@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using AngleSharp.Html.Parser;
 using Ganss.Xss;
 using MimeKit;
 using MimeKit.Text;
@@ -9,8 +10,11 @@ namespace MatMail.Messaging;
 /// <summary>An attachment of a message as the web client lists it.</summary>
 public sealed record AttachmentInfo(int Index, string FileName, string ContentType, long Size);
 
-/// <summary>The body of a message made safe to show: sanitised HTML, and whether it wants to load things from the internet.</summary>
-public sealed record RenderedBody(string Html, bool HasRemoteContent, bool WasPlainText);
+/// <summary>
+/// The body of a message made safe to show: sanitised HTML, whether it wants to load things from the internet, and whether the
+/// sender chose its colours (then it is shown on a light page even in the dark theme, because its text colours assume one).
+/// </summary>
+public sealed record RenderedBody(string Html, bool HasRemoteContent, bool WasPlainText, bool HasOwnColours = false);
 
 /// <summary>
 /// Turns a received message into HTML the browser may show. Everything active is removed (scripts, forms, frames, event handlers,
@@ -57,8 +61,81 @@ public sealed partial class MailBodyRenderer
 
         bool remoteFound = false;
         HtmlSanitizer sanitizer = BuildSanitizer(messageId, allowRemoteImages, () => remoteFound = true);
-        string clean = sanitizer.Sanitize(html);
-        return new RenderedBody(clean, remoteFound, plain);
+        string clean = sanitizer.Sanitize(plain ? html : MoveBodyLookIntoContent(html));
+        return new RenderedBody(clean, remoteFound, plain, !plain && ColourChoice().IsMatch(clean));
+    }
+
+    /// <summary>
+    /// The complete page a sandboxed iframe shows. The classes tell the style sheet (and the page that embeds it) how the mail wants
+    /// to be treated: plain text, HTML without colours of its own, or HTML with them.
+    /// </summary>
+    public static string BuildDocument(RenderedBody body)
+    {
+        string kind = body.WasPlainText ? "mm-plain" : body.HasOwnColours ? "mm-styled" : "mm-unstyled";
+        return "<!doctype html><html class=\"" + kind + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+            + "<base target=\"_blank\"><style>" + DocumentCss + "</style></head><body><div id=\"mm-body\">" + body.Html + "</div></body></html>";
+    }
+
+    private const string DocumentCss =
+        "html{background:transparent}"
+        + "body{margin:0;padding:0;font:14px/1.55 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#202124;background:#fff;overflow-wrap:break-word}"
+        + "#mm-body{padding:14px 18px}"
+        + "img{max-width:100%;height:auto}"
+        + "pre{white-space:pre-wrap}"
+        + "blockquote{margin:.6em 0 .6em .4em;padding-left:.8em;border-left:3px solid #dadce0;color:#5f6368}"
+        + "a{color:#1a73e8}"
+        + "img[data-blocked]{background:repeating-linear-gradient(45deg,#f1f3f4,#f1f3f4 6px,#e8eaed 6px,#e8eaed 12px);min-width:24px;min-height:24px}"
+        + ".mm-quote-toggle{display:inline-block;margin:6px 0;padding:0 9px;height:16px;line-height:14px;border:0;border-radius:8px;background:#e8eaed;color:#5f6368;cursor:pointer;font:700 12px/16px system-ui,sans-serif}"
+        + ".mm-quote-toggle:hover{background:#dadce0}"
+        + ".mm-quote[hidden]{display:none}"
+        // Mails without colours of their own follow the dark theme; the ones with colours stay on their light page.
+        + "html.mm-dark.mm-plain body,html.mm-dark.mm-unstyled body{background:transparent;color:#e8eaed}"
+        + "html.mm-dark.mm-plain a,html.mm-dark.mm-unstyled a{color:#8ab4f8}"
+        + "html.mm-dark.mm-plain blockquote,html.mm-dark.mm-unstyled blockquote{color:#9aa0a6;border-left-color:#5f6368}"
+        + "html.mm-dark.mm-plain img[data-blocked],html.mm-dark.mm-unstyled img[data-blocked]{background:repeating-linear-gradient(45deg,#2a2d32,#2a2d32 6px,#33373d 6px,#33373d 12px)}"
+        + "html.mm-dark.mm-plain .mm-quote-toggle,html.mm-dark.mm-unstyled .mm-quote-toggle{background:#3c4043;color:#bdc1c6}";
+
+    /// <summary>
+    /// Newsletters put their page colour and text colour on the body element, which the sanitiser removes together with the element.
+    /// Their look moves to a div that holds the content instead.
+    /// </summary>
+    private static string MoveBodyLookIntoContent(string html)
+    {
+        if (html.IndexOf("<body", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return html;
+        }
+
+        AngleSharp.Html.Dom.IHtmlDocument document = new HtmlParser().ParseDocument(html);
+        AngleSharp.Html.Dom.IHtmlElement? body = document.Body;
+        if (body is null)
+        {
+            return html;
+        }
+
+        // The style sheets of the head (newsletters style their text through classes) belong to the content as well.
+        string sheets = string.Concat(document.Head?.QuerySelectorAll("style").Select(s => s.OuterHtml) ?? Enumerable.Empty<string>());
+
+        var style = new System.Text.StringBuilder();
+        string? background = body.GetAttribute("bgcolor");
+        if (!string.IsNullOrWhiteSpace(background))
+        {
+            style.Append("background-color:").Append(background).Append(';');
+        }
+
+        string? text = body.GetAttribute("text");
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            style.Append("color:").Append(text).Append(';');
+        }
+
+        string? own = body.GetAttribute("style");
+        if (!string.IsNullOrWhiteSpace(own))
+        {
+            style.Append(own);
+        }
+
+        return sheets + (style.Length == 0 ? body.InnerHtml : "<div style=\"" + WebUtility.HtmlEncode(style.ToString()) + "\">" + body.InnerHtml + "</div>");
     }
 
     /// <summary>The attachments a reader can download (inline images the HTML shows are not listed).</summary>
@@ -154,12 +231,25 @@ public sealed partial class MailBodyRenderer
         sanitizer.AllowedSchemes.Add("data");
         sanitizer.AllowDataAttributes = false;
 
-        // cid: images point at the message's own inline parts.
+        // Style sheets of the sender (newsletters and Word mails style their text with classes). The sanitiser cleans the CSS: no
+        // @import, no @font-face, only known properties; @media stays, because many mails switch to a narrow layout with it.
+        sanitizer.AllowedTags.Add("style");
+        sanitizer.AllowedAtRules.Add(AngleSharp.Css.Dom.CssRuleType.Media);
+        sanitizer.AllowedCssProperties.Remove("position");
+        sanitizer.AllowedCssProperties.Remove("z-index");
+
         sanitizer.FilterUrl += (_, e) =>
         {
+            // cid: images point at the message's own inline parts.
             if (e.OriginalUrl.StartsWith("cid:", StringComparison.OrdinalIgnoreCase))
             {
                 e.SanitizedUrl = $"/api/mail/messages/{messageId}/cid/{WebUtility.UrlEncode(e.OriginalUrl[4..])}";
+            }
+            else if (!allowRemoteImages && e.Tag?.TagName == "STYLE" && RemoteUrl().IsMatch(e.OriginalUrl))
+            {
+                // url() in a style sheet loads from the internet, just like an image.
+                e.SanitizedUrl = null;
+                remoteFound();
             }
         };
 
@@ -200,6 +290,12 @@ public sealed partial class MailBodyRenderer
 
         link.SetAttribute("target", "_blank");
         link.SetAttribute("rel", "noopener noreferrer nofollow");
+
+        // The reader sees where a link really leads before clicking (the text of a link can say anything).
+        if (!string.IsNullOrEmpty(href) && !link.HasAttribute("title") && !href.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            link.SetAttribute("title", href.Length > 300 ? href[..300] : href);
+        }
     }
 
     private static void PrepareImage(AngleSharp.Dom.IElement image, bool allowRemoteImages, Action remoteFound)
@@ -235,6 +331,10 @@ public sealed partial class MailBodyRenderer
             remoteFound();
         }
     }
+
+    /// <summary>Colours the sender chose: a background, a text colour, a font colour.</summary>
+    [GeneratedRegex(@"\b(bgcolor|background|color)\s*[=:]", RegexOptions.IgnoreCase)]
+    private static partial Regex ColourChoice();
 
     [GeneratedRegex(@"^\s*(https?:)?//", RegexOptions.IgnoreCase)]
     private static partial Regex RemoteUrl();

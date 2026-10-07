@@ -1,0 +1,10 @@
+From: Support Portal <noreply@portal.example>
+To: max@eine-firma.example
+Subject: Ihr Ticket #48213 wurde aktualisiert
+Date: Thu, 08 Oct 2026 07:30:00 +0200
+Message-ID: <dark-1@portal.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<div style="font-family:Verdana,Geneva,sans-serif;font-size:13px;color:#000000"><p style="color:#000000">Hallo Max Mustermann,</p><p style="color:#000000">Ihr Ticket <b>#48213</b> wurde von <span style="color:#003366">Erika Musterfrau</span> aktualisiert:</p><blockquote style="border-left:3px solid #999999;margin:0 0 0 4px;padding-left:10px;color:#333333">Wir haben das Problem reproduziert und arbeiten an einer L&ouml;sung. Voraussichtlich ist es morgen behoben.</blockquote><p style="color:#000000"><a href="https://portal.example/tickets/48213" style="color:#0000ee">Ticket ansehen</a></p></div>

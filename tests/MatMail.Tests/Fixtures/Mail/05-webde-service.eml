@@ -1,0 +1,28 @@
+From: WEB.DE Team <info@service.web.example>
+To: max@eine-firma.example
+Subject: Ihre neue Postfach-Funktion: Mehr Speicher fuer Ihre Mails
+Date: Wed, 07 Oct 2026 08:20:00 +0200
+Message-ID: <webde-1@service.web.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+body { margin:0; padding:0; }
+td { font-family: Arial, Helvetica, sans-serif; font-size:13px; color:#333333; }
+a { color:#0073b7; }
+</style></head>
+<body bgcolor="#eeeeee" text="#333333" link="#0073b7" style="margin:0;padding:0">
+<center>
+<table width="640" border="0" cellspacing="0" cellpadding="0" bgcolor="#ffffff" align="center">
+ <tr><td bgcolor="#ffd800" height="8" style="font-size:1px;line-height:1px">&nbsp;</td></tr>
+ <tr><td style="padding:16px 24px" bgcolor="#ffffff"><table width="100%" border="0" cellspacing="0" cellpadding="0"><tr>
+   <td><font face="Arial, Helvetica, sans-serif" size="5" color="#333333"><b>WEB.DE</b></font></td>
+   <td align="right"><font face="Arial, Helvetica, sans-serif" size="1" color="#999999">Ihr Service-Update</font></td></tr></table></td></tr>
+ <tr><td style="padding:8px 24px 0 24px"><font face="Arial, Helvetica, sans-serif" size="4" color="#333333"><b>Mehr Platz f&uuml;r Ihre E-Mails</b></font></td></tr>
+ <tr><td style="padding:12px 24px 12px 24px"><font face="Arial, Helvetica, sans-serif" size="2" color="#333333">Guten Tag Herr Mustermann,<br><br>ab sofort steht Ihnen in Ihrem Postfach mehr Speicherplatz zur Verf&uuml;gung. Damit k&ouml;nnen Sie noch mehr Nachrichten und Anh&auml;nge aufbewahren.<br><br><b>Ihre Vorteile:</b></font>
+   <ul style="margin:8px 0 8px 18px;padding:0"><li><font face="Arial, Helvetica, sans-serif" size="2">Doppelter Speicherplatz</font></li><li><font face="Arial, Helvetica, sans-serif" size="2">Gr&ouml;&szlig;ere Anh&auml;nge bis 50 MB</font></li><li><font face="Arial, Helvetica, sans-serif" size="2">Neue Suchfunktion</font></li></ul></td></tr>
+ <tr><td align="center" style="padding:12px 24px 24px 24px"><table border="0" cellspacing="0" cellpadding="0"><tr><td bgcolor="#ffd800" style="padding:12px 28px;border-radius:4px"><a href="https://service.web.example/postfach" style="text-decoration:none;color:#333333;font-weight:bold;font-family:Arial,Helvetica,sans-serif;font-size:14px">Zum Postfach</a></td></tr></table></td></tr>
+ <tr><td bgcolor="#f4f4f4" style="padding:14px 24px"><font face="Arial, Helvetica, sans-serif" size="1" color="#888888">Diese Nachricht wurde automatisch erstellt. Bitte antworten Sie nicht auf diese E-Mail. WEB.DE ein Angebot der 1&amp;1 Mail &amp; Media GmbH. <a href="https://service.web.example/hilfe">Hilfe &amp; Kontakt</a></font></td></tr>
+</table></center></body></html>

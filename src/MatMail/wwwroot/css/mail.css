@@ -173,7 +173,11 @@
 .reader__detail { display: flex; gap: 0.75rem; padding: 0.1rem 0; }
 .reader__detail-label { flex: none; width: 5.5rem; color: var(--color-text-muted); }
 .reader__banner { display: flex; align-items: center; gap: 0.75rem; margin: 1rem 0 0.25rem; padding: 0.6rem 0.9rem; border-radius: var(--radius); background: var(--color-warn-soft); color: var(--color-text); font-size: 0.875rem; flex-wrap: wrap; }
-.reader__body { display: block; width: 100%; margin: 0.9rem 0 0; min-height: 120px; border: 0; border-radius: var(--radius); background: #fff; }
+.reader__body { display: block; width: 100%; margin: 0.9rem 0 0; min-height: 120px; border: 0; border-radius: var(--radius); background: transparent; color-scheme: light; }
+.reader__fit { display: block; margin: 0.5rem 0 0 auto; }
+.reader__fit[hidden] { display: none; }
+/* A mail with colours of its own is shown on a light page, also in the dark theme. */
+.reader__body--paper { background: #ffffff; }
 .reader__attachments { margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid var(--color-border); }
 .reader__attachments-title { margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--color-text-muted); }
 .attachment-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }

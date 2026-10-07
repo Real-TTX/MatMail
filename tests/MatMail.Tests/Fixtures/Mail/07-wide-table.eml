@@ -1,0 +1,16 @@
+From: Controlling <controlling@eine-firma.example>
+To: max@eine-firma.example
+Subject: Monatsreport September (Tabelle)
+Date: Thu, 08 Oct 2026 07:00:00 +0200
+Message-ID: <wide-1@eine-firma.example>
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+<html><body><p>Hallo zusammen,</p><p>hier der Report f&uuml;r September:</p>
+<table border="1" cellpadding="6" cellspacing="0" width="1100" style="border-collapse:collapse;font-family:Arial;font-size:13px">
+<tr bgcolor="#dde6f0"><th>Kunde</th><th>Postf&auml;cher</th><th>Speicher (GB)</th><th>Mails eingehend</th><th>Mails ausgehend</th><th>Spam blockiert</th><th>Umsatz (EUR)</th><th>Vorjahr (EUR)</th><th>Ver&auml;nderung</th><th>Bemerkung</th></tr>
+<tr><td>Kunde GmbH</td><td align="right">14</td><td align="right">38,2</td><td align="right">12.480</td><td align="right">5.120</td><td align="right">3.902</td><td align="right">1.420,00</td><td align="right">1.280,00</td><td align="right">+10,9 %</td><td>Domain-Umzug im Oktober</td></tr>
+<tr><td>Becker Bau</td><td align="right">6</td><td align="right">11,4</td><td align="right">4.220</td><td align="right">1.930</td><td align="right">1.204</td><td align="right">540,00</td><td align="right">540,00</td><td align="right">0,0 %</td><td>&nbsp;</td></tr>
+<tr><td>Partner AG</td><td align="right">42</td><td align="right">120,9</td><td align="right">44.810</td><td align="right">18.002</td><td align="right">9.661</td><td align="right">4.980,00</td><td align="right">4.410,00</td><td align="right">+12,9 %</td><td>Backup-Konto aktiv</td></tr>
+</table><p>Viele Gr&uuml;&szlig;e<br>Controlling</p></body></html>

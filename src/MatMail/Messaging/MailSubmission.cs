@@ -123,10 +123,11 @@ public sealed class MailSubmission
     private readonly FolderService _folders;
     private readonly AppConfig _config;
     private readonly IServiceScopeFactory _scopes;
+    private readonly BrandingService _branding;
 
     public MailSubmission(
         MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures,
-        MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes)
+        MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes, BrandingService branding)
     {
         _db = db;
         _delivery = delivery;
@@ -137,6 +138,7 @@ public sealed class MailSubmission
         _folders = folders;
         _config = config;
         _scopes = scopes;
+        _branding = branding;
     }
 
     public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancel = default)
@@ -227,7 +229,8 @@ public sealed class MailSubmission
             : null;
         string tenant = await _db.Tenants.AsNoTracking().Where(t => t.Id == request.TenantId).Select(t => t.Name).FirstOrDefaultAsync(cancel) ?? string.Empty;
         MailboxAddress? from = message.From.Mailboxes.FirstOrDefault();
-        return SignatureContext.For(user, from?.Name ?? string.Empty, from?.Address ?? request.EnvelopeFrom, tenant);
+        Brand brand = await _branding.GetAsync(request.TenantId, cancel);
+        return SignatureContext.For(user, from?.Name ?? string.Empty, from?.Address ?? request.EnvelopeFrom, tenant, brand.Website);
     }
 }
 

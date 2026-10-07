@@ -1,0 +1,50 @@
+From: Telekom Angebote <angebote@newsletter.telekom.example>
+To: max@eine-firma.example
+Subject: Ihr Oktober-Angebot: Glasfaser mit 6 Monaten Preisvorteil
+Date: Wed, 07 Oct 2026 06:00:00 +0200
+Message-ID: <tonline-1@newsletter.telekom.example>
+List-Unsubscribe: <https://newsletter.telekom.example/abmelden?id=123>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="tl-alt"
+
+--tl-alt
+Content-Type: text/plain; charset=UTF-8
+
+Ihr Oktober-Angebot: Glasfaser mit 6 Monaten Preisvorteil
+Jetzt informieren: https://newsletter.telekom.example/angebot
+
+--tl-alt
+Content-Type: text/html; charset=UTF-8
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Telekom Angebote</title>
+<style type="text/css">
+body{margin:0;padding:0;background:#f2f2f2;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}
+table{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt}
+img{border:0;display:block;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic}
+a{color:#e20074;text-decoration:none}
+.wrap{width:600px}
+.h1{font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:bold;color:#262626}
+.txt{font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:22px;color:#262626}
+.small{font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:16px;color:#6a6a6a}
+.btn a{display:inline-block;padding:12px 28px;background:#e20074;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:bold;border-radius:4px}
+@media only screen and (max-width:620px){.wrap{width:100%!important}.col{display:block!important;width:100%!important}.h1{font-size:22px!important}}
+</style></head>
+<body bgcolor="#f2f2f2" style="margin:0;padding:0;background:#f2f2f2">
+<table width="100%" bgcolor="#f2f2f2" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:16px 8px">
+<table class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background:#ffffff">
+<tr><td bgcolor="#e20074" style="background:#e20074;padding:14px 24px"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td><img src="https://static.telekom.example/mail/logo-white.png" width="48" height="48" alt="Telekom" style="display:block"></td><td align="right" class="small" style="color:#ffffff"><a href="https://newsletter.telekom.example/browser" style="color:#ffffff">Im Browser ansehen</a></td></tr></table></td></tr>
+<tr><td><img src="https://static.telekom.example/mail/hero-glasfaser.jpg" width="600" height="260" alt="Glasfaser" style="display:block;width:100%;height:auto"></td></tr>
+<tr><td style="padding:28px 32px 8px"><div class="h1">Glasfaser mit 6 Monaten Preisvorteil</div></td></tr>
+<tr><td class="txt" style="padding:0 32px 16px">Hallo Herr Mustermann,<br><br>bis zum 31. Oktober erhalten Sie bei Neubestellung eines Glasfaser-Tarifs <b>6 Monate lang 10 Euro Preisvorteil</b> pro Monat. Dazu gibt es den Router ohne Aufpreis.</td></tr>
+<tr><td align="center" class="btn" style="padding:8px 32px 28px"><a href="https://newsletter.telekom.example/angebot" target="_blank">Jetzt informieren</a></td></tr>
+<tr><td style="padding:0 32px 24px"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td class="col" width="50%" valign="top" style="padding-right:8px"><img src="https://static.telekom.example/mail/tarif-1.jpg" width="264" height="150" alt="Tarif 1" style="display:block;width:100%;height:auto"><div class="txt" style="padding-top:8px"><b>MagentaZuhause M</b><br>150 Mbit/s ab 34,95 &euro;</div></td>
+<td class="col" width="50%" valign="top" style="padding-left:8px"><img src="https://static.telekom.example/mail/tarif-2.jpg" width="264" height="150" alt="Tarif 2" style="display:block;width:100%;height:auto"><div class="txt" style="padding-top:8px"><b>MagentaZuhause L</b><br>300 Mbit/s ab 44,95 &euro;</div></td>
+</tr></table></td></tr>
+<tr><td bgcolor="#f7f7f7" class="small" style="background:#f7f7f7;padding:20px 32px">Telekom Deutschland GmbH, Landgrabenweg 151, 53227 Bonn. Sie erhalten diese E-Mail, weil Sie sich f&uuml;r den Newsletter angemeldet haben. <a href="https://newsletter.telekom.example/abmelden?id=123">Abmelden</a> | <a href="https://www.telekom.example/datenschutz">Datenschutz</a> | <a href="https://www.telekom.example/impressum">Impressum</a></td></tr>
+</table></td></tr></table></body></html>
+--tl-alt--

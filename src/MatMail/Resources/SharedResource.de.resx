@@ -284,6 +284,7 @@
   <data name="Filter" xml:space="preserve"><value>Filtern</value></data>
   <data name="Fingerprint" xml:space="preserve"><value>Fingerabdruck</value></data>
   <data name="First name" xml:space="preserve"><value>Vorname</value></data>
+  <data name="Fit to width" xml:space="preserve"><value>An Breite anpassen</value></data>
   <data name="Folder name" xml:space="preserve"><value>Ordnername</value></data>
   <data name="Folders" xml:space="preserve"><value>Ordner</value></data>
   <data name="Folders to fetch" xml:space="preserve"><value>Abzuholende Ordner</value></data>
@@ -481,6 +482,7 @@
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
+  <data name="Original size" xml:space="preserve"><value>Originalgröße</value></data>
   <data name="Outgoing mail (SMTP)" xml:space="preserve"><value>Postausgangsserver (SMTP)</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
   <data name="Overview of tenant “{0}”." xml:space="preserve"><value>Übersicht des Mandanten „{0}“.</value></data>
@@ -617,6 +619,7 @@
   <data name="Show original" xml:space="preserve"><value>Original anzeigen</value></data>
   <data name="Show password" xml:space="preserve"><value>Passwort anzeigen</value></data>
   <data name="Show pictures" xml:space="preserve"><value>Bilder anzeigen</value></data>
+  <data name="Show trimmed content" xml:space="preserve"><value>Ausgeblendeten Inhalt anzeigen</value></data>
   <data name="Sign in" xml:space="preserve"><value>Anmelden</value></data>
   <data name="Sign out" xml:space="preserve"><value>Abmelden</value></data>
   <data name="Sign out all other sessions" xml:space="preserve"><value>Alle anderen Sitzungen abmelden</value></data>

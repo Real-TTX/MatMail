@@ -638,8 +638,17 @@
       wrap.appendChild(banner);
     }
 
-    var frame = App.el("iframe", { class: "reader__body", sandbox: "allow-same-origin allow-popups allow-popups-to-escape-sandbox", title: T("messageBody"), src: m.bodyUrl });
-    frame.addEventListener("load", function () { fitFrame(frame); });
+    var frame = App.el("iframe", {
+      class: "reader__body", sandbox: "allow-same-origin allow-popups allow-popups-to-escape-sandbox", title: T("messageBody"), "data-quote-title": T("showTrimmed"), src: m.bodyUrl
+    });
+    var viewer = App.viewer.attach(frame);
+    var fitButton = App.el("button", { type: "button", class: "btn btn--secondary btn--sm reader__fit", hidden: "hidden", text: T("originalSize") });
+    fitButton.addEventListener("click", function () { viewer.setFit(!viewer.fitting); });
+    frame.addEventListener("mm-fit", function (e) {
+      fitButton.hidden = !e.detail.wide;
+      fitButton.textContent = e.detail.fitting ? T("originalSize") : T("fitToWidth");
+    });
+    wrap.appendChild(fitButton);
     wrap.appendChild(frame);
 
     if (m.attachments.length) {
@@ -674,16 +683,6 @@
     var button = App.el("button", { type: "button", class: "btn btn--secondary" }, [App.icon(icon), App.el("span", { text: label })]);
     button.addEventListener("click", onClick);
     return button;
-  }
-
-  function fitFrame(frame) {
-    try {
-      var body = frame.contentDocument && frame.contentDocument.body;
-      if (!body) { return; }
-      var resize = function () { frame.style.height = Math.max(120, frame.contentDocument.documentElement.scrollHeight) + "px"; };
-      resize();
-      if (window.ResizeObserver) { new ResizeObserver(resize).observe(body); }
-    } catch (e) { frame.style.height = "600px"; }
   }
 
   // ---------------------------------------------------------------------------------------------

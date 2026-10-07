@@ -78,7 +78,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> Bootstrap(
-        MailAccessService access, MailStore store, FolderService folders, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
+        MailAccessService access, MailStore store, FolderService folders, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, BrandingService branding, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -110,6 +110,7 @@ public static class MailApi
 
         User? self = await db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.UserId, cancel);
         string tenantName = current.TenantName ?? string.Empty;
+        string? website = (await branding.GetAsync(user.TenantId, cancel)).Website;
         var signatureDtos = new List<SignatureDto>();
         var seen = new HashSet<long>();
         foreach (SendIdentity identity in identities)
@@ -118,7 +119,7 @@ public static class MailApi
             {
                 if (seen.Add(signature.Id))
                 {
-                    SignatureContext context = SignatureContext.For(self, user.DisplayName, identity.Alias.Address, tenantName);
+                    SignatureContext context = SignatureContext.For(self, user.DisplayName, identity.Alias.Address, tenantName, website);
                     signatureDtos.Add(new SignatureDto(signature.Id, signature.Name, SignatureService.Render(signature.Html, context, html: true), signature.IsDefault, signature.Scope.ToString(), signature.MailboxId));
                 }
             }
@@ -225,16 +226,12 @@ public static class MailApi
         bool allowImages = images == true;
         RenderedBody body = renderer.Render(mime, id, allowImages);
         string imageSources = allowImages ? "img-src 'self' data: https: http:" : "img-src 'self' data:";
-        http.Response.Headers.ContentSecurityPolicy = $"default-src 'none'; {imageSources}; style-src 'unsafe-inline'; font-src data: https:; base-uri 'none'; form-action 'none'";
+        http.Response.Headers.ContentSecurityPolicy = $"default-src 'none'; {imageSources}; style-src 'unsafe-inline'; font-src {(allowImages ? "data: https:" : "data:")}; base-uri 'none'; form-action 'none'";
         http.Response.Headers.XContentTypeOptions = "nosniff";
         http.Response.Headers["Referrer-Policy"] = "no-referrer";
         http.Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
-        string document = "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><base target=\"_blank\">"
-            + "<style>html,body{margin:0;padding:0}body{font:14px/1.55 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#202124;background:#fff;word-wrap:break-word;overflow-wrap:anywhere;padding:2px}"
-            + "img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}blockquote{margin:.6em 0 .6em .4em;padding-left:.8em;border-left:3px solid #dadce0;color:#5f6368}a{color:#1a73e8}</style></head><body>"
-            + body.Html + "</body></html>";
-        return Results.Content(document, "text/html; charset=utf-8");
+        return Results.Content(MailBodyRenderer.BuildDocument(body), "text/html; charset=utf-8");
     }
 
     private static async Task<IResult> GetAttachment(

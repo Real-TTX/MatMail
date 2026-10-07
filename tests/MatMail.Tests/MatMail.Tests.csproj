@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\src\MatMail\MatMail.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

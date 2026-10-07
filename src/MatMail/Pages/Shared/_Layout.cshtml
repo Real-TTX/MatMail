@@ -1,0 +1,275 @@
+@inject CurrentUser CurrentUser
+@inject ThemeService Themes
+@inject MatMail.Data.MatMailDbContext Db
+@using Microsoft.EntityFrameworkCore
+@{
+    var theme = Themes.Resolve();
+    var area = ViewData["Area"] as string ?? "admin";   // admin | mail
+    var isMail = area == "mail";
+
+    // Breadcrumbs are "Section / Page" strings; each segment is translated, the last one is the page. They mirror the URL, so
+    // every crumb but the last can link back (only when both have the same number of segments).
+    var crumbText = ViewData["Breadcrumb"] as string ?? "";
+    var literalCrumbs = ViewData["BreadcrumbLiteral"] is true;
+    var crumbs = crumbText.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(s => literalCrumbs ? s : L[s].Value).ToList();
+    var pathParts = (Context.Request.Path.Value ?? "").Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var crumbsLinkable = pathParts.Count == crumbs.Count && crumbs.Count > 1;
+
+    var pageTitle = ViewData["Title"] as string ?? (crumbs.Count > 0 ? crumbs[^1] : "MatMail");
+    var showHeading = ViewData["NoHeading"] is not true && !isMail;
+    var pageDescription = ViewData["Description"] as string;
+
+    var displayName = CurrentUser.DisplayName ?? CurrentUser.Username ?? "?";
+    var avatarLetter = displayName.Length > 0 ? displayName[..1].ToUpperInvariant() : "?";
+
+    List<MatMail.Data.Tenant> switchableTenants = new();
+    if (CurrentUser.IsSystemAdmin)
+    {
+        switchableTenants = await Db.Tenants.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+    }
+
+    bool NavVisible(string? permission, bool systemOnly = false) => systemOnly ? CurrentUser.IsSystemAdmin : (permission is null || CurrentUser.Can(permission));
+    bool IsActive(string href) => href == "/Admin"
+        ? Context.Request.Path.Value?.TrimEnd('/').Equals("/Admin", StringComparison.OrdinalIgnoreCase) == true
+        : Context.Request.Path.StartsWithSegments(href, StringComparison.OrdinalIgnoreCase);
+}
+@functions {
+    private sealed record NavEntry(string Href, string Icon, string Text, string? Permission = null, bool SystemOnly = false);
+}
+@{
+    var navGroups = new (string Title, NavEntry[] Items)[]
+    {
+        ("", new[] { new NavEntry("/Admin", "dashboard", L["Dashboard"].Value) }),
+        (L["Mail"].Value, new[]
+        {
+            new NavEntry("/Admin/Mailboxes", "inbox", L["Mailboxes"].Value, Permissions.MailboxesManage),
+            new NavEntry("/Admin/Domains", "globe", L["Domains"].Value, Permissions.DomainsManage),
+            new NavEntry("/Admin/Accounts", "plug", L["Connected accounts"].Value, Permissions.AccountsManage),
+            new NavEntry("/Admin/Signatures", "pen-line", L["Signatures"].Value, Permissions.SignaturesManage),
+            new NavEntry("/Admin/Unassigned", "alert-circle", L["Unassigned"].Value, Permissions.UnassignedManage),
+        }),
+        (L["People"].Value, new[]
+        {
+            new NavEntry("/Admin/Users", "users", L["Users"].Value, Permissions.UsersManage),
+            new NavEntry("/Admin/Roles", "shield", L["Roles"].Value, Permissions.RolesManage),
+        }),
+        (L["Delivery"].Value, new[]
+        {
+            new NavEntry("/Admin/Relay", "network", L["SMTP relay"].Value, Permissions.RelayManage),
+            new NavEntry("/Admin/Queue", "send", L["Outgoing queue"].Value, Permissions.QueueManage),
+        }),
+        (L["System"].Value, new[]
+        {
+            new NavEntry("/Admin/Logs", "activity", L["Activity log"].Value, Permissions.LogsView),
+            new NavEntry("/Admin/Settings", "settings", L["Server settings"].Value, null, true),
+            new NavEntry("/Admin/Tenants", "building", L["Tenants"].Value, null, true),
+        }),
+    };
+}
+<!DOCTYPE html>
+<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@theme.Accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@(pageTitle == "MatMail" ? "MatMail" : $"{pageTitle} · MatMail")</title>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mail.css" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
+    <partial name="_ThemeHead" model="theme" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+    @Html.Raw(Icons.Sprite())
+    <div class="app-shell" data-area="@area">
+        <div class="app-shell__backdrop" id="sidebar-backdrop" hidden></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__brand">
+                <img class="sidebar__brand-mark" src="~/icons/logo.svg" alt="" width="28" height="28" />
+                <span class="sidebar__brand-text">MatMail</span>
+                <button type="button" class="icon-btn sidebar__close" id="sidebar-close" aria-label="@L["Close"]"><mm-icon name="x" /></button>
+            </div>
+
+            @if (CurrentUser.Can(Permissions.MailUse) || CurrentUser.CanAdminister)
+            {
+                <div class="area-switch" role="tablist">
+                    @if (CurrentUser.Can(Permissions.MailUse))
+                    {
+                        <a class="area-switch__item @(isMail ? "is-active" : "")" href="/Mail"><mm-icon name="mail" /><span>@L["Mail"]</span></a>
+                    }
+                    @if (CurrentUser.CanAdminister)
+                    {
+                        <a class="area-switch__item @(!isMail ? "is-active" : "")" href="/Admin"><mm-icon name="settings" /><span>@L["Administration"]</span></a>
+                    }
+                </div>
+            }
+
+            @if (IsSectionDefined("Sidebar"))
+            {
+                @await RenderSectionAsync("Sidebar")
+            }
+            else
+            {
+                <nav class="sidebar__nav" aria-label="@L["Main navigation"]">
+                    @if (CurrentUser.CanAdminister)
+                    {
+                        @foreach (var group in navGroups)
+                        {
+                            var visible = group.Items.Where(i => NavVisible(i.Permission, i.SystemOnly) && (i.Href != "/Admin" || CurrentUser.CanAdminister)).ToList();
+                            if (visible.Count == 0)
+                            {
+                                continue;
+                            }
+
+                            if (!string.IsNullOrEmpty(group.Title))
+                            {
+                                <div class="nav-heading">@group.Title</div>
+                            }
+
+                            @foreach (var item in visible)
+                            {
+                                <a class="nav-item @(IsActive(item.Href) ? "is-active" : "")" href="@item.Href">
+                                    <mm-icon name="@item.Icon" class="nav-item__icon" />
+                                    <span>@item.Text</span>
+                                </a>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <a class="nav-item @(Context.Request.Path.StartsWithSegments("/Account") ? "is-active" : "")" href="/Account">
+                            <mm-icon name="user" class="nav-item__icon" /><span>@L["My account"]</span>
+                        </a>
+                    }
+                </nav>
+            }
+
+            <div class="sidebar__footer">
+                <div class="dropdown dropdown--up" data-dropdown>
+                    <button type="button" class="account" data-dropdown-toggle aria-haspopup="menu" title="@L["Account"]">
+                        <span class="avatar" aria-hidden="true">@avatarLetter</span>
+                        <span class="account__body">
+                            <span class="account__name">@displayName</span>
+                            <span class="account__tenant">@(CurrentUser.TenantName ?? "")</span>
+                        </span>
+                        <mm-icon name="chevron-up" class="account__caret" />
+                    </button>
+                    <div class="dropdown__menu" role="menu" hidden>
+                        <div class="dropdown__header">
+                            <span class="dropdown__title">@displayName</span>
+                            <button type="button" class="icon-btn dropdown__close" data-dropdown-close aria-label="@L["Close"]"><mm-icon name="x" /></button>
+                        </div>
+                        <a class="dropdown__item" href="/Account" role="menuitem"><mm-icon name="user" /><span>@L["My account"]</span></a>
+                        <a class="dropdown__item" href="/Account/Appearance" role="menuitem"><mm-icon name="sliders" /><span>@L["Appearance and language"]</span></a>
+                        <div class="dropdown__divider"></div>
+                        <div class="dropdown__label">@L["Theme"]</div>
+                        <div class="segmented" data-theme-switch data-save-url="/Account/Appearance?handler=Mode">
+                            <button type="button" class="segmented__item @(theme.Mode == "system" ? "is-active" : "")" data-theme-mode="system" title="@L["System"]"><mm-icon name="monitor" /></button>
+                            <button type="button" class="segmented__item @(theme.Mode == "light" ? "is-active" : "")" data-theme-mode="light" title="@L["Light"]"><mm-icon name="sun" /></button>
+                            <button type="button" class="segmented__item @(theme.Mode == "dark" ? "is-active" : "")" data-theme-mode="dark" title="@L["Dark"]"><mm-icon name="moon" /></button>
+                        </div>
+                        <div class="dropdown__divider"></div>
+                        <form method="post" action="/Account/Logout" class="dropdown__form" data-no-busy>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="dropdown__item dropdown__item--danger" role="menuitem"><mm-icon name="log-out" /><span>@L["Sign out"]</span></button>
+                        </form>
+                        <div class="dropdown__version">MatMail @AppInfo.Version</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-header">
+                <button type="button" class="icon-btn hamburger" id="sidebar-toggle" aria-label="@L["Toggle navigation"]" aria-controls="sidebar" aria-expanded="false">
+                    <mm-icon name="menu" />
+                </button>
+                @if (IsSectionDefined("HeaderCenter"))
+                {
+                    @await RenderSectionAsync("HeaderCenter")
+                }
+                else
+                {
+                    <nav class="breadcrumb" aria-label="@L["Breadcrumb"]">
+                        @for (var i = 0; i < crumbs.Count; i++)
+                        {
+                            if (i > 0)
+                            {
+                                <span class="breadcrumb__sep" aria-hidden="true">/</span>
+                            }
+
+                            if (crumbsLinkable && i < crumbs.Count - 1)
+                            {
+                                <a class="breadcrumb__link" href="/@string.Join("/", pathParts.Take(i + 1))">@crumbs[i]</a>
+                            }
+                            else
+                            {
+                                <span class="@(i == crumbs.Count - 1 ? "breadcrumb__current" : "")">@crumbs[i]</span>
+                            }
+                        }
+                    </nav>
+                }
+
+                <div class="app-header__spacer"></div>
+
+                @if (switchableTenants.Count > 1)
+                {
+                    <div class="dropdown" data-dropdown>
+                        <button type="button" class="btn btn--ghost tenant-switch" data-dropdown-toggle aria-haspopup="menu" title="@L["Switch tenant"]">
+                            <mm-icon name="building" /><span class="tenant-switch__name">@CurrentUser.TenantName</span><mm-icon name="chevron-down" />
+                        </button>
+                        <div class="dropdown__menu dropdown__menu--right" role="menu" hidden>
+                            <div class="dropdown__header">
+                                <span class="dropdown__title">@L["Switch tenant"]</span>
+                                <button type="button" class="icon-btn dropdown__close" data-dropdown-close aria-label="@L["Close"]"><mm-icon name="x" /></button>
+                            </div>
+                            @foreach (var tenant in switchableTenants)
+                            {
+                                <form method="post" action="/Account/SwitchTenant" class="dropdown__form" data-no-busy>
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tenantId" value="@tenant.Id" />
+                                    <input type="hidden" name="returnUrl" value="@(isMail ? "/Mail" : "/Admin")" />
+                                    <button type="submit" class="dropdown__item @(tenant.Id == CurrentUser.TenantId ? "is-active" : "")" role="menuitem">
+                                        <mm-icon name="@(tenant.Id == CurrentUser.TenantId ? "check" : "building")" /><span>@tenant.Name</span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </header>
+
+            <main class="app-content @(isMail ? "app-content--bleed" : "")">
+                <partial name="_Notice" />
+                @if (showHeading)
+                {
+                    <div class="page-heading">
+                        <h1 class="page-heading__title">@pageTitle</h1>
+                        @if (!string.IsNullOrEmpty(pageDescription))
+                        {
+                            <p class="page-heading__description">@pageDescription</p>
+                        }
+                    </div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <dialog id="mm-confirm" class="dialog dialog--sm confirm">
+        <form method="dialog" class="confirm__inner" data-no-busy>
+            <p class="confirm__text"></p>
+            <div class="btn-row">
+                <button class="btn btn--primary confirm__ok" value="ok">@L["Confirm"]</button>
+                <button class="btn btn--secondary" value="cancel">@L["Cancel"]</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/picker.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

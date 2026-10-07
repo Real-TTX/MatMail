@@ -1,0 +1,33 @@
+@page "/Admin/Tenants/Edit"
+@model MatMail.Pages.Admin.Tenants.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Tenants / Edit tenant" : "Administration / Tenants / New tenant";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New tenant"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Tenant"]' icon="building">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Home or Example GmbH"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.Description" kind="textarea" rows="3" label='@L["Description"]' />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
+        <p class="form-help">@L["An inactive tenant cannot sign in or receive mail."]</p>
+    </mm-form-section>
+
+    @if (!Model.IsEdit)
+    {
+        <p class="muted">@L["A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant."]</p>
+    }
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Tenants" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit && !Model.IsCurrent)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this tenant with all its users, mailboxes and messages? This cannot be undone."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

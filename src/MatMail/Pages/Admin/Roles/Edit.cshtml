@@ -1,0 +1,42 @@
+@page "/Admin/Roles/Edit"
+@model MatMail.Pages.Admin.Roles.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Roles / Edit role" : "Administration / Roles / New role";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New role"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Role"]' icon="shield">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.Description" kind="textarea" rows="2" label='@L["Description"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Permissions"]' icon="key"
+                     description='@L["What members of this role may do. Reading somebody else’s mail is never part of a role: delegate it on the mailbox."]'>
+        <div class="checklist">
+            @foreach (var group in Permissions.Catalogue.GroupBy(p => p.Group))
+            {
+                <div class="checklist__group">@L[group.Key]</div>
+                @foreach (var permission in group)
+                {
+                    <label class="checklist__item">
+                        <input type="checkbox" name="Input.Permissions" value="@permission.Key" checked="@Model.Input.Permissions.Contains(permission.Key)" />
+                        <span>@L[permission.Description]<small class="mono">@permission.Key</small></span>
+                    </label>
+                }
+            }
+        </div>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Roles" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit && !Model.IsBuiltIn)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this role?"]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

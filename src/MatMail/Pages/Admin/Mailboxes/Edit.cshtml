@@ -1,0 +1,51 @@
+@page "/Admin/Mailboxes/Edit"
+@model MatMail.Pages.Admin.Mailboxes.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Mailboxes / Edit mailbox" : "Administration / Mailboxes / New mailbox";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New mailbox"].Value;
+}
+
+@if (Model.IsEdit)
+{
+    <partial name="_MailboxTabs" model='(Model.Id, "general")' />
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Mailbox"]' icon="inbox">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' autofocus="autofocus" />
+
+        @if (Model.IsEdit)
+        {
+            <input type="hidden" asp-for="Input.Type" />
+            <mm-field asp-for="TypeText" kind="readonly" label='@L["Type"]' />
+        }
+        else
+        {
+            <mm-field asp-for="Input.Type" kind="select" label='@L["Type"]' asp-items="Model.TypeItems" />
+        }
+
+        <mm-picker asp-for="Input.OwnerUserId" asp-items="Model.UserItems" label='@L["Owner"]' placeholder='@L["— Nobody —"]'
+                   help='@L["The owner has full access to a personal mailbox."]'
+                   show-when-field="Input.Type" show-when-value="Personal" />
+        <mm-field asp-for="Input.Description" kind="textarea" rows="2" label='@L["Description"]' />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
+    </mm-form-section>
+
+    @if (!Model.IsEdit)
+    {
+        <p class="muted">@L["After saving you can add addresses and delegate access."]</p>
+    }
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Mailboxes" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this mailbox with all its folders and messages? This cannot be undone."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

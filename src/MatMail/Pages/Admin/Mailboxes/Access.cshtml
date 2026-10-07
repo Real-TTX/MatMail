@@ -1,0 +1,46 @@
+@page "/Admin/Mailboxes/Access"
+@model MatMail.Pages.Admin.Mailboxes.AccessModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Mailboxes / Delegation";
+    ViewData["Title"] = Model.MailboxName;
+}
+
+<partial name="_MailboxTabs" model='(Model.Id, "access")' />
+
+<p class="muted">
+    @(Model.IsShared
+        ? L["The users listed here work in this shared mailbox (public folder), for example everybody who answers info@."]
+        : L["The owner always has full access. Users listed here may also work in this mailbox, for example as a substitute."])
+</p>
+
+<mm-table item-count="Model.Permissions.Count" empty-text='@L["Nobody else has access to this mailbox."]' empty-icon="users">
+    <thead>
+        <tr>
+            <th>@L["User"]</th>
+            <th>@L["Access"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var permission in Model.Permissions)
+        {
+            <tr data-row-href="/Admin/Mailboxes/Delegate?mailboxId=@Model.Id&id=@permission.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@permission.UserName</div>
+                    <div class="cell-sub">@permission.LoginName</div>
+                </td>
+                <td><mm-badge kind="@(permission.Access >= MailboxAccess.Send ? "warn" : "info")">@Model.AccessLabel(permission.Access)</mm-badge></td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Admin/Mailboxes/Delegate?mailboxId=@Model.Id&id=@permission.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-list-actions>
+    <mm-button variant="primary" href="@($"/Admin/Mailboxes/Delegate?mailboxId={Model.Id}")" icon="user-plus">@L["Add user"]</mm-button>
+    <mm-button variant="secondary" href="/Admin/Mailboxes" icon="arrow-left">@L["Back"]</mm-button>
+</mm-list-actions>

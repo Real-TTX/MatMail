@@ -1,0 +1,74 @@
+@page "/Admin/Mailboxes"
+@model MatMail.Pages.Admin.Mailboxes.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Mailboxes";
+    ViewData["Description"] = L["Where mail lives: personal mailboxes of users and shared mailboxes (public folders) that several users work in."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name or address…"]' />
+    <mm-toolbar-select name="Type" label='@L["Type"]' value="@Model.Type">
+        <option value="">@L["All"]</option>
+        <option value="Personal">@L["Personal"]</option>
+        <option value="Shared">@L["Shared (public folder)"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="messages_desc">@L["Most messages"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No mailboxes match."]' empty-icon="inbox">
+    <thead>
+        <tr>
+            <th>@L["Mailbox"]</th>
+            <th class="hide-sm">@L["Type"]</th>
+            <th>@L["Addresses"]</th>
+            <th class="hide-sm">@L["Delegates"]</th>
+            <th class="hide-sm">@L["Messages"]</th>
+            <th>@L["Status"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var mailbox in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Mailboxes/Edit?id=@mailbox.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@mailbox.Name</div>
+                    @if (mailbox.OwnerName is not null) { <div class="cell-sub">@mailbox.OwnerName</div> }
+                </td>
+                <td class="hide-sm">
+                    @if (mailbox.Type == MailboxType.Shared) { <mm-badge kind="info" icon="users">@L["Public folder"]</mm-badge> }
+                    else { <mm-badge kind="muted" icon="user">@L["Personal"]</mm-badge> }
+                </td>
+                <td>
+                    @if (mailbox.PrimaryAddress is null) { <span class="muted">–</span> }
+                    else { <span>@mailbox.PrimaryAddress</span> @if (mailbox.AddressCount > 1) { <span class="muted"> +@(mailbox.AddressCount - 1)</span> } }
+                </td>
+                <td class="hide-sm">@mailbox.DelegateCount</td>
+                <td class="hide-sm">@mailbox.MessageCount</td>
+                <td>@if (mailbox.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Admin/Mailboxes/Addresses?id=@mailbox.Id" title="@L["Addresses"]" aria-label="@L["Addresses"]"><mm-icon name="at-sign" /></a>
+                        <a class="icon-btn" href="/Admin/Mailboxes/Edit?id=@mailbox.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Mailboxes/Edit" icon="plus">@L["New mailbox"]</mm-button>
+</mm-list-actions>

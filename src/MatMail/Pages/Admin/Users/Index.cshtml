@@ -1,0 +1,71 @@
+@page "/Admin/Users"
+@model MatMail.Pages.Admin.Users.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Users";
+    ViewData["Description"] = L["People who can sign in to the web client, IMAP and SMTP of this tenant."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, login or e-mail…"]' />
+    <mm-toolbar-select name="RoleId" label='@L["Role"]' value="@Model.RoleId">
+        <option value="">@L["All roles"]</option>
+        @foreach (var role in Model.Roles)
+        {
+            <option value="@role.Id">@role.Name</option>
+        }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+        <option value="locked">@L["Locked"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="login_asc">@L["Login name"]</option>
+        <option value="lastlogin_desc">@L["Last sign-in"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No users match."]' empty-icon="users">
+    <thead>
+        <tr>
+            <th>@L["User"]</th>
+            <th class="hide-sm">@L["Roles"]</th>
+            <th class="hide-sm">@L["Last sign-in"]</th>
+            <th>@L["Status"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Users/Edit?id=@user.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@user.DisplayName @if (user.IsSystemAdmin) { <mm-badge kind="info" icon="shield">@L["System administrator"]</mm-badge> }</div>
+                    <div class="cell-sub">@user.LoginName@(string.IsNullOrEmpty(user.Email) ? "" : " · " + user.Email)</div>
+                </td>
+                <td class="hide-sm"><div class="chip-list">@foreach (var role in user.Roles) { <mm-badge kind="muted">@role</mm-badge> }</div></td>
+                <td class="hide-sm">@Fmt.Ago(user.LastLoginDate)</td>
+                <td>
+                    @if (!user.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }
+                    else if (user.LockedUntilDate > DateTime.UtcNow) { <mm-badge kind="warn" icon="lock">@L["Locked"]</mm-badge> }
+                    else { <mm-badge kind="ok">@L["Active"]</mm-badge> }
+                </td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Admin/Users/Edit?id=@user.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Users/Edit" icon="user-plus">@L["New user"]</mm-button>
+</mm-list-actions>

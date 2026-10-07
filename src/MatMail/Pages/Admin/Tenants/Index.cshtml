@@ -1,0 +1,67 @@
+@page "/Admin/Tenants"
+@model MatMail.Pages.Admin.Tenants.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Tenants";
+    ViewData["Description"] = L["Tenants keep users, mailboxes and settings apart: your family, a company, a hosting customer."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search tenants…"]' />
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No tenants match."]' empty-icon="building">
+    <thead>
+        <tr>
+            <th>@L["Tenant"]</th>
+            <th class="hide-sm">@L["Users"]</th>
+            <th class="hide-sm">@L["Mailboxes"]</th>
+            <th>@L["Status"]</th>
+            <th class="hide-sm">@L["Created"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tenant in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Tenants/Edit?id=@tenant.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@tenant.Name @if (tenant.Id == Model.CurrentTenantId) { <mm-badge kind="info">@L["Current"]</mm-badge> }</div>
+                    @if (!string.IsNullOrEmpty(tenant.Description)) { <div class="cell-sub">@tenant.Description</div> }
+                </td>
+                <td class="hide-sm">@tenant.Users</td>
+                <td class="hide-sm">@tenant.Mailboxes</td>
+                <td>@if (tenant.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="hide-sm">@Fmt.DateText(tenant.CreateDate)</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        @if (tenant.Id != Model.CurrentTenantId)
+                        {
+                            <form method="post" action="/Account/SwitchTenant" data-no-busy>
+                                <input type="hidden" name="tenantId" value="@tenant.Id" />
+                                <input type="hidden" name="returnUrl" value="/Admin" />
+                                <button type="submit" class="icon-btn" title="@L["Work in this tenant"]" aria-label="@L["Work in this tenant"]"><mm-icon name="log-out" /></button>
+                            </form>
+                        }
+                        <a class="icon-btn" href="/Admin/Tenants/Edit?id=@tenant.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Tenants/Edit" icon="plus">@L["New tenant"]</mm-button>
+</mm-list-actions>

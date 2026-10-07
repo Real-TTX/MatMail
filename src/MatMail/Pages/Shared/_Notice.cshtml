@@ -1,0 +1,17 @@
+@*
+    The page-level "what just happened" message. Rendered once by the layouts; page models fill it with
+    this.Notify(...) / this.NotifyNow(...). Field errors do NOT belong here: they stay with the validation summary.
+*@
+@{
+    var noticeText = (ViewData[NoticeExtensions.TextKey] ?? TempData[NoticeExtensions.TextKey]) as string;
+    var noticeKind = ((ViewData[NoticeExtensions.KindKey] ?? TempData[NoticeExtensions.KindKey]) as string ?? "Ok").ToLowerInvariant();
+    var noticeIcon = noticeKind switch { "danger" => "alert-circle", "warn" => "alert", "info" => "info", _ => "check-circle" };
+}
+
+@if (!string.IsNullOrWhiteSpace(noticeText))
+{
+    <div class="notice notice--@noticeKind" role="status">
+        <mm-icon name="@noticeIcon" class="notice__icon" />
+        <span class="notice__text">@noticeText</span>
+    </div>
+}

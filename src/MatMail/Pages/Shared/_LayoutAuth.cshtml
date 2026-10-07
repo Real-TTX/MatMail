@@ -1,0 +1,51 @@
+@inject ThemeService Themes
+@{
+    var theme = Themes.Resolve();
+    var title = ViewData["Title"] as string ?? "MatMail";
+    var culture = global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+}
+<!DOCTYPE html>
+<html lang="@culture" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@theme.Accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>@title · MatMail</title>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
+    <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
+    <partial name="_ThemeHead" model="theme" />
+</head>
+<body class="auth-page">
+    @Html.Raw(Icons.Sprite())
+    <main class="auth-shell @(ViewData["ShellClass"] as string)">
+        <div class="auth-brand">
+            <img class="auth-brand__mark" src="~/icons/logo.svg" alt="" width="40" height="40" />
+            <span class="auth-brand__text">MatMail</span>
+        </div>
+
+        <partial name="_Notice" />
+        @RenderBody()
+
+        <form class="lang-switch" method="post" action="/Account/Language" role="group" aria-label="@L["Language"]">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+            <button type="submit" name="culture" value="de-DE" class="lang-switch__btn @(culture == "de" ? "is-active" : "")">DE</button>
+            <button type="submit" name="culture" value="en-US" class="lang-switch__btn @(culture == "en" ? "is-active" : "")">EN</button>
+        </form>
+        <div class="auth-version">MatMail @AppInfo.Version</div>
+    </main>
+
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <dialog id="mm-confirm" class="dialog dialog--sm confirm">
+        <form method="dialog" class="confirm__inner" data-no-busy>
+            <p class="confirm__text"></p>
+            <div class="btn-row">
+                <button class="btn btn--primary confirm__ok" value="ok">@L["Confirm"]</button>
+                <button class="btn btn--secondary" value="cancel">@L["Cancel"]</button>
+            </div>
+        </form>
+    </dialog>
+</body>
+</html>

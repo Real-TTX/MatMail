@@ -1,0 +1,30 @@
+@page "/Account/Setup"
+@model MatMail.Pages.Account.SetupModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = L["Set up MatMail"].Value;
+    ViewData["ShellClass"] = "auth-shell--wide";
+}
+
+<div class="auth-card">
+    <h1>@L["Welcome to MatMail"]</h1>
+    <p class="auth-card__lead">@L["Create the first tenant and its administrator. You can add more tenants, users and mail addresses afterwards."]</p>
+
+    <mm-form>
+        <mm-field asp-for="Input.TenantName" label='@L["Tenant"]' help='@L["A tenant keeps users, mailboxes and settings apart, e.g. “Home” for your family or the name of a company."]' />
+        <div class="form-grid">
+            <mm-field asp-for="Input.DisplayName" label='@L["Your name"]' autocomplete="name" />
+            <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" />
+        </div>
+        <mm-field asp-for="Input.MailAddress" kind="email" label='@L["Your e-mail address (optional)"]'
+                  help='@L["Creates your personal mailbox with this address. Leave empty to add it later."]' />
+        <div class="form-grid">
+            <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true" />
+            <mm-field asp-for="Input.PasswordRepeat" kind="password" label='@L["Repeat password"]' autocomplete="new-password" />
+        </div>
+
+        <mm-button-row>
+            <mm-button variant="primary" type="submit" icon="check">@L["Create administrator"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+</div>

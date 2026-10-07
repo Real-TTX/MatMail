@@ -1,0 +1,94 @@
+@page "/Admin/Users/Edit"
+@model MatMail.Pages.Admin.Users.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Users / Edit user" : "Administration / Users / New user";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.DisplayName : L["New user"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-tabs>
+        <mm-tab-panel title='@L["General"]' icon="user">
+            <mm-form-section>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.DisplayName" label='@L["Name"]' autocomplete="off" autofocus="autofocus" />
+                    <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="off"
+                              help='@L["Lower case. Customers can use their e-mail address."]' />
+                </div>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Contact address for notifications; not used to sign in."]' />
+                    <mm-field asp-for="Input.Phone" kind="tel" label='@L["Phone"]' />
+                </div>
+                <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Access"]' icon="shield">
+            <mm-form-section title='@L["Password"]' icon="key">
+                <mm-field asp-for="Input.Password" kind="password" label='@(Model.IsEdit ? L["New password"].Value : L["Password"].Value)'
+                          autocomplete="new-password" reveal="true"
+                          help='@(Model.IsEdit ? L["Leave empty to keep the current password."].Value : L["At least 10 characters."].Value)' />
+                <mm-field asp-for="Input.MustChangePassword" kind="checkbox" label='@L["The user must choose a new password at the next sign-in"]' />
+            </mm-form-section>
+
+            <mm-form-section title='@L["Permissions"]' icon="shield">
+                <mm-picker asp-for="Input.RoleIds" asp-items="Model.RoleItems" multiple="true" label='@L["Roles"]'
+                           placeholder='@L["Add role…"]' help='@L["Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox."]' />
+                <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
+                @if (Model.CanSetSystemAdmin)
+                {
+                    <mm-field asp-for="Input.IsSystemAdmin" kind="checkbox" label='@L["System administrator (manages all tenants and the server)"]' />
+                }
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Mailbox"]' icon="inbox">
+            @if (Model.IsEdit)
+            {
+                <mm-form-section title='@L["Personal mailbox"]' icon="inbox">
+                    @if (Model.Mailbox is { } mailbox)
+                    {
+                        <dl class="kv">
+                            <dt>@L["Mailbox"]</dt>
+                            <dd><a href="/Admin/Mailboxes/Edit?id=@mailbox.Id">@mailbox.Name</a></dd>
+                            <dt>@L["Addresses"]</dt>
+                            <dd>@(Model.MailboxAddresses.Count == 0 ? "–" : string.Join(", ", Model.MailboxAddresses))</dd>
+                        </dl>
+                    }
+                    else
+                    {
+                        <p class="muted">@L["This user has no personal mailbox yet."]</p>
+                        <mm-field asp-for="Input.CreateMailbox" kind="checkbox" label='@L["Create a personal mailbox when saving"]' />
+                        <mm-field asp-for="Input.PrimaryAddress" kind="email" label='@L["Primary address"]' show-when-field="Input.CreateMailbox" show-when-value="true" />
+                    }
+                </mm-form-section>
+            }
+            else
+            {
+                <mm-form-section title='@L["Personal mailbox"]' icon="inbox" description='@L["The mailbox holds the user’s mail and folders."]'>
+                    <mm-field asp-for="Input.CreateMailbox" kind="checkbox" label='@L["Create a personal mailbox"]' />
+                    <mm-field asp-for="Input.PrimaryAddress" kind="email" label='@L["Primary address"]' show-when-field="Input.CreateMailbox" show-when-value="true"
+                              help='@L["The domain must be registered under Domains (or you may register it on the fly). Leave empty to add addresses later."]' />
+                </mm-form-section>
+            }
+        </mm-tab-panel>
+    </mm-tabs>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Users" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit && !Model.IsSelf)
+        {
+            @if (Model.Mailbox is not null)
+            {
+                <mm-button variant="danger" type="submit" handler="DeleteWithMailbox" icon="trash"
+                           confirm='@L["Delete this user and their mailbox with all messages? This cannot be undone."]'>@L["Delete with mailbox"]</mm-button>
+            }
+
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this user? Their mailbox is kept."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

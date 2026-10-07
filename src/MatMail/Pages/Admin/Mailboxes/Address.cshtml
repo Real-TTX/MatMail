@@ -1,0 +1,35 @@
+@page "/Admin/Mailboxes/Address"
+@model MatMail.Pages.Admin.Mailboxes.AddressModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Mailboxes / Addresses / Edit address" : "Administration / Mailboxes / Addresses / New address";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Address : L["New address"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="MailboxId" />
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Address"]' icon="at-sign">
+        <mm-field asp-for="Input.Address" kind="email" label='@L["E-mail address"]' placeholder="name@example.com" autofocus="autofocus"
+                  help='@L["Use *@example.com to catch every address of the domain that has no mailbox of its own."]' />
+        <mm-field asp-for="Input.IsPrimary" kind="checkbox" label='@L["Primary address of this mailbox"]' />
+        <mm-field asp-for="Input.CanSend" kind="checkbox" label='@L["This mailbox may send as this address"]' />
+        <mm-picker asp-for="Input.SendAccountId" asp-items="Model.AccountItems" label='@L["Send through"]' placeholder='@L["Default (matching account, otherwise direct delivery)"]'
+                   help='@L["The connected provider account whose SMTP server delivers mail sent as this address."]'
+                   show-when-field="Input.CanSend" show-when-value="true" />
+        @if (Model.CanRegisterDomain)
+        {
+            <mm-field asp-for="Input.RegisterDomain" kind="checkbox" label='@L["Register the domain if it does not exist yet"]' />
+        }
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="@($"/Admin/Mailboxes/Addresses?id={Model.MailboxId}")" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Remove this address? Mail to it will no longer reach this mailbox."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

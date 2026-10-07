@@ -1,0 +1,50 @@
+@page "/Admin/Roles"
+@model MatMail.Pages.Admin.Roles.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Roles";
+    ViewData["Description"] = L["A role is a set of permissions. Users can hold several roles."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search roles…"]' />
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="users_desc">@L["Most users"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No roles match."]' empty-icon="shield">
+    <thead>
+        <tr>
+            <th>@L["Role"]</th>
+            <th>@L["Permissions"]</th>
+            <th class="hide-sm">@L["Users"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var role in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Roles/Edit?id=@role.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@role.Name @if (role.IsBuiltIn) { <mm-badge kind="info">@L["Built-in"]</mm-badge> }</div>
+                    @if (!string.IsNullOrEmpty(role.Description)) { <div class="cell-sub">@role.Description</div> }
+                </td>
+                <td>@role.PermissionCount / @Permissions.All.Count</td>
+                <td class="hide-sm">@role.Users</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Admin/Roles/Edit?id=@role.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Roles/Edit" icon="plus">@L["New role"]</mm-button>
+</mm-list-actions>

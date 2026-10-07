@@ -1,0 +1,14 @@
+@page "/Account/AccessDenied"
+@model MatMail.Pages.Account.AccessDeniedModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = L["No access"].Value;
+}
+
+<div class="auth-card">
+    <h1>@L["No access"]</h1>
+    <p class="auth-card__lead">@L["You are not allowed to open this page."]</p>
+    <mm-button-row>
+        <mm-button variant="primary" href="/" icon="home">@L["Back to start"]</mm-button>
+    </mm-button-row>
+</div>

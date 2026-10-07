@@ -1,0 +1,8 @@
+@model string
+@* The tabs of the account area; Model = key of the active tab. *@
+<mm-tabbar>
+    <mm-tab title='@L["Profile"]' href="/Account" icon="user" active='@(Model == "profile")' />
+    <mm-tab title='@L["Password"]' href="/Account/Password" icon="key" active='@(Model == "password")' />
+    <mm-tab title='@L["Sessions"]' href="/Account/Sessions" icon="monitor" active='@(Model == "sessions")' />
+    <mm-tab title='@L["Appearance"]' href="/Account/Appearance" icon="sliders" active='@(Model == "appearance")' />
+</mm-tabbar>

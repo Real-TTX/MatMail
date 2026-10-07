@@ -1,0 +1,11 @@
+@page "/Mail"
+@model MatMail.Pages.Mail.IndexModel
+@{
+    ViewData["Area"] = "mail";
+    ViewData["Title"] = L["Mail"].Value;
+}
+
+<div class="empty-state" style="margin:2rem">
+    <mm-icon name="mail" class="empty-state__icon" />
+    <p>@L["The mail client is being built."]</p>
+</div>

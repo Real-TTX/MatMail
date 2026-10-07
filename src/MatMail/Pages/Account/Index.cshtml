@@ -1,0 +1,29 @@
+@page "/Account"
+@model MatMail.Pages.Account.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Account";
+    ViewData["Title"] = L["My account"].Value;
+}
+
+<partial name="_AccountTabs" model='"profile"' />
+
+<mm-form>
+    <mm-form-section title='@L["Profile"]' description='@L["These details appear in your signature and in the user list."]' icon="user">
+        <div class="form-grid">
+            <mm-field asp-for="LoginName" kind="readonly" label='@L["Login name"]' />
+            <mm-field asp-for="TenantName" kind="readonly" label='@L["Tenant"]' />
+        </div>
+        <div class="form-grid">
+            <mm-field asp-for="Input.DisplayName" label='@L["Name"]' autocomplete="name" />
+            <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Used for notifications; it is not your login."]' />
+        </div>
+        <div class="form-grid">
+            <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
+            <mm-field asp-for="Input.Phone" kind="tel" label='@L["Phone"]' />
+        </div>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+    </mm-button-row>
+</mm-form>

@@ -1,0 +1,72 @@
+@page "/Account/Appearance"
+@model MatMail.Pages.Account.AppearanceModel
+@{
+    ViewData["Breadcrumb"] = "Account / Appearance";
+    ViewData["Title"] = L["My account"].Value;
+    var accentColors = new Dictionary<string, string>
+    {
+        ["blue"] = "#1a73e8", ["green"] = "#188038", ["violet"] = "#7c3aed", ["teal"] = "#0f766e",
+        ["amber"] = "#b45309", ["rose"] = "#be123c", ["graphite"] = "#475569",
+    };
+}
+
+<partial name="_AccountTabs" model='"appearance"' />
+
+<mm-form>
+    <mm-form-section title='@L["Appearance"]' icon="sliders">
+        <div class="form-row">
+            <label>@L["Theme"]</label>
+            <div class="segmented segmented--wide" data-appearance-mode>
+                @foreach (var mode in new[] { ("system", "monitor", L["System"].Value), ("light", "sun", L["Light"].Value), ("dark", "moon", L["Dark"].Value) })
+                {
+                    <label class="segmented__item @(Model.Input.Mode == mode.Item1 ? "is-active" : "")">
+                        <input type="radio" class="sr-only" name="Input.Mode" value="@mode.Item1" checked="@(Model.Input.Mode == mode.Item1)" />
+                        <mm-icon name="@mode.Item2" /><span>@mode.Item3</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>@L["Accent colour"]</label>
+            <div class="swatches" data-appearance-accent>
+                @foreach (var accent in accentColors)
+                {
+                    <label class="swatch @(Model.Input.Accent == accent.Key ? "is-active" : "")" title="@accent.Key">
+                        <input type="radio" class="sr-only" name="Input.Accent" value="@accent.Key" checked="@(Model.Input.Accent == accent.Key)" />
+                        <span class="swatch__dot" style="background:@accent.Value"></span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <mm-field asp-for="Input.Culture" kind="select" label='@L["Language"]' asp-items="Model.Cultures" />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        // Live preview of the choice before it is saved.
+        (function () {
+            var root = document.documentElement;
+            function dark(mode) { return mode === "dark" || (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches); }
+            document.querySelectorAll("[data-appearance-mode] input").forEach(function (input) {
+                input.addEventListener("change", function () {
+                    document.querySelectorAll("[data-appearance-mode] .segmented__item").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
+                    root.setAttribute("data-theme-mode", input.value);
+                    root.setAttribute("data-mode", dark(input.value) ? "dark" : "light");
+                });
+            });
+            document.querySelectorAll("[data-appearance-accent] input").forEach(function (input) {
+                input.addEventListener("change", function () {
+                    document.querySelectorAll("[data-appearance-accent] .swatch").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
+                    root.setAttribute("data-accent", input.value);
+                });
+            });
+        })();
+    </script>
+}

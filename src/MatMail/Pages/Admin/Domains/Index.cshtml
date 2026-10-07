@@ -1,0 +1,54 @@
+@page "/Admin/Domains"
+@model MatMail.Pages.Admin.Domains.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Domains";
+    ViewData["Description"] = L["Mail is only accepted for registered domains. Addresses are added to mailboxes."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search domains…"]' />
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="addresses_desc">@L["Most addresses"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No domains yet."]' empty-icon="globe">
+    <thead>
+        <tr>
+            <th>@L["Domain"]</th>
+            <th class="hide-sm">@L["Addresses"]</th>
+            <th class="hide-sm">@L["Unknown addresses"]</th>
+            <th>@L["Status"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var domain in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Domains/Edit?id=@domain.Id" tabindex="0">
+                <td><div class="cell-title">@domain.Name</div>@if (!string.IsNullOrEmpty(domain.Notes)) { <div class="cell-sub">@domain.Notes</div> }</td>
+                <td class="hide-sm">@domain.Addresses</td>
+                <td class="hide-sm">@(domain.CatchAllMailbox is null ? L["Go to “Unassigned”"].Value : domain.CatchAllMailbox)</td>
+                <td>@if (domain.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Admin/Domains/Edit?id=@domain.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Domains/Edit" icon="plus">@L["New domain"]</mm-button>
+</mm-list-actions>

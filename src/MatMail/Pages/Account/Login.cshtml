@@ -1,0 +1,22 @@
+@page "/Account/Login"
+@model MatMail.Pages.Account.LoginModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = L["Sign in"].Value;
+}
+
+<div class="auth-card">
+    <h1>@L["Sign in"]</h1>
+    <p class="auth-card__lead">@L["Use your MatMail login name and password."]</p>
+
+    <mm-form>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" autofocus="autofocus" />
+        <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="current-password" reveal="true" />
+        <mm-field asp-for="Input.Remember" kind="checkbox" label='@L["Stay signed in"]' />
+
+        <mm-button-row>
+            <mm-button variant="primary" type="submit" icon="log-out">@L["Sign in"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+</div>

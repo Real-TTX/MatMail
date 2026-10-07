@@ -1,0 +1,7 @@
+@model (long MailboxId, string Active)
+@* The tabs of one mailbox; each is its own page. *@
+<mm-tabbar>
+    <mm-tab title='@L["General"]' href="@($"/Admin/Mailboxes/Edit?id={Model.MailboxId}")" icon="inbox" active='@(Model.Active == "general")' />
+    <mm-tab title='@L["Addresses"]' href="@($"/Admin/Mailboxes/Addresses?id={Model.MailboxId}")" icon="at-sign" active='@(Model.Active == "addresses")' />
+    <mm-tab title='@L["Delegation"]' href="@($"/Admin/Mailboxes/Access?id={Model.MailboxId}")" icon="users" active='@(Model.Active == "access")' />
+</mm-tabbar>

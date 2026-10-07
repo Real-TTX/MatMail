@@ -1,0 +1,41 @@
+@page "/Admin/Mailboxes/Delegate"
+@model MatMail.Pages.Admin.Mailboxes.DelegateModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Mailboxes / Delegation / Edit access" : "Administration / Mailboxes / Delegation / New access";
+    ViewData["Title"] = Model.IsEdit ? Model.UserName : L["Add user"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="MailboxId" />
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Access to this mailbox"]' icon="users">
+        @if (Model.IsEdit)
+        {
+            <input type="hidden" asp-for="Input.UserId" />
+            <mm-field asp-for="UserName" kind="readonly" label='@L["User"]' />
+        }
+        else
+        {
+            <mm-picker asp-for="Input.UserId" asp-items="Model.UserItems" label='@L["User"]' placeholder='@L["Select a user…"]' />
+        }
+
+        <mm-field asp-for="Input.Access" kind="select" label='@L["Access"]' asp-items="Model.AccessItems" />
+        <dl class="kv">
+            <dt>@L["Read"]</dt><dd>@L["See folders and messages."]</dd>
+            <dt>@L["Read and edit"]</dt><dd>@L["Also mark, move and delete messages and write drafts."]</dd>
+            <dt>@L["Read, edit and send"]</dt><dd>@L["Also send mail from this mailbox’s addresses (as a substitute)."]</dd>
+            <dt>@L["Full control"]</dt><dd>@L["Also manage folders and the other users of this mailbox."]</dd>
+        </dl>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="@($"/Admin/Mailboxes/Access?id={Model.MailboxId}")" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Remove the access of this user?"]'>@L["Remove access"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

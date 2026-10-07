@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>MatMail</RootNamespace>
+    <AssemblyName>MatMail</AssemblyName>
+    <UserSecretsId>matmail</UserSecretsId>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- IMAP / POP3 / SMTP client (provider sync + relay) and MIME parsing -->
+    <PackageReference Include="MailKit" Version="4.*" />
+    <!-- Sanitizes HTML mail bodies before they are shown in the web client -->
+    <PackageReference Include="HtmlSanitizer" Version="9.*" />
+    <!-- MX lookups for direct delivery -->
+    <PackageReference Include="DnsClient" Version="1.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MatMail.Tests" />
+  </ItemGroup>
+
+</Project>

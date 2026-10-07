@@ -1,0 +1,107 @@
+@page "/Admin"
+@model MatMail.Pages.Admin.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration";
+    ViewData["Title"] = L["Dashboard"].Value;
+    ViewData["Description"] = string.Format(L["Overview of tenant “{0}”."].Value, Model.TenantName);
+}
+
+<div class="stats">
+    @if (Model.Can(Permissions.UsersManage))
+    {
+        <a class="stat" href="/Admin/Users"><span class="stat__icon"><mm-icon name="users" /></span><span><div class="stat__value">@Model.UserCount</div><div class="stat__label">@L["Users"]</div></span></a>
+    }
+    @if (Model.Can(Permissions.MailboxesManage))
+    {
+        <a class="stat" href="/Admin/Mailboxes"><span class="stat__icon"><mm-icon name="inbox" /></span><span><div class="stat__value">@Model.MailboxCount</div><div class="stat__label">@L["Mailboxes"]</div></span></a>
+    }
+    @if (Model.Can(Permissions.DomainsManage))
+    {
+        <a class="stat" href="/Admin/Domains"><span class="stat__icon"><mm-icon name="globe" /></span><span><div class="stat__value">@Model.DomainCount</div><div class="stat__label">@L["Domains"]</div></span></a>
+    }
+    @if (Model.Can(Permissions.AccountsManage))
+    {
+        <a class="stat" href="/Admin/Accounts"><span class="stat__icon"><mm-icon name="plug" /></span><span><div class="stat__value">@Model.AccountCount</div><div class="stat__label">@L["Connected accounts"]</div></span></a>
+    }
+    @if (Model.Can(Permissions.QueueManage))
+    {
+        <a class="stat" href="/Admin/Queue"><span class="stat__icon"><mm-icon name="send" /></span><span><div class="stat__value">@Model.QueuedCount</div><div class="stat__label">@L["Waiting to be sent"]</div></span></a>
+    }
+    @if (Model.Can(Permissions.UnassignedManage))
+    {
+        <a class="stat" href="/Admin/Unassigned"><span class="stat__icon"><mm-icon name="alert-circle" /></span><span><div class="stat__value">@Model.UnassignedCount</div><div class="stat__label">@L["Unassigned messages"]</div></span></a>
+    }
+</div>
+
+<div class="card-grid">
+    @if (Model.AccountProblems.Count > 0)
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="alert" />@L["Connected accounts with problems"]</h2>
+            <mm-table item-count="Model.AccountProblems.Count">
+                <thead><tr><th>@L["Account"]</th><th>@L["Problem"]</th></tr></thead>
+                <tbody>
+                    @foreach (var account in Model.AccountProblems)
+                    {
+                        <tr data-row-href="/Admin/Accounts/Edit?id=@account.Id">
+                            <td class="cell-title">@account.Name</td>
+                            <td class="cell-sub">@account.LastSyncMessage</td>
+                        </tr>
+                    }
+                </tbody>
+            </mm-table>
+        </section>
+    }
+
+    @if (Model.Can(Permissions.LogsView))
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="activity" />@L["Recent activity"]</h2>
+            <mm-table item-count="Model.RecentLogs.Count" empty-text='@L["Nothing happened yet."]' empty-icon="activity">
+                <thead><tr><th>@L["When"]</th><th>@L["Event"]</th></tr></thead>
+                <tbody>
+                    @foreach (var log in Model.RecentLogs)
+                    {
+                        <tr>
+                            <td class="nowrap cell-sub">@Fmt.Ago(log.CreateDate)</td>
+                            <td>
+                                @if (log.Level == ActivityLevel.Error) { <mm-badge kind="danger">@log.Category</mm-badge> }
+                                else if (log.Level == ActivityLevel.Warning) { <mm-badge kind="warn">@log.Category</mm-badge> }
+                                else { <mm-badge kind="muted">@log.Category</mm-badge> }
+                                @log.Message
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </mm-table>
+            <mm-list-actions><mm-button variant="secondary" href="/Admin/Logs" icon="activity">@L["Open the activity log"]</mm-button></mm-list-actions>
+        </section>
+    }
+
+    @if (Model.IsSystemAdmin)
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="server" />@L["Server"]</h2>
+            <dl class="kv">
+                <dt>@L["Version"]</dt><dd class="mono">@AppInfo.Version</dd>
+                <dt>@L["Host name"]</dt><dd>@Model.Hostname</dd>
+                <dt>@L["Started"]</dt><dd>@Fmt.DateTimeText(AppInfo.StartedAt)</dd>
+                <dt>@L["Certificate"]</dt>
+                <dd>
+                    @if (Model.Certificate is { } cert)
+                    {
+                        <div>@cert.Subject</div>
+                        <div class="cell-sub">
+                            @if (cert.IsSelfSigned) { <mm-badge kind="warn" icon="alert">@L["Self-signed"]</mm-badge> }
+                            @string.Format(L["valid until {0}"].Value, Fmt.DateText(cert.NotAfter))
+                        </div>
+                    }
+                    else
+                    {
+                        <mm-badge kind="danger">@L["None"]</mm-badge>
+                    }
+                </dd>
+            </dl>
+        </section>
+    }
+</div>

@@ -1,0 +1,57 @@
+@page "/Account/Sessions"
+@model MatMail.Pages.Account.SessionsModel
+@{
+    ViewData["Breadcrumb"] = "Account / Sessions";
+    ViewData["Title"] = L["My account"].Value;
+}
+
+<partial name="_AccountTabs" model='"sessions"' />
+
+<p class="muted">@L["Everywhere you are signed in. Sessions stay valid after a restart of the server; end the ones you do not recognise."]</p>
+
+<mm-table item-count="Model.Sessions.Count" empty-text='@L["No sessions."]'>
+    <thead>
+        <tr>
+            <th>@L["Device"]</th>
+            <th class="hide-sm">@L["IP address"]</th>
+            <th>@L["Last active"]</th>
+            <th class="hide-sm">@L["Signed in"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var session in Model.Sessions)
+        {
+            <tr>
+                <td>
+                    <span class="cell-title">@UserAgentInfo.Describe(session.UserAgent)</span>
+                    @if (session.Token == Model.CurrentToken)
+                    {
+                        <mm-badge kind="ok">@L["This session"]</mm-badge>
+                    }
+                </td>
+                <td class="hide-sm">@(session.IpAddress ?? "–")</td>
+                <td>@Fmt.Ago(session.LastSeenDate)</td>
+                <td class="hide-sm">@Fmt.DateTimeText(session.CreateDate)</td>
+                <td class="is-actions">
+                    @if (session.Token != Model.CurrentToken)
+                    {
+                        <form method="post" asp-page-handler="Revoke" data-no-busy>
+                            <input type="hidden" name="token" value="@session.Token" />
+                            <button type="submit" class="icon-btn icon-btn--danger" title="@L["Sign out"]" aria-label="@L["Sign out"]"><mm-icon name="log-out" /></button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+@if (Model.Sessions.Count > 1)
+{
+    <mm-list-actions>
+        <form method="post" asp-page-handler="RevokeOthers">
+            <mm-button variant="danger" type="submit" icon="log-out" confirm='@L["Sign out all other sessions?"]'>@L["Sign out all other sessions"]</mm-button>
+        </form>
+    </mm-list-actions>
+}

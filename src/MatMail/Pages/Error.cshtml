@@ -1,0 +1,16 @@
+@page "/Error"
+@model MatMail.Pages.ErrorModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = L["Something went wrong"].Value;
+}
+
+<div class="auth-card">
+    <h1>@(Model.Code == 404 ? L["Page not found"] : L["Something went wrong"])</h1>
+    <p class="auth-card__lead">
+        @(Model.Code == 404 ? L["This page does not exist."] : L["The request could not be completed. Please try again."])
+    </p>
+    <mm-button-row>
+        <mm-button variant="primary" href="/" icon="home">@L["Back to start"]</mm-button>
+    </mm-button-row>
+</div>

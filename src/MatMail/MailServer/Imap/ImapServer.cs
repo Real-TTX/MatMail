@@ -20,9 +20,6 @@ public sealed record ImapListenOptions(IPAddress Address, int? PlainPort, int? T
 /// <summary>What all sessions of one server share.</summary>
 internal sealed class ImapServerContext
 {
-    private readonly object _certificateLock = new();
-    private (X509Certificate2 Source, X509Certificate2 Usable)? _windowsCertificate;
-
     public required IServiceScopeFactory Scopes { get; init; }
 
     public required AppConfig Config { get; init; }
@@ -38,34 +35,7 @@ internal sealed class ImapServerContext
     public CertificateProvider? Certificates { get; init; }
 
     /// <summary>The certificate to present right now (renewed certificates are picked up for new handshakes).</summary>
-    public X509Certificate2? Certificate
-    {
-        get
-        {
-            X509Certificate2? current = Certificates?.Current;
-            return current is null || !OperatingSystem.IsWindows() ? current : UsableOnWindows(current);
-        }
-    }
-
-    /// <summary>
-    /// The certificate provider keeps private keys ephemeral, which Windows (SChannel) cannot use for the server side of a TLS
-    /// handshake. On Windows (development machines; the container runs Linux) the certificate is imported once more with a key
-    /// the platform can use.
-    /// </summary>
-    private X509Certificate2 UsableOnWindows(X509Certificate2 current)
-    {
-        lock (_certificateLock)
-        {
-            if (_windowsCertificate is { } cached && ReferenceEquals(cached.Source, current))
-            {
-                return cached.Usable;
-            }
-
-            X509Certificate2 usable = X509CertificateLoader.LoadPkcs12(current.Export(X509ContentType.Pkcs12), null, X509KeyStorageFlags.Exportable);
-            _windowsCertificate = (current, usable);
-            return usable;
-        }
-    }
+    public X509Certificate2? Certificate => Certificates?.Current;
 
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(30);
 

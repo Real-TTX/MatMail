@@ -228,6 +228,50 @@ public class SubmissionTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_user_can_send_to_an_address_of_another_tenant_on_the_same_server()
+    {
+        // A second tenant with its own domain and user: addresses are unique across the server, so mail between tenants is local mail.
+        Mailbox otherMailbox;
+        using (IServiceScope setup = _host.Scope())
+        {
+            var tenants = setup.ServiceProvider.GetRequiredService<TenantService>();
+            (Tenant? other, string? tenantError) = await tenants.CreateAsync("Other", null);
+            Assert.Null(tenantError);
+            var db = setup.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            db.Domains.Add(new Domain { TenantId = other!.Id, Name = "other.test" });
+            await db.SaveChangesAsync();
+            long role = await db.Roles.Where(r => r.TenantId == other.Id && r.Name == TenantService.UserRoleName).Select(r => r.Id).FirstAsync();
+            (User? carol, string? userError) = await setup.ServiceProvider.GetRequiredService<UserService>().CreateAsync(
+                new UserInput { LoginName = "carol", DisplayName = "Carol", Password = "Test-Passw0rd!", RoleIds = new[] { role }, CreateMailbox = true, PrimaryAddress = "carol@other.test" }, other.Id);
+            Assert.Null(userError);
+            otherMailbox = await db.Mailboxes.IgnoreQueryFilters().FirstAsync(m => m.OwnerUserId == carol!.Id);
+        }
+
+        // Alice (tenant Home) sends the way the web client does: in a scope that is restricted to her tenant.
+        using IServiceScope scope = _host.ScopeAs(_seed.Alice);
+        byte[] raw = RawMail.Build("Alice <alice@example.test>", "carol@other.test", "Across tenants", "Hello Carol");
+        SubmissionResult result = await scope.ServiceProvider.GetRequiredService<MailSubmission>().SubmitAsync(new SubmissionRequest
+        {
+            Raw = raw,
+            EnvelopeFrom = "alice@example.test",
+            Recipients = new[] { "carol@other.test" },
+            TenantId = _seed.Tenant.Id,
+            MailboxId = _seed.AliceMailbox.Id,
+            SenderUserId = _seed.Alice.Id,
+            SaveToSent = true,
+        });
+
+        Assert.True(result.Accepted, result.Error);
+        Assert.Equal(1, result.LocalCopies);
+        Assert.Equal(0, result.Queued);
+
+        using IServiceScope check = _host.Scope();
+        var checkDb = check.ServiceProvider.GetRequiredService<MatMailDbContext>();
+        Assert.Equal(1, await checkDb.MailMessages.IgnoreQueryFilters().CountAsync(m => m.MailboxId == otherMailbox.Id && m.Subject == "Across tenants"));
+        Assert.Equal(1, await checkDb.MailMessages.IgnoreQueryFilters().CountAsync(m => m.MailboxId == _seed.AliceMailbox.Id && m.Folder!.Kind == FolderKind.Sent));
+    }
+
+    [DbFact]
     public async Task Footers_are_appended_to_every_outgoing_message()
     {
         using IServiceScope scope = _host.Scope();

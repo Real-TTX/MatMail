@@ -258,6 +258,7 @@ public class SmtpProtocolTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddLocalization();
         services.AddMatMailServices(new AppConfig());
         services.AddDataProtection().UseEphemeralDataProtectionProvider();
         services.AddSmtpServer();

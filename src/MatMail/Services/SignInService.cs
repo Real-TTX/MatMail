@@ -108,14 +108,13 @@ public sealed class SignInService
         PasswordVerificationResult verification = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
         if (verification == PasswordVerificationResult.Failed)
         {
-            user.FailedLoginCount++;
-            if (user.FailedLoginCount >= MaxFailedAttempts)
-            {
-                user.LockedUntilDate = now + LockoutDuration;
-                user.FailedLoginCount = 0;
-            }
-
-            await _db.SaveChangesAsync();
+            // One statement, so guesses that run in parallel cannot overwrite each other's count.
+            DateTime lockUntil = now + LockoutDuration;
+            int limit = MaxFailedAttempts;
+            await _db.Users.IgnoreQueryFilters().Where(u => u.Id == user.Id).ExecuteUpdateAsync(set => set
+                .SetProperty(u => u.FailedLoginCount, u => u.FailedLoginCount + 1 >= limit ? 0 : u.FailedLoginCount + 1)
+                .SetProperty(u => u.LockedUntilDate, u => u.FailedLoginCount + 1 >= limit ? (DateTime?)lockUntil : u.LockedUntilDate)
+                .SetProperty(u => u.UpdateDate, now));
             await _log.WarnAsync(ActivityCategory.Auth, $"Sign-in failed: wrong password for '{user.LoginName}'.", tenantId: user.TenantId, userId: user.Id, remoteIp: remoteIp);
             return new SignInOutcome(SignInStatus.InvalidCredentials, null);
         }

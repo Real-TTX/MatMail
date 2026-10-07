@@ -122,10 +122,11 @@ public sealed class MailSubmission
     private readonly MailStore _store;
     private readonly FolderService _folders;
     private readonly AppConfig _config;
+    private readonly IServiceScopeFactory _scopes;
 
     public MailSubmission(
         MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures,
-        MailStore store, FolderService folders, AppConfig config)
+        MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes)
     {
         _db = db;
         _delivery = delivery;
@@ -135,6 +136,7 @@ public sealed class MailSubmission
         _store = store;
         _folders = folders;
         _config = config;
+        _scopes = scopes;
     }
 
     public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancel = default)
@@ -184,7 +186,12 @@ public sealed class MailSubmission
         int localCopies = 0;
         if (local.Count > 0)
         {
-            DeliveryResult delivered = await _delivery.DeliverAsync(clean, new DeliverySource { EnvelopeRecipients = local }, cancel);
+            // Addresses are unique across the server, so a recipient may live in another tenant than the sender: the delivery
+            // runs as the system (the sender's scope only sees and may only write the sender's own tenant).
+            using IServiceScope delivery = _scopes.CreateScope();
+            delivery.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
+            DeliveryResult delivered = await delivery.ServiceProvider.GetRequiredService<MailDelivery>()
+                .DeliverAsync(clean, new DeliverySource { EnvelopeRecipients = local }, cancel);
             localCopies = delivered.Delivered;
         }
 

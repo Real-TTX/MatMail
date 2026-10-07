@@ -94,7 +94,8 @@ public sealed class AppPasswordService
     /// </summary>
     public async Task<(string? Error, string? Password)> CreateAsync(User user, string? name, CancellationToken cancel = default)
     {
-        string label = (name ?? string.Empty).Trim();
+        // Line breaks and the like have no place in a name (it goes into lists and into the log).
+        string label = new string((name ?? string.Empty).Where(c => !char.IsControl(c)).ToArray()).Trim();
         if (label.Length == 0)
         {
             return ("Enter a name for the app password.", null);

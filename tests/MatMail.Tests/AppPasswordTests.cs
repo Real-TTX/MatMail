@@ -122,6 +122,17 @@ public class AppPasswordTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task Line_breaks_cannot_get_into_a_name()
+    {
+        using IServiceScope scope = _host.Scope();
+        var service = scope.ServiceProvider.GetRequiredService<TwoFactorService>();
+
+        Assert.Null((await service.CreateAppPasswordAsync(_seed.Alice.Id, "Phone\r\n[Error] forged line\t", TwoFactorTestExtensions.Password, null)).Error);
+        Assert.Equal("Phone[Error] forged line", (await service.ListAppPasswordsAsync(_seed.Alice.Id)).Single().Name);
+        Assert.Equal("Enter a name for the app password.", (await service.CreateAppPasswordAsync(_seed.Alice.Id, "\r\n\t", TwoFactorTestExtensions.Password, null)).Error);
+    }
+
+    [DbFact]
     public async Task A_user_can_have_twenty_app_passwords()
     {
         for (int i = 0; i < AppPasswordService.MaxPerUser; i++)

@@ -12,15 +12,28 @@ namespace MatMail.MailSync;
 public sealed class MailSyncTrigger
 {
     private readonly MailSyncRunner _runner;
+    private readonly AppConfig _config;
     private readonly object _lock = new();
     private readonly List<long> _requests = new();
     private TaskCompletionSource _signal = NewSignal();
 
-    public MailSyncTrigger(MailSyncRunner runner) => _runner = runner;
+    public MailSyncTrigger(MailSyncRunner runner, AppConfig config)
+    {
+        _runner = runner;
+        _config = config;
+    }
+
+    /// <summary>False when the synchronisation is switched off in the settings (Sync.Enabled); then nothing is fetched at all.</summary>
+    public bool IsEnabled => _config.Sync.Enabled;
 
     /// <summary>Asks the scheduler to synchronise the account as soon as a slot is free, ahead of the due accounts.</summary>
     public void RequestSync(long accountId)
     {
+        if (!IsEnabled)
+        {
+            return;
+        }
+
         TaskCompletionSource signal;
         lock (_lock)
         {
@@ -117,6 +130,8 @@ public sealed class MailSyncService : BackgroundService
             return;
         }
 
+        // Let the host finish starting; the first pass talks to the database.
+        await Task.Yield();
         _logger.LogInformation("Provider synchronisation started (at most {MaxParallel} accounts at a time).", MaxParallel);
         while (!stoppingToken.IsCancellationRequested)
         {

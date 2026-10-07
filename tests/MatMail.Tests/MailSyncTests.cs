@@ -4,6 +4,7 @@ using MatMail.MailSync;
 using MatMail.Messaging;
 using MatMail.Services;
 using MatMail.Tests.Support;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
@@ -221,6 +222,22 @@ public class MailSyncLogicTests
         Assert.Equal(
             "mail.example.test: the user name or password was refused.; folder News does not exist at the provider",
             SyncText.Problem(failed, new MailKit.Security.AuthenticationException(), "mail.example.test"));
+    }
+
+    [Fact]
+    public void The_module_wires_up_like_the_application_does()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMatMailServices(new MatMail.Configuration.AppConfig());
+        services.AddDataProtection().UseEphemeralDataProtectionProvider();
+        services.AddMailSync();
+
+        // ASP.NET Core validates like this in Development: every service resolvable, no singleton depending on a scoped one.
+        using ServiceProvider provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        Assert.IsType<RemoteContentFetcher>(provider.GetRequiredService<IRemoteContentProvider>());
+        Assert.Contains(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>(), s => s is MailSyncService);
+        Assert.Same(provider.GetRequiredService<MailSyncService>(), provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<MailSyncService>().Single());
     }
 
     [Fact]

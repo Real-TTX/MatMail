@@ -1,0 +1,61 @@
+<Project>
+
+  <!-- ============================================================= -->
+  <!--  Shared MSBuild properties for all MatMail projects            -->
+  <!-- ============================================================= -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <Company>Matthias Schmoldt</Company>
+    <Product>MatMail</Product>
+    <Authors>Matthias Schmoldt</Authors>
+  </PropertyGroup>
+
+  <!-- ============================================================= -->
+  <!--  Versioning (single source of truth: Major/Minor below)        -->
+  <!--                                                                 -->
+  <!--  BuildNumber / Channel / BuildDate are overridden by CI, e.g.  -->
+  <!--    dotnet build -p:Channel=release -p:BuildNumber=42 \          -->
+  <!--                 -p:BuildDate=20261007                           -->
+  <!--                                                                 -->
+  <!--  Resulting InformationalVersion per channel:                    -->
+  <!--    release : <major>.<minor>.<build>-<date>  e.g. 0.1.42-20261007 -->
+  <!--    nightly : nightly-<build>-<date>          e.g. nightly-42-20261007 -->
+  <!--    local   : local-<date>                    e.g. local-20261007 -->
+  <!-- ============================================================= -->
+
+  <PropertyGroup>
+    <MatMailMajor>0</MatMailMajor>
+    <MatMailMinor>1</MatMailMinor>
+
+    <BuildNumber Condition="'$(BuildNumber)' == ''">0</BuildNumber>
+    <Channel Condition="'$(Channel)' == ''">local</Channel>
+    <BuildDate Condition="'$(BuildDate)' == ''">$([System.DateTime]::UtcNow.ToString('yyyyMMdd'))</BuildDate>
+
+    <!-- Numeric AssemblyVersion/FileVersion components are capped at 65534, so they are kept stable
+         at <major>.<minor>.0.0 and the (potentially large) build number lives only in the string
+         Version / InformationalVersion below. -->
+    <Version>$(MatMailMajor).$(MatMailMinor).$(BuildNumber)</Version>
+    <AssemblyVersion>$(MatMailMajor).$(MatMailMinor).0.0</AssemblyVersion>
+    <FileVersion>$(MatMailMajor).$(MatMailMinor).0.0</FileVersion>
+
+    <!-- Keep the informational version clean (no +git-sha suffix). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Channel)' == 'release'">
+    <InformationalVersion>$(MatMailMajor).$(MatMailMinor).$(BuildNumber)-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Channel)' == 'nightly'">
+    <InformationalVersion>nightly-$(BuildNumber)-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Channel)' == 'local'">
+    <InformationalVersion>local-$(BuildDate)</InformationalVersion>
+  </PropertyGroup>
+
+</Project>

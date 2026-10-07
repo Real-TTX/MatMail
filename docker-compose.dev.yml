@@ -1,0 +1,79 @@
+# MatMail – development stack: builds the image from the source in this folder.
+#   ./scripts/redeploy.ps1            (rebuilds the container and redeploys the stack)
+#   docker compose -f docker-compose.dev.yml up -d --build
+#
+# Web:   http://localhost:9933
+# Mail:  SMTP 2525 · submission 2587 · SMTPS 2465 · IMAP 2143 · IMAPS 2993  (high host ports, so nothing on this PC is in the way)
+name: matmail-dev
+
+services:
+  matmail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        Channel: ${MATMAIL_CHANNEL:-local}
+        BuildNumber: ${MATMAIL_BUILD_NUMBER:-0}
+        BuildDate: ${MATMAIL_BUILD_DATE:-}
+    image: matmail:dev
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9933:9933"
+      - "2525:25"
+      - "2587:587"
+      - "2465:465"
+      - "2143:143"
+      - "2993:993"
+    environment:
+      # Plain HTTP for development (the release stack serves HTTPS).
+      MATMAIL__Server__WebHttps: "false"
+      MATMAIL__Server__Hostname: localhost
+    sysctls:
+      # Lets the non-root app user listen on the standard mail ports inside the container.
+      net.ipv4.ip_unprivileged_port_start: 0
+    volumes:
+      - matmail-data:/data
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: matmail
+      POSTGRES_DB: matmail
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d matmail"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      # Only for local tests and tools; 5432 is taken by a PostgreSQL on this PC.
+      - "15432:5432"
+    volumes:
+      - matmail-db:/var/lib/postgresql/data
+
+  # Optional database UI:  docker compose -f docker-compose.dev.yml --profile tools up -d
+  pgadmin:
+    image: dpage/pgadmin4
+    profiles: ["tools"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@matmail.example.com
+      PGADMIN_DEFAULT_PASSWORD: matmail
+    ports:
+      - "9934:80"
+    depends_on:
+      - db
+
+# An explicit subnet: on a PC with many stacks Docker runs out of its default address pools ("all predefined address pools
+# have been fully subnetted"). Override with MATMAIL_DEV_SUBNET if this range collides with something.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${MATMAIL_DEV_SUBNET:-10.253.33.0/24}
+
+volumes:
+  matmail-data:
+  matmail-db:

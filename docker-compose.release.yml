@@ -1,0 +1,52 @@
+# MatMail – release stack: the prebuilt image from GitHub Container Registry plus PostgreSQL.
+#   docker compose -f docker-compose.release.yml up -d      ->  https://<server>:9933
+#
+# The web interface and every mail port are encrypted. Without a certificate the app creates a self-signed one on the first
+# start; put your own into the data volume (certs/fullchain.pem + certs/privkey.pem, or certs/server.pfx) and it is used right away.
+# Behind a reverse proxy that handles TLS, set MATMAIL__Server__WebHttps to "false" (and TrustProxyHeaders to "true").
+#
+# Change the host name and the database password before you use it for real.
+name: matmail
+
+services:
+  matmail:
+    image: ghcr.io/real-ttx/matmail:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "9933:9933"   # web interface
+      - "25:25"       # SMTP: mail from other servers, relay for trusted networks
+      - "587:587"     # SMTP submission (STARTTLS): mail clients
+      - "465:465"     # SMTPS (TLS): mail clients
+      - "143:143"     # IMAP (STARTTLS)
+      - "993:993"     # IMAPS (TLS)
+    environment:
+      MATMAIL__Server__Hostname: mail.example.com
+      MATMAIL__Database__Password: matmail
+      # Unattended first start (optional; otherwise the setup page opens):
+      # MATMAIL_ADMIN_USER: admin
+      # MATMAIL_ADMIN_PASSWORD: change-me-please
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0
+    volumes:
+      - matmail-data:/data
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: matmail
+      POSTGRES_DB: matmail
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d matmail"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - matmail-db:/var/lib/postgresql/data
+
+volumes:
+  matmail-data:
+  matmail-db:

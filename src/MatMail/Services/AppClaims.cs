@@ -11,6 +11,8 @@ public static class AppClaims
     public const string SystemAdmin = "matmail:sysadmin";
     public const string Permission = "matmail:permission";
     public const string MustChangePassword = "matmail:mustchangepassword";
+    public const string TwoFactor = "matmail:twofactor";
+    public const string TwoFactorRequired = "matmail:twofactorrequired";
     public const string ThemeMode = "matmail:thememode";
     public const string ThemeAccent = "matmail:themeaccent";
     public const string Culture = "matmail:culture";

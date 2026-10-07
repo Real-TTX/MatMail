@@ -3,6 +3,7 @@ using MatMail.Data;
 using MatMail.Messaging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatMail.Services;
 
@@ -19,8 +20,10 @@ public static class ServiceRegistration
 
         services.AddHttpContextAccessor();
         services.AddHttpClient();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<PasswordHasher<User>>();
         services.AddSingleton<SecretProtector>();
+        services.AddSingleton<TwoFactorTicket>();
         services.AddSingleton<SessionCache>();
         services.AddSingleton<SetupState>();
         services.AddSingleton<ActivityLogger>();
@@ -29,7 +32,10 @@ public static class ServiceRegistration
 
         services.AddScoped<CurrentUser>();
         services.AddScoped<ThemeService>();
+        services.AddScoped<TwoFactorPolicy>();
+        services.AddScoped<AppPasswordService>();
         services.AddScoped<SignInService>();
+        services.AddScoped<TwoFactorService>();
         services.AddScoped<SessionCookieEvents>();
         services.AddScoped<TenantService>();
         services.AddScoped<UserService>();

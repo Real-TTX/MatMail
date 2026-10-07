@@ -1,0 +1,21 @@
+@page "/Account/TwoFactor"
+@model MatMail.Pages.Account.TwoFactorModel
+@{
+    Layout = "_LayoutAuth";
+    ViewData["Title"] = L["Two-factor authentication"].Value;
+}
+
+<div class="auth-card">
+    <h1>@L["Two-factor authentication"]</h1>
+    <p class="auth-card__lead">@L["Enter the 6-digit code of your authenticator app. If you lost your phone, enter one of your recovery codes instead."]</p>
+
+    <mm-form>
+        <mm-field asp-for="Input.Code" label='@L["Code"]' autocomplete="one-time-code" autofocus="autofocus"
+                  autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="123 456" />
+
+        <mm-button-row>
+            <mm-button variant="primary" type="submit" icon="check">@L["Verify"]</mm-button>
+            <mm-button variant="secondary" href="@Model.BackUrl" icon="arrow-left">@L["Back"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+</div>

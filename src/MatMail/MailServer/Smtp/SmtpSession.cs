@@ -704,6 +704,15 @@ internal sealed class SmtpSession
         string queueId = Convert.ToHexString(RandomNumberGenerator.GetBytes(6));
         try
         {
+            if (SmtpMessageHandler.CountHeader(raw, "Received") >= SmtpMessageHandler.MaxHops)
+            {
+                await _context.Activity.WarnAsync(
+                    $"loop:{_remoteText}",
+                    $"SMTP: refused a message from {_remoteText} with {SmtpMessageHandler.MaxHops} or more Received headers (mail loop).",
+                    remoteIp: _remoteText);
+                return "554 5.4.6 Too many hops, the message is looping";
+            }
+
             long? mailboxId = transaction.Identity?.Mailbox.Id;
             if (transaction.User is MailUser user)
             {

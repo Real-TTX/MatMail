@@ -6,7 +6,8 @@ namespace MatMail.MailServer.Smtp;
 /// <summary>
 /// Per-address throttling of failed SMTP sign-ins, on top of the per-user lockout of the sign-in service: after
 /// <see cref="MaxFailures"/> failures within <see cref="Window"/> an address may not sign in for <see cref="BlockDuration"/>.
-/// A successful sign-in does not reset the count, so a known account cannot be used to keep guessing others.
+/// A successful sign-in does not reset the count, so a known account cannot be used to keep guessing others. IPv6 addresses
+/// count per /64 network, because a single host usually owns a whole /64 and could change its address at will.
 /// </summary>
 public sealed class SmtpAuthThrottle
 {
@@ -32,7 +33,7 @@ public sealed class SmtpAuthThrottle
 
     internal bool IsBlocked(IPAddress address, DateTime now)
     {
-        if (!_entries.TryGetValue(address, out Entry? entry))
+        if (!_entries.TryGetValue(KeyOf(address), out Entry? entry))
         {
             return false;
         }
@@ -46,7 +47,7 @@ public sealed class SmtpAuthThrottle
     internal bool RecordFailure(IPAddress address, DateTime now)
     {
         PruneOccasionally(now);
-        Entry entry = _entries.GetOrAdd(address, _ => new Entry());
+        Entry entry = _entries.GetOrAdd(KeyOf(address), _ => new Entry());
         lock (entry)
         {
             DropExpired(entry, now);
@@ -60,6 +61,24 @@ public sealed class SmtpAuthThrottle
             entry.BlockedUntil = now + BlockDuration;
             return true;
         }
+    }
+
+    /// <summary>IPv4 as it is; IPv6 reduced to its /64 network.</summary>
+    private static IPAddress KeyOf(IPAddress address)
+    {
+        if (address.IsIPv4MappedToIPv6)
+        {
+            return address.MapToIPv4();
+        }
+
+        if (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetworkV6)
+        {
+            return address;
+        }
+
+        byte[] bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return new IPAddress(bytes);
     }
 
     private static void DropExpired(Entry entry, DateTime now)

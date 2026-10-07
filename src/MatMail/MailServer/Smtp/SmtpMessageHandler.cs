@@ -11,6 +11,9 @@ namespace MatMail.MailServer.Smtp;
 /// </summary>
 internal sealed class SmtpMessageHandler
 {
+    /// <summary>A message with this many Received headers is going round in circles (RFC 5321 6.3).</summary>
+    public const int MaxHops = 50;
+
     private readonly IServiceScopeFactory _scopes;
 
     public SmtpMessageHandler(IServiceScopeFactory scopes) => _scopes = scopes;
@@ -102,6 +105,28 @@ internal sealed class SmtpMessageHandler
 
         result.Write(raw.AsSpan(headerEnd));
         return result.ToArray();
+    }
+
+    /// <summary>How often a header field occurs in the header block (folded continuation lines are not counted).</summary>
+    internal static int CountHeader(byte[] raw, string fieldName)
+    {
+        int headerEnd = FindHeaderEnd(raw);
+        byte[] prefix = Encoding.ASCII.GetBytes(fieldName + ":");
+        int count = 0;
+        int position = 0;
+        while (position < headerEnd)
+        {
+            int newline = Array.IndexOf(raw, (byte)'\n', position, headerEnd - position);
+            int lineEnd = newline < 0 ? headerEnd : newline + 1;
+            if (StartsWithField(raw.AsSpan(position, lineEnd - position), prefix))
+            {
+                count++;
+            }
+
+            position = lineEnd;
+        }
+
+        return count;
     }
 
     /// <summary>The index of the empty line that ends the header block (the length of the message when there is none).</summary>

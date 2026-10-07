@@ -194,8 +194,9 @@ public sealed class SmtpServer : BackgroundService
                 bound[endpoint.Kind] = port;
                 _logger.LogInformation("SMTP listening on {Address}:{Port} ({Kind}).", endpoint.Address, port, endpoint.Kind);
             }
-            catch (SocketException ex)
+            catch (Exception ex)
             {
+                // A port in use or a bad port number must not stop the rest of the application (the web interface).
                 _logger.LogError(ex, "SMTP port {Port} could not be opened.", endpoint.Port);
                 _ = _activity.ErrorAsync($"listen:{endpoint.Port}", $"SMTP port {endpoint.Port} ({endpoint.Kind}) could not be opened: {ex.Message}");
             }
@@ -221,16 +222,22 @@ public sealed class SmtpServer : BackgroundService
             {
                 break;
             }
-            catch (SocketException ex)
+            catch (SocketException ex) when (!stopping.IsCancellationRequested)
             {
-                if (stopping.IsCancellationRequested)
-                {
-                    break;
-                }
-
                 // E.g. a client that reset the connection before it was accepted; the listener itself is fine.
                 _logger.LogDebug(ex, "Accepting an SMTP connection failed.");
                 continue;
+            }
+            catch (Exception ex) when (!stopping.IsCancellationRequested)
+            {
+                // Never let the listener die (a failing hosted service would stop the whole application).
+                _logger.LogError(ex, "Accepting an SMTP connection failed.");
+                await Task.Delay(TimeSpan.FromMilliseconds(250), CancellationToken.None);
+                continue;
+            }
+            catch (Exception)
+            {
+                break;
             }
 
             long id = Interlocked.Increment(ref _nextSessionId);
@@ -245,34 +252,46 @@ public sealed class SmtpServer : BackgroundService
         // Let the accept loop go on at once.
         await Task.Yield();
 
-        IPAddress remote = Unmap(((IPEndPoint)client.Client.RemoteEndPoint!).Address);
-        string? refusal = Admit(remote);
-        try
+        using (client)
         {
-            client.NoDelay = true;
-            NetworkStream stream = client.GetStream();
-            if (refusal is not null)
+            IPAddress remote;
+            try
             {
-                await RefuseAsync(kind, stream, refusal);
+                remote = Unmap(((IPEndPoint)client.Client.RemoteEndPoint!).Address);
+            }
+            catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
+            {
+                // Gone before it could be looked at.
                 return;
             }
 
-            var context = new SmtpSessionContext(_scopes, _config, _throttle, _activity, _options, _logger);
-            var session = new SmtpSession(context, kind, stream, remote, _certificates?.Current);
-            await session.RunAsync(stopping);
-        }
-        catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
-        {
-            _logger.LogDebug(ex, "SMTP connection from {Remote} ended.", remote);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "SMTP connection from {Remote} failed.", remote);
-        }
-        finally
-        {
-            Release(remote);
-            client.Dispose();
+            string? refusal = Admit(remote);
+            try
+            {
+                client.NoDelay = true;
+                NetworkStream stream = client.GetStream();
+                if (refusal is not null)
+                {
+                    await RefuseAsync(kind, stream, refusal);
+                    return;
+                }
+
+                var context = new SmtpSessionContext(_scopes, _config, _throttle, _activity, _options, _logger);
+                var session = new SmtpSession(context, kind, stream, remote, _certificates?.Current);
+                await session.RunAsync(stopping);
+            }
+            catch (Exception ex) when (ex is IOException or SocketException or ObjectDisposedException or OperationCanceledException)
+            {
+                _logger.LogDebug(ex, "SMTP connection from {Remote} ended.", remote);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SMTP connection from {Remote} failed.", remote);
+            }
+            finally
+            {
+                Release(remote);
+            }
         }
     }
 

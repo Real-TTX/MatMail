@@ -2,11 +2,16 @@ using System.Net;
 using System.Text;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.MailServer.Outbound;
 using MatMail.MailServer.Smtp;
+using MatMail.Services;
 using MatMail.Tests.Support;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using MimeKit;
 
 namespace MatMail.Tests;
@@ -151,6 +156,44 @@ public class SmtpProtocolTests
         {
             Assert.False(slow.RecordFailure(attacker, start.AddMinutes(i * 3)));
         }
+    }
+
+    [Fact]
+    public void An_ipv6_host_cannot_dodge_the_throttle_by_changing_its_address()
+    {
+        var throttle = new SmtpAuthThrottle();
+        DateTime now = new(2026, 10, 7, 12, 0, 0, DateTimeKind.Utc);
+        for (int i = 1; i <= SmtpAuthThrottle.MaxFailures; i++)
+        {
+            throttle.RecordFailure(IPAddress.Parse($"2001:db8:1:2::{i:x}"), now);
+        }
+
+        Assert.True(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:2:abcd::ffff"), now));
+        Assert.False(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:3::1"), now));
+    }
+
+    [Fact]
+    public void Received_headers_are_counted_without_continuation_lines_or_the_body()
+    {
+        byte[] raw = Encoding.ASCII.GetBytes("Received: from a\r\n\tby b\r\nreceived: from c\r\nSubject: x\r\n\r\nReceived: in the body\r\n");
+        Assert.Equal(2, SmtpMessageHandler.CountHeader(raw, "Received"));
+    }
+
+    [Fact]
+    public void AddSmtpServer_registers_the_server_and_the_worker_as_hosted_services()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMatMailServices(new AppConfig());
+        services.AddDataProtection().UseEphemeralDataProtectionProvider();
+        services.AddSmtpServer();
+        services.AddSmtpServer();
+
+        using ServiceProvider provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+        IHostedService[] hosted = provider.GetServices<IHostedService>().ToArray();
+
+        Assert.Same(provider.GetRequiredService<SmtpServer>(), Assert.Single(hosted.OfType<SmtpServer>()));
+        Assert.Same(provider.GetRequiredService<OutboundWorker>(), Assert.Single(hosted.OfType<OutboundWorker>()));
     }
 
     /// <summary>A stream that hands out scripted input in small pieces and records what is written.</summary>
@@ -787,6 +830,23 @@ public class SmtpServerTests : IAsyncLifetime
         string raw = RawText(stored);
         Assert.Contains("first\r\n\r\nMAIL FROM:<x@sender.test>\r\nsecond\r\n\r\nRCPT TO:<victim@outside.test>\r\nthird\r\n", raw);
         Assert.Empty(await QueueAsync());
+    }
+
+    [DbFact]
+    public async Task A_message_that_went_round_too_often_is_refused_as_a_loop()
+    {
+        string hops = string.Concat(Enumerable.Range(0, SmtpMessageHandler.MaxHops)
+            .Select(i => $"Received: from hop{i}.test by hop{i + 1}.test; Tue, 7 Oct 2026 10:00:00 +0000\r\n"));
+
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync("mx.sender.test");
+            SmtpReplyLines reply = await client.SendMailAsync("max@sender.test", new[] { "alice@example.test" }, hops + Text(RawMail.Build("max@sender.test", "alice@example.test", "Loop", "x")));
+            Assert.Equal("554 5.4.6 Too many hops, the message is looping", reply.ToString());
+        }
+
+        Assert.Empty(await MessagesAsync(_seed.AliceMailbox.Id));
     }
 
     [DbFact]

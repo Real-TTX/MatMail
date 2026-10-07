@@ -132,7 +132,8 @@ public sealed class OutboundWorker : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Queue entry {Id} ended with the shutdown.", id);
+            // ProcessAsync handles its own failures; whatever still escapes must not end the worker.
+            _logger.LogError(ex, "Queue entry {Id} could not be processed.", id);
         }
         finally
         {
@@ -141,7 +142,10 @@ public sealed class OutboundWorker : BackgroundService
         }
     }
 
-    /// <summary>Sends every entry that is due (several at a time) and returns how many were worked on.</summary>
+    /// <summary>
+    /// Sends every entry that is due (several at a time), waits until all are done and returns how many were worked on — for a
+    /// "send now" action and the tests. The background service itself uses delivery slots and never waits for a slow one.
+    /// </summary>
     public async Task<int> ProcessDueAsync(CancellationToken cancel = default)
     {
         await ReleaseExpiredClaimsAsync(cancel);

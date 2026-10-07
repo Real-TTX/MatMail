@@ -123,6 +123,19 @@ public class ImapSignInTests : ImapTestBase
     }
 
     [DbFact]
+    public async Task Commands_sent_in_the_clear_after_starttls_are_not_executed()
+    {
+        await using RawImapClient raw = await Imap.RawAsync();
+        await raw.ReadLineAsync();
+
+        // An attacker in the middle appends a command to the client's STARTTLS; it must not run inside the encrypted session.
+        await raw.SendAsync("a1 STARTTLS\r\na2 LOGIN alice " + ImapTestServer.Password + "\r\n");
+        Assert.Equal("a1 OK Begin TLS negotiation now", await raw.ReadLineAsync());
+        await raw.StartTlsAsync();
+        Assert.Equal(new[] { "a3 BAD Please log in first" }, await raw.CommandAsync("a3", "SELECT INBOX"));
+    }
+
+    [DbFact]
     public async Task A_wrong_password_is_refused_and_the_client_may_try_again()
     {
         using ImapClient client = await Imap.ConnectAsync();
@@ -1704,6 +1717,19 @@ public class ImapFormatTests
         Assert.Equal("Only text\r\n", Encoding.ASCII.GetString(structure.GetSection(Parse("1"))!.Value.Span));
         Assert.Null(structure.GetSection(Parse("2")));
         Assert.Equal("(\"text\" \"plain\" (\"charset\" \"utf-8\") NIL NIL \"7BIT\" 11 1 NIL NIL NIL NIL)", ImapBodyStructure.Build(structure, extensible: true));
+    }
+
+    [Theory]
+    [InlineData("this is not a header\r\nneither is this\r\n", 0, 2)]
+    [InlineData("", 0, 0)]
+    [InlineData("\u0001\u0002 binary\r\n\r\nrest", 13, 1)]
+    public void Messages_mime_cannot_read_become_one_text_body(string text, int headerLength, int lines)
+    {
+        byte[] raw = Encoding.ASCII.GetBytes(text);
+        ImapMessageStructure structure = ImapMessageStructure.Parse(raw);
+        Assert.Equal($"(\"text\" \"plain\" NIL NIL NIL \"7BIT\" {raw.Length - headerLength} {lines} NIL NIL NIL NIL)", ImapBodyStructure.Build(structure, extensible: true));
+        Assert.Equal(text[headerLength..], Encoding.ASCII.GetString(structure.GetSection(Parse("TEXT"))!.Value.Span));
+        Assert.Equal(text, Encoding.ASCII.GetString(structure.GetSection(Parse(""))!.Value.Span));
     }
 
     [Fact]

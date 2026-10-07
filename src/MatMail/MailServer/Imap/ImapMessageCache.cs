@@ -6,8 +6,10 @@ namespace MatMail.MailServer.Imap;
 /// </summary>
 internal sealed class ImapMessageCache
 {
-    private const int Capacity = 3;
-    private const int MaxCachedSize = 16 * 1024 * 1024;
+    private const int Capacity = 2;
+
+    /// <summary>Larger messages are loaded again when needed, so many sessions cannot pile up memory.</summary>
+    private const int MaxCachedSize = 4 * 1024 * 1024;
 
     private readonly LinkedList<Entry> _entries = new();
 

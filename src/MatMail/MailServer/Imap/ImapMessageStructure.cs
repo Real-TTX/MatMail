@@ -115,9 +115,31 @@ internal sealed class ImapMessageStructure
         var parser = new MimeParser(ParserOptions.Default, stream, MimeFormat.Entity, persistent: true);
         parser.MimeEntityEnd += (_, e) => entities[e.Entity] = (e.BeginOffset, e.HeadersEndOffset, e.EndOffset, e.Lines);
         parser.MimeMessageEnd += (_, e) => messages[e.Message] = (e.BeginOffset, e.HeadersEndOffset, e.EndOffset);
-        MimeMessage message = parser.ParseMessage();
+        try
+        {
+            MimeMessage message = parser.ParseMessage();
+            return new ImapMessageStructure(raw, BuildMessage(message, entities, messages));
+        }
+        catch (FormatException)
+        {
+            // Not a MIME message at all (empty, no header, binary): shown as one plain-text body, nothing is lost.
+            return Unstructured(raw);
+        }
+    }
 
-        return new ImapMessageStructure(raw, BuildMessage(message, entities, messages));
+    /// <summary>A message MimeKit cannot read: the header (up to the first blank line, if there is one) and one text body.</summary>
+    private static ImapMessageStructure Unstructured(byte[] raw)
+    {
+        ReadOnlySpan<byte> bytes = raw;
+        int crlf = bytes.IndexOf("\r\n\r\n"u8);
+        int lf = bytes.IndexOf("\n\n"u8);
+        int headersEnd = crlf >= 0 && (lf < 0 || crlf < lf) ? crlf + 4 : lf >= 0 ? lf + 2 : 0;
+        ReadOnlySpan<byte> body = bytes[headersEnd..];
+        int lines = body.Count((byte)'\n') + (body.Length > 0 && body[^1] != '\n' ? 1 : 0);
+
+        var part = new ImapBodyPart { Entity = new TextPart("plain"), Start = 0, BodyStart = headersEnd, End = raw.Length, Lines = lines };
+        var message = new ImapMessagePart { Message = new MimeMessage(), Start = 0, BodyStart = headersEnd, End = raw.Length, Body = part };
+        return new ImapMessageStructure(raw, message);
     }
 
     /// <summary>

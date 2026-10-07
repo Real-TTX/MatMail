@@ -114,6 +114,7 @@
   var locale = (doc.documentElement.lang || "en");
   // The time zone the user chose in their appearance settings; without one the browser's own is used.
   var zone = doc.documentElement.getAttribute("data-time-zone") || undefined;
+  try { new Intl.DateTimeFormat(locale, { timeZone: zone }); } catch (e) { zone = undefined; }   // a zone this browser does not know: use its own
   function dayOf(date) { return date.toLocaleDateString("en-CA", { timeZone: zone }); }   // yyyy-mm-dd in that zone
   App.formatListDate = function (iso) {
     var d = new Date(iso), now = new Date();

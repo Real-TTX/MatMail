@@ -21,7 +21,12 @@ internal sealed class ImapConnection : IAsyncDisposable
 {
     public const int FlushThreshold = 64 * 1024;
 
+    private const int WriteChunkSize = 1024 * 1024;
+
     private static readonly SslProtocols AllowedProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+
+    /// <summary>How long one piece of output may take to reach the client.</summary>
+    private static readonly TimeSpan WriteTimeout = TimeSpan.FromMinutes(5);
 
     private readonly byte[] _input = new byte[16 * 1024];
     private readonly MemoryStream _output = new();
@@ -195,13 +200,22 @@ internal sealed class ImapConnection : IAsyncDisposable
         }
 
         await SendBufferedAsync(cancel);
-        await _stream.WriteAsync(bytes, cancel);
+        await SendAsync(bytes, cancel);
     }
 
     public async Task FlushAsync(CancellationToken cancel)
     {
         await SendBufferedAsync(cancel);
-        await _stream.FlushAsync(cancel);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        timeout.CancelAfter(WriteTimeout);
+        try
+        {
+            await _stream.FlushAsync(timeout.Token);
+        }
+        catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
+        {
+            throw new IOException("The client did not read the response in time.");
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -217,8 +231,29 @@ internal sealed class ImapConnection : IAsyncDisposable
             return;
         }
 
-        await _stream.WriteAsync(_output.GetBuffer().AsMemory(0, (int)_output.Length), cancel);
+        await SendAsync(_output.GetBuffer().AsMemory(0, (int)_output.Length), cancel);
         _output.SetLength(0);
+    }
+
+    /// <summary>
+    /// Sends in pieces, each of which must get through within <see cref="WriteTimeout"/>: a client that stops reading cannot hold
+    /// its session (and a large message in memory) forever.
+    /// </summary>
+    private async Task SendAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancel)
+    {
+        for (int offset = 0; offset < bytes.Length; offset += WriteChunkSize)
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            timeout.CancelAfter(WriteTimeout);
+            try
+            {
+                await _stream.WriteAsync(bytes.Slice(offset, Math.Min(WriteChunkSize, bytes.Length - offset)), timeout.Token);
+            }
+            catch (OperationCanceledException) when (!cancel.IsCancellationRequested)
+            {
+                throw new IOException("The client did not read the response in time.");
+            }
+        }
     }
 
     private void AppendToLine(ReadOnlySpan<byte> bytes, ref int length)

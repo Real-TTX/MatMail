@@ -281,6 +281,7 @@ public sealed class ImapServer : BackgroundService
         try
         {
             socket.NoDelay = true;
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
             Stream stream = new NetworkStream(socket, ownsSocket: true);
             if (implicitTls)
             {

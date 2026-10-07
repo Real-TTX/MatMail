@@ -24,7 +24,7 @@ internal sealed partial class ImapSession
         {
             while (!await WaitForDoneOrChangeAsync(done, idle.Token))
             {
-                await SynchronizeAsync(null, allowExpunge: true);
+                await TrySynchronizeWhileIdlingAsync();
                 if (IsClosing)
                 {
                     ObserveLater(done);
@@ -53,6 +53,22 @@ internal sealed partial class ImapSession
         {
             ObserveLater(done);
             await SayGoodbyeAsync("BYE Autologout; idle for too long");
+        }
+    }
+
+    /// <summary>
+    /// Reports changes while idling. A failure (e.g. the database is briefly unavailable) must not end IDLE: the read that waits for
+    /// "DONE" is still pending, and the next wake-up simply tries again.
+    /// </summary>
+    private async Task TrySynchronizeWhileIdlingAsync()
+    {
+        try
+        {
+            await SynchronizeAsync(null, allowExpunge: true);
+        }
+        catch (Exception ex) when (!IsConnectionError(ex) && ex is not OperationCanceledException)
+        {
+            _context.Logger.LogWarning(ex, "IMAP IDLE could not check the selected folder of {User}.", _user?.LoginName);
         }
     }
 

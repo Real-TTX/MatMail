@@ -173,6 +173,7 @@ public sealed class MailStore
     public async Task<int> ChangeFlagsAsync(IEnumerable<long> messageIds, FlagChange change, CancellationToken cancel = default)
     {
         long[] ids = messageIds.Distinct().ToArray();
+        await using IDbContextTransaction? own = await BeginAsync(cancel);
         List<MailMessage> messages = await _db.MailMessages.Where(m => ids.Contains(m.Id)).ToListAsync(cancel);
         int changed = 0;
 
@@ -200,6 +201,16 @@ public sealed class MailStore
         if (changed > 0)
         {
             await _db.SaveChangesAsync(cancel);
+        }
+
+        // The change counter and the rows become visible together, so a session that wakes up on the counter always finds the rows.
+        if (own is not null)
+        {
+            await own.CommitAsync(cancel);
+        }
+
+        if (changed > 0)
+        {
             foreach (IGrouping<long, MailMessage> folderGroup in messages.GroupBy(m => m.FolderId))
             {
                 MailMessage first = folderGroup.First();
@@ -373,10 +384,20 @@ public sealed class MailStore
         var locations = await _db.MailMessages.AsNoTracking().Where(m => ids.Contains(m.Id))
             .Select(m => new { m.TenantId, m.MailboxId, m.FolderId }).Distinct().ToListAsync(cancel);
 
+        await using IDbContextTransaction? own = await BeginAsync(cancel);
         int deleted = await _db.MailMessages.Where(m => ids.Contains(m.Id)).ExecuteDeleteAsync(cancel);
         foreach (var location in locations)
         {
             await BumpAsync(location.FolderId, cancel);
+        }
+
+        if (own is not null)
+        {
+            await own.CommitAsync(cancel);
+        }
+
+        foreach (var location in locations)
+        {
             _hub.Publish(new MailEvent(MailEventKind.Removed, location.TenantId, location.MailboxId, location.FolderId));
         }
 
@@ -440,6 +461,10 @@ public sealed class MailStore
             return new ParsedMessage { Subject = "(unreadable message)", ThreadKey = "subj:(unreadable message)", HeaderBytes = raw.Length > 4096 ? raw[..4096] : raw };
         }
     }
+
+    /// <summary>Starts a transaction unless the caller already runs inside one (then null: the caller commits).</summary>
+    private async Task<IDbContextTransaction?> BeginAsync(CancellationToken cancel)
+        => _db.Database.CurrentTransaction is null ? await _db.Database.BeginTransactionAsync(cancel) : null;
 
     /// <summary>Reserves <paramref name="count"/> UIDs of a folder and bumps its change counter in one statement (race free).</summary>
     private async Task<(long FirstUid, long ModSeq)> AllocateAsync(long folderId, int count, CancellationToken cancel)

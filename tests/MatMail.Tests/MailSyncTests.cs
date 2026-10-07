@@ -372,6 +372,36 @@ public class MailSyncSchedulerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_reset_forgets_what_was_fetched_but_not_while_a_run_is_going()
+    {
+        var trigger = _host.Services.GetRequiredService<MailSyncTrigger>();
+        MailAccount account = await AddAccountAsync("moved to another server", a => { a.NextSyncDate = DateTime.UtcNow.AddMinutes(5); a.FailureCount = 2; });
+        using (IServiceScope scope = _host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            db.MailAccountFolderStates.Add(new MailAccountFolderState { MailAccountId = account.Id, RemoteFolder = "INBOX", UidValidity = 7, LastUid = 42 });
+            db.RemoteMessageStates.Add(new RemoteMessageState { MailAccountId = account.Id, RemoteFolder = "INBOX", RemoteUid = "42" });
+            await db.SaveChangesAsync();
+        }
+
+        Assert.True(await trigger.ResetAsync(account.Id));
+
+        using (IServiceScope scope = _host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            Assert.False(await db.MailAccountFolderStates.AnyAsync(s => s.MailAccountId == account.Id));
+            Assert.False(await db.RemoteMessageStates.AnyAsync(r => r.MailAccountId == account.Id));
+        }
+
+        MailAccount reset = await ReloadAsync(account.Id);
+        Assert.Null(reset.NextSyncDate);
+        Assert.Equal(0, reset.FailureCount);
+
+        MailAccount busy = await AddAccountAsync("busy", a => a.LastSyncState = SyncState.Running);
+        Assert.False(await trigger.ResetAsync(busy.Id));
+    }
+
+    [DbFact]
     public async Task The_background_service_wakes_up_for_a_request()
     {
         MailAccount account = await AddAccountAsync("requested", a => a.NextSyncDate = DateTime.UtcNow.AddHours(1));
@@ -527,6 +557,22 @@ public class MailSyncProviderTests : IAsyncLifetime
         ActivityLog line = Assert.Single(await SyncLogAsync());
         Assert.Equal($"{account.Name}: 3 new messages", line.Message);
         Assert.Equal(_seed.Tenant.Id, line.TenantId);
+    }
+
+    [ProviderFact]
+    public async Task Mail_that_reached_the_provider_by_smtp_is_fetched_for_the_accounts_address()
+    {
+        ProviderUser provider = await ProviderUser.CreateAsync();
+        await provider.SendAsync(RawMail.Build("max@sender.test", "bob@example.test", "Via SMTP", "Hello Bob"));
+        Assert.Equal(1, await provider.CountAsync("INBOX"));
+        MailAccount account = await AddAccountAsync(provider, a => a.Address = "bob@example.test");
+
+        SyncReport report = await SyncAsync(account);
+
+        Assert.True(report.Succeeded, report.Message);
+        MailMessage message = Assert.Single(await InboxAsync(_seed.BobMailbox.Id));
+        Assert.Equal("Via SMTP", message.Subject);
+        Assert.Equal("bob@example.test", message.EnvelopeRecipients);
     }
 
     [ProviderFact]

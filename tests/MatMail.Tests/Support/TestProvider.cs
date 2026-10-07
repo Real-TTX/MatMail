@@ -122,6 +122,17 @@ public sealed record ProviderUser(string Login, string Password)
         return uid?.Id ?? 0;
     }
 
+    /// <summary>Delivers a message to this mailbox through the provider's SMTP server (the way real mail arrives).</summary>
+    public async Task SendAsync(byte[] raw)
+    {
+        (string host, int port) = TestProvider.Smtp;
+        using var client = new MailKit.Net.Smtp.SmtpClient { Timeout = 30_000 };
+        await client.ConnectAsync(host, port, SecureSocketOptions.None);
+        MimeMessage message = MimeMessage.Load(new MemoryStream(raw));
+        await client.SendAsync(message, MailboxAddress.Parse("sender@sender.test"), new[] { MailboxAddress.Parse(Login) });
+        await client.DisconnectAsync(true);
+    }
+
     public async Task<int> CountAsync(string folder)
     {
         using ImapClient client = await ConnectAsync();

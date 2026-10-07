@@ -102,6 +102,14 @@ public sealed class SyncFailureTracker
             _attempts.TryRemove(key, out _);
         }
     }
+
+    public void ForgetAccount(long accountId)
+    {
+        foreach (var key in _attempts.Keys.Where(k => k.AccountId == accountId))
+        {
+            _attempts.TryRemove(key, out _);
+        }
+    }
 }
 
 /// <summary>
@@ -509,22 +517,23 @@ public sealed class SyncImporter
     }
 
     /// <summary>
-    /// Backup and migration: a local copy of this account and folder with the same Message-ID that no record points to any more
-    /// (the provider renumbered the folder, or a run was interrupted between storing and recording) is taken again instead of
-    /// storing the message a second time.
+    /// Backup and migration: a copy in the target mailbox from this account and folder with the same Message-ID that no record
+    /// points to any more (the provider renumbered the folder, or a run was interrupted between storing and recording) is taken
+    /// again instead of storing the message a second time.
     /// </summary>
     private async Task<ImportResult?> RelinkAsync(SyncRun run, RemoteMessage remote, CancellationToken cancel)
     {
-        if (run.Role == MailAccountRole.Mail || remote.MessageId is null)
+        if (run.Role == MailAccountRole.Mail || remote.MessageId is null || run.TargetMailbox is null)
         {
             return null;
         }
 
         long accountId = run.Account.Id;
+        long targetId = run.TargetMailbox.Id;
         string folder = remote.Folder.FullName;
         string messageId = remote.MessageId;
         long? orphan = await _db.MailMessages.AsNoTracking()
-            .Where(m => m.SourceAccountId == accountId && m.RemoteFolder == folder && m.MessageIdHeader == messageId)
+            .Where(m => m.MailboxId == targetId && m.SourceAccountId == accountId && m.RemoteFolder == folder && m.MessageIdHeader == messageId)
             .Where(m => !_db.RemoteMessageStates.Any(r =>
                 r.MailAccountId == accountId && r.RemoteFolder == folder && r.RemoteUid == m.RemoteUid && r.LocalMessageId == m.Id))
             .OrderBy(m => m.Id)

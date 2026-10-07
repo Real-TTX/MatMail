@@ -39,6 +39,12 @@ public sealed class MailSyncTrigger
     /// <summary>Synchronises the account right now and waits for the outcome (a run that is already going is not started twice).</summary>
     public Task<SyncReport> SyncNowAsync(long accountId, CancellationToken cancel = default) => _runner.RunAsync(accountId, cancel);
 
+    /// <summary>
+    /// Makes the next run compare everything again (see <see cref="MailSyncRunner.ResetAsync"/>); for when the account's server,
+    /// user or role changed. Returns false while a run is going.
+    /// </summary>
+    public Task<bool> ResetAsync(long accountId, CancellationToken cancel = default) => _runner.ResetAsync(accountId, cancel);
+
     public bool IsRunning(long accountId) => _runner.IsRunning(accountId);
 
     public bool IsRequested(long accountId)

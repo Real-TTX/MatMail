@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.Messaging;
 using MatMail.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,15 +21,18 @@ public sealed class MailSyncRunner
 
     private readonly IServiceScopeFactory _scopes;
     private readonly ActivityLogger _activity;
+    private readonly SyncFailureTracker _failures;
     private readonly AppConfig _config;
     private readonly MailSyncOptions _options;
     private readonly ILogger<MailSyncRunner> _logger;
     private readonly ConcurrentDictionary<long, byte> _running = new();
 
-    public MailSyncRunner(IServiceScopeFactory scopes, ActivityLogger activity, AppConfig config, MailSyncOptions options, ILogger<MailSyncRunner> logger)
+    public MailSyncRunner(
+        IServiceScopeFactory scopes, ActivityLogger activity, SyncFailureTracker failures, AppConfig config, MailSyncOptions options, ILogger<MailSyncRunner> logger)
     {
         _scopes = scopes;
         _activity = activity;
+        _failures = failures;
         _config = config;
         _options = options;
         _logger = logger;
@@ -72,6 +76,55 @@ public sealed class MailSyncRunner
         try
         {
             return await RunExclusiveAsync(accountId, cancel);
+        }
+        finally
+        {
+            _running.TryRemove(accountId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Forgets what was fetched for the account (folder positions and message records), so the next run compares every remote
+    /// message again. Local mail stays; only live-access stand-ins are removed and listed afresh. Meant for when the account's
+    /// server, user or role changed (UIDs of another server mean other messages). Returns false while a run is going.
+    /// </summary>
+    public async Task<bool> ResetAsync(long accountId, CancellationToken cancel = default)
+    {
+        if (!_running.TryAdd(accountId, 0))
+        {
+            return false;
+        }
+
+        try
+        {
+            using IServiceScope scope = _scopes.CreateScope();
+            var current = scope.ServiceProvider.GetRequiredService<CurrentUser>();
+            current.RunAsSystem();
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            MailAccount? account = await db.MailAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.Id == accountId, cancel);
+            if (account is null || (account.LastSyncState == SyncState.Running && account.UpdateDate >= DateTime.UtcNow - _options.StaleRunAfter))
+            {
+                return false;
+            }
+
+            current.RunAsSystemInTenant(account.TenantId);
+            long[] stubs = await db.MailMessages
+                .Where(m => m.SourceAccountId == accountId && m.Storage == MessageStorage.Remote)
+                .Select(m => m.Id)
+                .ToArrayAsync(cancel);
+            if (stubs.Length > 0)
+            {
+                await scope.ServiceProvider.GetRequiredService<MailStore>().DeleteAsync(stubs, permanent: true, cancel);
+            }
+
+            await db.RemoteMessageStates.Where(r => r.MailAccountId == accountId).ExecuteDeleteAsync(cancel);
+            await db.MailAccountFolderStates.Where(s => s.MailAccountId == accountId).ExecuteDeleteAsync(cancel);
+            await db.MailAccounts.Where(a => a.Id == accountId).ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.NextSyncDate, (DateTime?)null)
+                .SetProperty(a => a.FailureCount, 0), cancel);
+            _failures.ForgetAccount(accountId);
+            _logger.LogInformation("The synchronisation state of account {AccountId} was reset.", accountId);
+            return true;
         }
         finally
         {

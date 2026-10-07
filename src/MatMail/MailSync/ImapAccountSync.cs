@@ -108,7 +108,7 @@ public sealed class ImapAccountSync : IAccountSync
 
     private static IEnumerable<string> ConfiguredFolders(MailAccount account)
     {
-        string[] names = account.SyncFolders
+        string[] names = (account.SyncFolders ?? Array.Empty<string>())
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .Select(n => n.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)

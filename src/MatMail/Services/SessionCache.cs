@@ -16,6 +16,10 @@ public sealed record SessionSnapshot(
     string? ThemeMode,
     string? ThemeAccent,
     string? Culture,
+    string? TextSize,
+    string? Density,
+    string? TimeZone,
+    bool ShowPreviews,
     DateTime ExpiresDate);
 
 /// <summary>

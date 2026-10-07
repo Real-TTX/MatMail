@@ -112,14 +112,17 @@
   };
 
   var locale = (doc.documentElement.lang || "en");
+  // The time zone the user chose in their appearance settings; without one the browser's own is used.
+  var zone = doc.documentElement.getAttribute("data-time-zone") || undefined;
+  function dayOf(date) { return date.toLocaleDateString("en-CA", { timeZone: zone }); }   // yyyy-mm-dd in that zone
   App.formatListDate = function (iso) {
     var d = new Date(iso), now = new Date();
-    if (d.toDateString() === now.toDateString()) { return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }); }
-    if (d.getFullYear() === now.getFullYear()) { return d.toLocaleDateString(locale, { day: "numeric", month: "short" }); }
-    return d.toLocaleDateString(locale, { year: "numeric", month: "numeric", day: "numeric" });
+    if (dayOf(d) === dayOf(now)) { return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", timeZone: zone }); }
+    if (dayOf(d).slice(0, 4) === dayOf(now).slice(0, 4)) { return d.toLocaleDateString(locale, { day: "numeric", month: "short", timeZone: zone }); }
+    return d.toLocaleDateString(locale, { year: "numeric", month: "numeric", day: "numeric", timeZone: zone });
   };
   App.formatFullDate = function (iso) {
-    return new Date(iso).toLocaleString(locale, { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    return new Date(iso).toLocaleString(locale, { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: zone });
   };
 
   App.displayName = function (name, address) { return name && name.trim() ? name : (address || ""); };

@@ -100,6 +100,12 @@ public class MatMailDbContext : DbContext
             e.Property(x => x.Department).HasMaxLength(150);
             e.Property(x => x.Mobile).HasMaxLength(50);
             e.Property(x => x.Fax).HasMaxLength(50);
+            e.Property(x => x.TextSize).HasMaxLength(20);
+            e.Property(x => x.Density).HasMaxLength(20);
+            e.Property(x => x.TimeZone).HasMaxLength(100);
+
+            // Existing users keep seeing the previews they have always seen.
+            e.Property(x => x.ShowPreviews).HasDefaultValue(true);
             e.HasMany(x => x.UserRoles).WithOne(x => x.User).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

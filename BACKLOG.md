@@ -7,7 +7,7 @@ Status: ✅ done · 🔧 in progress · ⏳ planned · ❓ open question · 💤
 
 | # | Item | Status |
 |---|---|---|
-| 1 | **Appearance per user** – *Aussehen und Darstellung einstellbar pro User* | 🔧 theme, accent and language exist; density, font size and list options follow |
+| 1 | **Appearance per user** – *Aussehen und Darstellung einstellbar pro User* | ✅ theme, accent colour, language, text size, density, time zone and message previews (`/Account/Appearance`); more list options (reading pane, conversation view) can follow |
 | 2 | **Branding for tenants** – *Branding für Tenants!* | ✅ name, logo, accent colour and website per tenant (`/Admin/Branding`); shown in the app, on the sign-in page of the tenant (`/t/<slug>`) and as `{{Website}}` in signatures |
 | 3 | **EN/DE, English is the default** – *i18n – EN/DE (EN Default)* | ✅ English unless the user or the browser says German; every text exists in both languages (`node tools/i18n.mjs check`) |
 | 4 | **TOTP, optional or enforced** – *TOTP Aktivierbar, auch forcierbar als Berechtigung oder Rule* | 🔧 authenticator app + recovery codes; enforceable per tenant / role. IMAP and SMTP cannot ask for a second factor, so they use *app passwords* once TOTP is on |

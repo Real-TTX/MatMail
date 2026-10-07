@@ -242,6 +242,10 @@ public sealed class SignInService
             user.ThemeMode,
             user.ThemeAccent,
             user.Culture,
+            user.TextSize,
+            user.Density,
+            user.TimeZone,
+            user.ShowPreviews,
             session.ExpiresDate);
     }
 
@@ -264,6 +268,10 @@ public sealed class SignInService
         AddIfSet(claims, AppClaims.ThemeMode, snapshot.ThemeMode);
         AddIfSet(claims, AppClaims.ThemeAccent, snapshot.ThemeAccent);
         AddIfSet(claims, AppClaims.Culture, snapshot.Culture);
+        AddIfSet(claims, AppClaims.TextSize, snapshot.TextSize);
+        AddIfSet(claims, AppClaims.Density, snapshot.Density);
+        AddIfSet(claims, AppClaims.TimeZone, snapshot.TimeZone);
+        claims.Add(new Claim(AppClaims.ShowPreviews, snapshot.ShowPreviews ? "1" : "0"));
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }

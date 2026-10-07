@@ -180,7 +180,10 @@
   <data name="Close" xml:space="preserve"><value>Schließen</value></data>
   <data name="Close a message window first." xml:space="preserve"><value>Schließen Sie zuerst ein Nachrichtenfenster.</value></data>
   <data name="Colour" xml:space="preserve"><value>Farbe</value></data>
+  <data name="Comfortable" xml:space="preserve"><value>Komfortabel</value></data>
   <data name="Comma separated: after the first failure, the second, …; the last value repeats." xml:space="preserve"><value>Durch Komma getrennt: nach dem ersten Fehlschlag, nach dem zweiten, …; der letzte Wert wiederholt sich.</value></data>
+  <data name="Compact" xml:space="preserve"><value>Kompakt</value></data>
+  <data name="Compact fits more rows on the screen." xml:space="preserve"><value>Kompakt zeigt mehr Zeilen auf dem Bildschirm.</value></data>
   <data name="Compose" xml:space="preserve"><value>Verfassen</value></data>
   <data name="Computers and devices in these networks may send mail through this server without signing in (smart host), e.g. printers, scanners and internal servers." xml:space="preserve"><value>Computer und Geräte in diesen Netzwerken dürfen ohne Anmeldung E-Mails über diesen Server senden (Smarthost), z. B. Drucker, Scanner und interne Server.</value></data>
   <data name="Confirm" xml:space="preserve"><value>Bestätigen</value></data>
@@ -202,11 +205,13 @@
   <data name="Dashboard" xml:space="preserve"><value>Übersicht</value></data>
   <data name="Database is up to date." xml:space="preserve"><value>Die Datenbank ist auf dem neuesten Stand.</value></data>
   <data name="Date" xml:space="preserve"><value>Datum</value></data>
+  <data name="Dates and times are shown in this time zone." xml:space="preserve"><value>Datum und Uhrzeit werden in dieser Zeitzone angezeigt.</value></data>
   <data name="days" xml:space="preserve"><value>Tage</value></data>
   <data name="Dear Ms Example, the nightly backup finished without errors. Best regards" xml:space="preserve"><value>Sehr geehrte Frau Beispiel, die nächtliche Sicherung ist fehlerfrei durchgelaufen. Mit freundlichen Grüßen</value></data>
   <data name="Default" xml:space="preserve"><value>Standard</value></data>
   <data name="Default (account of the sender address, otherwise direct delivery)" xml:space="preserve"><value>Standard (Konto der Absenderadresse, sonst direkte Zustellung)</value></data>
   <data name="Default (matching account, otherwise direct delivery)" xml:space="preserve"><value>Standard (passendes Konto, sonst direkte Zustellung)</value></data>
+  <data name="Default (server for lists and logs, this device in the mail client)" xml:space="preserve"><value>Standard (Server für Listen und Protokolle, dieses Gerät im Mailclient)</value></data>
   <data name="Defaults for new users" xml:space="preserve"><value>Voreinstellungen für neue Benutzer</value></data>
   <data name="Delegates" xml:space="preserve"><value>Vertreter</value></data>
   <data name="Delegation" xml:space="preserve"><value>Vertretung</value></data>
@@ -240,6 +245,7 @@
   <data name="Delivered for" xml:space="preserve"><value>Zugestellt für</value></data>
   <data name="Delivery" xml:space="preserve"><value>Zustellung</value></data>
   <data name="Delivery and synchronisation" xml:space="preserve"><value>Zustellung und Synchronisierung</value></data>
+  <data name="Density" xml:space="preserve"><value>Dichte</value></data>
   <data name="Department" xml:space="preserve"><value>Abteilung</value></data>
   <data name="Description" xml:space="preserve"><value>Beschreibung</value></data>
   <data name="Details" xml:space="preserve"><value>Details</value></data>
@@ -654,6 +660,7 @@
   <data name="Show original" xml:space="preserve"><value>Original anzeigen</value></data>
   <data name="Show password" xml:space="preserve"><value>Passwort anzeigen</value></data>
   <data name="Show pictures" xml:space="preserve"><value>Bilder anzeigen</value></data>
+  <data name="Show the first words of a message in the list" xml:space="preserve"><value>Die ersten Worte einer Nachricht in der Liste anzeigen</value></data>
   <data name="Show trimmed content" xml:space="preserve"><value>Ausgeblendeten Inhalt anzeigen</value></data>
   <data name="Sign in" xml:space="preserve"><value>Anmelden</value></data>
   <data name="Sign out" xml:space="preserve"><value>Abmelden</value></data>

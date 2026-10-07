@@ -73,6 +73,18 @@ public class User : AuditedEntity, ITenantEntity
     public string? ThemeAccent { get; set; }
     public string? Culture { get; set; }
 
+    /// <summary>"small", "normal" or "large"; null = normal.</summary>
+    public string? TextSize { get; set; }
+
+    /// <summary>"comfortable" or "compact"; null = comfortable.</summary>
+    public string? Density { get; set; }
+
+    /// <summary>Time zone for dates and times (IANA id, e.g. "Europe/Berlin"); null = that of the server.</summary>
+    public string? TimeZone { get; set; }
+
+    /// <summary>Show the first words of a message next to its subject in the list.</summary>
+    public bool ShowPreviews { get; set; } = true;
+
     public DateTime? LastLoginDate { get; set; }
     public int FailedLoginCount { get; set; }
     public DateTime? LockedUntilDate { get; set; }

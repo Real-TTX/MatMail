@@ -1,29 +1,57 @@
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Security.Claims;
 using MatMail.Configuration;
 
 namespace MatMail.Services;
 
-/// <summary>Formats dates in the configured time zone and sizes for people. Everything is stored in UTC.</summary>
+/// <summary>
+/// Formats dates in the time zone of the signed-in user (else the configured one of the server) and sizes for people.
+/// Everything is stored in UTC.
+/// </summary>
 public sealed class Fmt
 {
-    private readonly TimeZoneInfo _zone;
+    private static readonly ConcurrentDictionary<string, TimeZoneInfo?> Zones = new(StringComparer.Ordinal);
 
-    public Fmt(AppConfig config)
+    private readonly TimeZoneInfo _serverZone;
+    private readonly IHttpContextAccessor _http;
+
+    public Fmt(AppConfig config, IHttpContextAccessor http)
     {
-        try
+        _http = http;
+        _serverZone = Find(config.Display.TimeZone) ?? TimeZoneInfo.Utc;
+    }
+
+    /// <summary>The time zone dates are shown in: the signed-in user's own, otherwise the server's.</summary>
+    public TimeZoneInfo Zone => Find(_http.HttpContext?.User.FindFirstValue(AppClaims.TimeZone)) ?? _serverZone;
+
+    /// <summary>Whether the id names a time zone this server knows.</summary>
+    public static bool IsKnownZone(string? id) => Find(id) is not null;
+
+    private static TimeZoneInfo? Find(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
         {
-            _zone = TimeZoneInfo.FindSystemTimeZoneById(config.Display.TimeZone);
+            return null;
         }
-        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+
+        return Zones.GetOrAdd(id, key =>
         {
-            _zone = TimeZoneInfo.Utc;
-        }
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(key);
+            }
+            catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+            {
+                return null;
+            }
+        });
     }
 
     public DateTime ToLocal(DateTime utc)
     {
         DateTime value = utc.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(utc, DateTimeKind.Utc) : utc;
-        return TimeZoneInfo.ConvertTimeFromUtc(value.ToUniversalTime(), _zone);
+        return TimeZoneInfo.ConvertTimeFromUtc(value.ToUniversalTime(), Zone);
     }
 
     public string DateTimeText(DateTime? utc) => utc is null ? "–" : ToLocal(utc.Value).ToString("g", CultureInfo.CurrentCulture);

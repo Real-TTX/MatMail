@@ -14,4 +14,8 @@ public static class AppClaims
     public const string ThemeMode = "matmail:thememode";
     public const string ThemeAccent = "matmail:themeaccent";
     public const string Culture = "matmail:culture";
+    public const string TextSize = "matmail:textsize";
+    public const string Density = "matmail:density";
+    public const string TimeZone = "matmail:timezone";
+    public const string ShowPreviews = "matmail:showpreviews";
 }

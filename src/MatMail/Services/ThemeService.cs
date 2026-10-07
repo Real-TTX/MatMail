@@ -3,14 +3,29 @@ using MatMail.Configuration;
 
 namespace MatMail.Services;
 
-/// <summary>The resolved look of the current request. <see cref="UserHasMode"/> tells whether the user saved their own choice.</summary>
-public sealed record ThemeChoice(string Mode, string Accent, bool UserHasMode, bool UserHasAccent = false);
+/// <summary>
+/// The resolved look of the current request. <see cref="UserHasMode"/> tells whether the user saved their own choice.
+/// Text size, density, previews and time zone are the user's own settings with a plain default.
+/// </summary>
+public sealed record ThemeChoice(string Mode, string Accent, bool UserHasMode, bool UserHasAccent = false)
+{
+    public string TextSize { get; init; } = "normal";
+    public string Density { get; init; } = "comfortable";
 
-/// <summary>Decides mode (system / light / dark) and accent colour: the signed-in user's choice, else the installation default.</summary>
+    /// <summary>The first words of a message are shown in the list.</summary>
+    public bool ShowPreviews { get; init; } = true;
+
+    /// <summary>The time zone the user chose for dates and times; null: the server's (pages) and the browser's (mail client).</summary>
+    public string? UserTimeZone { get; init; }
+}
+
+/// <summary>Decides mode (system / light / dark), accent colour and the rest of the look: the signed-in user's choice, else the installation default.</summary>
 public sealed class ThemeService
 {
     public static readonly string[] Modes = { "system", "light", "dark" };
     public static readonly string[] Accents = { "blue", "green", "violet", "teal", "amber", "rose", "graphite" };
+    public static readonly string[] TextSizes = { "small", "normal", "large" };
+    public static readonly string[] Densities = { "comfortable", "compact" };
 
     private readonly IHttpContextAccessor _http;
     private readonly AppConfig _config;
@@ -26,12 +41,19 @@ public sealed class ThemeService
         ClaimsPrincipal? principal = _http.HttpContext?.User;
         string? userMode = principal?.FindFirstValue(AppClaims.ThemeMode);
         string? userAccent = principal?.FindFirstValue(AppClaims.ThemeAccent);
+        string? userZone = principal?.FindFirstValue(AppClaims.TimeZone);
 
         bool hasMode = Modes.Contains(userMode);
         string mode = hasMode ? userMode! : Normalize(_config.Display.ThemeMode, Modes, "system");
         bool hasAccent = Accents.Contains(userAccent);
         string accent = hasAccent ? userAccent! : Normalize(_config.Display.ThemeAccent, Accents, "blue");
-        return new ThemeChoice(mode, accent, hasMode, hasAccent);
+        return new ThemeChoice(mode, accent, hasMode, hasAccent)
+        {
+            TextSize = Normalize(principal?.FindFirstValue(AppClaims.TextSize), TextSizes, "normal"),
+            Density = Normalize(principal?.FindFirstValue(AppClaims.Density), Densities, "comfortable"),
+            ShowPreviews = principal?.FindFirstValue(AppClaims.ShowPreviews) != "0",
+            UserTimeZone = Fmt.IsKnownZone(userZone) ? userZone : null,
+        };
     }
 
     private static string Normalize(string? value, string[] allowed, string fallback)

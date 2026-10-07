@@ -40,7 +40,37 @@
             </div>
         </div>
 
+        <div class="form-row">
+            <label>@L["Text size"]</label>
+            <div class="segmented segmented--wide" data-appearance-attribute="data-text-size">
+                @foreach (var size in new[] { ("small", L["Small"].Value), ("normal", L["Normal"].Value), ("large", L["Large"].Value) })
+                {
+                    <label class="segmented__item @(Model.Input.TextSize == size.Item1 ? "is-active" : "")">
+                        <input type="radio" class="sr-only" name="Input.TextSize" value="@size.Item1" checked="@(Model.Input.TextSize == size.Item1)" />
+                        <span>@size.Item2</span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>@L["Density"]</label>
+            <div class="segmented segmented--wide" data-appearance-attribute="data-density">
+                @foreach (var density in new[] { ("comfortable", L["Comfortable"].Value), ("compact", L["Compact"].Value) })
+                {
+                    <label class="segmented__item @(Model.Input.Density == density.Item1 ? "is-active" : "")">
+                        <input type="radio" class="sr-only" name="Input.Density" value="@density.Item1" checked="@(Model.Input.Density == density.Item1)" />
+                        <span>@density.Item2</span>
+                    </label>
+                }
+            </div>
+            <p class="form-help">@L["Compact fits more rows on the screen."]</p>
+        </div>
+
         <mm-field asp-for="Input.Culture" kind="select" label='@L["Language"]' asp-items="Model.Cultures" />
+        <mm-picker asp-for="Input.TimeZone" asp-items="Model.TimeZones" label='@L["Time zone"]' placeholder='@L["Default (server for lists and logs, this device in the mail client)"]'
+                   help='@L["Dates and times are shown in this time zone."]' />
+        <mm-field asp-for="Input.ShowPreviews" kind="checkbox" label='@L["Show the first words of a message in the list"]' />
     </mm-form-section>
 
     <mm-button-row>
@@ -59,6 +89,16 @@
                     document.querySelectorAll("[data-appearance-mode] .segmented__item").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
                     root.setAttribute("data-theme-mode", input.value);
                     root.setAttribute("data-mode", dark(input.value) ? "dark" : "light");
+                });
+            });
+            // Text size and density: the attribute of <html> that the style sheet reacts to.
+            document.querySelectorAll("[data-appearance-attribute]").forEach(function (group) {
+                var attribute = group.getAttribute("data-appearance-attribute");
+                group.querySelectorAll("input").forEach(function (input) {
+                    input.addEventListener("change", function () {
+                        group.querySelectorAll(".segmented__item").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
+                        root.setAttribute(attribute, input.value);
+                    });
                 });
             });
             document.querySelectorAll("[data-appearance-accent] input").forEach(function (input) {

@@ -11,7 +11,17 @@
   --header-height: 56px;
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
   --transition: 0.14s ease;
+
+  /* Density: the rows of tables and of the message list. The user's choice (data-density on <html>) changes them. */
+  --cell-pad-y: 0.7rem;
+  --cell-pad-x: 0.9rem;
+  --mail-row-height: 2.75rem;
 }
+
+/* ---- Display settings of the user: text size and density (attributes of <html>, see the layouts) ---- */
+html[data-text-size="small"] { font-size: 87.5%; }
+html[data-text-size="large"] { font-size: 112.5%; }
+html[data-density="compact"] { --cell-pad-y: 0.35rem; --cell-pad-x: 0.75rem; --mail-row-height: 2.15rem; }
 
 /* ---- Accent colours: a light-mode and a dark-mode shade each ---- */
 :root, :root[data-accent="blue"] { --accent-light: #1a73e8; --accent-dark: #8ab4f8; }

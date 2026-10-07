@@ -161,7 +161,7 @@ input[type="color"].form-control { padding: 0.2rem; min-width: 4rem; max-width: 
   text-transform: uppercase;
   white-space: nowrap;
 }
-.data-table td { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+.data-table td { padding: var(--cell-pad-y) var(--cell-pad-x); border-bottom: 1px solid var(--color-border); vertical-align: middle; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tbody tr[data-row-href] { cursor: pointer; }
 .data-table tbody tr:hover { background: var(--color-surface-hover); }

@@ -1,0 +1,32 @@
+# Build output
+**/bin/
+**/obj/
+publish/
+artifacts/
+TestResults/
+*.log
+
+# IDE / OS
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.swp
+Thumbs.db
+.DS_Store
+
+# Local runtime data (never commit)
+data/
+tmp/
+.env
+*.pfx
+*.pem
+*.key
+
+# Claude Code local state
+.claude/settings.local.json
+.claude/worktrees/
+
+# Node tooling (screenshots / helper scripts)
+node_modules/

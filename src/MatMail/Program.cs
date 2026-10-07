@@ -59,6 +59,7 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 // ---------------------------------------------------------------------------------------------
 builder.Services.AddSingleton(certificates);
 builder.Services.AddMatMailServices(config);
+builder.Services.AddHostedService<MaintenanceService>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))

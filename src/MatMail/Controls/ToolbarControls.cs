@@ -114,3 +114,32 @@ public sealed class ToolbarSelectTagHelper : TagHelper
             $"<select class=\"form-control\" id=\"{id}\" name=\"{id}\" data-autosubmit>{options}</select>");
     }
 }
+
+/// <summary>A labelled input of a toolbar (a date, a number …); applies when it changes. Usage: &lt;mm-toolbar-field name="From" label="From" type="date" value="…" /&gt;</summary>
+[HtmlTargetElement("mm-toolbar-field", TagStructure = TagStructure.WithoutEndTag)]
+public sealed class ToolbarFieldTagHelper : TagHelper
+{
+    [HtmlAttributeName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [HtmlAttributeName("label")]
+    public string Label { get; set; } = string.Empty;
+
+    [HtmlAttributeName("type")]
+    public string Type { get; set; } = "text";
+
+    [HtmlAttributeName("value")]
+    public string? Value { get; set; }
+
+    public override void Process(TagHelperContext context, TagHelperOutput output)
+    {
+        HtmlEncoder enc = HtmlEncoder.Default;
+        string id = enc.Encode(Name);
+        output.TagName = "div";
+        output.TagMode = TagMode.StartTagAndEndTag;
+        output.Attributes.SetAttribute("class", "toolbar__group toolbar__filter");
+        output.Content.SetHtmlContent(
+            $"<label for=\"{id}\">{enc.Encode(Label)}</label>" +
+            $"<input class=\"form-control\" type=\"{enc.Encode(Type)}\" id=\"{id}\" name=\"{id}\" value=\"{enc.Encode(Value ?? string.Empty)}\" data-autosubmit />");
+    }
+}

@@ -1,0 +1,50 @@
+@page "/Admin/Queue/Details"
+@model MatMail.Pages.Admin.Queue.DetailsModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Outgoing queue / Details";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Item?.Subject) ? L["(no subject)"].Value : Model.Item!.Subject;
+}
+
+@if (Model.Item is { } item)
+{
+    <section class="card">
+        <dl class="kv">
+            <dt>@L["Status"]</dt>
+            <dd>
+                @switch (item.Status)
+                {
+                    case OutboundStatus.Sent: <mm-badge kind="ok" icon="check">@L["Sent"]</mm-badge> break;
+                    case OutboundStatus.Failed: <mm-badge kind="danger" icon="alert">@L["Failed"]</mm-badge> break;
+                    case OutboundStatus.Sending: <mm-badge kind="info" icon="send">@L["Sending"]</mm-badge> break;
+                    case OutboundStatus.Cancelled: <mm-badge kind="muted">@L["Cancelled"]</mm-badge> break;
+                    default: <mm-badge kind="warn" icon="clock">@L["Waiting"]</mm-badge> break;
+                }
+            </dd>
+            <dt>@L["Sender"]</dt><dd>@item.EnvelopeFrom</dd>
+            <dt>@L["Recipients"]</dt><dd>@string.Join(", ", item.Recipients)</dd>
+            <dt>@L["Size"]</dt><dd>@Fmt.Size(item.SizeBytes)</dd>
+            <dt>@L["Sent through"]</dt><dd>@(Model.AccountName ?? L["Direct delivery"].Value)</dd>
+            <dt>@L["Attempts"]</dt><dd>@item.AttemptCount</dd>
+            <dt>@L["Queued"]</dt><dd>@Fmt.DateTimeText(item.CreateDate)</dd>
+            @if (item.Status == OutboundStatus.Pending) { <dt>@L["Next attempt"]</dt><dd>@Fmt.DateTimeText(item.NextAttemptDate)</dd> }
+            @if (item.SentDate is not null) { <dt>@L["Delivered"]</dt><dd>@Fmt.DateTimeText(item.SentDate)</dd> }
+            @if (!string.IsNullOrEmpty(item.LastError)) { <dt>@L["Last error"]</dt><dd class="mono">@item.LastError</dd> }
+        </dl>
+    </section>
+
+    <mm-button-row>
+        @if (item.Status is OutboundStatus.Failed or OutboundStatus.Pending or OutboundStatus.Cancelled)
+        {
+            <form method="post" asp-page-handler="Retry"><input type="hidden" name="id" value="@item.Id" /><mm-button variant="primary" type="submit" icon="refresh">@L["Try again now"]</mm-button></form>
+        }
+        @if (item.Status == OutboundStatus.Pending)
+        {
+            <form method="post" asp-page-handler="Cancel"><input type="hidden" name="id" value="@item.Id" /><mm-button variant="secondary" type="submit" icon="x">@L["Cancel sending"]</mm-button></form>
+        }
+        <mm-button variant="secondary" href="@($"/Admin/Queue/Details?id={item.Id}&handler=Download")" icon="download">@L["Download message (.eml)"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Queue" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        <form method="post" asp-page-handler="Delete"><input type="hidden" name="id" value="@item.Id" />
+            <mm-button variant="danger" type="submit" icon="trash" confirm='@L["Remove this entry from the queue?"]'>@L["Delete"]</mm-button></form>
+    </mm-button-row>
+}

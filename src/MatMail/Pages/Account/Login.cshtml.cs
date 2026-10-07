@@ -25,7 +25,7 @@ public class LoginModel(SignInService signIn, IStringLocalizer<SharedResource> l
 
     public async Task<IActionResult> OnPostAsync()
     {
-        SignInOutcome result = await signIn.ValidateCredentialsAsync(Input.LoginName, Input.Password, HttpContext.Connection.RemoteIpAddress?.ToString());
+        SignInOutcome result = await signIn.ValidateCredentialsAsync(Input.LoginName, Input.Password, HttpContext.ClientAddress());
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.Status == SignInStatus.LockedOut

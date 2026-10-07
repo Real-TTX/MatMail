@@ -1,0 +1,39 @@
+@page "/Admin/Unassigned/Assign"
+@model MatMail.Pages.Admin.Unassigned.AssignModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Unassigned / Hand over";
+    ViewData["Title"] = L["Hand over to a mailbox"].Value;
+}
+
+@if (Model.Message is { } message)
+{
+    <section class="card">
+        <h2 class="card__title"><mm-icon name="mail" />@(string.IsNullOrWhiteSpace(message.Subject) ? L["(no subject)"].Value : message.Subject)</h2>
+        <dl class="kv">
+            <dt>@L["From"]</dt><dd>@(string.IsNullOrWhiteSpace(message.FromName) ? message.FromAddress : $"{message.FromName} <{message.FromAddress}>")</dd>
+            <dt>@L["Addressed to"]</dt><dd class="mono">@(message.EnvelopeRecipients ?? "–")</dd>
+            <dt>@L["Received"]</dt><dd>@Fmt.DateTimeText(message.ReceivedDate)</dd>
+            <dt>@L["Preview"]</dt><dd class="muted">@message.Preview</dd>
+        </dl>
+        <mm-list-actions><mm-button variant="secondary" href="@($"/Mail#mailbox={message.MailboxId}&m={message.Id}")" icon="eye">@L["Read the message"]</mm-button></mm-list-actions>
+    </section>
+
+    <mm-form>
+        <input type="hidden" asp-for="Id" />
+        <mm-form-section title='@L["Where does it belong?"]' icon="folder-input">
+            <mm-picker asp-for="Input.MailboxId" asp-items="Model.MailboxItems" label='@L["Mailbox"]' placeholder='@L["Select a mailbox…"]' />
+            @if (Model.Addresses.Count > 0)
+            {
+                <mm-field asp-for="Input.AddAddresses" kind="checkbox" label='@string.Format(L["Add {0} to this mailbox, so future mail arrives there directly"].Value, string.Join(", ", Model.Addresses))' />
+                <mm-field asp-for="Input.MoveSimilar" kind="checkbox" label='@L["Hand over all other waiting messages for these addresses as well"]' />
+            }
+        </mm-form-section>
+
+        <mm-button-row>
+            <mm-button variant="primary" type="submit" icon="folder-input">@L["Hand over"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Unassigned" icon="arrow-left">@L["Back"]</mm-button>
+            <mm-button-spacer />
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this message for good?"]'>@L["Delete"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+}

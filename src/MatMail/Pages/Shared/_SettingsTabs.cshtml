@@ -1,0 +1,6 @@
+@model string
+@* The tabs of the server settings; Model = key of the active tab. *@
+<mm-tabbar>
+    <mm-tab title='@L["Server settings"]' href="/Admin/Settings" icon="settings" active='@(Model == "settings")' />
+    <mm-tab title='@L["TLS certificate"]' href="/Admin/Settings/Certificate" icon="lock" active='@(Model == "certificate")' />
+</mm-tabbar>

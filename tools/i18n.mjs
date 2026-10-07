@@ -114,16 +114,47 @@ function unescapeCSharp(s) {
   return s.replace(/\\(["'\\])/g, '$1').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
 }
 
-// Keys used in code: L["..."], l["..."], _l["..."] (+ the first string of L["…", args]), plus sentence-like literals in Services
+// The string literals in the first argument of every localizer call: L["text"], l[flag ? "A" : "B"], L["format {0}", value].
+function* localizerKeys(text) {
+  const start = /\b(?:L|l|_l|localizer)\s*\[/g;
+  let m;
+  while ((m = start.exec(text))) {
+    let depth = 1;
+    let inFirstArgument = true;
+    for (let i = m.index + m[0].length; i < text.length && depth > 0; i++) {
+      const c = text[i];
+      if (c === '"') {
+        let j = i + 1;
+        let literal = '';
+        while (j < text.length && text[j] !== '"') {
+          if (text[j] === '\\') { literal += text[j] + (text[j + 1] ?? ''); j += 2; } else { literal += text[j]; j++; }
+        }
+        if (inFirstArgument) yield literal;
+        i = j;
+      } else if (c === '[' || c === '(' || c === '{') depth++;
+      else if (c === ']' || c === ')' || c === '}') depth--;
+      else if (c === ',' && depth === 1) inFirstArgument = false;
+    }
+  }
+}
+
+// Keys used in code: L["..."], l["..."], _l["..."] (see localizerKeys), plus sentence-like literals in Services
 // (error messages that pages translate with l[error]) and Permissions descriptions.
 function usedKeys() {
   const keys = new Map(); // key -> first file
   const add = (k, f) => { if (k && !keys.has(k)) keys.set(k, f); };
-  const localizer = /\b(?:L|l|_l|localizer)\s*\[\s*"((?:[^"\\]|\\.)*)"/g;
   for (const file of walk(srcDir)) {
     const text = fs.readFileSync(file, 'utf8');
     let m;
-    while ((m = localizer.exec(text))) add(unescapeCSharp(m[1]), file);
+    for (const literal of localizerKeys(text)) add(unescapeCSharp(literal), file);
+
+    // Breadcrumbs are "Section / Page" literals in ViewData["Breadcrumb"]; the layout translates every segment.
+    const crumb = /ViewData\["Breadcrumb"\]\s*=\s*([^;]+);/g;
+    while ((m = crumb.exec(text))) {
+      for (const literal of m[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)) {
+        for (const segment of literal[1].split(' / ')) add(segment.trim(), file);
+      }
+    }
 
     const inServices = /[\\/]Services[\\/]/.test(file) || /Permissions\.cs$/.test(file);
     if (inServices) {

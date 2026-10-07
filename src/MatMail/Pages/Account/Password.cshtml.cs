@@ -25,7 +25,7 @@ public class PasswordModel(SignInService signIn, UserService users, CurrentUser 
     public async Task<IActionResult> OnPostAsync()
     {
         string? loginName = currentUser.Username;
-        SignInOutcome check = await signIn.ValidateCredentialsAsync(loginName, Input.Current, HttpContext.Connection.RemoteIpAddress?.ToString());
+        SignInOutcome check = await signIn.ValidateCredentialsAsync(loginName, Input.Current, HttpContext.ClientAddress());
         if (!check.Succeeded)
         {
             ModelState.AddModelError("Input.Current", l["The current password is wrong."]);

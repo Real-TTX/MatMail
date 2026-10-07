@@ -135,7 +135,7 @@ public sealed class SignInService
             TenantId = user.TenantId,
             ExpiresDate = now + SessionLifetime,
             LastSeenDate = now,
-            IpAddress = http.Connection.RemoteIpAddress?.ToString(),
+            IpAddress = http.ClientAddress(),
             UserAgent = userAgent.Length == 0 ? null : userAgent[..Math.Min(userAgent.Length, 512)],
             CreateUserId = user.Id,
         };

@@ -1,0 +1,84 @@
+@page "/Admin/Queue"
+@model MatMail.Pages.Admin.Queue.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Outgoing queue";
+    ViewData["Description"] = L["Messages for recipients at other servers wait here until they are delivered. Failed ones are retried automatically."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search subject, sender, recipient or error…"]' />
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="Pending">@L["Waiting"]</option>
+        <option value="Sending">@L["Sending"]</option>
+        <option value="Sent">@L["Sent"]</option>
+        <option value="Failed">@L["Failed"]</option>
+        <option value="Cancelled">@L["Cancelled"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="created_desc">@L["Newest first"]</option>
+        <option value="created_asc">@L["Oldest first"]</option>
+        <option value="next_asc">@L["Next attempt"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["The queue is empty."]' empty-icon="send">
+    <thead>
+        <tr>
+            <th>@L["Message"]</th>
+            <th class="hide-sm">@L["Recipients"]</th>
+            <th>@L["Status"]</th>
+            <th class="hide-sm">@L["Attempts"]</th>
+            <th class="hide-sm">@L["When"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Queue/Details?id=@item.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@(string.IsNullOrWhiteSpace(item.Subject) ? L["(no subject)"].Value : item.Subject)</div>
+                    <div class="cell-sub">@item.EnvelopeFrom · @Fmt.Size(item.SizeBytes)</div>
+                </td>
+                <td class="hide-sm">@string.Join(", ", item.Recipients.Take(2))@(item.Recipients.Length > 2 ? $" +{item.Recipients.Length - 2}" : "")</td>
+                <td>
+                    @switch (item.Status)
+                    {
+                        case OutboundStatus.Sent: <mm-badge kind="ok" icon="check">@L["Sent"]</mm-badge> break;
+                        case OutboundStatus.Failed: <mm-badge kind="danger" icon="alert">@L["Failed"]</mm-badge> break;
+                        case OutboundStatus.Sending: <mm-badge kind="info" icon="send">@L["Sending"]</mm-badge> break;
+                        case OutboundStatus.Cancelled: <mm-badge kind="muted">@L["Cancelled"]</mm-badge> break;
+                        default: <mm-badge kind="warn" icon="clock">@L["Waiting"]</mm-badge> break;
+                    }
+                    @if (!string.IsNullOrEmpty(item.LastError) && item.Status != OutboundStatus.Sent) { <div class="cell-sub" title="@item.LastError">@item.LastError</div> }
+                </td>
+                <td class="hide-sm">@item.AttemptCount</td>
+                <td class="hide-sm">@(item.Status == OutboundStatus.Sent ? Fmt.Ago(item.SentDate) : item.Status == OutboundStatus.Pending ? Fmt.DateTimeText(item.NextAttemptDate) : Fmt.Ago(item.UpdateDate))</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        @if (item.Status is OutboundStatus.Failed or OutboundStatus.Pending or OutboundStatus.Cancelled)
+                        {
+                            <form method="post" asp-page-handler="Retry" data-no-busy>
+                                <input type="hidden" name="id" value="@item.Id" />
+                                <button type="submit" class="icon-btn" title="@L["Try again now"]" aria-label="@L["Try again now"]"><mm-icon name="refresh" /></button>
+                            </form>
+                        }
+                        <a class="icon-btn" href="/Admin/Queue/Details?id=@item.Id" title="@L["Details"]" aria-label="@L["Details"]"><mm-icon name="eye" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <form method="post" asp-page-handler="RetryAllFailed">
+        <mm-button variant="secondary" type="submit" icon="refresh">@L["Try all failed again"]</mm-button>
+    </form>
+    <form method="post" asp-page-handler="ClearFinished">
+        <mm-button variant="danger" type="submit" icon="trash" confirm='@L["Remove all finished entries (sent, cancelled) from the list?"]'>@L["Clear finished"]</mm-button>
+    </form>
+</mm-list-actions>

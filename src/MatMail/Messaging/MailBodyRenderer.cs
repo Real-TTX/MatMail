@@ -134,7 +134,7 @@ public sealed partial class MailBodyRenderer
             case MimePart { Content: not null } part:
                 part.Content.DecodeTo(stream);
                 break;
-            case MessagePart messagePart:
+            case MessagePart { Message: not null } messagePart:
                 messagePart.Message.WriteTo(stream);
                 break;
         }

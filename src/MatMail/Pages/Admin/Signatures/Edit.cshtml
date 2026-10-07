@@ -1,0 +1,77 @@
+@page "/Admin/Signatures/Edit"
+@model MatMail.Pages.Admin.Signatures.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Signatures / Edit signature" : "Administration / Signatures / New signature";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New signature"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Signature"]' icon="pen-line">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' autofocus="autofocus" />
+        <div class="form-grid">
+            <mm-field asp-for="Input.Kind" kind="select" label='@L["Type"]' asp-items="Model.KindItems"
+                      help='@L["A signature is offered in the mail client. A footer is appended by the server to every outgoing message in its scope and cannot be removed by the sender."]' />
+            <mm-field asp-for="Input.Scope" kind="select" label='@L["Applies to"]' asp-items="Model.ScopeItems" />
+        </div>
+        <mm-picker asp-for="Input.MailboxId" asp-items="Model.MailboxItems" label='@L["Mailbox"]' placeholder='@L["Select a mailbox…"]'
+                   show-when-field="Input.Scope" show-when-value="Mailbox" />
+        <mm-picker asp-for="Input.UserId" asp-items="Model.UserItems" label='@L["User"]' placeholder='@L["Select a user…"]'
+                   show-when-field="Input.Scope" show-when-value="User" />
+        <div class="form-row">
+            <label for="Input_Html">@L["Content (HTML)"]</label>
+            <textarea asp-for="Input.Html" class="form-control" rows="9" spellcheck="false"></textarea>
+            <span asp-validation-for="Input.Html" class="field-error"></span>
+            <p class="form-help">
+                @L["Placeholders:"]
+                @foreach (var placeholder in new[] { "DisplayName", "Email", "JobTitle", "Phone", "Tenant" })
+                {
+                    <code class="placeholder-chip" data-insert="{{@placeholder}}">{{@placeholder}}</code>
+                }
+            </p>
+        </div>
+        <div class="form-row">
+            <label>@L["Preview"]</label>
+            <iframe class="signature-preview" id="signature-preview" sandbox title="@L["Preview"]"></iframe>
+        </div>
+        <mm-field asp-for="Input.PlainText" kind="textarea" rows="3" label='@L["Plain text version (optional)"]' help='@L["Created from the HTML when left empty."]' />
+        <mm-field asp-for="Input.IsDefault" kind="checkbox" label='@L["Preselect this signature when writing a message"]' show-when-field="Input.Kind" show-when-value="Signature" />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Signatures" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this signature?"]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        (function () {
+          var area = document.getElementById("Input_Html"), frame = document.getElementById("signature-preview");
+          var sample = { DisplayName: "Max Mustermann", Email: "max@example.com", JobTitle: "Managing director", Phone: "+49 123 456789", Tenant: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(User.FindFirst(AppClaims.TenantName)?.Value ?? "Example GmbH")) };
+          function render() {
+            var html = area.value.replace(/\{\{\s*(\w+)\s*\}\}/g, function (m, key) {
+              var name = Object.keys(sample).filter(function (k) { return k.toLowerCase() === key.toLowerCase(); })[0];
+              return name ? sample[name] : m;
+            });
+            frame.srcdoc = '<!doctype html><meta charset="utf-8"><body style="font:14px/1.5 system-ui,sans-serif;margin:8px;color:#202124">' + html;
+          }
+          area.addEventListener("input", render);
+          document.querySelectorAll("[data-insert]").forEach(function (chip) {
+            chip.addEventListener("click", function () {
+              var start = area.selectionStart, end = area.selectionEnd;
+              area.value = area.value.slice(0, start) + chip.getAttribute("data-insert") + area.value.slice(end);
+              area.focus(); area.selectionStart = area.selectionEnd = start + chip.getAttribute("data-insert").length; render();
+            });
+          });
+          render();
+        })();
+    </script>
+}

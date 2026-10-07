@@ -672,7 +672,7 @@ public static class MailApi
             case MimePart { Content: not null } part:
                 await part.Content.DecodeToAsync(stream, cancel);
                 break;
-            case MessagePart messagePart:
+            case MessagePart { Message: not null } messagePart:
                 await messagePart.Message.WriteToAsync(stream, cancel);
                 break;
         }

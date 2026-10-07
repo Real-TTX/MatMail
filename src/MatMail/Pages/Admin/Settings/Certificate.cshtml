@@ -1,0 +1,54 @@
+@page "/Admin/Settings/Certificate"
+@model MatMail.Pages.Admin.Settings.CertificateModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Server settings / TLS certificate";
+    ViewData["Title"] = L["TLS certificate"].Value;
+    ViewData["Description"] = L["The web interface, SMTP and IMAP are encrypted with this certificate. Without one, a self-signed certificate is created; mail programs and browsers then warn."].Value;
+}
+
+<partial name="_SettingsTabs" model='"certificate"' />
+
+<section class="card">
+    <h2 class="card__title"><mm-icon name="lock" />@L["Active certificate"]</h2>
+    @if (Model.Info is { } info)
+    {
+        <dl class="kv">
+            <dt>@L["Subject"]</dt><dd>@info.Subject</dd>
+            <dt>@L["Issuer"]</dt><dd>@info.Issuer</dd>
+            <dt>@L["Valid"]</dt><dd>@Fmt.DateText(info.NotBefore) – @Fmt.DateText(info.NotAfter)
+                @if (info.NotAfter < DateTime.UtcNow) { <mm-badge kind="danger" icon="alert">@L["Expired"]</mm-badge> }
+                else if (info.NotAfter < DateTime.UtcNow.AddDays(21)) { <mm-badge kind="warn" icon="alert">@L["Expires soon"]</mm-badge> }</dd>
+            <dt>@L["Source"]</dt>
+            <dd>
+                @switch (info.Source)
+                {
+                    case CertificateSource.Pfx: <span>@L["PKCS#12 file"] <code>certs/server.pfx</code></span> break;
+                    case CertificateSource.Pem: <span>@L["PEM files"] <code>certs/fullchain.pem</code>, <code>certs/privkey.pem</code></span> break;
+                    default: <mm-badge kind="warn" icon="alert">@L["Self-signed (generated)"]</mm-badge> break;
+                }
+            </dd>
+            <dt>@L["Fingerprint"]</dt><dd class="mono">@info.Thumbprint</dd>
+        </dl>
+    }
+    else
+    {
+        <p><mm-badge kind="danger" icon="alert">@L["No certificate"]</mm-badge> @L["TLS is not available until a certificate is installed."]</p>
+    }
+</section>
+
+<mm-form enctype="multipart/form-data">
+    <mm-form-section title='@L["Install a certificate"]' icon="upload"
+                     description='@L["Upload either a PEM certificate chain with its private key, or a PKCS#12 (.pfx) file. It replaces the current certificate at once. Renewed files that you place in the certs folder of the data volume are picked up automatically."]'>
+        <div class="form-row"><label for="CertificateFile">@L["Certificate (PEM, with the chain) or PKCS#12 file"]</label><input class="form-control" type="file" id="CertificateFile" name="CertificateFile" /></div>
+        <div class="form-row"><label for="KeyFile">@L["Private key (PEM)"]</label><input class="form-control" type="file" id="KeyFile" name="KeyFile" /></div>
+        <div class="form-row"><label for="PfxPassword">@L["Password of the PKCS#12 file (if any)"]</label><input class="form-control" type="password" id="PfxPassword" name="PfxPassword" autocomplete="off" /></div>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" handler="Upload" icon="upload">@L["Install"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Settings" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        <mm-button variant="danger" type="submit" handler="UseSelfSigned" icon="rotate-ccw"
+                   confirm='@L["Remove the installed certificate and use a self-signed one again?"]'>@L["Use a self-signed certificate"]</mm-button>
+    </mm-button-row>
+</mm-form>

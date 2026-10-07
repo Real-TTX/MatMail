@@ -1,0 +1,31 @@
+@page "/Admin/Relay/Edit"
+@model MatMail.Pages.Admin.Relay.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / SMTP relay / Edit rule" : "Administration / SMTP relay / New rule";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New relay rule"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Smart host rule"]' icon="network">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Office printers"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.Network" label='@L["Network or address"]' placeholder="192.168.1.0/24"
+                  help='@L["A single address (192.168.1.20) or a range in CIDR notation (192.168.1.0/24, fd00::/8). The address the server sees is checked: behind Docker’s network address translation use the client’s real address."]' />
+        <mm-field asp-for="Input.AllowedSenderDomains" kind="textarea" rows="2" label='@L["Sender domains"]'
+                  help='@L["Domains the devices may send as (one per line or comma separated). Empty: every domain of this tenant."]' />
+        <mm-picker asp-for="Input.SendAccountId" asp-items="Model.AccountItems" label='@L["Send through"]' placeholder='@L["Default (account of the sender address, otherwise direct delivery)"]' />
+        <mm-field asp-for="Input.IsEnabled" kind="checkbox" label='@L["Enabled"]' />
+        <mm-field asp-for="Input.Notes" kind="textarea" rows="2" label='@L["Notes"]' />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Relay" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this relay rule?"]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

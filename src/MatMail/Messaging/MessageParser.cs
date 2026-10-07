@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 using MimeKit;
@@ -38,6 +39,12 @@ public sealed class ParsedMessage
 /// <summary>Reads a raw RFC 822 message with MimeKit and extracts the facts the mail store keeps.</summary>
 public static partial class MessageParser
 {
+    // Column lengths of MailMessage: longer values would make the insert fail. Ids are capped as well because they are indexed.
+    private const int MaxSubjectLength = 1000;
+    private const int MaxFromNameLength = 500;
+    private const int MaxAddressLength = 320;
+    private const int MaxIdLength = 500;
+
     private const int PreviewLength = 200;
     private const int SearchTextLength = 100_000;
 
@@ -56,22 +63,22 @@ public static partial class MessageParser
         string text = ExtractText(message);
         string collapsed = Whitespace().Replace(text, " ").Trim();
 
-        string? messageId = Clean(message.MessageId);
-        string? inReplyTo = Clean(message.InReplyTo);
+        string? messageId = Truncate(Clean(message.MessageId), MaxIdLength);
+        string? inReplyTo = Truncate(Clean(message.InReplyTo), MaxIdLength);
         string references = string.Join(' ', message.References.Select(r => "<" + r.Trim('<', '>') + ">"));
-        string subject = message.Subject ?? string.Empty;
+        string subject = Truncate(message.Subject ?? string.Empty, MaxSubjectLength);
 
         return new ParsedMessage
         {
             Subject = subject,
-            FromName = from?.Name ?? string.Empty,
-            FromAddress = (from?.Address ?? string.Empty).ToLowerInvariant(),
+            FromName = Truncate(from?.Name ?? string.Empty, MaxFromNameLength),
+            FromAddress = Truncate((from?.Address ?? string.Empty).ToLowerInvariant(), MaxAddressLength),
             ToSummary = string.Join(", ", message.To.Mailboxes.Concat(message.Cc.Mailboxes).Select(Describe)),
             SentDate = message.Date == DateTimeOffset.MinValue ? null : message.Date.UtcDateTime,
             MessageId = messageId,
             InReplyTo = inReplyTo,
             References = references.Length == 0 ? null : references,
-            ThreadKey = BuildThreadKey(message, subject, messageId, inReplyTo),
+            ThreadKey = Truncate(BuildThreadKey(message, subject, messageId, inReplyTo), MaxIdLength),
             HasAttachments = message.Attachments.Any(),
             Preview = collapsed.Length <= PreviewLength ? collapsed : collapsed[..PreviewLength],
             SearchText = collapsed.Length <= SearchTextLength ? collapsed : collapsed[..SearchTextLength],
@@ -177,6 +184,19 @@ public static partial class MessageParser
 
     private static string Describe(MailboxAddress mailbox)
         => string.IsNullOrWhiteSpace(mailbox.Name) ? mailbox.Address : $"{mailbox.Name} <{mailbox.Address}>";
+
+    /// <summary>Cuts a text to the length a column holds, without splitting a surrogate pair.</summary>
+    [return: NotNullIfNotNull(nameof(text))]
+    public static string? Truncate(string? text, int maxLength)
+    {
+        if (text is null || text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        int length = char.IsHighSurrogate(text[maxLength - 1]) ? maxLength - 1 : maxLength;
+        return text[..length];
+    }
 
     private static string? Clean(string? id)
         => string.IsNullOrWhiteSpace(id) ? null : "<" + id.Trim().Trim('<', '>') + ">";

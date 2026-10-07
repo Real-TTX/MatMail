@@ -284,7 +284,7 @@ public sealed partial class ComposeService
                 {
                     await part.Content.DecodeToAsync(content, cancel);
                 }
-                else if (entity is MessagePart messagePart)
+                else if (entity is MessagePart { Message: not null } messagePart)
                 {
                     await messagePart.Message.WriteToAsync(content, cancel);
                 }
@@ -400,7 +400,7 @@ public sealed partial class ComposeService
                 copy.Position = 0;
                 builder.Attachments.Add(MailBodyRenderer.FileNameOf(part, number++), copy.ToArray(), part.ContentType);
             }
-            else if (entity is MessagePart messagePart)
+            else if (entity is MessagePart { Message: not null } messagePart)
             {
                 using var copy = new MemoryStream();
                 messagePart.Message.WriteTo(copy);

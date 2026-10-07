@@ -1,4 +1,5 @@
 using MatMail.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatMail.Messaging;
 
@@ -24,6 +25,7 @@ public static class MessagingServices
         services.AddScoped<ComposeService>();
         services.AddScoped<ContactService>();
         services.AddScoped<ProviderConnector>();
+        services.TryAddSingleton<IAccountSyncRunner, UnavailableSyncRunner>();
         return services;
     }
 }

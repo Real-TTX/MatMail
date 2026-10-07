@@ -28,6 +28,29 @@ public class MessageParserTests
     }
 
     [Fact]
+    public void Values_longer_than_their_columns_are_cut()
+    {
+        string longSubject = new string('s', 1500);
+        string longName = new string('n', 800);
+        byte[] raw = RawMail.Build($"\"{longName}\" <max@sender.test>", "alice@example.test", longSubject, "text", "<" + new string('i', 900) + "@sender.test>");
+        ParsedMessage parsed = MessageParser.Parse(raw);
+
+        Assert.Equal(1000, parsed.Subject.Length);
+        Assert.Equal(500, parsed.FromName.Length);
+        Assert.True(parsed.MessageId!.Length <= 500);
+        Assert.True(parsed.ThreadKey.Length <= 500);
+    }
+
+    [Fact]
+    public void Cutting_does_not_split_a_surrogate_pair()
+    {
+        string text = new string('a', 9) + char.ConvertFromUtf32(0x1F600);
+        Assert.Equal(new string('a', 9), MessageParser.Truncate(text, 10));
+        Assert.Equal(text, MessageParser.Truncate(text, 11));
+        Assert.Null(MessageParser.Truncate(null, 10));
+    }
+
+    [Fact]
     public void A_reply_joins_the_thread_of_its_first_reference()
     {
         byte[] raw = RawMail.Build("a@x.test", "b@y.test", "Re: Plan", "ok", extraHeaders: "In-Reply-To: <second@x.test>\r\nReferences: <root@x.test> <second@x.test>\r\n");

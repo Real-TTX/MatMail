@@ -1,0 +1,91 @@
+@page "/Admin/Accounts"
+@model MatMail.Pages.Admin.Accounts.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Connected accounts";
+    ViewData["Description"] = L["Mail accounts at your providers (Strato, Netcup, …). Their mail is fetched and distributed to the mailboxes; outgoing mail can leave through them."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, address or server…"]' />
+    <mm-toolbar-select name="Role" label='@L["Role"]' value="@Model.Role">
+        <option value="">@L["All roles"]</option>
+        <option value="Mail">@L["Mail"]</option>
+        <option value="Backup">@L["Backup"]</option>
+        <option value="Migration">@L["Migration"]</option>
+        <option value="SendOnly">@L["Send only"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="enabled">@L["Enabled"]</option>
+        <option value="disabled">@L["Disabled"]</option>
+        <option value="error">@L["With errors"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="sync_desc">@L["Last synchronised"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No connected accounts yet."]' empty-icon="plug">
+    <thead>
+        <tr>
+            <th>@L["Account"]</th>
+            <th>@L["Role"]</th>
+            <th class="hide-sm">@L["Server"]</th>
+            <th class="hide-sm">@L["On the server"]</th>
+            <th>@L["Last synchronisation"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var account in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Accounts/Edit?id=@account.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@account.Name @if (account.IsCatchAll) { <mm-badge kind="warn">@L["Catch-all"]</mm-badge> } @if (!account.IsEnabled) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</div>
+                    <div class="cell-sub">@account.Address</div>
+                </td>
+                <td><mm-badge kind="@(account.Role == MailAccountRole.Mail ? "info" : account.Role == MailAccountRole.SendOnly ? "muted" : "warn")">@Model.RoleLabel(account.Role)</mm-badge></td>
+                <td class="hide-sm">
+                    @if (account.Role == MailAccountRole.SendOnly) { <span>SMTP @account.SendHost</span> }
+                    else { <span>@account.ReceiveProtocol.ToString().ToUpperInvariant() @account.ReceiveHost</span> }
+                </td>
+                <td class="hide-sm">@Model.RetentionLabel(account.Role, account.Retention)</td>
+                <td>
+                    @if (account.Role == MailAccountRole.SendOnly) { <span class="muted">–</span> }
+                    else
+                    {
+                        @switch (account.LastSyncState)
+                        {
+                            case SyncState.Ok: <mm-badge kind="ok" icon="check">@Fmt.Ago(account.LastSyncDate)</mm-badge> break;
+                            case SyncState.Error: <mm-badge kind="danger" icon="alert">@L["Failed"]</mm-badge> break;
+                            case SyncState.Running: <mm-badge kind="info" icon="refresh">@L["Running"]</mm-badge> break;
+                            default: <mm-badge kind="muted">@L["Never"]</mm-badge> break;
+                        }
+                        @if (!string.IsNullOrEmpty(account.LastSyncMessage)) { <div class="cell-sub" title="@account.LastSyncMessage">@account.LastSyncMessage</div> }
+                    }
+                </td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        @if (account.Role != MailAccountRole.SendOnly && account.IsEnabled)
+                        {
+                            <form method="post" asp-page-handler="Sync" data-no-busy>
+                                <input type="hidden" name="id" value="@account.Id" />
+                                <button type="submit" class="icon-btn" title="@L["Synchronise now"]" aria-label="@L["Synchronise now"]"><mm-icon name="refresh" /></button>
+                            </form>
+                        }
+                        <a class="icon-btn" href="/Admin/Accounts/Edit?id=@account.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Accounts/Edit" icon="plus">@L["New connected account"]</mm-button>
+</mm-list-actions>

@@ -1,0 +1,63 @@
+@page "/Admin/Logs"
+@model MatMail.Pages.Admin.Logs.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Activity log";
+    ViewData["Description"] = L["Sign-ins, mail traffic, synchronisation and delivery events. Old entries are removed automatically."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search the log…"]' />
+    <mm-toolbar-select name="Category" label='@L["Area"]' value="@Model.Category">
+        <option value="">@L["All"]</option>
+        @foreach (var name in Enum.GetNames<ActivityCategory>())
+        {
+            <option value="@name">@Model.CategoryLabel(name)</option>
+        }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Level" label='@L["Level"]' value="@Model.Level">
+        <option value="">@L["All"]</option>
+        <option value="Info">@L["Information"]</option>
+        <option value="Warning">@L["Warnings"]</option>
+        <option value="Error">@L["Errors"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-field name="From" label='@L["From"]' type="date" value="@Model.From" />
+    <mm-toolbar-field name="To" label='@L["To"]' type="date" value="@Model.To" />
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="newest">@L["Newest first"]</option>
+        <option value="oldest">@L["Oldest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No entries."]' empty-icon="activity">
+    <thead>
+        <tr>
+            <th>@L["When"]</th>
+            <th>@L["Area"]</th>
+            <th>@L["Event"]</th>
+            <th class="hide-sm">@L["Address"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var entry in Model.Paged.Rows)
+        {
+            <tr title="@entry.Details">
+                <td class="nowrap cell-sub" title="@Fmt.DateTimeText(entry.CreateDate)">@Fmt.Ago(entry.CreateDate)</td>
+                <td>
+                    @switch (entry.Level)
+                    {
+                        case ActivityLevel.Error: <mm-badge kind="danger">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
+                        case ActivityLevel.Warning: <mm-badge kind="warn">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
+                        default: <mm-badge kind="muted">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
+                    }
+                </td>
+                <td>
+                    <div>@entry.Message</div>
+                    @if (!string.IsNullOrEmpty(entry.Details)) { <div class="cell-sub log-details">@entry.Details</div> }
+                </td>
+                <td class="hide-sm mono">@entry.RemoteIp</td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />

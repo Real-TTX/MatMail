@@ -1,0 +1,88 @@
+@page "/Admin/Settings"
+@model MatMail.Pages.Admin.Settings.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Server settings";
+    ViewData["Description"] = L["Settings of the whole installation (stored in config/app.json in the data volume). Environment variables MATMAIL__Section__Key override them."].Value;
+}
+
+<partial name="_SettingsTabs" model='"settings"' />
+
+<mm-form>
+    <mm-tabs>
+        <mm-tab-panel title='@L["Server"]' icon="server">
+            <mm-form-section title='@L["Address and web interface"]'>
+                <mm-field asp-for="Input.Hostname" label='@L["Public host name"]' placeholder="mail.example.com"
+                          help='@L["The name of this server: used in the SMTP/IMAP greeting and for the generated certificate."]' />
+                <mm-field asp-for="Input.WebHttps" kind="checkbox" label='@L["Serve the web interface over HTTPS"]' />
+                <mm-field asp-for="Input.TrustProxyHeaders" kind="checkbox" label='@L["A reverse proxy is in front (trust X-Forwarded-For / X-Forwarded-Proto)"]' />
+                <mm-field asp-for="Input.MaxUploadMb" kind="number" label='@L["Largest message / attachment upload"]' suffix="MB" />
+                <p class="form-help">@string.Format(L["The web interface listens on port {0} (set by the container)."].Value, Model.WebPort)</p>
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Mail servers"]' icon="mail">
+            <mm-form-section title="SMTP" description='@L["Receives mail from other servers, accepts mail from mail programs and relays for trusted networks. Port 0 switches a listener off."]'>
+                <mm-field asp-for="Input.SmtpEnabled" kind="checkbox" label='@L["SMTP server enabled"]' />
+                <div class="form-grid">
+                    <mm-field asp-for="Input.SmtpPort" kind="number" label='@L["Port (servers, relay)"]' />
+                    <mm-field asp-for="Input.SmtpSubmissionPort" kind="number" label='@L["Port (mail programs, STARTTLS)"]' />
+                    <mm-field asp-for="Input.SmtpImplicitTlsPort" kind="number" label='@L["Port (mail programs, TLS)"]' />
+                </div>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.SmtpMaxMessageSizeMb" kind="number" label='@L["Largest message"]' suffix="MB" />
+                    <mm-field asp-for="Input.SmtpMaxRecipients" kind="number" label='@L["Most recipients per message"]' />
+                </div>
+                <mm-field asp-for="Input.SmtpRequireTlsForAuth" kind="checkbox" label='@L["Sign-in only over an encrypted connection"]' />
+            </mm-form-section>
+            <mm-form-section title="IMAP" description='@L["Lets Outlook, Thunderbird and phones read and organise mail."]'>
+                <mm-field asp-for="Input.ImapEnabled" kind="checkbox" label='@L["IMAP server enabled"]' />
+                <div class="form-grid">
+                    <mm-field asp-for="Input.ImapPort" kind="number" label='@L["Port (STARTTLS)"]' />
+                    <mm-field asp-for="Input.ImapImplicitTlsPort" kind="number" label='@L["Port (TLS)"]' />
+                </div>
+                <mm-field asp-for="Input.ImapRequireTls" kind="checkbox" label='@L["Sign-in only over an encrypted connection"]' />
+            </mm-form-section>
+            <p class="muted">@L["Changing a port or switching a server on or off takes effect after the container is restarted."]</p>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Delivery and synchronisation"]' icon="send">
+            <mm-form-section title='@L["Outgoing queue"]'>
+                <mm-field asp-for="Input.QueueEnabled" kind="checkbox" label='@L["Deliver queued mail"]' />
+                <mm-field asp-for="Input.QueueRetryMinutes" label='@L["Waiting times between attempts"]' suffix='@L["minutes"]' help='@L["Comma separated: after the first failure, the second, …; the last value repeats."]' />
+                <mm-field asp-for="Input.QueueMaxAgeHours" kind="number" label='@L["Give up after"]' suffix='@L["hours"]' />
+                <mm-field asp-for="Input.QueueAllowDirectDelivery" kind="checkbox" label='@L["Deliver directly to the recipient’s server when no provider account applies"]' />
+            </mm-form-section>
+            <mm-form-section title='@L["Provider synchronisation"]'>
+                <mm-field asp-for="Input.SyncEnabled" kind="checkbox" label='@L["Fetch mail from connected accounts"]' />
+                <mm-field asp-for="Input.SyncMaxParallel" kind="number" label='@L["Accounts synchronised at the same time"]' />
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Housekeeping"]' icon="trash">
+            <mm-form-section title='@L["Keep for …"]'>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.ActivityLogDays" kind="number" label='@L["Activity log"]' suffix='@L["days"]' />
+                    <mm-field asp-for="Input.TrashDays" kind="number" label='@L["Trash"]' suffix='@L["days"]' help='@L["Older messages in the trash are deleted. 0 = keep."]' />
+                    <mm-field asp-for="Input.JunkDays" kind="number" label='@L["Spam"]' suffix='@L["days"]' help='@L["0 = keep."]' />
+                    <mm-field asp-for="Input.SentQueueDays" kind="number" label='@L["Delivered entries of the queue"]' suffix='@L["days"]' />
+                </div>
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Display"]' icon="sliders">
+            <mm-form-section title='@L["Defaults for new users"]'>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.TimeZone" label='@L["Time zone"]' placeholder="Europe/Berlin" />
+                    <mm-field asp-for="Input.Culture" kind="select" label='@L["Language"]' asp-items="Model.CultureItems" />
+                    <mm-field asp-for="Input.ThemeMode" kind="select" label='@L["Theme"]' asp-items="Model.ThemeItems" />
+                    <mm-field asp-for="Input.ThemeAccent" kind="select" label='@L["Accent colour"]' asp-items="Model.AccentItems" />
+                </div>
+            </mm-form-section>
+        </mm-tab-panel>
+    </mm-tabs>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin" icon="arrow-left">@L["Back"]</mm-button>
+    </mm-button-row>
+</mm-form>

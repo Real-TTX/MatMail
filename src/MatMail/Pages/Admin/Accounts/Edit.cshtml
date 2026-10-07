@@ -1,0 +1,159 @@
+@page "/Admin/Accounts/Edit"
+@model MatMail.Pages.Admin.Accounts.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Connected accounts / Edit account" : "Administration / Connected accounts / New account";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New connected account"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    @if (Model.IsEdit && Model.Account is { } account && account.Role != MailAccountRole.SendOnly)
+    {
+        <div class="notice notice--@(account.LastSyncState == SyncState.Error ? "danger" : account.LastSyncState == SyncState.Ok ? "ok" : "info")">
+            <mm-icon name="@(account.LastSyncState == SyncState.Error ? "alert-circle" : "refresh")" class="notice__icon" />
+            <span class="notice__text">
+                <b>@L["Last synchronisation"]:</b>
+                @(account.LastSyncDate is null ? L["Never"].Value : Fmt.DateTimeText(account.LastSyncDate))
+                @if (!string.IsNullOrEmpty(account.LastSyncMessage)) { <span> – @account.LastSyncMessage</span> }
+                @if (account.NextSyncDate is not null && account.IsEnabled) { <span class="muted"> · @L["next"]: @Fmt.DateTimeText(account.NextSyncDate)</span> }
+            </span>
+        </div>
+    }
+
+    <mm-form-section title='@L["Account"]' icon="plug">
+        <div class="form-grid">
+            <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Strato – info@example.com"]' autofocus="autofocus" />
+            <mm-field asp-for="Input.Address" kind="email" label='@L["Mail address of the account"]' placeholder="info@example.com" />
+        </div>
+        <mm-field asp-for="Input.Role" kind="select" label='@L["What is this account used for?"]' asp-items="Model.RoleItems" />
+        <p class="form-help" show-role="Mail">@L["Mail: the mail is fetched and distributed to the mailboxes by recipient address. The account can also be used to send."]</p>
+        <p class="form-help" show-role="Backup">@L["Backup: a copy of everything is kept in a backup mailbox. Nothing is distributed and nothing is ever deleted at the provider."]</p>
+        <p class="form-help" show-role="Migration">@L["Migration: moves a whole account with all its folders into a mailbox, e.g. when you change the provider."]</p>
+        <p class="form-help" show-role="SendOnly">@L["Send only: nothing is fetched; outgoing mail leaves through this server (SMTP relay)."]</p>
+
+        <mm-field asp-for="Input.IsEnabled" kind="checkbox" label='@L["Enabled"]' />
+        <mm-field asp-for="Input.IsCatchAll" kind="checkbox" label='@L["Catch-all: this provider mailbox receives the mail of a whole domain"]'
+                  show-when-field="Input.Role" show-when-value="Mail,Backup,Migration" />
+        <mm-picker asp-for="Input.TargetMailboxId" asp-items="Model.MailboxItems" label='@L["Target mailbox"]' placeholder='@L["Unassigned (an administrator distributes it)"]'
+                   help='@L["Mail: where mail goes that nobody claims. Backup and migration: the mailbox that receives the copies."]'
+                   show-when-field="Input.Role" show-when-value="Mail,Backup,Migration" />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Receiving"]' icon="inbox" description='@L["How this server fetches the mail from the provider."]'
+                     show-when-field="Input.Role" show-when-value="Mail,Backup,Migration">
+        <div class="form-grid">
+            <mm-field asp-for="Input.ReceiveProtocol" kind="select" label='@L["Protocol"]' asp-items="Model.ProtocolItems" />
+            <mm-field asp-for="Input.ReceiveHost" label='@L["Server"]' placeholder="imap.example.com" />
+        </div>
+        <div class="form-grid">
+            <mm-field asp-for="Input.ReceivePort" kind="number" label='@L["Port"]' />
+            <mm-field asp-for="Input.ReceiveSecurity" kind="select" label='@L["Encryption"]' asp-items="Model.SecurityItems" />
+        </div>
+        <div class="form-grid">
+            <mm-field asp-for="Input.ReceiveUsername" label='@L["User name"]' autocomplete="off" />
+            <mm-field asp-for="Input.ReceivePassword" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true"
+                      help='@(Model.IsEdit ? L["Leave empty to keep the stored password. It is stored encrypted."].Value : L["Stored encrypted."].Value)' />
+        </div>
+        <mm-picker asp-for="Input.Retention" asp-items="Model.RetentionItems" label='@L["Mail on the provider’s server"]'
+                   help='@L["Keep a copy: the originals stay. Delete after download: the provider’s mailbox is emptied once the mail is safely stored here. Live access: nothing is stored, the mail is read from the provider when needed (IMAP only)."]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Sending"]' icon="send" description='@L["The provider’s SMTP server, used to send mail from addresses that belong to this account."]'>
+        <div class="form-grid">
+            <mm-field asp-for="Input.SendHost" label='@L["Server"]' placeholder="smtp.example.com" />
+            <mm-field asp-for="Input.SendPort" kind="number" label='@L["Port"]' />
+        </div>
+        <mm-field asp-for="Input.SendSecurity" kind="select" label='@L["Encryption"]' asp-items="Model.SecurityItems" />
+        <mm-field asp-for="Input.SendUsesReceiveCredentials" kind="checkbox" label='@L["Use the same user name and password as for receiving"]'
+                  show-when-field="Input.Role" show-when-value="Mail,Backup,Migration" />
+        <div class="form-grid" data-send-credentials>
+            <mm-field asp-for="Input.SendUsername" label='@L["SMTP user name"]' autocomplete="off" />
+            <mm-field asp-for="Input.SendPassword" kind="password" label='@L["SMTP password"]' autocomplete="new-password" reveal="true"
+                      help='@(Model.IsEdit ? L["Leave empty to keep the stored password."].Value : null)' />
+        </div>
+        <mm-field asp-for="Input.AllowInvalidCertificate" kind="checkbox" label='@L["Accept a self-signed or mismatching certificate (servers in your own network only)"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Synchronisation"]' icon="refresh" show-when-field="Input.Role" show-when-value="Mail,Backup,Migration">
+        <div class="form-grid">
+            <mm-field asp-for="Input.SyncIntervalMinutes" kind="number" label='@L["Check every"]' suffix='@L["minutes"]' />
+            <mm-field asp-for="Input.SyncAllFolders" kind="checkbox" label='@L["All folders (always for backup and migration)"]' />
+        </div>
+        <mm-field asp-for="Input.SyncFolders" kind="textarea" rows="3" label='@L["Folders to fetch"]' help='@L["One folder per line, as the provider names it. Empty: only the inbox."]'
+                  show-when-field="Input.SyncAllFolders" show-when-value="false" />
+    </mm-form-section>
+
+    <mm-field asp-for="Input.Notes" kind="textarea" rows="2" label='@L["Notes"]' />
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Accounts" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" type="submit" handler="Test" icon="plug">@L["Test connection"]</mm-button>
+        @if (Model.IsEdit && Model.Account?.Role != MailAccountRole.SendOnly)
+        {
+            <mm-button variant="secondary" type="submit" handler="SyncNow" icon="refresh">@L["Synchronise now"]</mm-button>
+        }
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this connected account? Messages that were already fetched stay in the mailboxes."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        (function () {
+          var role = document.getElementById("Input_Role");
+          var protocol = document.getElementById("Input_ReceiveProtocol");
+          var security = document.getElementById("Input_ReceiveSecurity");
+          var port = document.getElementById("Input_ReceivePort");
+          var sendSecurity = document.getElementById("Input_SendSecurity");
+          var sendPort = document.getElementById("Input_SendPort");
+          var same = document.getElementById("Input_SendUsesReceiveCredentials");
+          var creds = document.querySelector("[data-send-credentials]");
+
+          // Role help: only the text of the chosen role.
+          function roleHelp() {
+            document.querySelectorAll("[show-role]").forEach(function (p) { p.hidden = p.getAttribute("show-role") !== role.value; });
+          }
+
+          // Default ports follow protocol and encryption while the port still holds a default value.
+          var receiveDefaults = { "Imap:Ssl": 993, "Imap:StartTls": 143, "Imap:None": 143, "Pop3:Ssl": 995, "Pop3:StartTls": 110, "Pop3:None": 110 };
+          var sendDefaults = { Ssl: 465, StartTls: 587, None: 25 };
+          var lastReceive = receiveDefaults[protocol.value + ":" + security.value];
+          var lastSend = sendDefaults[sendSecurity.value];
+          function receivePorts() {
+            var value = parseInt(port.value, 10);
+            var known = Object.keys(receiveDefaults).map(function (k) { return receiveDefaults[k]; });
+            if (!value || known.indexOf(value) >= 0) { port.value = receiveDefaults[protocol.value + ":" + security.value]; }
+          }
+          function sendPorts() {
+            var value = parseInt(sendPort.value, 10);
+            var known = Object.keys(sendDefaults).map(function (k) { return sendDefaults[k]; });
+            if (!value || known.indexOf(value) >= 0) { sendPort.value = sendDefaults[sendSecurity.value]; }
+          }
+
+          function credentials() {
+            var needed = role.value === "SendOnly" || !same.checked;
+            creds.hidden = !needed;
+            creds.querySelectorAll("input").forEach(function (i) { i.disabled = !needed; });
+          }
+
+          role.addEventListener("change", function () {
+            if (role.value === "SendOnly") { same.checked = false; }
+            roleHelp(); credentials();
+          });
+          protocol.addEventListener("change", receivePorts);
+          security.addEventListener("change", receivePorts);
+          sendSecurity.addEventListener("change", sendPorts);
+          same.addEventListener("change", credentials);
+          roleHelp();
+          credentials();
+          // The dependent-field script runs first and may disable the checkbox row; re-evaluate after it.
+          setTimeout(credentials, 0);
+        })();
+    </script>
+}

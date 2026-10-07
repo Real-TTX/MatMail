@@ -1,0 +1,47 @@
+@page "/Admin/Unassigned"
+@model MatMail.Pages.Admin.Unassigned.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Unassigned";
+    ViewData["Description"] = L["Mail that nobody could be found for (the address exists at the provider or in a domain, but no mailbox has it). Hand it to a mailbox so nothing gets lost."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search sender, subject or address…"]' />
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="newest">@L["Newest first"]</option>
+        <option value="oldest">@L["Oldest first"]</option>
+        <option value="address">@L["By address"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["Nothing is waiting. Every message found its mailbox."]' empty-icon="check-circle">
+    <thead>
+        <tr>
+            <th>@L["Message"]</th>
+            <th>@L["Addressed to"]</th>
+            <th class="hide-sm">@L["Received"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Unassigned/Assign?id=@item.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@(string.IsNullOrWhiteSpace(item.Subject) ? L["(no subject)"].Value : item.Subject)</div>
+                    <div class="cell-sub">@(string.IsNullOrWhiteSpace(item.FromName) ? item.FromAddress : $"{item.FromName} <{item.FromAddress}>")</div>
+                </td>
+                <td class="mono">@(item.EnvelopeRecipients ?? "–")</td>
+                <td class="hide-sm">@Fmt.DateTimeText(item.ReceivedDate)</td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        <a class="icon-btn" href="/Mail#mailbox=@item.MailboxId&m=@item.Id" title="@L["Read"]" aria-label="@L["Read"]"><mm-icon name="eye" /></a>
+                        <a class="icon-btn" href="/Admin/Unassigned/Assign?id=@item.Id" title="@L["Hand over to a mailbox"]" aria-label="@L["Hand over to a mailbox"]"><mm-icon name="folder-input" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />

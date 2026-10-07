@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
+    <!-- Pinned to the same version as the design-time package, so the tests resolve one consistent EF Core -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

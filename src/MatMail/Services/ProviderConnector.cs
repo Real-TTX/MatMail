@@ -45,8 +45,8 @@ public sealed class ProviderConnector
                 client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             }
 
-            await client.ConnectAsync(account.ReceiveHost, account.ReceivePort, ToSocketOptions(account.ReceiveSecurity), cancel);
-            await client.AuthenticateAsync(account.ReceiveUsername, ReceivePassword(account) ?? string.Empty, cancel);
+            await client.ConnectAsync(account.ReceiveHost!, account.ReceivePort, ToSocketOptions(account.ReceiveSecurity), cancel);
+            await client.AuthenticateAsync(account.ReceiveUsername ?? string.Empty, ReceivePassword(account) ?? string.Empty, cancel);
             return client;
         }
         catch
@@ -66,8 +66,8 @@ public sealed class ProviderConnector
                 client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             }
 
-            await client.ConnectAsync(account.ReceiveHost, account.ReceivePort, ToSocketOptions(account.ReceiveSecurity), cancel);
-            await client.AuthenticateAsync(account.ReceiveUsername, ReceivePassword(account) ?? string.Empty, cancel);
+            await client.ConnectAsync(account.ReceiveHost!, account.ReceivePort, ToSocketOptions(account.ReceiveSecurity), cancel);
+            await client.AuthenticateAsync(account.ReceiveUsername ?? string.Empty, ReceivePassword(account) ?? string.Empty, cancel);
             return client;
         }
         catch
@@ -87,7 +87,7 @@ public sealed class ProviderConnector
                 client.ServerCertificateValidationCallback = (_, _, _, _) => true;
             }
 
-            await client.ConnectAsync(account.SendHost, account.SendPort, ToSocketOptions(account.SendSecurity), cancel);
+            await client.ConnectAsync(account.SendHost!, account.SendPort, ToSocketOptions(account.SendSecurity), cancel);
             (string? user, string? password) = SendCredentials(account);
             if (!string.IsNullOrEmpty(user))
             {

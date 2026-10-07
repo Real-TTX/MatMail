@@ -1,0 +1,245 @@
+using MatMail.Configuration;
+using MatMail.Data;
+using MatMail.Services;
+using Microsoft.EntityFrameworkCore;
+using MimeKit;
+
+namespace MatMail.Messaging;
+
+/// <summary>Wakes the outgoing-queue worker when something was queued (it also polls on its own).</summary>
+public sealed class OutboundSignal
+{
+    private readonly SemaphoreSlim _semaphore = new(0, int.MaxValue);
+
+    public void Notify() => _semaphore.Release();
+
+    /// <summary>Waits until something was queued or the timeout passed. Returns true when woken by a signal.</summary>
+    public async Task<bool> WaitAsync(TimeSpan timeout, CancellationToken cancel)
+    {
+        bool signalled = await _semaphore.WaitAsync(timeout, cancel);
+        while (_semaphore.CurrentCount > 0 && await _semaphore.WaitAsync(0, cancel))
+        {
+            // Several signals count as one wake-up.
+        }
+
+        return signalled;
+    }
+}
+
+/// <summary>The outgoing queue: messages waiting for delivery to external recipients.</summary>
+public sealed class OutboundQueue
+{
+    private readonly MatMailDbContext _db;
+    private readonly OutboundSignal _signal;
+
+    public OutboundQueue(MatMailDbContext db, OutboundSignal signal)
+    {
+        _db = db;
+        _signal = signal;
+    }
+
+    public async Task<OutboundMessage> EnqueueAsync(
+        long tenantId, long? accountId, string envelopeFrom, IEnumerable<string> recipients, byte[] raw, string subject, long? mailboxId, long? senderUserId,
+        CancellationToken cancel = default)
+    {
+        var message = new OutboundMessage
+        {
+            TenantId = tenantId,
+            MailAccountId = accountId,
+            EnvelopeFrom = envelopeFrom,
+            Recipients = recipients.Select(MailAddresses.Normalize).Distinct().ToArray(),
+            Raw = raw,
+            SizeBytes = raw.LongLength,
+            Subject = subject.Length > 1000 ? subject[..1000] : subject,
+            MailboxId = mailboxId,
+            SenderUserId = senderUserId,
+            Status = OutboundStatus.Pending,
+            NextAttemptDate = DateTime.UtcNow,
+        };
+
+        _db.OutboundMessages.Add(message);
+        await _db.SaveChangesAsync(cancel);
+        _signal.Notify();
+        return message;
+    }
+
+    /// <summary>Puts a failed or waiting message back in line, to be tried now.</summary>
+    public async Task<bool> RetryNowAsync(long id, CancellationToken cancel = default)
+    {
+        int changed = await _db.OutboundMessages
+            .Where(o => o.Id == id && (o.Status == OutboundStatus.Failed || o.Status == OutboundStatus.Pending || o.Status == OutboundStatus.Cancelled))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(o => o.Status, OutboundStatus.Pending)
+                .SetProperty(o => o.NextAttemptDate, DateTime.UtcNow), cancel);
+        if (changed > 0)
+        {
+            _signal.Notify();
+        }
+
+        return changed > 0;
+    }
+
+    public async Task<bool> CancelAsync(long id, CancellationToken cancel = default)
+        => await _db.OutboundMessages.Where(o => o.Id == id && o.Status == OutboundStatus.Pending)
+               .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OutboundStatus.Cancelled), cancel) > 0;
+}
+
+/// <summary>What is to be sent.</summary>
+public sealed record SubmissionRequest
+{
+    /// <summary>The message (may contain Bcc; it is removed from what recipients get).</summary>
+    public required byte[] Raw { get; init; }
+    public required string EnvelopeFrom { get; init; }
+
+    /// <summary>All recipients (To, Cc and Bcc).</summary>
+    public required IReadOnlyList<string> Recipients { get; init; }
+    public required long TenantId { get; init; }
+
+    /// <summary>The mailbox the message is sent from: its Sent folder gets a copy when <see cref="SaveToSent"/> is set.</summary>
+    public long? MailboxId { get; init; }
+    public long? SenderUserId { get; init; }
+
+    /// <summary>The smart-host rule when a trusted network sent it without signing in.</summary>
+    public RelayRule? Rule { get; init; }
+    public bool SaveToSent { get; init; }
+    public bool ApplyFooters { get; init; } = true;
+}
+
+public sealed record SubmissionResult(bool Accepted, string? Error, int LocalCopies, int Queued, IReadOnlyList<string> Rejected);
+
+/// <summary>
+/// Sending: takes a finished message and distributes it. Recipients on registered domains are delivered locally at once, all
+/// others are queued for the provider account (or direct delivery) the sender is routed to. Footers are appended here, so every
+/// path (web client, SMTP submission, smart host) gets them.
+/// </summary>
+public sealed class MailSubmission
+{
+    private readonly MatMailDbContext _db;
+    private readonly MailDelivery _delivery;
+    private readonly SendRouting _routing;
+    private readonly OutboundQueue _queue;
+    private readonly SignatureService _signatures;
+    private readonly MailStore _store;
+    private readonly FolderService _folders;
+    private readonly AppConfig _config;
+
+    public MailSubmission(
+        MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures,
+        MailStore store, FolderService folders, AppConfig config)
+    {
+        _db = db;
+        _delivery = delivery;
+        _routing = routing;
+        _queue = queue;
+        _signatures = signatures;
+        _store = store;
+        _folders = folders;
+        _config = config;
+    }
+
+    public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancel = default)
+    {
+        MimeMessage message;
+        using (var stream = new MemoryStream(request.Raw, writable: false))
+        {
+            message = await MimeMessage.LoadAsync(ParserOptions.Default, stream, cancel);
+        }
+
+        string fromDomain = MailAddresses.DomainOf(MailAddresses.Normalize(request.EnvelopeFrom));
+        if (string.IsNullOrEmpty(message.MessageId))
+        {
+            message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId(fromDomain.Length > 0 ? fromDomain : _config.Server.Hostname);
+        }
+
+        if (message.Date == DateTimeOffset.MinValue)
+        {
+            message.Date = DateTimeOffset.UtcNow;
+        }
+
+        if (request.ApplyFooters)
+        {
+            SignatureContext context = await BuildContextAsync(request, message, cancel);
+            await _signatures.ApplyFootersAsync(message, request.TenantId, request.MailboxId, request.SenderUserId, context, cancel);
+        }
+
+        byte[] withBcc = MimeSerializer.ToBytes(message);
+        message.Bcc.Clear();
+        byte[] clean = MimeSerializer.ToBytes(message);
+
+        var local = new List<string>();
+        var external = new List<string>();
+        foreach (string recipient in request.Recipients.Select(MailAddresses.Normalize).Where(MailAddresses.IsValid).Distinct())
+        {
+            if (await _delivery.ResolveAsync(recipient, null, cancel) is not null)
+            {
+                local.Add(recipient);
+            }
+            else
+            {
+                external.Add(recipient);
+            }
+        }
+
+        var rejected = new List<string>();
+        int localCopies = 0;
+        if (local.Count > 0)
+        {
+            DeliveryResult delivered = await _delivery.DeliverAsync(clean, new DeliverySource { EnvelopeRecipients = local }, cancel);
+            localCopies = delivered.Delivered;
+        }
+
+        int queued = 0;
+        if (external.Count > 0)
+        {
+            MailAccount? account = await _routing.ResolveAccountAsync(request.TenantId, request.EnvelopeFrom, request.Rule, cancel);
+            if (account is null && !_config.Queue.AllowDirectDelivery)
+            {
+                return new SubmissionResult(false, "No sending account is configured for this sender and direct delivery is switched off.", localCopies, 0, external);
+            }
+
+            await _queue.EnqueueAsync(request.TenantId, account?.Id, request.EnvelopeFrom, external, clean, message.Subject ?? string.Empty, request.MailboxId, request.SenderUserId, cancel);
+            queued = 1;
+        }
+
+        if (request.SaveToSent && request.MailboxId is long mailboxId)
+        {
+            MailFolder? sent = await _folders.FindByKindAsync(mailboxId, FolderKind.Sent, cancel);
+            if (sent is not null)
+            {
+                await _store.AddAsync(sent.Id, new NewMessage(withBcc) { IsRead = true }, cancel);
+            }
+        }
+
+        return new SubmissionResult(true, null, localCopies, queued, rejected);
+    }
+
+    private async Task<SignatureContext> BuildContextAsync(SubmissionRequest request, MimeMessage message, CancellationToken cancel)
+    {
+        User? user = request.SenderUserId is long userId
+            ? await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancel)
+            : null;
+        string tenant = await _db.Tenants.AsNoTracking().Where(t => t.Id == request.TenantId).Select(t => t.Name).FirstOrDefaultAsync(cancel) ?? string.Empty;
+        MailboxAddress? from = message.From.Mailboxes.FirstOrDefault();
+        return new SignatureContext(
+            user?.DisplayName ?? from?.Name ?? string.Empty,
+            from?.Address ?? request.EnvelopeFrom,
+            user?.JobTitle,
+            user?.Phone,
+            tenant);
+    }
+}
+
+/// <summary>Serialises messages the way mail travels: CRLF line ends.</summary>
+public static class MimeSerializer
+{
+    public static byte[] ToBytes(MimeMessage message)
+    {
+        FormatOptions options = FormatOptions.Default.Clone();
+        options.NewLineFormat = NewLineFormat.Dos;
+        options.EnsureNewLine = true;
+
+        using var stream = new MemoryStream();
+        message.WriteTo(options, stream);
+        return stream.ToArray();
+    }
+}

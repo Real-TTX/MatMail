@@ -2,6 +2,7 @@ using System.Globalization;
 using MatMail;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.Messaging;
 using MatMail.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -55,30 +56,12 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 // ---------------------------------------------------------------------------------------------
 // Services
 // ---------------------------------------------------------------------------------------------
-builder.Services.AddSingleton(config);
 builder.Services.AddSingleton(certificates);
-builder.Services.AddDbContext<MatMailDbContext>(options => options.UseNpgsql(config.Database.ConnectionString));
+builder.Services.AddMatMailServices(config);
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
     .SetApplicationName("MatMail");
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddHttpClient();
-builder.Services.AddSingleton<PasswordHasher<User>>();
-builder.Services.AddSingleton<SecretProtector>();
-builder.Services.AddSingleton<SessionCache>();
-builder.Services.AddSingleton<SetupState>();
-builder.Services.AddSingleton<ActivityLogger>();
-builder.Services.AddSingleton<Fmt>();
-builder.Services.AddScoped<CurrentUser>();
-builder.Services.AddScoped<ThemeService>();
-builder.Services.AddScoped<SignInService>();
-builder.Services.AddScoped<SessionCookieEvents>();
-builder.Services.AddScoped<TenantService>();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<MailboxService>();
-builder.Services.AddScoped<SetupService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

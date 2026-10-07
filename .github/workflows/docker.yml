@@ -19,7 +19,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # The integration tests (IMAP/SMTP servers) run against a real PostgreSQL.
+    # The integration tests run against a real PostgreSQL and, for the provider synchronisation, a GreenMail test mail server.
     services:
       postgres:
         image: postgres:17
@@ -33,6 +33,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      greenmail:
+        image: greenmail/standalone:2.1.14
+        env:
+          GREENMAIL_OPTS: -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.api.hostname=0.0.0.0 -Dgreenmail.api.port=8080
+        ports:
+          - 3025:3025
+          - 3110:3110
+          - 3143:3143
+          - 8080:8080
 
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +80,7 @@ jobs:
       - name: Test
         env:
           MATMAIL_TEST_DB: Host=localhost;Port=5432;Database=matmail_test;Username=postgres;Password=matmail
+          MATMAIL_TEST_IMAP: localhost:3143;pop3=localhost:3110;smtp=localhost:3025;api=localhost:8080
         run: dotnet test MatMail.slnx -c Release --no-build --verbosity normal
 
       - name: Resolve version string

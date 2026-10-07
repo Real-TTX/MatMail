@@ -78,6 +78,11 @@
   <data name="{0} message(s) were handed over to “{1}”." xml:space="preserve"><value>{0} Nachricht(en) an „{1}“ übergeben.</value></data>
   <data name="{0} selected" xml:space="preserve"><value>{0} ausgewählt</value></data>
   <data name="{0}–{1} of {2}" xml:space="preserve"><value>{0}–{1} von {2}</value></data>
+  <data name="{0}: cannot connect ({1})." xml:space="preserve"><value>{0}: Verbindung nicht möglich ({1}).</value></data>
+  <data name="{0}: the connection was closed." xml:space="preserve"><value>{0}: Die Verbindung wurde geschlossen.</value></data>
+  <data name="{0}: the server did not answer in time." xml:space="preserve"><value>{0}: Der Server hat nicht rechtzeitig geantwortet.</value></data>
+  <data name="{0}: the TLS connection failed (certificate or protocol problem): {1}" xml:space="preserve"><value>{0}: Die TLS-Verbindung ist fehlgeschlagen (Zertifikats- oder Protokollproblem): {1}</value></data>
+  <data name="{0}: the user name or password was refused." xml:space="preserve"><value>{0}: Benutzername oder Passwort wurden abgelehnt.</value></data>
   <data name="0 = keep." xml:space="preserve"><value>0 = behalten.</value></data>
   <data name="A backup never deletes mail at the provider." xml:space="preserve"><value>Ein Backup löscht niemals E-Mails beim Anbieter.</value></data>
   <data name="A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant." xml:space="preserve"><value>Ein neuer Mandant startet mit den Rollen Administrator und Benutzer sowie einem Postfach „Unverteilt“. Legen Sie den ersten Administrator unter Benutzer an, nachdem Sie in den Mandanten gewechselt haben.</value></data>
@@ -287,6 +292,7 @@
   <data name="Housekeeping" xml:space="preserve"><value>Aufräumen</value></data>
   <data name="How this server fetches the mail from the provider." xml:space="preserve"><value>Wie dieser Server die E-Mails beim Anbieter abholt.</value></data>
   <data name="IMAP server enabled" xml:space="preserve"><value>IMAP-Server aktiv</value></data>
+  <data name="IMAP: signed in at {0}; {1} folders; the inbox holds {2} messages ({3} unread)." xml:space="preserve"><value>IMAP: Anmeldung bei {0} erfolgreich; {1} Ordner; der Posteingang enthält {2} Nachrichten ({3} ungelesen).</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inaktiv</value></data>
   <data name="Inbox" xml:space="preserve"><value>Posteingang</value></data>
   <data name="Information" xml:space="preserve"><value>Information</value></data>
@@ -468,6 +474,7 @@
   <data name="PKCS#12 files with a password: set it as MATMAIL__Tls__PfxPassword so it can be read after a restart." xml:space="preserve"><value>PKCS#12-Dateien mit Passwort: Setzen Sie es als MATMAIL__Tls__PfxPassword, damit die Datei nach einem Neustart gelesen werden kann.</value></data>
   <data name="Placeholders:" xml:space="preserve"><value>Platzhalter:</value></data>
   <data name="Plain text version (optional)" xml:space="preserve"><value>Nur-Text-Version (optional)</value></data>
+  <data name="POP3: signed in at {0}; {1} messages are waiting." xml:space="preserve"><value>POP3: Anmeldung bei {0} erfolgreich; {1} Nachrichten warten.</value></data>
   <data name="Port" xml:space="preserve"><value>Port</value></data>
   <data name="Port (mail programs, STARTTLS)" xml:space="preserve"><value>Port (Mailprogramme, STARTTLS)</value></data>
   <data name="Port (mail programs, TLS)" xml:space="preserve"><value>Port (Mailprogramme, TLS)</value></data>
@@ -596,6 +603,8 @@
   <data name="SMTP server" xml:space="preserve"><value>SMTP-Server</value></data>
   <data name="SMTP server enabled" xml:space="preserve"><value>SMTP-Server aktiv</value></data>
   <data name="SMTP user name" xml:space="preserve"><value>SMTP-Benutzername</value></data>
+  <data name="SMTP: connected to {0} (without sign-in)." xml:space="preserve"><value>SMTP: Verbindung zu {0} hergestellt (ohne Anmeldung).</value></data>
+  <data name="SMTP: signed in at {0}." xml:space="preserve"><value>SMTP: Anmeldung bei {0} erfolgreich.</value></data>
   <data name="Something went wrong" xml:space="preserve"><value>Da ist etwas schiefgelaufen</value></data>
   <data name="Sort" xml:space="preserve"><value>Sortierung</value></data>
   <data name="Source" xml:space="preserve"><value>Quelle</value></data>

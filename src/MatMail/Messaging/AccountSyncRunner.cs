@@ -14,6 +14,12 @@ public interface IAccountSyncRunner
 
     /// <summary>Asks the scheduler to take this account next (returns immediately).</summary>
     void Request(long accountId);
+
+    /// <summary>
+    /// Makes the next run compare everything again: for when the account's server, user or role changed (UIDs of another server
+    /// mean other messages). Returns false while a run is going.
+    /// </summary>
+    Task<bool> ResetAsync(long accountId, CancellationToken cancel = default);
 }
 
 internal sealed class UnavailableSyncRunner : IAccountSyncRunner
@@ -24,4 +30,6 @@ internal sealed class UnavailableSyncRunner : IAccountSyncRunner
     public void Request(long accountId)
     {
     }
+
+    public Task<bool> ResetAsync(long accountId, CancellationToken cancel = default) => Task.FromResult(true);
 }

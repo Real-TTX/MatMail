@@ -1,4 +1,5 @@
 using MatMail.Messaging;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MatMail.MailSync;
 
@@ -60,6 +61,7 @@ public static class MailSyncServices
         services.AddSingleton<SyncFailureTracker>();
         services.AddSingleton<MailSyncRunner>();
         services.AddSingleton<MailSyncTrigger>();
+        services.Replace(ServiceDescriptor.Singleton<IAccountSyncRunner, AccountSyncAdapter>());
         services.AddSingleton<RemoteContentFetcher>();
         services.AddSingleton<IRemoteContentProvider>(provider => provider.GetRequiredService<RemoteContentFetcher>());
 

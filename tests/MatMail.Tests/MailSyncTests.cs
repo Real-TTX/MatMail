@@ -229,6 +229,7 @@ public class MailSyncLogicTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddLocalization();
         services.AddMatMailServices(new MatMail.Configuration.AppConfig());
         services.AddDataProtection().UseEphemeralDataProtectionProvider();
         services.AddMailSync();

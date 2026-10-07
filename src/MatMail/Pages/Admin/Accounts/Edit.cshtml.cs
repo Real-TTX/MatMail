@@ -121,6 +121,7 @@ public class EditModel(
         }
 
         MailAccount account = existing ?? new MailAccount();
+        var source = (account.ReceiveHost, account.ReceiveUsername, account.ReceiveProtocol, account.Role);
         Apply(account);
         if (existing is null)
         {
@@ -128,6 +129,12 @@ public class EditModel(
         }
 
         await db.SaveChangesAsync();
+        if (existing is not null && source != (account.ReceiveHost, account.ReceiveUsername, account.ReceiveProtocol, account.Role))
+        {
+            // The UIDs of another server or mailbox mean other messages: forget what was fetched so far.
+            await sync.ResetAsync(account.Id);
+        }
+
         this.Notify(l[IsEdit ? "The account was saved." : "The account was created. Test the connection and start the synchronisation."].Value);
         return RedirectToPage("Index");
     }
@@ -164,7 +171,7 @@ public class EditModel(
             lines.Add(send.Message);
         }
 
-        this.NotifyNow(ok, string.Join(" ", lines.Select(line => l[line].Value)));
+        this.NotifyNow(ok, string.Join(" ", lines));
         return Page();
     }
 

@@ -288,6 +288,7 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
 /* ---- Phones: one column, drawer for folders, full-screen compose ---- */
 @media (max-width: 960px) {
   .mail-search { max-width: none; }
+  .app-shell[data-area="mail"] .app-header__spacer { display: none; }   /* the search box takes the room */
   .mail-toolbar__count { display: none; }
   .mail-pager__text { display: none; }
 }

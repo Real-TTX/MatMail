@@ -318,7 +318,7 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
 .tenant-switch__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .app-content { flex: 1; min-width: 0; padding: 1.5rem 1.75rem 3rem; max-width: 1280px; width: 100%; }
-.app-content--bleed { padding: 0; max-width: none; }
+.app-content.app-content--bleed { padding: 0; max-width: none; }   /* the mail client: edge to edge, also on phones */
 
 .page-heading { margin-bottom: 1.25rem; }
 .page-heading__title { font-size: 1.5rem; letter-spacing: -0.01em; }
@@ -350,10 +350,10 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
     inset: 0 auto 0 0;
     width: min(20rem, 86vw);
     transform: translateX(-102%);
-    transition: transform 0.2s ease;
-    box-shadow: var(--shadow-lg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .sidebar.is-open { transform: translateX(0); }
+  /* The shadow only while the drawer is open: a closed one would bleed its shadow into the left edge of the screen. */
+  .sidebar.is-open { transform: translateX(0); box-shadow: var(--shadow-lg); }
   .sidebar .sidebar__close, .app-header .hamburger { display: inline-flex; }
   .app-header { padding: 0 0.75rem; }
   .app-content { padding: 1rem 1rem 3rem; }

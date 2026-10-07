@@ -238,7 +238,7 @@
     /** Pasted HTML (Word, web pages) without scripts, styles of the source and Office leftovers. */
     function clean(html) {
       var parsed = new DOMParser().parseFromString(html, "text/html");
-      parsed.querySelectorAll("script,style,meta,link,title,xml,object,embed,iframe").forEach(function (node) { node.remove(); });
+      parsed.querySelectorAll("script,style,meta,link,title,xml,object,embed,iframe,frame,frameset,applet,base,form,noscript,template").forEach(function (node) { node.remove(); });
       parsed.querySelectorAll("*").forEach(function (node) {
         Array.prototype.slice.call(node.attributes).forEach(function (attribute) {
           var name = attribute.name.toLowerCase();

@@ -41,7 +41,7 @@ public sealed class ToolbarTagHelper : TagHelper
 
         if (Count is int count)
         {
-            string text = HtmlEncoder.Default.Encode(_l["{0} matches", count].Value);
+            string text = HtmlEncoder.Default.Encode(count == 1 ? _l["{0} match", count].Value : _l["{0} matches", count].Value);
             output.Content.AppendHtml($"<div class=\"toolbar__group toolbar__count\">{text}</div>");
         }
 

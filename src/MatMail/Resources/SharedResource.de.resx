@@ -73,6 +73,7 @@
   <data name="(no subject)" xml:space="preserve"><value>(kein Betreff)</value></data>
   <data name="{0} attachment(s)" xml:space="preserve"><value>{0} Anhang/Anhänge</value></data>
   <data name="{0} entries were removed." xml:space="preserve"><value>{0} Einträge wurden entfernt.</value></data>
+  <data name="{0} match" xml:space="preserve"><value>{0} Treffer</value></data>
   <data name="{0} matches" xml:space="preserve"><value>{0} Treffer</value></data>
   <data name="{0} message(s) are tried again." xml:space="preserve"><value>{0} Nachricht(en) werden erneut versucht.</value></data>
   <data name="{0} message(s) were handed over to “{1}”." xml:space="preserve"><value>{0} Nachricht(en) an „{1}“ übergeben.</value></data>

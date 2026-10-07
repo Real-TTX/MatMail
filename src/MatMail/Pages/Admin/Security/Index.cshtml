@@ -1,0 +1,36 @@
+@page "/Admin/Security"
+@model MatMail.Pages.Admin.Security.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Security";
+    ViewData["Title"] = L["Security"].Value;
+    ViewData["Description"] = L["How the people of this tenant sign in."].Value;
+}
+
+<mm-form>
+    <mm-form-section title='@L["Two-factor authentication"]' icon="smartphone"
+                     description='@L["After the password, signing in asks for a code from an authenticator app. People who are bound to it and have not set it up yet can do nothing else until they have. Mail programs (IMAP and SMTP) cannot ask for a code: they sign in with app passwords then."]'>
+        <mm-field asp-for="Input.Mode" kind="select" label='@L["Two-factor authentication is"]' asp-items="Model.ModeItems"
+                  help='@L["Administrators are users who hold any permission besides using mail, and system administrators. You can also bind single roles: tick “Members must use two-factor authentication” in the role."]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Who uses it"]' icon="users">
+        <dl class="kv">
+            <dt>@L["Active users"]</dt><dd>@Model.Summary.Users</dd>
+            <dt>@L["Using two-factor authentication"]</dt><dd>@Model.Summary.Enabled</dd>
+            <dt>@L["Bound to it, not set up yet"]</dt>
+            <dd>
+                @Model.Summary.StillToSetUp
+                @if (Model.Summary.StillToSetUp > 0)
+                {
+                    <mm-badge kind="warn" icon="alert">@L["They set it up at their next sign-in"]</mm-badge>
+                }
+            </dd>
+        </dl>
+        <p class="form-help">@L["Someone who lost their phone can be helped on the user page: “Reset two-factor authentication”."]</p>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin" icon="arrow-left">@L["Back"]</mm-button>
+    </mm-button-row>
+</mm-form>

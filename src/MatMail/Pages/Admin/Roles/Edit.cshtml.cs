@@ -7,7 +7,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Admin.Roles;
 
-public class EditModel(MatMailDbContext db, SessionCache cache, IStringLocalizer<SharedResource> l) : PageModel
+public class EditModel(MatMailDbContext db, SessionCache cache, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public long Id { get; set; }
@@ -18,11 +18,15 @@ public class EditModel(MatMailDbContext db, SessionCache cache, IStringLocalizer
     public bool IsEdit => Id != 0;
     public bool IsBuiltIn { get; private set; }
 
+    /// <summary>Binding a role to two-factor authentication is a security rule: whoever manages roles but not security sees the box and cannot change it.</summary>
+    public bool CanSetTwoFactor => currentUser.Can(Services.Permissions.SecurityManage);
+
     public class InputModel
     {
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string[] Permissions { get; set; } = Array.Empty<string>();
+        public bool RequiresTwoFactor { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -40,7 +44,7 @@ public class EditModel(MatMailDbContext db, SessionCache cache, IStringLocalizer
         }
 
         IsBuiltIn = role.IsBuiltIn;
-        Input = new InputModel { Name = role.Name, Description = role.Description, Permissions = role.Permissions };
+        Input = new InputModel { Name = role.Name, Description = role.Description, Permissions = role.Permissions, RequiresTwoFactor = role.RequiresTwoFactor };
         return Page();
     }
 
@@ -59,6 +63,11 @@ public class EditModel(MatMailDbContext db, SessionCache cache, IStringLocalizer
         if (!ModelState.IsValid)
         {
             IsBuiltIn = IsEdit && await db.Roles.AnyAsync(r => r.Id == Id && r.IsBuiltIn);
+            if (IsEdit && !CanSetTwoFactor)
+            {
+                Input.RequiresTwoFactor = await db.Roles.Where(r => r.Id == Id).Select(r => r.RequiresTwoFactor).FirstOrDefaultAsync();
+            }
+
             return Page();
         }
 
@@ -83,6 +92,11 @@ public class EditModel(MatMailDbContext db, SessionCache cache, IStringLocalizer
         role.Name = name;
         role.Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim();
         role.Permissions = permissions;
+        if (CanSetTwoFactor)
+        {
+            role.RequiresTwoFactor = Input.RequiresTwoFactor;
+        }
+
         await db.SaveChangesAsync();
         cache.Clear();
 

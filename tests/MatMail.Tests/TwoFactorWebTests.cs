@@ -169,6 +169,7 @@ public class TwoFactorSetupMiddlewareTests
     [InlineData("/Account/Logout")]
     [InlineData("/Account/Language")]
     [InlineData("/healthz")]
+    [InlineData("/Error")]
     [InlineData("/css/app.css")]
     [InlineData("/js/app.js")]
     [InlineData("/icons/logo.svg")]

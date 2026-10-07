@@ -50,10 +50,12 @@ public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, 
         SecondStepOutcome outcome = await twoFactor.VerifyLoginAsync(pending.UserId, Input.Code, HttpContext.ClientAddress(), HttpContext.RequestAborted);
         if (outcome.User is null)
         {
+            // A refused code is not kept in the field.
+            ModelState.Remove("Input.Code");
+            Input.Code = string.Empty;
             ModelState.AddModelError(string.Empty, outcome.Result.Status == SecondFactorStatus.LockedOut
                 ? l[SignInService.LockedMessage]
                 : l[TwoFactorService.WrongCodeMessage]);
-            Input.Code = string.Empty;
             await ApplyBrandAsync(pending);
             return Page();
         }

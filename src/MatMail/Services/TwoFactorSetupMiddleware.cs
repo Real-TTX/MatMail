@@ -12,7 +12,8 @@ public sealed class TwoFactorSetupMiddleware
     public const string SecurityPath = "/Account/Security";
 
     private static readonly string[] StaticPrefixes = { "/css/", "/js/", "/icons/", "/brand/", "/favicon" };
-    private static readonly string[] AllowedPages = { "/Account/Logout", "/Account/Language", "/healthz" };
+    // "/Error" is where a refused request (the 403 of the mail API) is re-executed to be answered; it shows nothing but the error.
+    private static readonly string[] AllowedPages = { "/Account/Logout", "/Account/Language", "/healthz", "/Error" };
 
     private readonly RequestDelegate _next;
 

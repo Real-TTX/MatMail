@@ -113,7 +113,10 @@ internal sealed class ImapMailboxTree
             tree.AddFolders(personal, string.Empty, true, await work.Folders.ListAsync(personal.Mailbox.Id, cancel));
         }
 
-        List<AccessibleMailbox> others = mailboxes.Where(m => !ReferenceEquals(m, personal)).ToList();
+        // A stable order, so a mailbox keeps its label from session to session even when two mailboxes share a name.
+        List<AccessibleMailbox> others = mailboxes.Where(m => !ReferenceEquals(m, personal))
+            .OrderBy(m => m.Mailbox.Type).ThenBy(m => m.Mailbox.Name, StringComparer.OrdinalIgnoreCase).ThenBy(m => m.Mailbox.Id)
+            .ToList();
         if (others.Count > 0 && wantsShared)
         {
             tree.Add(new ImapMailboxNode { Name = SharedRoot });
@@ -191,11 +194,14 @@ internal sealed class ImapMailboxTree
         return new ImapFolderTarget(mailbox, string.Join(Delimiter, parts[first..]));
     }
 
-    /// <summary>A LIST pattern ("*" matches everything, "%" everything but the delimiter) as an anchored, case-insensitive regex.</summary>
+    /// <summary>
+    /// A LIST pattern ("*" matches everything, "%" everything but the delimiter) as an anchored, case-insensitive regex; the pattern is
+    /// NFC-normalised like the names it is matched against.
+    /// </summary>
     public static Regex CompilePattern(string pattern)
     {
         var regex = new StringBuilder("^");
-        foreach (char character in pattern)
+        foreach (char character in pattern.Normalize(NormalizationForm.FormC))
         {
             regex.Append(character switch
             {
@@ -214,7 +220,7 @@ internal sealed class ImapMailboxTree
         Dictionary<long, FolderInfo> byId = folders.ToDictionary(f => f.Id);
         foreach (FolderInfo folder in folders)
         {
-            string name = prefix + RelativeName(folder, byId);
+            string name = (prefix + RelativeName(folder, byId)).Normalize(NormalizationForm.FormC);
             if (isPersonal && IsShared(name))
             {
                 // A personal folder called "Shared" would collide with the shared namespace; it stays reachable in the web client.
@@ -266,7 +272,7 @@ internal sealed class ImapMailboxTree
     /// <summary>The label of a mailbox below "Shared/": its name without delimiters, made unique.</summary>
     private static string UniqueLabel(Mailbox mailbox, HashSet<string> used)
     {
-        string label = mailbox.Name.Replace(Delimiter, '-').Trim();
+        string label = mailbox.Name.Replace(Delimiter, '-').Trim().Normalize(NormalizationForm.FormC);
         if (label.Length == 0)
         {
             label = "Mailbox";

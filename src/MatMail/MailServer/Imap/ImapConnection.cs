@@ -149,7 +149,14 @@ internal sealed class ImapConnection : IAsyncDisposable
         int buffered = (int)Math.Min(remaining, _inputEnd - _inputStart);
         _inputStart += buffered;
         remaining -= buffered;
+        if (remaining == 0)
+        {
+            // Whatever follows the literal in the buffer (the rest of the command, pipelined commands) stays.
+            return;
+        }
 
+        _inputStart = 0;
+        _inputEnd = 0;
         while (remaining > 0)
         {
             int read = await _stream.ReadAsync(_input.AsMemory(0, (int)Math.Min(_input.Length, remaining)), cancel);
@@ -160,9 +167,6 @@ internal sealed class ImapConnection : IAsyncDisposable
 
             remaining -= read;
         }
-
-        _inputStart = 0;
-        _inputEnd = 0;
     }
 
     public void Write(string text)

@@ -45,6 +45,7 @@ internal sealed partial class ImapSession
 {
     private static readonly Dictionary<string, CommandHandler> Handlers = CreateHandlers();
     private static readonly HashSet<string> UidCommands = new(StringComparer.OrdinalIgnoreCase) { "FETCH", "STORE", "COPY", "MOVE", "SEARCH", "EXPUNGE" };
+    private static readonly TimeSpan PreAuthenticationTimeout = TimeSpan.FromMinutes(2);
 
     private readonly ImapConnection _connection;
     private readonly ImapRequestReader _reader;
@@ -121,11 +122,14 @@ internal sealed partial class ImapSession
         }
     }
 
-    /// <summary>Reads the next command; null when the client disconnected or the session timed out.</summary>
+    /// <summary>
+    /// Reads the next command; null when the client disconnected or the session timed out. Before sign-in the timeout is short (a
+    /// client signs in right away); afterwards it is the full autologout time (RFC 3501, section 5.4: at least 30 minutes).
+    /// </summary>
     private async Task<ImapRequest?> ReadRequestAsync()
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_shutdown);
-        timeout.CancelAfter(_context.IdleTimeout);
+        timeout.CancelAfter(_state == ImapSessionState.NotAuthenticated ? Min(_context.IdleTimeout, PreAuthenticationTimeout) : _context.IdleTimeout);
         try
         {
             return await _reader.ReadAsync(timeout.Token);
@@ -203,7 +207,7 @@ internal sealed partial class ImapSession
         {
             Tagged(command, "NO", ex.Message);
         }
-        catch (Exception ex) when (!IsConnectionError(ex) && !(ex is OperationCanceledException && _shutdown.IsCancellationRequested))
+        catch (Exception ex) when (!IsConnectionError(ex) && ex is not ImapLineTooLongException && !(ex is OperationCanceledException && _shutdown.IsCancellationRequested))
         {
             _context.Logger.LogError(ex, "IMAP command {Command} of {User} failed.", command.DisplayName, _user?.LoginName ?? "(not signed in)");
             Tagged(command, "NO", "[SERVERBUG] The command failed on the server");
@@ -291,6 +295,8 @@ internal sealed partial class ImapSession
         => ex is IOException or SocketException or ObjectDisposedException or AuthenticationException or EndOfStreamException;
 
     private static string Truncate(string text) => text.Length <= 40 ? text : text[..40];
+
+    private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
     // ---------------------------------------------------------------------------------------------------------------
     // Keeping the selected folder in step

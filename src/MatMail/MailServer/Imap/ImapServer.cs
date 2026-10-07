@@ -273,7 +273,8 @@ public sealed class ImapServer : BackgroundService
         string remoteIp = RemoteAddress(socket);
         if (!TryEnter(remoteIp))
         {
-            await RefuseAsync(socket, "* BYE Too many connections from your address\r\n");
+            // On the TLS port the client expects a handshake, not text: the connection is just closed there.
+            await RefuseAsync(socket, implicitTls ? null : "* BYE Too many connections from your address\r\n");
             return;
         }
 
@@ -343,12 +344,16 @@ public sealed class ImapServer : BackgroundService
         }
     }
 
-    private static async Task RefuseAsync(Socket socket, string message)
+    private static async Task RefuseAsync(Socket socket, string? message)
     {
         try
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await socket.SendAsync(Encoding.ASCII.GetBytes(message), SocketFlags.None, timeout.Token);
+            if (message is not null)
+            {
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await socket.SendAsync(Encoding.ASCII.GetBytes(message), SocketFlags.None, timeout.Token);
+            }
+
             socket.Shutdown(SocketShutdown.Both);
         }
         catch (Exception ex) when (ex is SocketException or OperationCanceledException or ObjectDisposedException)

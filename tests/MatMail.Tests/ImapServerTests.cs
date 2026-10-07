@@ -7,6 +7,7 @@ using MatMail.Data;
 using MatMail.MailServer.Imap;
 using MatMail.Messaging;
 using MatMail.Tests.Support;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
 using MailFolder = MatMail.Data.MailFolder;
@@ -207,6 +208,37 @@ public class ImapSignInTests : ImapTestBase
         await raw.ReadLineAsync();
         Assert.Equal("* BYE Autologout; idle for too long", await raw.ReadLineAsync());
         Assert.True(await raw.IsClosedAsync());
+    }
+
+    [DbFact]
+    public async Task Broken_connections_do_not_disturb_the_listener()
+    {
+        // Text instead of a TLS handshake on the TLS port: the server just drops the connection.
+        using (var tcp = new System.Net.Sockets.TcpClient())
+        {
+            await tcp.ConnectAsync("127.0.0.1", Imap.TlsPort);
+            await tcp.GetStream().WriteAsync("a1 CAPABILITY\r\n"u8.ToArray());
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                Assert.Equal(0, await tcp.GetStream().ReadAsync(new byte[256], timeout.Token));
+            }
+            catch (IOException)
+            {
+                // A reset is fine as well.
+            }
+        }
+
+        // A client that disappears in the middle of a literal.
+        await using (RawImapClient vanishing = await Imap.RawAsync())
+        {
+            await vanishing.ReadLineAsync();
+            await vanishing.SendAsync("a1 LOGIN {5}\r\n");
+            Assert.Equal("+ Ready for literal data", await vanishing.ReadLineAsync());
+        }
+
+        using ImapClient client = await Imap.LoginAsync(security: SecureSocketOptions.SslOnConnect);
+        Assert.True(client.IsAuthenticated);
     }
 
     [DbFact]
@@ -564,6 +596,53 @@ public class ImapFetchTests : ImapTestBase
     }
 
     [DbFact]
+    public async Task Messages_whose_content_is_not_available_answer_no_unavailable()
+    {
+        await AddToInboxAsync(ImapTestData.Simple("Stored here"));
+        await AddToInboxAsync(ImapTestData.Simple("Only referenced"), m => m with { Storage = MessageStorage.Remote });
+
+        await using RawImapClient raw = await LoginRawAsync();
+        await raw.CommandAsync("s", "SELECT INBOX");
+
+        // What the database keeps is served without the provider...
+        Assert.StartsWith("* 2 FETCH (UID 2 ENVELOPE (\"Tue, 07 Oct 2026 10:00:00 +0200\" \"Only referenced\"", (await raw.CommandAsync("a1", "UID FETCH 2 (UID ENVELOPE)"))[0]);
+        Assert.Equal("* 2 FETCH (UID 2 BODY[HEADER.FIELDS (SUBJECT)] {28}\r\nSubject: Only referenced\r\n\r\n)", (await raw.CommandAsync("a2", "UID FETCH 2 (BODY.PEEK[HEADER.FIELDS (SUBJECT)])"))[0]);
+
+        // ...the body needs the provider, which is not there.
+        List<string> body = await raw.CommandAsync("a3", "UID FETCH 1:2 (BODY.PEEK[TEXT])");
+        Assert.Equal("* 1 FETCH (UID 1 BODY[TEXT] {7}\r\nHello\r\n)", body[0]);
+        Assert.Equal("* 2 FETCH (UID 2)", body[1]);
+        Assert.Equal("a3 NO [UNAVAILABLE] Some message contents could not be loaded", body[^1]);
+
+        // COPY is all or nothing: the copy of the first message is taken back.
+        Assert.Equal("a4 NO [UNAVAILABLE] Some messages could not be read; nothing was copied", (await raw.CommandAsync("a4", "UID COPY 1:2 Archive"))[^1]);
+        MailFolder archive = await ImapTestData.FolderAsync(Host, AliceId, FolderKind.Archive);
+        Assert.Empty(await ImapTestData.MessagesAsync(Host, archive.Id));
+    }
+
+    [DbFact]
+    public async Task Fetch_handles_many_messages_in_batches()
+    {
+        MailFolder inbox = await ImapTestData.FolderAsync(Host, AliceId, FolderKind.Inbox);
+        using (IServiceScope scope = Host.Scope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<MailStore>();
+            for (int i = 1; i <= 250; i++)
+            {
+                await store.AddAsync(inbox.Id, new NewMessage(ImapTestData.Simple($"Message {i:000}")) { IsRead = i % 2 == 0 });
+            }
+        }
+
+        using ImapClient client = await Imap.LoginAsync();
+        await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
+        IList<IMessageSummary> all = await client.Inbox.FetchAsync(0, -1, MessageSummaryItems.Envelope | MessageSummaryItems.UniqueId | MessageSummaryItems.Flags);
+        Assert.Equal(Enumerable.Range(1, 250).Select(i => $"Message {i:000}"), all.Select(s => s.Envelope!.Subject));
+        Assert.Equal(125, all.Count(s => s.Flags!.Value.HasFlag(MessageFlags.Seen)));
+        Assert.Equal(125, (await client.Inbox.SearchAsync(SearchQuery.NotSeen)).Count);
+        Assert.Equal(250, (await client.Inbox.SearchAsync(SearchQuery.SubjectContains("Message"))).Count);
+    }
+
+    [DbFact]
     public async Task Uid_fetch_handles_ranges_gaps_and_the_star()
     {
         var messages = new List<MailMessage>();
@@ -775,6 +854,34 @@ public class ImapMessageTests : ImapTestBase
     }
 
     [DbFact]
+    public async Task Large_messages_survive_append_and_fetch_byte_for_byte()
+    {
+        var attachment = new byte[3 * 1024 * 1024];
+        new Random(42).NextBytes(attachment);
+        var builder = new BodyBuilder { TextBody = "Anbei die Datei." };
+        builder.Attachments.Add("daten.bin", attachment);
+        var message = new MimeMessage { Subject = "Große Datei", Body = builder.ToMessageBody() };
+        message.From.Add(MailboxAddress.Parse("alice@example.test"));
+
+        using ImapClient client = await Imap.LoginAsync();
+        UniqueId? uid = await client.Inbox.AppendAsync(new AppendRequest(message, MessageFlags.Seen));
+        MailFolder inbox = await ImapTestData.FolderAsync(Host, AliceId, FolderKind.Inbox);
+        MailMessage stored = Assert.Single(await ImapTestData.MessagesAsync(Host, inbox.Id));
+        byte[] storedRaw = (await ImapTestData.ContentAsync(Host, stored.Id)).Raw!;
+
+        await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
+        await using Stream stream = await client.Inbox.GetStreamAsync(uid!.Value, string.Empty);
+        using var copy = new MemoryStream();
+        await stream.CopyToAsync(copy);
+        Assert.Equal(storedRaw, copy.ToArray());
+
+        MimeMessage fetched = await client.Inbox.GetMessageAsync(uid.Value);
+        using var content = new MemoryStream();
+        await ((MimePart)fetched.Attachments.Single()).Content!.DecodeToAsync(content);
+        Assert.Equal(attachment, content.ToArray());
+    }
+
+    [DbFact]
     public async Task Copy_returns_copyuid_and_keeps_the_originals()
     {
         MailMessage one = await AddToInboxAsync(ImapTestData.Simple("One"));
@@ -885,6 +992,46 @@ public class ImapChangeNotificationTests : ImapTestBase
         Assert.Equal("* 1 EXPUNGE", await raw.ReadLineAsync());
         await raw.SendAsync("DONE\r\n");
         Assert.Equal("i1 OK IDLE terminated", await raw.ReadLineAsync());
+    }
+
+    [DbFact]
+    public async Task Idle_notices_changes_without_a_notification_through_the_poll()
+    {
+        MailMessage message = await AddToInboxAsync(ImapTestData.Simple("Polled"));
+        Imap.Server.IdlePollInterval = TimeSpan.FromMilliseconds(200);
+        await using RawImapClient raw = await LoginRawAsync();
+        await raw.CommandAsync("s", "SELECT INBOX");
+        await raw.SendAsync("i1 IDLE\r\n");
+        Assert.Equal("+ idling", await raw.ReadLineAsync());
+
+        // A change the event hub does not hear about (another server instance, a repair in the database).
+        using (IServiceScope scope = Host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"MailMessage\" SET \"IsStarred\" = true WHERE \"Id\" = {message.Id}");
+            await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"MailFolder\" SET \"ModSeq\" = \"ModSeq\" + 1 WHERE \"Id\" = {message.FolderId}");
+        }
+
+        Assert.Equal("* 1 FETCH (UID 1 FLAGS (\\Flagged))", await raw.ReadLineAsync());
+        await raw.SendAsync("DONE\r\n");
+        Assert.Equal("i1 OK IDLE terminated", await raw.ReadLineAsync());
+    }
+
+    [DbFact]
+    public async Task A_folder_deleted_elsewhere_ends_the_sessions_that_have_it_selected()
+    {
+        MailFolder projects = await ImapTestData.CreateFolderAsync(Host, AliceId, "Projekte");
+        await using RawImapClient raw = await LoginRawAsync();
+        await raw.CommandAsync("s", "SELECT Projekte");
+
+        using (IServiceScope scope = Host.ScopeAs(Seed.Alice))
+        {
+            Assert.Null(await scope.ServiceProvider.GetRequiredService<FolderService>().DeleteAsync(projects.Id));
+        }
+
+        await raw.SendAsync("a1 NOOP\r\n");
+        Assert.Equal("* BYE The selected mailbox no longer exists", await raw.ReadLineAsync());
+        Assert.True(await raw.IsClosedAsync());
     }
 
     [DbFact]
@@ -1045,6 +1192,39 @@ public class ImapSharedMailboxTests : ImapTestBase
         Assert.Equal("a1 NO [NONEXISTENT] No such mailbox", (await raw.CommandAsync("a1", "SELECT Shared/Bob/INBOX"))[^1]);
         Assert.Equal(new[] { "a2 OK LIST completed" }, await raw.CommandAsync("a2", "LIST \"\" \"Shared/*\""));
         Assert.Equal("a3 NO [CANNOT] Folders can only be created inside a shared mailbox (Shared/<mailbox>/<folder>)", (await raw.CommandAsync("a3", "CREATE Shared/Bob/Spy"))[^1]);
+    }
+
+    [DbFact]
+    public async Task Mailboxes_with_the_same_name_get_distinct_labels_and_managers_may_restructure_them()
+    {
+        Mailbox second;
+        using (IServiceScope scope = Host.Scope())
+        {
+            second = await scope.ServiceProvider.GetRequiredService<Services.MailboxService>().CreateMailboxAsync("Info", MailboxType.Shared, null, Seed.Tenant.Id);
+        }
+
+        await ImapTestData.GrantAsync(Host, Seed.Info, Seed.Alice, MailboxAccess.Read);
+        await ImapTestData.GrantAsync(Host, second, Seed.Alice, MailboxAccess.Manage);
+
+        await using RawImapClient raw = await LoginRawAsync();
+        Assert.Equal(
+            new[]
+            {
+                "* LIST (\\Noselect \\HasChildren) \"/\" \"Shared/Info\"",
+                "* LIST (\\Noselect \\HasChildren) \"/\" \"Shared/Info (2)\"",
+                "a1 OK LIST completed",
+            },
+            await raw.CommandAsync("a1", "LIST \"\" \"Shared/%\""));
+        Assert.Equal(new[] { "* LIST (\\Noselect \\HasChildren) \"/\" \"Shared\"", "a2 OK LIST completed" }, await raw.CommandAsync("a2", "LIST \"\" Shared"));
+
+        Assert.Equal("a3 OK CREATE completed", (await raw.CommandAsync("a3", "CREATE \"Shared/Info (2)/Projekte\""))[^1]);
+        Assert.NotNull(await ImapTestData.FolderAsync(Host, second.Id, "Projekte"));
+        Assert.Equal("a4 OK RENAME completed", (await raw.CommandAsync("a4", "RENAME \"Shared/Info (2)/Projekte\" \"Shared/Info (2)/Kunden\""))[^1]);
+        Assert.Equal("a5 NO [CANNOT] Folders can only be renamed within their mailbox", (await raw.CommandAsync("a5", "RENAME \"Shared/Info (2)/Kunden\" Kunden"))[^1]);
+        Assert.Equal("a6 OK DELETE completed", (await raw.CommandAsync("a6", "DELETE \"Shared/Info (2)/Kunden\""))[^1]);
+        Assert.Equal("a7 NO [NOPERM] Subscriptions of this shared mailbox are managed by its owner", (await raw.CommandAsync("a7", "UNSUBSCRIBE Shared/Info/INBOX"))[^1]);
+        Assert.Equal("a8 OK UNSUBSCRIBE completed", (await raw.CommandAsync("a8", "UNSUBSCRIBE \"Shared/Info (2)/Junk\""))[^1]);
+        Assert.Equal("a9 NO [CANNOT] This name cannot be selected", (await raw.CommandAsync("a9", "SELECT Shared/Info"))[^1]);
     }
 
     [DbFact]
@@ -1365,7 +1545,9 @@ public class ImapProtocolTests : ImapTestBase
         await using RawImapClient raw = await ConnectAsync(login: true);
         await raw.CommandAsync("s1", "SELECT INBOX");
         Assert.Contains("* 0 EXISTS", await raw.CommandAsync("s2", "SELECT Drafts"));
-        Assert.Equal(new[] { "s3 BAD Invalid message sequence number." }, await raw.CommandAsync("s3", "FETCH 1 FLAGS"));
+
+        // In an empty mailbox "*" has no value; any sequence set is simply empty there.
+        Assert.Equal(new[] { "s3 OK FETCH completed" }, await raw.CommandAsync("s3", "FETCH 1:* FLAGS"));
         Assert.Equal(new[] { "s4 NO [NONEXISTENT] No such mailbox" }, await raw.CommandAsync("s4", "SELECT Nowhere"));
         Assert.Equal(new[] { "s5 BAD No mailbox selected" }, await raw.CommandAsync("s5", "FETCH 1 FLAGS"));
     }

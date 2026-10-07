@@ -272,29 +272,34 @@ internal sealed partial class ImapSession
     // COPY / MOVE
     // ---------------------------------------------------------------------------------------------------------------
 
-    /// <summary>COPY set mailbox — answered with COPYUID (RFC 4315).</summary>
+    /// <summary>COPY set mailbox — answered with COPYUID (RFC 4315). All or nothing: a message that cannot be read undoes the copy.</summary>
     private async Task CopyAsync(ImapCommand command)
     {
-        (ImapSelection selection, List<ImapMessage> messages, string targetName) = ReadTransfer(command);
+        (_, List<ImapMessage> messages, string targetName) = ReadTransfer(command);
 
         await using ImapWork work = OpenWork();
         ImapMailboxNode target = await FindTransferTargetAsync(work, targetName);
         var sourceUids = new List<long>();
         var targetUids = new List<long>();
+        var copiedIds = new List<long>();
         foreach (ImapMessage message in messages)
         {
             // One message at a time: the UIDs pair up exactly and only one message body is in memory.
             IReadOnlyList<MailMessage> copies = await work.Store.CopyAsync(new[] { message.Id }, target.Folder!.Id, _shutdown);
-            if (copies.Count == 1)
+            if (copies.Count != 1)
             {
-                sourceUids.Add(message.Uid);
-                targetUids.Add(copies[0].Uid);
-            }
-        }
+                // The content is not available (e.g. a provider that cannot be reached): take back what was copied.
+                if (copiedIds.Count > 0)
+                {
+                    await work.Store.DeleteAsync(copiedIds, permanent: true, _shutdown);
+                }
 
-        if (messages.Count > 0 && sourceUids.Count == 0)
-        {
-            throw new ImapNoException("[UNAVAILABLE] The messages could not be read");
+                throw new ImapNoException("[UNAVAILABLE] Some messages could not be read; nothing was copied");
+            }
+
+            sourceUids.Add(message.Uid);
+            targetUids.Add(copies[0].Uid);
+            copiedIds.Add(copies[0].Id);
         }
 
         string copyUid = sourceUids.Count == 0

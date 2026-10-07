@@ -119,7 +119,11 @@ internal sealed partial class ImapSession
         }
 
         string envelope = ImapEnvelope.Build(context.Content?.HeaderBytes);
-        context.CacheUpdates.Envelopes.Add((context.Message.Id, envelope));
+        if (context.Content?.HeaderBytes is not null)
+        {
+            context.CacheUpdates.Envelopes.Add((context.Message.Id, envelope));
+        }
+
         return envelope;
     }
 

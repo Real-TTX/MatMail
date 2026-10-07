@@ -184,14 +184,23 @@ internal sealed partial class ImapSession
         await SignInAsync(command, login, password);
     }
 
+    /// <summary>The client's response to the empty "+" challenge; null when it disconnects or does not answer in time.</summary>
     private async Task<string?> ReadSaslResponseAsync()
     {
         WriteLine("+ ");
         await _connection.FlushAsync(_shutdown);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_shutdown);
-        timeout.CancelAfter(_context.IdleTimeout);
-        byte[]? line = await _connection.ReadLineAsync(ImapRequestReader.MaxLineLength, timeout.Token);
-        return line is null ? null : Encoding.ASCII.GetString(line).Trim();
+        timeout.CancelAfter(Min(_context.IdleTimeout, PreAuthenticationTimeout));
+        try
+        {
+            byte[]? line = await _connection.ReadLineAsync(ImapRequestReader.MaxLineLength, timeout.Token);
+            return line is null ? null : Encoding.ASCII.GetString(line).Trim();
+        }
+        catch (OperationCanceledException) when (!_shutdown.IsCancellationRequested)
+        {
+            await SayGoodbyeAsync("BYE Autologout; idle for too long");
+            return null;
+        }
     }
 
     /// <summary>authzid NUL authcid NUL passwd; "=" stands for an empty initial response.</summary>

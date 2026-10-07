@@ -128,10 +128,18 @@ internal sealed class ImapSelection
         return low;
     }
 
-    /// <summary>The indexes a set of sequence numbers refers to (ascending). Numbers beyond the mailbox are a client error (BAD).</summary>
+    /// <summary>
+    /// The indexes a set of sequence numbers refers to (ascending). Numbers beyond the mailbox are a client error (BAD); in an empty
+    /// mailbox, where "*" has no value, every set is simply empty.
+    /// </summary>
     public List<int> ResolveSequenceSet(SequenceSet set)
     {
         var indexes = new SortedSet<int>();
+        if (Messages.Count == 0)
+        {
+            return new List<int>();
+        }
+
         foreach ((long low, long high) in set.Resolve(Messages.Count))
         {
             if (low < 1 || high > Messages.Count)

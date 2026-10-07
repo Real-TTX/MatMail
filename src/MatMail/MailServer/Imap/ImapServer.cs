@@ -165,6 +165,11 @@ public sealed class ImapServer : BackgroundService
         {
             await Task.WhenAll(listeners.Select(l => AcceptLoopAsync(l.Listener, l.ImplicitTls, stoppingToken)));
         }
+        catch (Exception ex)
+        {
+            // Never take the whole application (web interface, SMTP) down with the IMAP server.
+            _logger.LogError(ex, "The IMAP server stopped unexpectedly.");
+        }
         finally
         {
             listeners.ForEach(l => l.Listener.Stop());

@@ -69,7 +69,9 @@ public sealed class TestHost : IAsyncDisposable
     public AppConfig Config { get; }
     public string ConnectionString => Config.Database.ConnectionString;
 
-    public static async Task<TestHost> CreateAsync(Action<AppConfig>? configure = null)
+    /// <param name="configure">Adjusts the configuration.</param>
+    /// <param name="configureServices">Adds services on top of the application's own (e.g. modules that Program.cs wires separately).</param>
+    public static async Task<TestHost> CreateAsync(Action<AppConfig>? configure = null, Action<IServiceCollection>? configureServices = null)
     {
         string admin = TestDatabase.AdminConnectionString ?? throw new InvalidOperationException("MATMAIL_TEST_DB is not set.");
         var builder = new NpgsqlConnectionStringBuilder(admin);
@@ -101,6 +103,7 @@ public sealed class TestHost : IAsyncDisposable
         services.AddLocalization();
         services.AddMatMailServices(config);
         services.AddDataProtection().UseEphemeralDataProtectionProvider();
+        configureServices?.Invoke(services);
         ServiceProvider provider = services.BuildServiceProvider(validateScopes: true);
 
         using (IServiceScope scope = provider.CreateScope())

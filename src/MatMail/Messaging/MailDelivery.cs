@@ -25,6 +25,9 @@ public sealed record DeliverySource
 
     /// <summary>Limit address lookups to one tenant (provider accounts belong to a tenant).</summary>
     public long? TenantId { get; init; }
+
+    /// <summary>Remote: the raw bytes are only a header stub, the message stays at the provider (live access).</summary>
+    public MessageStorage Storage { get; init; } = MessageStorage.Local;
 }
 
 /// <summary>One mailbox that received (or already had) the message.</summary>
@@ -195,6 +198,7 @@ public sealed class MailDelivery
             RemoteFolder = source.RemoteFolder,
             RemoteUid = source.RemoteUid,
             EnvelopeRecipients = addresses.Count == 0 ? null : string.Join(", ", addresses.Distinct()),
+            Storage = source.Storage,
         }, cancel);
 
         return new DeliveredCopy(mailbox, message, false, wentToUnassigned);

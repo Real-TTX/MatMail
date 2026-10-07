@@ -1082,6 +1082,65 @@ public class ImapChangeNotificationTests : ImapTestBase
     }
 
     [DbFact]
+    public async Task Parallel_sessions_append_and_flag_without_losing_anything()
+    {
+        const int Sessions = 5;
+        const int MessagesPerSession = 6;
+        var clients = new List<ImapClient>();
+        try
+        {
+            for (int i = 0; i < Sessions; i++)
+            {
+                ImapClient client = await Imap.LoginAsync();
+                await client.Inbox.OpenAsync(FolderAccess.ReadWrite);
+                clients.Add(client);
+            }
+
+            await Task.WhenAll(clients.Select(async (client, session) =>
+            {
+                for (int i = 0; i < MessagesPerSession; i++)
+                {
+                    var message = new MimeMessage { Subject = $"Session {session} message {i}" };
+                    message.From.Add(MailboxAddress.Parse("alice@example.test"));
+                    message.Body = new TextPart("plain") { Text = "x" };
+                    UniqueId? uid = await client.Inbox.AppendAsync(new AppendRequest(message, MessageFlags.None));
+                    await client.Inbox.StoreAsync(new[] { uid!.Value }, new StoreFlagsRequest(StoreAction.Add, MessageFlags.Flagged) { Silent = true });
+                }
+            }));
+
+            foreach (ImapClient client in clients)
+            {
+                await client.NoOpAsync();
+                Assert.Equal(Sessions * MessagesPerSession, client.Inbox.Count);
+                IList<IMessageSummary> summaries = await client.Inbox.FetchAsync(0, -1, MessageSummaryItems.UniqueId | MessageSummaryItems.Flags);
+                Assert.Equal(Enumerable.Range(1, Sessions * MessagesPerSession).Select(i => (uint)i), summaries.Select(s => s.UniqueId.Id));
+                Assert.All(summaries, s => Assert.True(s.Flags!.Value.HasFlag(MessageFlags.Flagged)));
+            }
+        }
+        finally
+        {
+            clients.ForEach(c => c.Dispose());
+        }
+    }
+
+    [DbFact]
+    public async Task Mailkit_previews_references_and_full_headers_work()
+    {
+        await AddToInboxAsync(ImapTestData.MultipartWithAttachment());
+        await AddToInboxAsync(ImapTestData.Simple("Re: Bericht", "Danke!", extraHeaders: "In-Reply-To: <multi@sender.test>\r\nReferences: <multi@sender.test>\r\n"));
+
+        using ImapClient client = await Imap.LoginAsync();
+        await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
+        IList<IMessageSummary> summaries = await client.Inbox.FetchAsync(0, -1,
+            MessageSummaryItems.PreviewText | MessageSummaryItems.References | MessageSummaryItems.Headers | MessageSummaryItems.UniqueId);
+
+        Assert.StartsWith("Hallo Alice,", summaries[0].PreviewText);
+        Assert.Equal("Danke!", summaries[1].PreviewText?.Trim());
+        Assert.Equal("multi@sender.test", summaries[1].References!.Single());
+        Assert.Equal("Bericht", summaries[0].Headers![HeaderId.Subject]);
+    }
+
+    [DbFact]
     public async Task Expunges_are_not_reported_during_fetch_store_and_search()
     {
         MailMessage first = await AddToInboxAsync(ImapTestData.Simple("First"));

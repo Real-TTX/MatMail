@@ -53,6 +53,7 @@
                     @if (!user.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }
                     else if (user.LockedUntilDate > DateTime.UtcNow) { <mm-badge kind="warn" icon="lock">@L["Locked"]</mm-badge> }
                     else { <mm-badge kind="ok">@L["Active"]</mm-badge> }
+                    @if (user.TwoFactor) { <mm-badge kind="info" icon="smartphone">2FA</mm-badge> }
                 </td>
                 <td class="is-actions">
                     <span class="icon-actions">

@@ -28,7 +28,7 @@ public class IndexModel(MatMailDbContext db) : PageModel
 
     public sealed record UserRow(
         long Id, string LoginName, string DisplayName, string? Email, bool IsActive, bool IsSystemAdmin,
-        DateTime? LastLoginDate, DateTime? LockedUntilDate, List<string> Roles);
+        DateTime? LastLoginDate, DateTime? LockedUntilDate, List<string> Roles, bool TwoFactor);
 
     public async Task OnGetAsync()
     {
@@ -68,7 +68,8 @@ public class IndexModel(MatMailDbContext db) : PageModel
         Paged = await query
             .Select(u => new UserRow(
                 u.Id, u.LoginName, u.DisplayName, u.Email, u.IsActive, u.IsSystemAdmin, u.LastLoginDate, u.LockedUntilDate,
-                db.UserRoles.Where(ur => ur.UserId == u.Id).Select(ur => ur.Role!.Name).OrderBy(n => n).ToList()))
+                db.UserRoles.Where(ur => ur.UserId == u.Id).Select(ur => ur.Role!.Name).OrderBy(n => n).ToList(),
+                db.UserTotps.Any(t => t.UserId == u.Id && t.ConfirmedDate != null)))
             .ToPageAsync(PageNumber);
         PageNumber = Paged.PageNumber;
     }

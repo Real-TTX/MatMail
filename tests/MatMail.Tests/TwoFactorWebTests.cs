@@ -52,6 +52,19 @@ public class TwoFactorTicketTests
     }
 
     [Fact]
+    public void What_the_address_bar_sent_cannot_make_the_cookie_too_big()
+    {
+        TwoFactorTicket ticket = NewTicket();
+        var issued = new DefaultHttpContext();
+
+        ticket.Issue(issued, new PendingSignIn(7, Remember: false, "/" + new string('x', 5000), new string('y', 500)));
+
+        string cookie = issued.Response.Headers.SetCookie.ToString();
+        Assert.True(cookie.Length < 1000, "cookie of " + cookie.Length + " characters");
+        Assert.Equal(new PendingSignIn(7, false, null, null), ticket.Read(Browser(issued)));
+    }
+
+    [Fact]
     public void Without_https_the_cookie_is_not_marked_secure_so_it_works_on_plain_http_setups()
     {
         var issued = new DefaultHttpContext();

@@ -328,19 +328,39 @@ public class AppPasswordTests : IAsyncLifetime
     }
 
     [DbFact]
-    public async Task The_account_password_refused_for_the_mail_protocols_counts_as_a_failure()
+    public async Task An_old_mail_program_that_keeps_sending_the_right_password_does_not_lock_the_account()
+    {
+        await _host.EnrolAsync(_clock, _seed.Alice);
+
+        // Every retry is refused (and logged) ...
+        for (int i = 0; i < 8; i++)
+        {
+            Assert.Null(await ProtocolLoginAsync("alice", TwoFactorTestExtensions.Password));
+        }
+
+        // ... but a password that is right is no guess: the person can still sign in on the web to create the app password.
+        User user = await _host.ReloadAsync(_seed.Alice);
+        Assert.Equal(0, user.FailedLoginCount);
+        Assert.Null(user.LockedUntilDate);
+        Assert.True((await _host.SignInAsync("alice", TwoFactorTestExtensions.Password, SignInPurpose.Web)).Succeeded);
+
+        List<string> messages = await _host.ReadAsync(db => db.ActivityLogs.AsNoTracking().Where(l => l.Message.Contains("app password only")).Select(l => l.Message).ToListAsync());
+        Assert.Equal(8, messages.Count);
+        Assert.All(messages, message => Assert.Contains("'alice'", message));
+        Assert.All(messages, message => Assert.DoesNotContain(TwoFactorTestExtensions.Password, message));
+    }
+
+    [DbFact]
+    public async Task Wrong_passwords_for_a_user_with_two_factor_still_count_and_lock()
     {
         await _host.EnrolAsync(_clock, _seed.Alice);
 
         for (int i = 0; i < 5; i++)
         {
-            Assert.Null(await ProtocolLoginAsync("alice", TwoFactorTestExtensions.Password));
+            Assert.Null(await ProtocolLoginAsync("alice", "Wrong-Passw0rd-" + i));
         }
 
         Assert.NotNull((await _host.ReloadAsync(_seed.Alice)).LockedUntilDate);
-        string message = await _host.ReadAsync(db => db.ActivityLogs.AsNoTracking().Where(l => l.Message.Contains("app password only")).Select(l => l.Message).FirstAsync());
-        Assert.Contains("'alice'", message);
-        Assert.DoesNotContain(TwoFactorTestExtensions.Password, message);
     }
 
     [DbFact]

@@ -159,7 +159,13 @@ public sealed class SignInService
             : new CredentialCheck(_hasher.VerifyHashedPassword(user, user.PasswordHash, password));
         if (!check.Accepted)
         {
-            await RegisterFailureAsync(user.Id, now);
+            // A right password that the protocol does not take any more (two-factor authentication came) is no guess: counting it would
+            // lock people out of the web, where they have to go to create their app password, every time an old mail program retries.
+            if (!check.PasswordRefused)
+            {
+                await RegisterFailureAsync(user.Id, now);
+            }
+
             await _log.WarnAsync(ActivityCategory.Auth, check.FailureMessage(user), tenantId: user.TenantId, userId: user.Id, remoteIp: remoteIp);
             return new SignInOutcome(SignInStatus.InvalidCredentials, null);
         }

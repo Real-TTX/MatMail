@@ -29,9 +29,13 @@ public sealed class TwoFactorTicket
 
     internal void Issue(HttpContext http, PendingSignIn pending, TimeSpan lifetime)
     {
-        string value = _protector.Protect(JsonSerializer.Serialize(pending), lifetime);
+        // What the address bar sent along is not allowed to make the cookie too big for the browser.
+        PendingSignIn bounded = pending with { ReturnUrl = Bounded(pending.ReturnUrl, 1000), TenantSlug = Bounded(pending.TenantSlug, 64) };
+        string value = _protector.Protect(JsonSerializer.Serialize(bounded), lifetime);
         http.Response.Cookies.Append(CookieName, value, Options(http, lifetime));
     }
+
+    private static string? Bounded(string? text, int maxLength) => text is { Length: > 0 } && text.Length <= maxLength ? text : null;
 
     /// <summary>The pending sign-in of this request, or null when there is none, it expired or it was tampered with.</summary>
     public PendingSignIn? Read(HttpContext http)

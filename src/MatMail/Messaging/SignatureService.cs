@@ -9,7 +9,49 @@ using MimeKit;
 namespace MatMail.Messaging;
 
 /// <summary>The values a signature template can use.</summary>
-public sealed record SignatureContext(string DisplayName, string Email, string? JobTitle, string? Phone, string Tenant);
+public sealed record SignatureContext(string DisplayName, string Email, string? JobTitle, string? Phone, string Tenant)
+{
+    public string? Salutation { get; init; }
+    public string? Title { get; init; }
+    public string? FirstName { get; init; }
+    public string? LastName { get; init; }
+    public string? Department { get; init; }
+    public string? Mobile { get; init; }
+    public string? Fax { get; init; }
+
+    /// <summary>The company's web address (branding of the tenant).</summary>
+    public string? Website { get; init; }
+
+    /// <summary>The first name: the one entered, otherwise everything of the display name but its last word.</summary>
+    public string FirstNameOrDerived => !string.IsNullOrWhiteSpace(FirstName) ? FirstName : SplitName().First;
+
+    /// <summary>The last name: the one entered, otherwise the last word of the display name.</summary>
+    public string LastNameOrDerived => !string.IsNullOrWhiteSpace(LastName) ? LastName : SplitName().Last;
+
+    /// <summary>Title and name as one would write them: "Dr. Max Mustermann".</summary>
+    public string FullName => string.Join(' ', new[] { Title, DisplayName }.Where(part => !string.IsNullOrWhiteSpace(part)));
+
+    private (string First, string Last) SplitName()
+    {
+        string name = DisplayName.Trim();
+        int space = name.LastIndexOf(' ');
+        return space < 0 ? (name, string.Empty) : (name[..space].Trim(), name[(space + 1)..].Trim());
+    }
+
+    /// <summary>The values of a user (null: only the sender's address and name are known) in a tenant.</summary>
+    public static SignatureContext For(User? user, string fallbackName, string email, string tenant, string? website = null) => new(
+        string.IsNullOrWhiteSpace(user?.DisplayName) ? fallbackName : user.DisplayName, email, user?.JobTitle, user?.Phone, tenant)
+    {
+        Salutation = user?.Salutation,
+        Title = user?.Title,
+        FirstName = user?.FirstName,
+        LastName = user?.LastName,
+        Department = user?.Department,
+        Mobile = user?.Mobile,
+        Fax = user?.Fax,
+        Website = website,
+    };
+}
 
 /// <summary>
 /// Signatures and footers. A <see cref="SignatureKind.Signature"/> is offered by the mail client; a <see cref="SignatureKind.Footer"/>
@@ -28,9 +70,18 @@ public sealed partial class SignatureService
         string rendered = Placeholder().Replace(template, match => match.Groups[1].Value.ToLowerInvariant() switch
         {
             "displayname" or "name" => Value(context.DisplayName),
+            "fullname" => Value(context.FullName),
+            "firstname" => Value(context.FirstNameOrDerived),
+            "lastname" => Value(context.LastNameOrDerived),
+            "salutation" => Value(context.Salutation),
+            "title" => Value(context.Title),
             "email" => Value(context.Email),
-            "jobtitle" => Value(context.JobTitle),
+            "jobtitle" or "position" => Value(context.JobTitle),
+            "department" => Value(context.Department),
             "phone" => Value(context.Phone),
+            "mobile" => Value(context.Mobile),
+            "fax" => Value(context.Fax),
+            "website" => Value(context.Website),
             "tenant" or "company" => Value(context.Tenant),
             _ => match.Value,
         });

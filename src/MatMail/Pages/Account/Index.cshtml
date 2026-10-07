@@ -17,11 +17,9 @@
             <mm-field asp-for="Input.DisplayName" label='@L["Name"]' autocomplete="name" />
             <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Used for notifications; it is not your login."]' />
         </div>
-        <div class="form-grid">
-            <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
-            <mm-field asp-for="Input.Phone" kind="tel" label='@L["Phone"]' />
-        </div>
+        <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
     </mm-form-section>
+    <partial name="_PersonFields" for="Input" />
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>

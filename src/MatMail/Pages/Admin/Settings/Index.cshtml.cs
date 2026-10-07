@@ -55,7 +55,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         public int SentQueueDays { get; set; }
 
         public string TimeZone { get; set; } = "Europe/Berlin";
-        public string Culture { get; set; } = "de-DE";
+        public string Culture { get; set; } = "en-US";
         public string ThemeMode { get; set; } = "system";
         public string ThemeAccent { get; set; } = "blue";
     }

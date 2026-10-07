@@ -25,13 +25,20 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
     public bool IsSelf => Id == currentUser.UserId;
     public bool CanSetSystemAdmin => currentUser.IsSystemAdmin;
 
-    public class InputModel
+    public class InputModel : IPersonFields
     {
         public string LoginName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? JobTitle { get; set; }
+        public string? Salutation { get; set; }
+        public string? Title { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Department { get; set; }
+        public string? Mobile { get; set; }
+        public string? Fax { get; set; }
         public string? Password { get; set; }
         public bool MustChangePassword { get; set; }
         public bool IsActive { get; set; } = true;
@@ -64,6 +71,13 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
             Email = user.Email,
             Phone = user.Phone,
             JobTitle = user.JobTitle,
+            Salutation = user.Salutation,
+            Title = user.Title,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Department = user.Department,
+            Mobile = user.Mobile,
+            Fax = user.Fax,
             MustChangePassword = user.MustChangePassword,
             IsActive = user.IsActive,
             IsSystemAdmin = user.IsSystemAdmin,
@@ -84,6 +98,13 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
             Email = Input.Email,
             Phone = Input.Phone,
             JobTitle = Input.JobTitle,
+            Salutation = Input.Salutation,
+            Title = Input.Title,
+            FirstName = Input.FirstName,
+            LastName = Input.LastName,
+            Department = Input.Department,
+            Mobile = Input.Mobile,
+            Fax = Input.Fax,
             Password = Input.Password,
             MustChangePassword = Input.MustChangePassword,
             IsActive = Input.IsActive,

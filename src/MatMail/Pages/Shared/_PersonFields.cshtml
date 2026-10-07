@@ -1,0 +1,26 @@
+@model MatMail.Pages.IPersonFields
+@* Salutation, title and contact numbers of a person; used with <partial name="_PersonFields" for="Input" />. *@
+<mm-form-section title='@L["Person"]' icon="user"
+                 description='@L["Used for the placeholders of signatures, e.g. {{Salutation}} {{Title}} {{LastName}}. First and last name are taken from the name when left empty."]'>
+    <div class="form-grid">
+        <mm-field asp-for="Salutation" label='@L["Salutation"]' list="salutation-suggestions" autocomplete="off" />
+        <mm-field asp-for="Title" label='@L["Title"]' placeholder="Dr." autocomplete="off" />
+    </div>
+    <div class="form-grid">
+        <mm-field asp-for="FirstName" label='@L["First name"]' autocomplete="off" />
+        <mm-field asp-for="LastName" label='@L["Last name"]' autocomplete="off" />
+    </div>
+    <mm-field asp-for="Department" label='@L["Department"]' autocomplete="off" />
+    <div class="form-grid">
+        <mm-field asp-for="Phone" kind="tel" label='@L["Phone"]' />
+        <mm-field asp-for="Mobile" kind="tel" label='@L["Mobile"]' />
+        <mm-field asp-for="Fax" kind="tel" label='@L["Fax"]' />
+    </div>
+    <datalist id="salutation-suggestions">
+        <option value="Mr"></option>
+        <option value="Ms"></option>
+        <option value="Mx"></option>
+        <option value="Herr"></option>
+        <option value="Frau"></option>
+    </datalist>
+</mm-form-section>

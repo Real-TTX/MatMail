@@ -21,8 +21,8 @@ public class DisplayConfig
     /// <summary>IANA time zone used for every date shown in the UI. Falls back to UTC when unknown.</summary>
     public string TimeZone { get; set; } = "Europe/Berlin";
 
-    /// <summary>UI language when the visitor has not picked one: "de-DE" or "en-US". Untranslated strings stay English.</summary>
-    public string Culture { get; set; } = "de-DE";
+    /// <summary>UI language when nothing else is known (no choice of the user, no browser preference): "en-US" or "de-DE".</summary>
+    public string Culture { get; set; } = "en-US";
 
     /// <summary>Default theme for users without a choice: system, light or dark.</summary>
     public string ThemeMode { get; set; } = "system";

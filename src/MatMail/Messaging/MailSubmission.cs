@@ -227,12 +227,7 @@ public sealed class MailSubmission
             : null;
         string tenant = await _db.Tenants.AsNoTracking().Where(t => t.Id == request.TenantId).Select(t => t.Name).FirstOrDefaultAsync(cancel) ?? string.Empty;
         MailboxAddress? from = message.From.Mailboxes.FirstOrDefault();
-        return new SignatureContext(
-            user?.DisplayName ?? from?.Name ?? string.Empty,
-            from?.Address ?? request.EnvelopeFrom,
-            user?.JobTitle,
-            user?.Phone,
-            tenant);
+        return SignatureContext.For(user, from?.Name ?? string.Empty, from?.Address ?? request.EnvelopeFrom, tenant);
     }
 }
 

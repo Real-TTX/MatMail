@@ -31,6 +31,19 @@ public class User : AuditedEntity, ITenantEntity
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }
 
+    /// <summary>How the person is addressed ("Mr", "Ms", "Herr", "Frau", ...).</summary>
+    public string? Salutation { get; set; }
+
+    /// <summary>Academic or professional title ("Dr.", "Prof. Dr.").</summary>
+    public string? Title { get; set; }
+
+    /// <summary>Optional; without them the placeholders split the display name.</summary>
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Department { get; set; }
+    public string? Mobile { get; set; }
+    public string? Fax { get; set; }
+
     /// <summary>"system", "light" or "dark"; null = installation default.</summary>
     public string? ThemeMode { get; set; }
     public string? ThemeAccent { get; set; }

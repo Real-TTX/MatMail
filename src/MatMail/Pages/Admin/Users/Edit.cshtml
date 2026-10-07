@@ -18,10 +18,10 @@
                 </div>
                 <div class="form-grid">
                     <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Contact address for notifications; not used to sign in."]' />
-                    <mm-field asp-for="Input.Phone" kind="tel" label='@L["Phone"]' />
+                    <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
                 </div>
-                <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
             </mm-form-section>
+            <partial name="_PersonFields" for="Input" />
         </mm-tab-panel>
 
         <mm-tab-panel title='@L["Access"]' icon="shield">

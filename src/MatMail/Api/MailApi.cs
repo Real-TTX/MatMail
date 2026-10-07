@@ -118,7 +118,7 @@ public static class MailApi
             {
                 if (seen.Add(signature.Id))
                 {
-                    var context = new SignatureContext(user.DisplayName, identity.Alias.Address, self?.JobTitle, self?.Phone, tenantName);
+                    SignatureContext context = SignatureContext.For(self, user.DisplayName, identity.Alias.Address, tenantName);
                     signatureDtos.Add(new SignatureDto(signature.Id, signature.Name, SignatureService.Render(signature.Html, context, html: true), signature.IsDefault, signature.Scope.ToString(), signature.MailboxId));
                 }
             }

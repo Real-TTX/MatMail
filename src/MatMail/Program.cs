@@ -145,7 +145,7 @@ builder.Services.Configure<MvcOptions>(options => options.SuppressImplicitRequir
 
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    var languages = new[] { new CultureInfo("de-DE"), new CultureInfo("en-US") };
+    var languages = new[] { new CultureInfo("en-US"), new CultureInfo("de-DE") };
     CultureInfo configured = languages.FirstOrDefault(c => string.Equals(c.Name, config.Display.Culture, StringComparison.OrdinalIgnoreCase)) ?? languages[0];
 
     // The neutral parents ("de", "en") are listed too: ASP.NET falls back from de-AT to de, but never from "de" to "de-DE".

@@ -78,6 +78,13 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.TenantId);
             e.Property(x => x.LoginName).HasMaxLength(320);
             e.Property(x => x.DisplayName).HasMaxLength(200);
+            e.Property(x => x.Salutation).HasMaxLength(50);
+            e.Property(x => x.Title).HasMaxLength(100);
+            e.Property(x => x.FirstName).HasMaxLength(150);
+            e.Property(x => x.LastName).HasMaxLength(150);
+            e.Property(x => x.Department).HasMaxLength(150);
+            e.Property(x => x.Mobile).HasMaxLength(50);
+            e.Property(x => x.Fax).HasMaxLength(50);
             e.HasMany(x => x.UserRoles).WithOne(x => x.User).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

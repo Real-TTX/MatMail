@@ -229,6 +229,7 @@
   <data name="Delivered for" xml:space="preserve"><value>Zugestellt für</value></data>
   <data name="Delivery" xml:space="preserve"><value>Zustellung</value></data>
   <data name="Delivery and synchronisation" xml:space="preserve"><value>Zustellung und Synchronisierung</value></data>
+  <data name="Department" xml:space="preserve"><value>Abteilung</value></data>
   <data name="Description" xml:space="preserve"><value>Beschreibung</value></data>
   <data name="Details" xml:space="preserve"><value>Details</value></data>
   <data name="Device" xml:space="preserve"><value>Gerät</value></data>
@@ -273,9 +274,11 @@
   <data name="Expired" xml:space="preserve"><value>Abgelaufen</value></data>
   <data name="Expires soon" xml:space="preserve"><value>Läuft bald ab</value></data>
   <data name="Failed" xml:space="preserve"><value>Fehlgeschlagen</value></data>
+  <data name="Fax" xml:space="preserve"><value>Fax</value></data>
   <data name="Fetch mail from connected accounts" xml:space="preserve"><value>E-Mails von verbundenen Konten abholen</value></data>
   <data name="Filter" xml:space="preserve"><value>Filtern</value></data>
   <data name="Fingerprint" xml:space="preserve"><value>Fingerabdruck</value></data>
+  <data name="First name" xml:space="preserve"><value>Vorname</value></data>
   <data name="Folder name" xml:space="preserve"><value>Ordnername</value></data>
   <data name="Folders" xml:space="preserve"><value>Ordner</value></data>
   <data name="Folders to fetch" xml:space="preserve"><value>Abzuholende Ordner</value></data>
@@ -295,6 +298,7 @@
   <data name="hours" xml:space="preserve"><value>Stunden</value></data>
   <data name="Housekeeping" xml:space="preserve"><value>Aufräumen</value></data>
   <data name="How this server fetches the mail from the provider." xml:space="preserve"><value>Wie dieser Server die E-Mails beim Anbieter abholt.</value></data>
+  <data name="IMAP / SMTP settings" xml:space="preserve"><value>IMAP-/SMTP-Einstellungen</value></data>
   <data name="IMAP server enabled" xml:space="preserve"><value>IMAP-Server aktiv</value></data>
   <data name="IMAP: signed in at {0}; {1} folders; the inbox holds {2} messages ({3} unread)." xml:space="preserve"><value>IMAP: Anmeldung bei {0} erfolgreich; {1} Ordner; der Posteingang enthält {2} Nachrichten ({3} ungelesen).</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inaktiv</value></data>
@@ -316,6 +320,7 @@
   <data name="Largest message / attachment upload" xml:space="preserve"><value>Größte Nachricht / größter Anhang beim Hochladen</value></data>
   <data name="Last active" xml:space="preserve"><value>Zuletzt aktiv</value></data>
   <data name="Last error" xml:space="preserve"><value>Letzter Fehler</value></data>
+  <data name="Last name" xml:space="preserve"><value>Nachname</value></data>
   <data name="Last sign-in" xml:space="preserve"><value>Letzte Anmeldung</value></data>
   <data name="Last synchronisation" xml:space="preserve"><value>Letzte Synchronisierung</value></data>
   <data name="Last synchronised" xml:space="preserve"><value>Zuletzt synchronisiert</value></data>
@@ -373,6 +378,7 @@
   <data name="Migration: moves a whole account with all its folders into a mailbox, e.g. when you change the provider." xml:space="preserve"><value>Migration: Verschiebt ein ganzes Konto mit allen Ordnern in ein Postfach, z. B. beim Wechsel des Anbieters.</value></data>
   <data name="Minimise" xml:space="preserve"><value>Minimieren</value></data>
   <data name="minutes" xml:space="preserve"><value>Minuten</value></data>
+  <data name="Mobile" xml:space="preserve"><value>Mobil</value></data>
   <data name="More" xml:space="preserve"><value>Mehr</value></data>
   <data name="Most addresses" xml:space="preserve"><value>Meiste Adressen</value></data>
   <data name="Most messages" xml:space="preserve"><value>Meiste Nachrichten</value></data>
@@ -476,6 +482,7 @@
   <data name="People" xml:space="preserve"><value>Personen</value></data>
   <data name="People who can sign in to the web client, IMAP and SMTP of this tenant." xml:space="preserve"><value>Personen, die sich im Webclient, per IMAP und per SMTP bei diesem Mandanten anmelden können.</value></data>
   <data name="Permissions" xml:space="preserve"><value>Berechtigungen</value></data>
+  <data name="Person" xml:space="preserve"><value>Person</value></data>
   <data name="Personal" xml:space="preserve"><value>Persönlich</value></data>
   <data name="Personal mailbox" xml:space="preserve"><value>Persönliches Postfach</value></data>
   <data name="Personal mailbox of a user" xml:space="preserve"><value>Persönliches Postfach eines Benutzers</value></data>
@@ -544,6 +551,7 @@
   <data name="Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox." xml:space="preserve"><value>Rollen legen fest, was der Benutzer verwalten darf. Der Zugriff auf fremde Postfächer wird pro Postfach als Vertretung vergeben.</value></data>
   <data name="Rule" xml:space="preserve"><value>Regel</value></data>
   <data name="Running" xml:space="preserve"><value>Läuft</value></data>
+  <data name="Salutation" xml:space="preserve"><value>Anrede</value></data>
   <data name="Save" xml:space="preserve"><value>Speichern</value></data>
   <data name="Save and close" xml:space="preserve"><value>Speichern und schließen</value></data>
   <data name="Saving…" xml:space="preserve"><value>Wird gespeichert …</value></data>
@@ -761,6 +769,7 @@
   <data name="This user already has access." xml:space="preserve"><value>Dieser Benutzer hat bereits Zugriff.</value></data>
   <data name="This user has no personal mailbox yet." xml:space="preserve"><value>Dieser Benutzer hat noch kein persönliches Postfach.</value></data>
   <data name="Time zone" xml:space="preserve"><value>Zeitzone</value></data>
+  <data name="Title" xml:space="preserve"><value>Titel</value></data>
   <data name="TLS certificate" xml:space="preserve"><value>TLS-Zertifikat</value></data>
   <data name="TLS is not available until a certificate is installed." xml:space="preserve"><value>TLS ist erst verfügbar, wenn ein Zertifikat installiert ist.</value></data>
   <data name="To" xml:space="preserve"><value>An</value></data>
@@ -787,6 +796,7 @@
   <data name="Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed." xml:space="preserve"><value>Verwenden Sie diese Einstellungen in Outlook, Thunderbird, Apple Mail oder auf dem Smartphone. Ihre E-Mails liegen hier; die Passwörter der E-Mail-Anbieter werden nie gebraucht.</value></data>
   <data name="Use your login name or e-mail address and your password." xml:space="preserve"><value>Verwenden Sie Ihren Anmeldenamen oder Ihre E-Mail-Adresse und Ihr Passwort.</value></data>
   <data name="Used for notifications; it is not your login." xml:space="preserve"><value>Wird für Benachrichtigungen verwendet; es ist nicht Ihr Login.</value></data>
+  <data name="Used for the placeholders of signatures, e.g. {{Salutation}} {{Title}} {{LastName}}. First and last name are taken from the name when left empty." xml:space="preserve"><value>Wird für die Platzhalter der Signaturen verwendet, z. B. {{Salutation}} {{Title}} {{LastName}}. Vor- und Nachname werden aus dem Namen abgeleitet, wenn sie leer bleiben.</value></data>
   <data name="User" xml:space="preserve"><value>Benutzer</value></data>
   <data name="User name" xml:space="preserve"><value>Benutzername</value></data>
   <data name="Users" xml:space="preserve"><value>Benutzer</value></data>

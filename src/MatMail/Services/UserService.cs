@@ -11,6 +11,13 @@ public sealed class UserInput
     public string? Email { get; set; }
     public string? JobTitle { get; set; }
     public string? Phone { get; set; }
+    public string? Salutation { get; set; }
+    public string? Title { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Department { get; set; }
+    public string? Mobile { get; set; }
+    public string? Fax { get; set; }
 
     /// <summary>Required for new users; for existing users only set when the password is to change.</summary>
     public string? Password { get; set; }
@@ -71,6 +78,13 @@ public sealed class UserService
             Email = Clean(input.Email),
             JobTitle = Clean(input.JobTitle),
             Phone = Clean(input.Phone),
+            Salutation = Clean(input.Salutation),
+            Title = Clean(input.Title),
+            FirstName = Clean(input.FirstName),
+            LastName = Clean(input.LastName),
+            Department = Clean(input.Department),
+            Mobile = Clean(input.Mobile),
+            Fax = Clean(input.Fax),
             IsActive = input.IsActive,
             IsSystemAdmin = input.IsSystemAdmin,
             MustChangePassword = input.MustChangePassword,
@@ -159,6 +173,13 @@ public sealed class UserService
         user.Email = Clean(input.Email);
         user.JobTitle = Clean(input.JobTitle);
         user.Phone = Clean(input.Phone);
+        user.Salutation = Clean(input.Salutation);
+        user.Title = Clean(input.Title);
+        user.FirstName = Clean(input.FirstName);
+        user.LastName = Clean(input.LastName);
+        user.Department = Clean(input.Department);
+        user.Mobile = Clean(input.Mobile);
+        user.Fax = Clean(input.Fax);
         user.IsActive = input.IsActive;
         user.IsSystemAdmin = input.IsSystemAdmin;
         user.MustChangePassword = input.MustChangePassword;

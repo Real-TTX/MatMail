@@ -15,12 +15,19 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, SessionCac
     public string LoginName { get; private set; } = string.Empty;
     public string TenantName { get; private set; } = string.Empty;
 
-    public class InputModel
+    public class InputModel : IPersonFields
     {
         public string DisplayName { get; set; } = string.Empty;
         public string? Email { get; set; }
         public string? JobTitle { get; set; }
         public string? Phone { get; set; }
+        public string? Salutation { get; set; }
+        public string? Title { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Department { get; set; }
+        public string? Mobile { get; set; }
+        public string? Fax { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -31,7 +38,17 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, SessionCac
             return NotFound();
         }
 
-        Input = new InputModel { DisplayName = user.DisplayName, Email = user.Email, JobTitle = user.JobTitle, Phone = user.Phone };
+        Input = new InputModel
+        {
+            DisplayName = user.DisplayName, Email = user.Email, JobTitle = user.JobTitle, Phone = user.Phone,
+            Salutation = user.Salutation,
+            Title = user.Title,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Department = user.Department,
+            Mobile = user.Mobile,
+            Fax = user.Fax,
+        };
         return Page();
     }
 
@@ -62,6 +79,13 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, SessionCac
         user.Email = string.IsNullOrWhiteSpace(Input.Email) ? null : Input.Email.Trim();
         user.JobTitle = string.IsNullOrWhiteSpace(Input.JobTitle) ? null : Input.JobTitle.Trim();
         user.Phone = string.IsNullOrWhiteSpace(Input.Phone) ? null : Input.Phone.Trim();
+        user.Salutation = string.IsNullOrWhiteSpace(Input.Salutation) ? null : Input.Salutation.Trim();
+        user.Title = string.IsNullOrWhiteSpace(Input.Title) ? null : Input.Title.Trim();
+        user.FirstName = string.IsNullOrWhiteSpace(Input.FirstName) ? null : Input.FirstName.Trim();
+        user.LastName = string.IsNullOrWhiteSpace(Input.LastName) ? null : Input.LastName.Trim();
+        user.Department = string.IsNullOrWhiteSpace(Input.Department) ? null : Input.Department.Trim();
+        user.Mobile = string.IsNullOrWhiteSpace(Input.Mobile) ? null : Input.Mobile.Trim();
+        user.Fax = string.IsNullOrWhiteSpace(Input.Fax) ? null : Input.Fax.Trim();
         await db.SaveChangesAsync();
         cache.InvalidateUser(user.Id);
 

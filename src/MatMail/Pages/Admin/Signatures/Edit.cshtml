@@ -25,7 +25,7 @@
             <span asp-validation-for="Input.Html" class="field-error"></span>
             <p class="form-help">
                 @L["Placeholders:"]
-                @foreach (var placeholder in new[] { "DisplayName", "Email", "JobTitle", "Phone", "Tenant" })
+                @foreach (var placeholder in new[] { "FullName", "Salutation", "Title", "FirstName", "LastName", "DisplayName", "JobTitle", "Department", "Email", "Phone", "Mobile", "Fax", "Tenant", "Website" })
                 {
                     <code class="placeholder-chip" data-insert="{{@placeholder}}">{{@placeholder}}</code>
                 }
@@ -55,7 +55,7 @@
     <script>
         (function () {
           var area = document.getElementById("Input_Html"), frame = document.getElementById("signature-preview");
-          var sample = { DisplayName: "Max Mustermann", Email: "max@example.com", JobTitle: "Managing director", Phone: "+49 123 456789", Tenant: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(User.FindFirst(AppClaims.TenantName)?.Value ?? "Example GmbH")) };
+          var sample = { FullName: "Dr. Max Mustermann", Salutation: "Mr", Title: "Dr.", FirstName: "Max", LastName: "Mustermann", DisplayName: "Max Mustermann", Email: "max@example.com", JobTitle: "Managing director", Department: "Management", Phone: "+49 123 456789", Mobile: "+49 170 1234567", Fax: "+49 123 456780", Website: "https://www.example.com", Tenant: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(User.FindFirst(AppClaims.TenantName)?.Value ?? "Example GmbH")) };
           function render() {
             var html = area.value.replace(/\{\{\s*(\w+)\s*\}\}/g, function (m, key) {
               var name = Object.keys(sample).filter(function (k) { return k.toLowerCase() === key.toLowerCase(); })[0];

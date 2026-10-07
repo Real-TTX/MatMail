@@ -149,3 +149,41 @@ public class SignatureSecurityTests
         Assert.Contains("mailto:max@example.test", html);
     }
 }
+
+public class SignaturePlaceholderTests
+{
+    [Fact]
+    public void Personal_details_fill_the_placeholders()
+    {
+        var context = new SignatureContext("Max Mustermann", "max@example.test", "CEO", "+49 30 123", "Example GmbH")
+        {
+            Salutation = "Herr", Title = "Dr.", Department = "Management", Mobile = "+49 170 1", Fax = "+49 30 124", Website = "https://example.test",
+        };
+
+        string html = SignatureService.Render(
+            "{{Salutation}} {{FullName}}|{{FirstName}}|{{LastName}}|{{Title}}|{{JobTitle}}, {{Department}}|{{Phone}}|{{Mobile}}|{{Fax}}|{{Company}}|{{Website}}|{{Email}}",
+            context, html: true);
+
+        Assert.Equal("Herr Dr. Max Mustermann|Max|Mustermann|Dr.|CEO, Management|+49 30 123|+49 170 1|+49 30 124|Example GmbH|https://example.test|max@example.test", html);
+    }
+
+    [Theory]
+    [InlineData("Max Mustermann", null, null, "Max", "Mustermann")]
+    [InlineData("Anna Maria von Berg", null, null, "Anna Maria von", "Berg")]
+    [InlineData("Madonna", null, null, "Madonna", "")]
+    [InlineData("Max Mustermann", "Maximilian", "Muster-Mann", "Maximilian", "Muster-Mann")]
+    public void First_and_last_name_are_taken_from_the_name_unless_entered(string display, string? first, string? last, string expectedFirst, string expectedLast)
+    {
+        var context = new SignatureContext(display, "x@example.test", null, null, "T") { FirstName = first, LastName = last };
+        Assert.Equal(expectedFirst, context.FirstNameOrDerived);
+        Assert.Equal(expectedLast, context.LastNameOrDerived);
+    }
+
+    [Fact]
+    public void Values_are_encoded_in_html_and_unknown_placeholders_stay_as_they_are()
+    {
+        var context = new SignatureContext("A & B", "x@example.test", null, null, "T");
+        Assert.Equal("A &amp; B {{Unknown}}", SignatureService.Render("{{DisplayName}} {{Unknown}}", context, html: true));
+        Assert.Equal("A & B", SignatureService.Render("{{DisplayName}}", context, html: false));
+    }
+}

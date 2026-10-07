@@ -914,6 +914,43 @@ public class SmtpServerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task The_hosted_services_start_and_stop_with_the_application()
+    {
+        // Wired like Program.cs does it: the mail core, the certificate, AddSmtpServer(); ports from the configuration.
+        AppConfig config = _host.Config;
+        config.Smtp.BindAddress = "127.0.0.1";
+        config.Smtp.Port = FreePort();
+        config.Smtp.SubmissionPort = FreePort();
+        config.Smtp.ImplicitTlsPort = FreePort();
+
+        using IHost application = new HostBuilder()
+            .ConfigureServices(services =>
+            {
+                services.AddLogging();
+                services.AddMatMailServices(config);
+                services.AddDataProtection().UseEphemeralDataProtectionProvider();
+                services.AddSingleton(TestCertificates.Provider);
+                services.AddSmtpServer();
+            })
+            .Build();
+
+        await application.StartAsync();
+        SmtpServer server = application.Services.GetRequiredService<SmtpServer>();
+        Assert.Equal(config.Smtp.Port, server.BoundPorts[SmtpListenerKind.Relay]);
+        Assert.Equal(config.Smtp.SubmissionPort, server.BoundPorts[SmtpListenerKind.Submission]);
+        Assert.Equal(config.Smtp.ImplicitTlsPort, server.BoundPorts[SmtpListenerKind.ImplicitTls]);
+
+        (RawSmtpClient client, SmtpReplyLines greeting) = await RawSmtpClient.ConnectAsync(config.Smtp.ImplicitTlsPort, implicitTls: true);
+        await using (client)
+        {
+            Assert.Equal("220 mail.example.test ESMTP MatMail", greeting.ToString());
+        }
+
+        await application.StopAsync();
+        Assert.Equal(0, server.ActiveConnections);
+    }
+
+    [DbFact]
     public async Task Idle_connections_are_closed_after_the_command_timeout()
     {
         await using RunningSmtpServer quick = await RunningSmtpServer.StartAsync(_host, commandTimeout: TimeSpan.FromSeconds(1));
@@ -948,6 +985,15 @@ public class SmtpServerTests : IAsyncLifetime
     // -------------------------------------------------------------------------------------------------------------------
 
     private static string Plain(string login, string password) => Base64($"\0{login}\0{password}");
+
+    private static int FreePort()
+    {
+        var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
+    }
 
     private static string Base64(string text) => Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
 

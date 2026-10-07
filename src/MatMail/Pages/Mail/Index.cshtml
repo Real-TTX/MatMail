@@ -1,11 +1,59 @@
 @page "/Mail"
 @model MatMail.Pages.Mail.IndexModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
     ViewData["Area"] = "mail";
     ViewData["Title"] = L["Mail"].Value;
+    var token = Antiforgery.GetAndStoreTokens(HttpContext).RequestToken;
 }
 
-<div class="empty-state" style="margin:2rem">
-    <mm-icon name="mail" class="empty-state__icon" />
-    <p>@L["The mail client is being built."]</p>
+@section Head {
+    <meta name="csrf-token" content="@token" />
+}
+
+@section Sidebar {
+    <div class="mail-sidebar">
+        <button type="button" class="btn-compose" id="mail-compose-button">
+            <mm-icon name="edit" /><span>@L["Compose"]</span>
+        </button>
+        <nav class="mail-folders" id="mail-folders" aria-label="@L["Folders"]"></nav>
+    </div>
+}
+
+@section HeaderCenter {
+    <form class="mail-search" id="mail-search" role="search" autocomplete="off">
+        <mm-icon name="search" class="mail-search__icon" />
+        <input type="search" id="mail-search-input" class="mail-search__input" placeholder="@L["Search mail"]" aria-label="@L["Search mail"]" />
+        <button type="button" class="icon-btn mail-search__clear" id="mail-search-clear" aria-label="@L["Clear search"]" hidden><mm-icon name="x" /></button>
+    </form>
+}
+
+<script type="application/json" id="mail-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+<div class="mail-app" id="mail-app">
+    <section class="mail-pane mail-pane--list" id="mail-list-pane">
+        <div class="mail-toolbar" id="mail-list-toolbar"></div>
+        <div class="mail-notice" id="mail-notice" hidden></div>
+        <div class="mail-list" id="mail-list" role="list"></div>
+        <div class="mail-empty" id="mail-empty" hidden>
+            <mm-icon name="inbox" class="mail-empty__icon" />
+            <p id="mail-empty-text">@L["Nothing here."]</p>
+        </div>
+    </section>
+
+    <section class="mail-pane mail-pane--reader" id="mail-reader-pane" hidden>
+        <div class="mail-toolbar" id="mail-reader-toolbar"></div>
+        <div class="mail-reader" id="mail-reader"></div>
+    </section>
+
+    <div class="mail-loading" id="mail-loading" hidden><span class="spinner"></span></div>
 </div>
+
+<div class="compose-dock" id="compose-dock" aria-live="polite"></div>
+<div class="mail-toasts" id="mail-toasts" role="status" aria-live="polite"></div>
+<div class="menu-layer" id="mail-menu-layer" hidden></div>
+
+@section Scripts {
+    <script src="~/js/mail-core.js" asp-append-version="true"></script>
+    <script src="~/js/mail-compose.js" asp-append-version="true"></script>
+    <script src="~/js/mail-ui.js" asp-append-version="true"></script>
+}

@@ -94,7 +94,10 @@ public static partial class MessageParser
     }
 
     /// <summary>Lower-case subject without the "Re:", "Fwd:", "AW:", "WG:" prefixes.</summary>
-    public static string NormalizeSubject(string? subject)
+    public static string NormalizeSubject(string? subject) => StripReplyPrefixes(subject).ToLowerInvariant();
+
+    /// <summary>The subject without any "Re:", "Fwd:", "AW:", "WG:" prefixes, in its original case.</summary>
+    public static string StripReplyPrefixes(string? subject)
     {
         string value = (subject ?? string.Empty).Trim();
         string previous;
@@ -105,7 +108,7 @@ public static partial class MessageParser
         }
         while (value != previous);
 
-        return value.ToLowerInvariant();
+        return value;
     }
 
     private static string ExtractText(MimeMessage message)

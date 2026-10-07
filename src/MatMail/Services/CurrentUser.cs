@@ -52,6 +52,11 @@ public sealed class CurrentUser
 
     public bool IsSystemAdmin => _actor is { } a ? a.IsSystemAdmin : Principal?.FindFirstValue(AppClaims.SystemAdmin) == "1";
 
+    /// <summary>The permissions the user holds through roles (system administrators additionally hold everything).</summary>
+    public IReadOnlySet<string> PermissionSet => _actor is { } a
+        ? a.Permissions
+        : (Principal?.FindAll(AppClaims.Permission).Select(c => c.Value).ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>());
+
     /// <summary>True when the user holds the permission (system administrators hold all of them).</summary>
     public bool Can(string permission)
     {

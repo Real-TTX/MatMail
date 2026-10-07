@@ -61,6 +61,12 @@ public sealed class MailAccessService
         return user;
     }
 
+    /// <summary>The signed-in web user (from the session principal), or null when nobody is signed in.</summary>
+    public MailUser? GetCurrentUser()
+        => _current.UserId is long userId && _current.TenantId is long tenantId && tenantId > 0
+            ? new MailUser(userId, tenantId, _current.Username ?? string.Empty, _current.DisplayName ?? _current.Username ?? string.Empty, _current.IsSystemAdmin, _current.PermissionSet)
+            : null;
+
     /// <summary>Makes the current scope act as this user.</summary>
     public void Apply(MailUser user)
         => _current.RunAs(user.UserId, user.TenantId, user.IsSystemAdmin, user.Permissions, user.DisplayName);

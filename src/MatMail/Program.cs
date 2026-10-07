@@ -1,5 +1,6 @@
 using System.Globalization;
 using MatMail;
+using MatMail.Api;
 using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Messaging;
@@ -62,6 +63,8 @@ builder.Services.AddMatMailServices(config);
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
     .SetApplicationName("MatMail");
+
+builder.Services.AddAntiforgery(options => options.HeaderName = "X-CSRF-TOKEN");
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -207,6 +210,7 @@ app.MapGet("/healthz", async (MatMailDbContext db, CancellationToken cancel) =>
 }).AllowAnonymous();
 
 app.MapRazorPages();
+app.MapMailApi();
 await app.RunAsync();
 return 0;
 

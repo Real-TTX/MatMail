@@ -9,6 +9,8 @@ public static class MessagingServices
     {
         services.AddSingleton<MailEventHub>();
         services.AddSingleton<OutboundSignal>();
+        services.AddSingleton<AttachmentStaging>();
+        services.AddSingleton<MailBodyRenderer>();
 
         services.AddScoped<MailStore>();
         services.AddScoped<FolderService>();
@@ -19,6 +21,8 @@ public static class MessagingServices
         services.AddScoped<SignatureService>();
         services.AddScoped<OutboundQueue>();
         services.AddScoped<MailSubmission>();
+        services.AddScoped<ComposeService>();
+        services.AddScoped<ContactService>();
         services.AddScoped<ProviderConnector>();
         return services;
     }

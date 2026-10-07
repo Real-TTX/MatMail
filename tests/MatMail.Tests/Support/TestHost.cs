@@ -98,6 +98,7 @@ public sealed class TestHost : IAsyncDisposable
 
         var services = new ServiceCollection();
         services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
+        services.AddLocalization();
         services.AddMatMailServices(config);
         services.AddDataProtection().UseEphemeralDataProtectionProvider();
         ServiceProvider provider = services.BuildServiceProvider(validateScopes: true);

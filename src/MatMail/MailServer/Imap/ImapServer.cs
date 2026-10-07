@@ -40,6 +40,9 @@ internal sealed class ImapServerContext
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(30);
 
     public TimeSpan IdlePollInterval { get; set; } = TimeSpan.FromSeconds(20);
+
+    /// <summary>How often an open session looks up whether its user and the selected mailbox are still allowed.</summary>
+    public TimeSpan AccessRecheckInterval { get; set; } = TimeSpan.FromSeconds(5);
 }
 
 /// <summary>
@@ -107,6 +110,13 @@ public sealed class ImapServer : BackgroundService
     {
         get => _context.IdlePollInterval;
         set => _context.IdlePollInterval = value;
+    }
+
+    /// <summary>How often an open session looks up whether its user and the selected mailbox are still allowed (tests: zero).</summary>
+    public TimeSpan AccessRecheckInterval
+    {
+        get => _context.AccessRecheckInterval;
+        set => _context.AccessRecheckInterval = value;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

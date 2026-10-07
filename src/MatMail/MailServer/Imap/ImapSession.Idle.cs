@@ -64,6 +64,11 @@ internal sealed partial class ImapSession
     {
         try
         {
+            if (!await StillAllowedAsync())
+            {
+                return;
+            }
+
             await SynchronizeAsync(null, allowExpunge: true);
         }
         catch (Exception ex) when (!IsConnectionError(ex) && ex is not OperationCanceledException)

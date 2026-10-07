@@ -52,6 +52,12 @@ internal static class ImapSearchParser
     public static readonly string[] SupportedCharsets = { "UTF-8", "US-ASCII" };
 
     /// <summary>
+    /// How deep groups, NOT and OR may nest. The parser and the evaluation recurse; without a limit a few thousand "(" would end the
+    /// whole process with a stack overflow, which no handler can catch.
+    /// </summary>
+    private const int MaxDepth = 32;
+
+    /// <summary>
     /// [CHARSET SP astring SP] search-key *(SP search-key). Returns the criteria and the charset named by the client (null when none
     /// was named); the caller refuses charsets it does not know.
     /// </summary>
@@ -74,15 +80,20 @@ internal static class ImapSearchParser
         return (keys.Count == 1 ? keys[0] : new AndKey(keys), charset);
     }
 
-    private static SearchKey ReadKey(ImapParser parser)
+    private static SearchKey ReadKey(ImapParser parser, int depth = 0)
     {
+        if (depth > MaxDepth)
+        {
+            throw parser.Error("Search criteria are nested too deeply.");
+        }
+
         if (parser.TryConsume('('))
         {
             var keys = new List<SearchKey>();
             parser.TrySpace();
             while (!parser.TryConsume(')'))
             {
-                keys.Add(ReadKey(parser));
+                keys.Add(ReadKey(parser, depth + 1));
                 if (parser.Peek() != ')')
                 {
                     parser.ExpectSpace();
@@ -133,8 +144,8 @@ internal static class ImapSearchParser
             "BODY" => new BodyKey(Argument(parser)),
             "TEXT" => new TextKey(Argument(parser)),
             "UID" => Uid(parser),
-            "NOT" => Not(parser),
-            "OR" => Or(parser),
+            "NOT" => Not(parser, depth),
+            "OR" => Or(parser, depth),
             _ => throw parser.Error($"Unknown search criterion {name}."),
         };
     }
@@ -193,18 +204,18 @@ internal static class ImapSearchParser
         return new UidKey(parser.ReadSequenceSet());
     }
 
-    private static SearchKey Not(ImapParser parser)
+    private static SearchKey Not(ImapParser parser, int depth)
     {
         parser.ExpectSpace();
-        return new NotKey(ReadKey(parser));
+        return new NotKey(ReadKey(parser, depth + 1));
     }
 
-    private static SearchKey Or(ImapParser parser)
+    private static SearchKey Or(ImapParser parser, int depth)
     {
         parser.ExpectSpace();
-        SearchKey left = ReadKey(parser);
+        SearchKey left = ReadKey(parser, depth + 1);
         parser.ExpectSpace();
-        return new OrKey(left, ReadKey(parser));
+        return new OrKey(left, ReadKey(parser, depth + 1));
     }
 }
 

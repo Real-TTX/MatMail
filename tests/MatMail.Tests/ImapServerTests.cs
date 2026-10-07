@@ -1891,3 +1891,88 @@ public class ImapFormatTests
         return ImapFetchRequest.Parse(parser, isUid: false).Items.Single().Section!;
     }
 }
+
+/// <summary>Findings of the security review: what an administrator takes away must reach sessions that are already open.</summary>
+public class ImapSecurityTests : ImapTestBase
+{
+    [DbFact]
+    public async Task Withdrawing_a_delegation_ends_the_open_session_that_uses_it()
+    {
+        await ImapTestData.GrantAsync(Host, Seed.Info, Seed.Bob, MailboxAccess.Edit);
+        Imap.Server.AccessRecheckInterval = TimeSpan.Zero;
+
+        await using RawImapClient raw = await LoginRawAsync("bob");
+        Assert.StartsWith("a1 OK", (await raw.CommandAsync("a1", "SELECT Shared/Info/INBOX"))[^1]);
+        Assert.StartsWith("a2 OK", (await raw.CommandAsync("a2", "NOOP"))[^1]);
+
+        using (IServiceScope scope = Host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            await db.MailboxPermissions.Where(p => p.MailboxId == Seed.Info.Id && p.UserId == Seed.Bob.Id).ExecuteDeleteAsync();
+        }
+
+        await raw.SendAsync("a3 NOOP\r\n");
+        Assert.StartsWith("* BYE", await raw.ReadLineAsync());
+        Assert.True(await raw.IsClosedAsync());
+    }
+
+    [DbFact]
+    public async Task Reducing_a_delegation_to_read_makes_the_open_session_read_only()
+    {
+        await ImapTestData.GrantAsync(Host, Seed.Info, Seed.Bob, MailboxAccess.Edit);
+        await ImapTestData.AddAsync(Host, Seed.Info.Id, FolderKind.Inbox, ImapTestData.Simple("For everybody"));
+        Imap.Server.AccessRecheckInterval = TimeSpan.Zero;
+
+        await using RawImapClient raw = await LoginRawAsync("bob");
+        Assert.StartsWith("a1 OK", (await raw.CommandAsync("a1", "SELECT Shared/Info/INBOX"))[^1]);
+        Assert.StartsWith("a2 OK", (await raw.CommandAsync("a2", "STORE 1 +FLAGS (\\Flagged)"))[^1]);
+
+        using (IServiceScope scope = Host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            await db.MailboxPermissions.Where(p => p.MailboxId == Seed.Info.Id && p.UserId == Seed.Bob.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(p => p.Access, MailboxAccess.Read));
+        }
+
+        List<string> response = await raw.CommandAsync("a3", "STORE 1 -FLAGS (\\Flagged)");
+        Assert.StartsWith("a3 NO", response[^1]);
+        Assert.Contains("[NOPERM]", response[^1]);
+    }
+
+    [DbFact]
+    public async Task Deactivating_the_user_ends_the_open_session()
+    {
+        Imap.Server.AccessRecheckInterval = TimeSpan.Zero;
+        await using RawImapClient raw = await LoginRawAsync("alice");
+        Assert.StartsWith("a1 OK", (await raw.CommandAsync("a1", "SELECT INBOX"))[^1]);
+
+        using (IServiceScope scope = Host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            await db.Users.IgnoreQueryFilters().Where(u => u.Id == Seed.Alice.Id).ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, false));
+        }
+
+        await raw.SendAsync("a2 NOOP\r\n");
+        Assert.StartsWith("* BYE", await raw.ReadLineAsync());
+        Assert.True(await raw.IsClosedAsync());
+    }
+
+    [DbFact]
+    public async Task Absurdly_nested_search_criteria_are_refused_and_the_server_keeps_running()
+    {
+        await using RawImapClient raw = await LoginRawAsync("alice");
+        Assert.StartsWith("a1 OK", (await raw.CommandAsync("a1", "SELECT INBOX"))[^1]);
+
+        string groups = "a2 SEARCH " + new string('(', 20_000) + "ALL" + new string(')', 20_000);
+        Assert.StartsWith("a2 BAD", (await raw.CommandAsync("a2", groups["a2 ".Length..]))[^1]);
+
+        string nots = "SEARCH " + string.Concat(Enumerable.Repeat("NOT ", 20_000)) + "ALL";
+        Assert.StartsWith("a3 BAD", (await raw.CommandAsync("a3", nots))[^1]);
+
+        string ors = "SEARCH " + string.Concat(Enumerable.Repeat("OR ALL ", 20_000)) + "ALL";
+        Assert.StartsWith("a4 BAD", (await raw.CommandAsync("a4", ors))[^1]);
+
+        Assert.StartsWith("a5 OK", (await raw.CommandAsync("a5", "NOOP"))[^1]);
+        Assert.StartsWith("a6 OK", (await raw.CommandAsync("a6", "SEARCH NOT (OR SEEN (FLAGGED UNSEEN))"))[^1]);
+    }
+}

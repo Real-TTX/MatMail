@@ -57,6 +57,7 @@ internal sealed partial class ImapSession
 
     private ImapSessionState _state = ImapSessionState.NotAuthenticated;
     private MailUser? _user;
+    private DateTime _accessCheckedAt = DateTime.MinValue;
     private volatile ImapSelection? _selection;
     private IDisposable? _subscription;
     private int _changePending;
@@ -189,8 +190,56 @@ internal sealed partial class ImapSession
             return;
         }
 
+        if (_state is ImapSessionState.Authenticated or ImapSessionState.Selected && !await StillAllowedAsync())
+        {
+            return;
+        }
+
         var command = new ImapCommand { Tag = tag, Name = name, IsUid = isUid, Parser = parser };
         await RunHandlerAsync(handler, command);
+    }
+
+    /// <summary>
+    /// A session can stay open for days, so what an administrator takes away has to reach it: a deactivated user, a role without
+    /// mail rights, a withdrawn or reduced delegation. Looked up every few seconds (and while idling); false = the session was ended.
+    /// </summary>
+    private async Task<bool> StillAllowedAsync()
+    {
+        MailUser? user = _user;
+        DateTime now = DateTime.UtcNow;
+        if (user is null || now - _accessCheckedAt < _context.AccessRecheckInterval)
+        {
+            return true;
+        }
+
+        _accessCheckedAt = now;
+        await using ImapWork work = OpenWork();
+        MailUser? fresh = await work.Access.RefreshAsync(user, _shutdown);
+        if (fresh is null)
+        {
+            _selection = null;
+            await SayGoodbyeAsync("BYE This account may no longer use the mail server");
+            return false;
+        }
+
+        _user = fresh;
+        ImapSelection? selection = _selection;
+        if (selection is null)
+        {
+            return true;
+        }
+
+        IReadOnlyList<AccessibleMailbox> mailboxes = await work.Access.GetMailboxesAsync(fresh, _shutdown);
+        AccessibleMailbox? mailbox = mailboxes.FirstOrDefault(m => m.Mailbox.Id == selection.MailboxId);
+        if (mailbox is null)
+        {
+            _selection = null;
+            await SayGoodbyeAsync("BYE Access to the selected mailbox was withdrawn");
+            return false;
+        }
+
+        selection.Access = mailbox.Access;
+        return true;
     }
 
     private async Task RunHandlerAsync(CommandHandler handler, ImapCommand command)

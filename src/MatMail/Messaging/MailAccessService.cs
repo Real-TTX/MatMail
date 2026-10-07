@@ -61,6 +61,27 @@ public sealed class MailAccessService
         return user;
     }
 
+    /// <summary>
+    /// The user as the database sees them now, or null when they may no longer use mail (deactivated, tenant switched off, no more
+    /// mail permission). Protocol sessions live for hours; this is how a change by an administrator reaches them.
+    /// </summary>
+    public async Task<MailUser?> RefreshAsync(MailUser user, CancellationToken cancel = default)
+    {
+        User? row = await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.UserId, cancel);
+        if (row is null || !row.IsActive)
+        {
+            return null;
+        }
+
+        if (!row.IsSystemAdmin && !await _db.Tenants.AnyAsync(t => t.Id == row.TenantId && t.IsActive, cancel))
+        {
+            return null;
+        }
+
+        MailUser fresh = await LoadUserAsync(row);
+        return fresh.Can(Permissions.MailUse) ? fresh : null;
+    }
+
     /// <summary>The signed-in web user (from the session principal), or null when nobody is signed in.</summary>
     public MailUser? GetCurrentUser()
         => _current.UserId is long userId && _current.TenantId is long tenantId && tenantId > 0

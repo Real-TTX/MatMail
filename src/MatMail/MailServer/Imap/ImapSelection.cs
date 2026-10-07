@@ -51,7 +51,8 @@ internal sealed class ImapSelection
 
     public string Name { get; }
 
-    public MailboxAccess Access { get; }
+    /// <summary>What the user may do here; lowered when an administrator takes rights away while the session is open.</summary>
+    public MailboxAccess Access { get; set; }
 
     public bool IsExamine { get; }
 

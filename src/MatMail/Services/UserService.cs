@@ -98,12 +98,19 @@ public sealed class UserService
         return (user, null);
     }
 
-    public async Task<string?> UpdateAsync(long id, UserInput input)
+    /// <param name="keepSession">The session of the person who makes the change: it stays valid when they change their own password.</param>
+    public async Task<string?> UpdateAsync(long id, UserInput input, Guid? keepSession = null)
     {
         User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
         if (user is null)
         {
             return "The user does not exist.";
+        }
+
+        // Whoever may manage the users of a tenant must not be able to take over the installation by editing a system administrator.
+        if (user.IsSystemAdmin && !_current.IsSystemAdmin)
+        {
+            return "Only system administrators can change a system administrator.";
         }
 
         string loginName = SignInService.NormalizeLoginName(input.LoginName);
@@ -142,6 +149,11 @@ public sealed class UserService
             }
         }
 
+        if (user.IsSystemAdmin && user.IsActive && !input.IsActive && !await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.IsSystemAdmin && u.Id != id && u.IsActive))
+        {
+            return "There must be at least one active system administrator.";
+        }
+
         user.LoginName = loginName;
         user.DisplayName = input.DisplayName.Trim();
         user.Email = Clean(input.Email);
@@ -150,9 +162,10 @@ public sealed class UserService
         user.IsActive = input.IsActive;
         user.IsSystemAdmin = input.IsSystemAdmin;
         user.MustChangePassword = input.MustChangePassword;
-        if (!string.IsNullOrEmpty(input.Password))
+        bool passwordChanged = !string.IsNullOrEmpty(input.Password);
+        if (passwordChanged)
         {
-            user.PasswordHash = _signIn.HashPassword(user, input.Password);
+            user.PasswordHash = _signIn.HashPassword(user, input.Password!);
             user.FailedLoginCount = 0;
             user.LockedUntilDate = null;
         }
@@ -160,9 +173,14 @@ public sealed class UserService
         await _db.SaveChangesAsync();
         await SetRolesAsync(user, input.RoleIds);
 
+        // A deactivated user and a new password end the sessions that were signed in before (a stolen session must not survive a reset).
         if (!input.IsActive)
         {
             await _db.UserSessions.Where(s => s.UserId == id).ExecuteDeleteAsync();
+        }
+        else if (passwordChanged)
+        {
+            await _db.UserSessions.Where(s => s.UserId == id && (keepSession == null || s.Token != keepSession)).ExecuteDeleteAsync();
         }
 
         _cache.InvalidateUser(id);
@@ -207,6 +225,11 @@ public sealed class UserService
             return "The user does not exist.";
         }
 
+        if (user.IsSystemAdmin && !_current.IsSystemAdmin)
+        {
+            return "Only system administrators can change a system administrator.";
+        }
+
         if (user.IsSystemAdmin && !await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.IsSystemAdmin && u.Id != id && u.IsActive))
         {
             return "There must be at least one active system administrator.";
@@ -225,15 +248,15 @@ public sealed class UserService
 
     private async Task SetRolesAsync(User user, long[] roleIds)
     {
-        // Only roles of the user's own tenant can be assigned.
-        HashSet<long> allowed = (await _db.Roles.IgnoreQueryFilters()
-                .Where(r => r.TenantId == user.TenantId && roleIds.Contains(r.Id))
-                .Select(r => r.Id)
-                .ToListAsync())
-            .ToHashSet();
+        // Only roles of the user's own tenant can be assigned, and nobody hands out (or takes away) rights they do not hold themselves:
+        // a role with a permission the acting person lacks stays exactly as it is.
+        List<Role> tenantRoles = await _db.Roles.IgnoreQueryFilters().AsNoTracking().Where(r => r.TenantId == user.TenantId).ToListAsync();
+        bool Manageable(Role role) => _current.IsSystemAdmin || role.Permissions.All(_current.Can);
+        HashSet<long> allowed = tenantRoles.Where(r => roleIds.Contains(r.Id) && Manageable(r)).Select(r => r.Id).ToHashSet();
+        HashSet<long> untouchable = tenantRoles.Where(r => !Manageable(r)).Select(r => r.Id).ToHashSet();
 
         List<UserRole> current = await _db.UserRoles.Where(ur => ur.UserId == user.Id).ToListAsync();
-        _db.UserRoles.RemoveRange(current.Where(ur => !allowed.Contains(ur.RoleId)));
+        _db.UserRoles.RemoveRange(current.Where(ur => !allowed.Contains(ur.RoleId) && !untouchable.Contains(ur.RoleId)));
 
         HashSet<long> have = current.Select(ur => ur.RoleId).ToHashSet();
         foreach (long roleId in allowed.Where(id => !have.Contains(id)))

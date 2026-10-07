@@ -458,6 +458,7 @@
   <data name="One mailbox" xml:space="preserve"><value>Ein Postfach</value></data>
   <data name="One of the domains is not valid." xml:space="preserve"><value>Eine der Domänen ist ungültig.</value></data>
   <data name="One user" xml:space="preserve"><value>Ein Benutzer</value></data>
+  <data name="Only system administrators can change a system administrator." xml:space="preserve"><value>Nur Systemadministratoren können einen Systemadministrator ändern.</value></data>
   <data name="Only system administrators can change this setting." xml:space="preserve"><value>Nur Systemadministratoren können diese Einstellung ändern.</value></data>
   <data name="Only system administrators can create system administrators." xml:space="preserve"><value>Nur Systemadministratoren können Systemadministratoren anlegen.</value></data>
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>

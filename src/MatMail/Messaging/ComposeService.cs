@@ -482,6 +482,7 @@ public sealed partial class ComposeService
         var sanitizer = new HtmlSanitizer();
         sanitizer.AllowedTags.Remove("img");
         sanitizer.AllowedTags.Remove("style");
+        sanitizer.AllowedSchemes.Add("mailto");
         return sanitizer.Sanitize(html);
     }
 
@@ -500,6 +501,8 @@ public sealed partial class ComposeService
         var sanitizer = new HtmlSanitizer();
         sanitizer.AllowedSchemes.Add("data");
         sanitizer.AllowedSchemes.Add("cid");
+        sanitizer.AllowedSchemes.Add("mailto");
+        sanitizer.AllowedSchemes.Add("tel");
         return sanitizer.Sanitize(html);
     }
 

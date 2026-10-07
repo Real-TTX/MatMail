@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.RegularExpressions;
+using Ganss.Xss;
 using MatMail.Data;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
@@ -24,7 +25,7 @@ public sealed partial class SignatureService
     public static string Render(string template, SignatureContext context, bool html)
     {
         string Value(string? text) => html ? WebUtility.HtmlEncode(text ?? string.Empty) : text ?? string.Empty;
-        return Placeholder().Replace(template, match => match.Groups[1].Value.ToLowerInvariant() switch
+        string rendered = Placeholder().Replace(template, match => match.Groups[1].Value.ToLowerInvariant() switch
         {
             "displayname" or "name" => Value(context.DisplayName),
             "email" => Value(context.Email),
@@ -33,7 +34,14 @@ public sealed partial class SignatureService
             "tenant" or "company" => Value(context.Tenant),
             _ => match.Value,
         });
+
+        // Signatures are written by administrators but shown inside the mail client of every user (it inserts them into the message
+        // being written), so they get the same treatment as received mail: no scripts, event handlers or script URLs.
+        return html ? Sanitize(rendered) : rendered;
     }
+
+    /// <summary>HTML of a signature or footer without anything active in it.</summary>
+    public static string Sanitize(string html) => new HtmlSanitizer { AllowedSchemes = { "mailto", "tel" } }.Sanitize(html);
 
     /// <summary>The plain-text version of a signature (its own text, or its HTML converted).</summary>
     public static string ToPlainText(Signature signature, SignatureContext context)

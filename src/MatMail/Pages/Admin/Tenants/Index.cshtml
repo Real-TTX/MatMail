@@ -47,6 +47,7 @@
                         @if (tenant.Id != Model.CurrentTenantId)
                         {
                             <form method="post" action="/Account/SwitchTenant" data-no-busy>
+                                @Html.AntiForgeryToken()
                                 <input type="hidden" name="tenantId" value="@tenant.Id" />
                                 <input type="hidden" name="returnUrl" value="/Admin" />
                                 <button type="submit" class="icon-btn" title="@L["Work in this tenant"]" aria-label="@L["Work in this tenant"]"><mm-icon name="log-out" /></button>

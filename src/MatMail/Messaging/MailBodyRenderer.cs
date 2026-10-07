@@ -149,6 +149,7 @@ public sealed partial class MailBodyRenderer
         Array.ForEach(ExtraAttributes, attribute => sanitizer.AllowedAttributes.Add(attribute));
         Array.ForEach(ExtraCss, property => sanitizer.AllowedCssProperties.Add(property));
         sanitizer.AllowedSchemes.Add("cid");
+        sanitizer.AllowedSchemes.Add("mailto");
         sanitizer.AllowedSchemes.Add("tel");
         sanitizer.AllowedSchemes.Add("data");
         sanitizer.AllowDataAttributes = false;

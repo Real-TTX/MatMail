@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MatMail.Data;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -100,7 +101,8 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
                 userInput.IsSystemAdmin = await db.Users.Where(u => u.Id == Id).Select(u => u.IsSystemAdmin).FirstOrDefaultAsync();
             }
 
-            string? error = await users.UpdateAsync(Id, userInput);
+            Guid.TryParse(User.FindFirstValue(AppClaims.SessionToken), out Guid ownSession);
+            string? error = await users.UpdateAsync(Id, userInput, ownSession == Guid.Empty ? null : ownSession);
             if (error is not null)
             {
                 ModelState.AddModelError(string.Empty, l[error]);

@@ -1,0 +1,69 @@
+@page "/Account/MailPrograms"
+@model MatMail.Pages.Account.MailProgramsModel
+@{
+    ViewData["Breadcrumb"] = "Account / Mail programs";
+    ViewData["Title"] = L["My account"].Value;
+    string user = Model.PrimaryAddress ?? Model.LoginName;
+}
+
+<partial name="_AccountTabs" model='"mailprograms"' />
+
+<p class="muted">@L["Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed."]</p>
+
+@if (Model.SelfSignedCertificate)
+{
+    <div class="notice notice--warn"><mm-icon name="alert" class="notice__icon" /><span class="notice__text">@L["This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings."]</span></div>
+}
+
+<div class="card-grid">
+    <section class="card">
+        <h2 class="card__title"><mm-icon name="inbox" />@L["Incoming mail (IMAP)"]</h2>
+        @if (!Model.ImapEnabled || (Model.ImapTlsPort == 0 && Model.ImapStartTlsPort == 0))
+        {
+            <p class="muted">@L["The IMAP server is switched off."]</p>
+        }
+        else
+        {
+            <dl class="kv">
+                <dt>@L["Server"]</dt><dd class="mono">@Model.Host</dd>
+                @if (Model.ImapTlsPort != 0)
+                {
+                    <dt>@L["Port"]</dt><dd class="mono">@Model.ImapTlsPort <span class="muted">· SSL/TLS</span></dd>
+                }
+                @if (Model.ImapStartTlsPort != 0)
+                {
+                    <dt>@(Model.ImapTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.ImapStartTlsPort <span class="muted">· STARTTLS</span></dd>
+                }
+                <dt>@L["User name"]</dt><dd class="mono">@user</dd>
+                <dt>@L["Password"]</dt><dd>@L["Your MatMail password"]</dd>
+            </dl>
+        }
+    </section>
+
+    <section class="card">
+        <h2 class="card__title"><mm-icon name="send" />@L["Outgoing mail (SMTP)"]</h2>
+        @if (!Model.SmtpEnabled || (Model.SmtpTlsPort == 0 && Model.SmtpSubmissionPort == 0))
+        {
+            <p class="muted">@L["The SMTP server is switched off."]</p>
+        }
+        else
+        {
+            <dl class="kv">
+                <dt>@L["Server"]</dt><dd class="mono">@Model.Host</dd>
+                @if (Model.SmtpTlsPort != 0)
+                {
+                    <dt>@L["Port"]</dt><dd class="mono">@Model.SmtpTlsPort <span class="muted">· SSL/TLS</span></dd>
+                }
+                @if (Model.SmtpSubmissionPort != 0)
+                {
+                    <dt>@(Model.SmtpTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.SmtpSubmissionPort <span class="muted">· STARTTLS</span></dd>
+                }
+                <dt>@L["Sign-in"]</dt><dd>@L["Required (normal password)"]</dd>
+                <dt>@L["User name"]</dt><dd class="mono">@user</dd>
+                <dt>@L["Password"]</dt><dd>@L["Your MatMail password"]</dd>
+            </dl>
+        }
+    </section>
+</div>
+
+<p class="muted page-note">@L["Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox."]</p>

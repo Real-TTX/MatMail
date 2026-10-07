@@ -128,6 +128,7 @@
   <data name="Also manage folders and the other users of this mailbox." xml:space="preserve"><value>Außerdem Ordner und die anderen Benutzer dieses Postfachs verwalten.</value></data>
   <data name="Also mark, move and delete messages and write drafts." xml:space="preserve"><value>Außerdem Nachrichten markieren, verschieben und löschen sowie Entwürfe schreiben.</value></data>
   <data name="Also send mail from this mailbox’s addresses (as a substitute)." xml:space="preserve"><value>Außerdem E-Mails mit den Adressen dieses Postfachs senden (als Vertretung).</value></data>
+  <data name="Alternative" xml:space="preserve"><value>Alternativ</value></data>
   <data name="An attachment is no longer available. Please add it again." xml:space="preserve"><value>Ein Anhang ist nicht mehr verfügbar. Bitte fügen Sie ihn erneut hinzu.</value></data>
   <data name="An inactive tenant cannot sign in or receive mail." xml:space="preserve"><value>Ein inaktiver Mandant kann sich nicht anmelden und keine E-Mails empfangen.</value></data>
   <data name="Appearance" xml:space="preserve"><value>Erscheinungsbild</value></data>
@@ -298,6 +299,7 @@
   <data name="IMAP: signed in at {0}; {1} folders; the inbox holds {2} messages ({3} unread)." xml:space="preserve"><value>IMAP: Anmeldung bei {0} erfolgreich; {1} Ordner; der Posteingang enthält {2} Nachrichten ({3} ungelesen).</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inaktiv</value></data>
   <data name="Inbox" xml:space="preserve"><value>Posteingang</value></data>
+  <data name="Incoming mail (IMAP)" xml:space="preserve"><value>Posteingangsserver (IMAP)</value></data>
   <data name="Information" xml:space="preserve"><value>Information</value></data>
   <data name="Install" xml:space="preserve"><value>Installieren</value></data>
   <data name="Install a certificate" xml:space="preserve"><value>Zertifikat installieren</value></data>
@@ -338,6 +340,7 @@
   <data name="Mail for these addresses is delivered into this mailbox, and the mailbox may send as them. *@domain is a catch-all for the whole domain." xml:space="preserve"><value>Nachrichten an diese Adressen werden in diesem Postfach zugestellt, und das Postfach darf mit ihnen senden. *@domain ist ein Catch-all für die ganze Domäne.</value></data>
   <data name="Mail is only accepted for registered domains. Addresses are added to mailboxes." xml:space="preserve"><value>E-Mails werden nur für registrierte Domänen angenommen. Adressen werden den Postfächern hinzugefügt.</value></data>
   <data name="Mail on the provider’s server" xml:space="preserve"><value>E-Mails auf dem Server des Anbieters</value></data>
+  <data name="Mail programs" xml:space="preserve"><value>Mailprogramme</value></data>
   <data name="Mail servers" xml:space="preserve"><value>Mailserver</value></data>
   <data name="Mail that nobody could be found for (the address exists at the provider or in a domain, but no mailbox has it). Hand it to a mailbox so nothing gets lost." xml:space="preserve"><value>Nachrichten, für die sich niemand finden ließ (die Adresse gibt es beim Anbieter oder in einer Domäne, aber kein Postfach besitzt sie). Übergeben Sie sie an ein Postfach, damit nichts verloren geht.</value></data>
   <data name="Mail: the mail is fetched and distributed to the mailboxes by recipient address. The account can also be used to send." xml:space="preserve"><value>E-Mail: Die Nachrichten werden abgeholt und anhand der Empfängeradresse auf die Postfächer verteilt. Das Konto kann auch zum Senden verwendet werden.</value></data>
@@ -460,6 +463,7 @@
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
+  <data name="Outgoing mail (SMTP)" xml:space="preserve"><value>Postausgangsserver (SMTP)</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
   <data name="Overview of tenant “{0}”." xml:space="preserve"><value>Übersicht des Mandanten „{0}“.</value></data>
   <data name="Owner" xml:space="preserve"><value>Besitzer</value></data>
@@ -532,6 +536,7 @@
   <data name="Reply-To" xml:space="preserve"><value>Antwortadresse</value></data>
   <data name="Report spam" xml:space="preserve"><value>Als Spam melden</value></data>
   <data name="Reported as spam." xml:space="preserve"><value>Als Spam gemeldet.</value></data>
+  <data name="Required (normal password)" xml:space="preserve"><value>Erforderlich (normales Passwort)</value></data>
   <data name="Reset filters" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="Role" xml:space="preserve"><value>Rolle</value></data>
   <data name="Roles" xml:space="preserve"><value>Rollen</value></data>
@@ -586,6 +591,7 @@
   <data name="Settings of the whole installation (stored in config/app.json in the data volume). Environment variables MATMAIL__Section__Key override them." xml:space="preserve"><value>Einstellungen der gesamten Installation (gespeichert in config/app.json im Datenvolume). Umgebungsvariablen der Form MATMAIL__Section__Key überschreiben sie.</value></data>
   <data name="Shared (public folder)" xml:space="preserve"><value>Gemeinsam (öffentlicher Ordner)</value></data>
   <data name="Shared mailbox (public folder)" xml:space="preserve"><value>Gemeinsames Postfach (öffentlicher Ordner)</value></data>
+  <data name="Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox." xml:space="preserve"><value>Gemeinsame Postfächer, die Ihnen zugewiesen wurden, erscheinen unter dem Ordner „Shared“. Um mit einer gemeinsamen Adresse zu senden, wählen Sie sie als Absender; dafür muss am Postfach das Senderecht vergeben sein.</value></data>
   <data name="Show original" xml:space="preserve"><value>Original anzeigen</value></data>
   <data name="Show password" xml:space="preserve"><value>Passwort anzeigen</value></data>
   <data name="Show pictures" xml:space="preserve"><value>Bilder anzeigen</value></data>
@@ -669,6 +675,7 @@
   <data name="The folder name is not valid." xml:space="preserve"><value>Der Ordnername ist ungültig.</value></data>
   <data name="The host name is required." xml:space="preserve"><value>Der Hostname ist erforderlich.</value></data>
   <data name="The housekeeping run failed." xml:space="preserve"><value>Die Wartung ist fehlgeschlagen.</value></data>
+  <data name="The IMAP server is switched off." xml:space="preserve"><value>Der IMAP-Server ist ausgeschaltet.</value></data>
   <data name="The installation is already set up." xml:space="preserve"><value>Die Installation ist bereits eingerichtet.</value></data>
   <data name="The interval must be between 1 and 1440 minutes." xml:space="preserve"><value>Das Intervall muss zwischen 1 und 1440 Minuten liegen.</value></data>
   <data name="The login name must not contain spaces." xml:space="preserve"><value>Der Anmeldename darf keine Leerzeichen enthalten.</value></data>
@@ -713,6 +720,7 @@
   <data name="The signature was created." xml:space="preserve"><value>Die Signatur wurde angelegt.</value></data>
   <data name="The signature was deleted." xml:space="preserve"><value>Die Signatur wurde gelöscht.</value></data>
   <data name="The signature was saved." xml:space="preserve"><value>Die Signatur wurde gespeichert.</value></data>
+  <data name="The SMTP server is switched off." xml:space="preserve"><value>Der SMTP-Server ist ausgeschaltet.</value></data>
   <data name="The synchronisation is not available in this installation." xml:space="preserve"><value>Die Synchronisierung ist in dieser Installation nicht verfügbar.</value></data>
   <data name="The tenant was created." xml:space="preserve"><value>Der Mandant wurde angelegt.</value></data>
   <data name="The tenant was deleted." xml:space="preserve"><value>Der Mandant wurde gelöscht.</value></data>
@@ -744,6 +752,7 @@
   <data name="This name is reserved for a system folder." xml:space="preserve"><value>Dieser Name ist für einen Systemordner reserviert.</value></data>
   <data name="This page does not exist." xml:space="preserve"><value>Diese Seite gibt es nicht.</value></data>
   <data name="This role is still assigned to users." xml:space="preserve"><value>Diese Rolle ist noch Benutzern zugewiesen.</value></data>
+  <data name="This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings." xml:space="preserve"><value>Dieser Server verwendet ein selbstsigniertes Zertifikat: Ihr Mailprogramm fragt einmalig, ob es ihm vertrauen soll. Ein Administrator kann unter Servereinstellungen ein Zertifikat einer vertrauenswürdigen Stelle installieren.</value></data>
   <data name="This session" xml:space="preserve"><value>Diese Sitzung</value></data>
   <data name="This tenant contains a system administrator. Move or remove that user first." xml:space="preserve"><value>Dieser Mandant enthält einen Systemadministrator. Verschieben oder entfernen Sie diesen Benutzer zuerst.</value></data>
   <data name="This time zone is unknown." xml:space="preserve"><value>Diese Zeitzone ist unbekannt.</value></data>
@@ -774,6 +783,7 @@
   <data name="Use a self-signed certificate" xml:space="preserve"><value>Selbstsigniertes Zertifikat verwenden</value></data>
   <data name="Use the same user name and password as for receiving" xml:space="preserve"><value>Denselben Benutzernamen und dasselbe Passwort wie beim Empfang verwenden</value></data>
   <data name="Use the web mail client, IMAP and SMTP" xml:space="preserve"><value>Den Web-Mail-Client, IMAP und SMTP verwenden</value></data>
+  <data name="Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed." xml:space="preserve"><value>Verwenden Sie diese Einstellungen in Outlook, Thunderbird, Apple Mail oder auf dem Smartphone. Ihre E-Mails liegen hier; die Passwörter der E-Mail-Anbieter werden nie gebraucht.</value></data>
   <data name="Use your login name or e-mail address and your password." xml:space="preserve"><value>Verwenden Sie Ihren Anmeldenamen oder Ihre E-Mail-Adresse und Ihr Passwort.</value></data>
   <data name="Used for notifications; it is not your login." xml:space="preserve"><value>Wird für Benachrichtigungen verwendet; es ist nicht Ihr Login.</value></data>
   <data name="User" xml:space="preserve"><value>Benutzer</value></data>
@@ -811,6 +821,7 @@
   <data name="Your appearance settings were saved." xml:space="preserve"><value>Ihre Darstellungseinstellungen wurden gespeichert.</value></data>
   <data name="Your e-mail address (optional)" xml:space="preserve"><value>Ihre E-Mail-Adresse (optional)</value></data>
   <data name="Your inbox is empty." xml:space="preserve"><value>Ihr Posteingang ist leer.</value></data>
+  <data name="Your MatMail password" xml:space="preserve"><value>Ihr MatMail-Passwort</value></data>
   <data name="Your name" xml:space="preserve"><value>Ihr Name</value></data>
   <data name="Your password was changed." xml:space="preserve"><value>Ihr Passwort wurde geändert.</value></data>
   <data name="Your profile was saved." xml:space="preserve"><value>Ihr Profil wurde gespeichert.</value></data>

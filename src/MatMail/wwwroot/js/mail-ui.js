@@ -34,6 +34,7 @@
     App.handlers.reloadList = function () { return loadList(true); };
 
     doc.getElementById("mail-compose-button").addEventListener("click", function () { App.compose.open({}); });
+    doc.getElementById("mail-compose-fab").addEventListener("click", function () { App.compose.open({}); });
     els.search.addEventListener("submit", function (e) { e.preventDefault(); navigate({ q: els.searchInput.value.trim(), page: 1, m: 0 }); });
     els.searchClear.addEventListener("click", function () { els.searchInput.value = ""; navigate({ q: "", page: 1, m: 0 }); els.searchInput.focus(); });
     els.searchInput.addEventListener("input", function () { els.searchClear.hidden = !els.searchInput.value; });

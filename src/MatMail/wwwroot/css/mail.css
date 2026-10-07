@@ -43,6 +43,7 @@
   cursor: pointer;
   transition: box-shadow var(--transition), background var(--transition);
 }
+.fab-compose { display: none; }
 .btn-compose:hover { box-shadow: var(--shadow-md); background: color-mix(in srgb, var(--color-primary) 20%, transparent); }
 .btn-compose .icon { width: 1.4rem; height: 1.4rem; }
 
@@ -316,6 +317,26 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
   .reader__details { margin-left: 0; }
   .reader__sender { flex-wrap: wrap; }
   .reader__meta { margin-left: 3.35rem; }
+
+  .fab-compose {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border: 0;
+    border-radius: 1.1rem;
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+  }
+  .fab-compose .icon { width: 1.5rem; height: 1.5rem; }
+  .mail-app.is-reading .fab-compose { display: none; }
 
   .compose-dock { right: 0; left: 0; }
   .compose, .compose.is-maximized { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; border: 0; border-radius: 0; z-index: 130; }

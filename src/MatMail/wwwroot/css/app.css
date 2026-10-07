@@ -361,6 +361,11 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
   .tenant-switch__name { display: none; }
 }
 
+/* Phones: only the page itself in the breadcrumb (the earlier crumbs would squeeze it down to a single letter). */
+@media (max-width: 720px) {
+  .breadcrumb > :not(.breadcrumb__current) { display: none; }
+}
+
 /* ---- Branding of a tenant: logo instead of the product mark, own accent colour ---- */
 .sidebar__brand-logo { max-height: 38px; max-width: 190px; width: auto; height: auto; object-fit: contain; margin-right: auto; flex: none; }
 .auth-brand__logo { max-height: 64px; max-width: 280px; width: auto; height: auto; object-fit: contain; }

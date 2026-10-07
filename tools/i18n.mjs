@@ -148,6 +148,9 @@ function usedKeys() {
     let m;
     for (const literal of localizerKeys(text)) add(unescapeCSharp(literal), file);
 
+    // API errors: new Failure("text") is translated when the response is written.
+    for (const failure of text.matchAll(/new Failure\("((?:[^"\\]|\\.)*)"\)/g)) add(unescapeCSharp(failure[1]), file);
+
     // Breadcrumbs are "Section / Page" literals in ViewData["Breadcrumb"]; the layout translates every segment.
     const crumb = /ViewData\["Breadcrumb"\]\s*=\s*([^;]+);/g;
     while ((m = crumb.exec(text))) {
@@ -156,7 +159,7 @@ function usedKeys() {
       }
     }
 
-    const inServices = /[\\/]Services[\\/]/.test(file) || /Permissions\.cs$/.test(file);
+    const inServices = /[\\/](Services|Messaging|Api)[\\/]/.test(file) || /Permissions\.cs$/.test(file);
     if (inServices) {
       const sentence = /"((?:[^"\\\n]|\\.)+)"/g;
       while ((m = sentence.exec(text))) {

@@ -7,6 +7,7 @@ using MatMail.Services;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using MimeKit;
 
 namespace MatMail.Api;
@@ -65,7 +66,7 @@ public static class MailApi
             }
             catch (AntiforgeryValidationException)
             {
-                return Results.Json(new { error = "The page is out of date. Reload it and try again." }, statusCode: StatusCodes.Status400BadRequest);
+                return new Failure("The page is out of date. Reload it and try again.");
             }
         }
 
@@ -77,7 +78,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> Bootstrap(
-        MailAccessService access, MailStore store, FolderService folders, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, CancellationToken cancel)
+        MailAccessService access, MailStore store, FolderService folders, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -93,7 +94,7 @@ public static class MailApi
             Dictionary<long, (int Total, int Unread)> counts = await store.GetCountsAsync(infos.Select(i => i.Id), cancel);
             mailboxes.Add(new MailboxDto(
                 box.Mailbox.Id,
-                box.Mailbox.Type == MailboxType.Unassigned ? "Unassigned" : box.Mailbox.Name,
+                box.Mailbox.Type == MailboxType.Unassigned ? l["Unassigned"].Value : box.Mailbox.Name,
                 box.Mailbox.Type.ToString(),
                 box.IsOwn,
                 box.Access.ToString(),
@@ -368,7 +369,7 @@ public static class MailApi
         }
 
         (MailFolder? folder, string? failure) = await folders.CreateAsync(request.MailboxId, request.Path, cancel);
-        return folder is null ? Results.BadRequest(new { error = failure }) : Results.Ok(new { id = folder.Id });
+        return folder is null ? new Failure(failure) : Results.Ok(new { id = folder.Id });
     }
 
     private static async Task<IResult> RenameFolder(long id, RenameFolderRequest request, MailAccessService access, FolderService folders, CancellationToken cancel)
@@ -381,7 +382,7 @@ public static class MailApi
         }
 
         string? failure = await folders.RenameAsync(id, request.Path, cancel);
-        return failure is null ? Results.Ok() : Results.BadRequest(new { error = failure });
+        return failure is null ? Results.Ok() : new Failure(failure);
     }
 
     private static async Task<IResult> DeleteFolder(long id, MailAccessService access, FolderService folders, CancellationToken cancel)
@@ -394,7 +395,7 @@ public static class MailApi
         }
 
         string? failure = await folders.DeleteAsync(id, cancel);
-        return failure is null ? Results.Ok() : Results.BadRequest(new { error = failure });
+        return failure is null ? Results.Ok() : new Failure(failure);
     }
 
     private static async Task<IResult> MarkFolderRead(long id, MailAccessService access, MailStore store, CancellationToken cancel)
@@ -421,7 +422,7 @@ public static class MailApi
 
         if (folder.Kind is not (FolderKind.Trash or FolderKind.Junk))
         {
-            return Results.BadRequest(new { error = "Only the trash and the spam folder can be emptied." });
+            return new Failure("Only the trash and the spam folder can be emptied.");
         }
 
         int removed = await store.EmptyFolderAsync(id, cancel);
@@ -444,7 +445,7 @@ public static class MailApi
         IFormFile? file = form.Files.FirstOrDefault();
         if (file is null)
         {
-            return Results.BadRequest(new { error = "No file." });
+            return new Failure("No file.");
         }
 
         try
@@ -455,7 +456,7 @@ public static class MailApi
         }
         catch (InvalidOperationException ex)
         {
-            return Results.BadRequest(new { error = ex.Message });
+            return new Failure(ex.Message);
         }
     }
 
@@ -494,7 +495,7 @@ public static class MailApi
         }
 
         ComposeResult result = await compose.SaveDraftAsync(user, model, cancel);
-        return result.Ok ? Results.Ok(new { ok = true, draftId = result.DraftId }) : Results.BadRequest(new { error = result.Error });
+        return result.Ok ? Results.Ok(new { ok = true, draftId = result.DraftId }) : new Failure(result.Error);
     }
 
     private static async Task<IResult> DiscardDraft(long id, MailAccessService access, ComposeService compose, CancellationToken cancel)
@@ -518,7 +519,7 @@ public static class MailApi
         }
 
         ComposeResult result = await compose.SendAsync(user, model, cancel);
-        return result.Ok ? Results.Ok(new { ok = true }) : Results.BadRequest(new { error = result.Error });
+        return result.Ok ? Results.Ok(new { ok = true }) : new Failure(result.Error);
     }
 
     private static async Task<IResult> Contacts(string? q, MailAccessService access, ContactService contacts, CancellationToken cancel)
@@ -687,5 +688,19 @@ public static class MailApi
         disposition.SetHttpFileName(fileName);
         http.Response.Headers.ContentDisposition = disposition.ToString();
         return Results.File(stream.ToArray(), safe ? type : "application/octet-stream");
+    }
+
+    /// <summary>
+    /// A 400 whose message is shown to the user. The services return English texts; they are the translation keys, so the text
+    /// goes out in the language of the request.
+    /// </summary>
+    private sealed class Failure(string? message) : IResult
+    {
+        public Task ExecuteAsync(HttpContext http)
+        {
+            var localizer = http.RequestServices.GetRequiredService<IStringLocalizer<SharedResource>>();
+            string text = string.IsNullOrEmpty(message) ? string.Empty : localizer[message].Value;
+            return Results.BadRequest(new { error = text }).ExecuteAsync(http);
+        }
     }
 }

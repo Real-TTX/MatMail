@@ -85,6 +85,8 @@
   <data name="{0}: the user name or password was refused." xml:space="preserve"><value>{0}: Benutzername oder Passwort wurden abgelehnt.</value></data>
   <data name="0 = keep." xml:space="preserve"><value>0 = behalten.</value></data>
   <data name="A backup never deletes mail at the provider." xml:space="preserve"><value>Ein Backup löscht niemals E-Mails beim Anbieter.</value></data>
+  <data name="A folder cannot be moved into itself." xml:space="preserve"><value>Ein Ordner kann nicht in sich selbst verschoben werden.</value></data>
+  <data name="A folder with this name already exists." xml:space="preserve"><value>Ein Ordner mit diesem Namen existiert bereits.</value></data>
   <data name="A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant." xml:space="preserve"><value>Ein neuer Mandant startet mit den Rollen Administrator und Benutzer sowie einem Postfach „Unverteilt“. Legen Sie den ersten Administrator unter Benutzer an, nachdem Sie in den Mandanten gewechselt haben.</value></data>
   <data name="A PEM certificate needs its private key file." xml:space="preserve"><value>Ein PEM-Zertifikat braucht die Datei mit seinem privaten Schlüssel.</value></data>
   <data name="A personal mailbox needs an owner." xml:space="preserve"><value>Ein persönliches Postfach braucht einen Besitzer.</value></data>
@@ -126,6 +128,7 @@
   <data name="Also manage folders and the other users of this mailbox." xml:space="preserve"><value>Außerdem Ordner und die anderen Benutzer dieses Postfachs verwalten.</value></data>
   <data name="Also mark, move and delete messages and write drafts." xml:space="preserve"><value>Außerdem Nachrichten markieren, verschieben und löschen sowie Entwürfe schreiben.</value></data>
   <data name="Also send mail from this mailbox’s addresses (as a substitute)." xml:space="preserve"><value>Außerdem E-Mails mit den Adressen dieses Postfachs senden (als Vertretung).</value></data>
+  <data name="An attachment is no longer available. Please add it again." xml:space="preserve"><value>Ein Anhang ist nicht mehr verfügbar. Bitte fügen Sie ihn erneut hinzu.</value></data>
   <data name="An inactive tenant cannot sign in or receive mail." xml:space="preserve"><value>Ein inaktiver Mandant kann sich nicht anmelden und keine E-Mails empfangen.</value></data>
   <data name="Appearance" xml:space="preserve"><value>Erscheinungsbild</value></data>
   <data name="Appearance and language" xml:space="preserve"><value>Darstellung und Sprache</value></data>
@@ -412,12 +415,14 @@
   <data name="No connected accounts yet." xml:space="preserve"><value>Noch keine verbundenen Konten.</value></data>
   <data name="No domains yet." xml:space="preserve"><value>Noch keine Domänen.</value></data>
   <data name="No entries." xml:space="preserve"><value>Keine Einträge.</value></data>
+  <data name="No file." xml:space="preserve"><value>Keine Datei.</value></data>
   <data name="No mailboxes match." xml:space="preserve"><value>Keine passenden Postfächer.</value></data>
   <data name="No messages match your search." xml:space="preserve"><value>Keine Nachrichten entsprechen Ihrer Suche.</value></data>
   <data name="No receiving server is configured." xml:space="preserve"><value>Es ist kein Empfangsserver konfiguriert.</value></data>
   <data name="No records found." xml:space="preserve"><value>Keine Einträge gefunden.</value></data>
   <data name="No relay rules. Without a rule, only signed-in users can send." xml:space="preserve"><value>Keine Relay-Regeln. Ohne Regel können nur angemeldete Benutzer senden.</value></data>
   <data name="No roles match." xml:space="preserve"><value>Keine passenden Rollen.</value></data>
+  <data name="No sending account is configured for this sender and direct delivery is switched off." xml:space="preserve"><value>Für diesen Absender ist kein Versandkonto eingerichtet und die direkte Zustellung ist abgeschaltet.</value></data>
   <data name="No sending server is configured." xml:space="preserve"><value>Es ist kein Sendeserver konfiguriert.</value></data>
   <data name="No sent messages." xml:space="preserve"><value>Keine gesendeten Nachrichten.</value></data>
   <data name="No sessions." xml:space="preserve"><value>Keine Sitzungen.</value></data>
@@ -453,6 +458,7 @@
   <data name="Only system administrators can change this setting." xml:space="preserve"><value>Nur Systemadministratoren können diese Einstellung ändern.</value></data>
   <data name="Only system administrators can create system administrators." xml:space="preserve"><value>Nur Systemadministratoren können Systemadministratoren anlegen.</value></data>
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
+  <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
   <data name="Overview of tenant “{0}”." xml:space="preserve"><value>Übersicht des Mandanten „{0}“.</value></data>
@@ -624,6 +630,8 @@
   <data name="System" xml:space="preserve"><value>System</value></data>
   <data name="System administrator" xml:space="preserve"><value>Systemadministrator</value></data>
   <data name="System administrator (manages all tenants and the server)" xml:space="preserve"><value>Systemadministrator (verwaltet alle Mandanten und den Server)</value></data>
+  <data name="System folders cannot be deleted." xml:space="preserve"><value>Systemordner können nicht gelöscht werden.</value></data>
+  <data name="System folders cannot be renamed." xml:space="preserve"><value>Systemordner können nicht umbenannt werden.</value></data>
   <data name="Target mailbox" xml:space="preserve"><value>Zielpostfach</value></data>
   <data name="Tenant" xml:space="preserve"><value>Mandant</value></data>
   <data name="Tenants" xml:space="preserve"><value>Mandanten</value></data>
@@ -640,6 +648,7 @@
   <data name="The address was removed." xml:space="preserve"><value>Die Adresse wurde entfernt.</value></data>
   <data name="The address was saved." xml:space="preserve"><value>Die Adresse wurde gespeichert.</value></data>
   <data name="The archive is empty." xml:space="preserve"><value>Das Archiv ist leer.</value></data>
+  <data name="The attachment is too large." xml:space="preserve"><value>Der Anhang ist zu groß.</value></data>
   <data name="The certificate could not be read: {0}" xml:space="preserve"><value>Das Zertifikat konnte nicht gelesen werden: {0}</value></data>
   <data name="The certificate has expired." xml:space="preserve"><value>Das Zertifikat ist abgelaufen.</value></data>
   <data name="The certificate is installed and in use." xml:space="preserve"><value>Das Zertifikat ist installiert und wird verwendet.</value></data>
@@ -656,6 +665,8 @@
   <data name="The e-mail address is not valid." xml:space="preserve"><value>Die E-Mail-Adresse ist ungültig.</value></data>
   <data name="The entry was removed." xml:space="preserve"><value>Der Eintrag wurde entfernt.</value></data>
   <data name="The file contains no private key." xml:space="preserve"><value>Die Datei enthält keinen privaten Schlüssel.</value></data>
+  <data name="The folder does not exist." xml:space="preserve"><value>Der Ordner existiert nicht.</value></data>
+  <data name="The folder name is not valid." xml:space="preserve"><value>Der Ordnername ist ungültig.</value></data>
   <data name="The host name is required." xml:space="preserve"><value>Der Hostname ist erforderlich.</value></data>
   <data name="The housekeeping run failed." xml:space="preserve"><value>Die Wartung ist fehlgeschlagen.</value></data>
   <data name="The installation is already set up." xml:space="preserve"><value>Die Installation ist bereits eingerichtet.</value></data>
@@ -664,12 +675,15 @@
   <data name="The login name or the password is wrong." xml:space="preserve"><value>Der Anmeldename oder das Passwort ist falsch.</value></data>
   <data name="The mail could not be loaded." xml:space="preserve"><value>Die Nachrichten konnten nicht geladen werden.</value></data>
   <data name="The mailbox does not exist." xml:space="preserve"><value>Das Postfach existiert nicht.</value></data>
+  <data name="The mailbox has no Drafts folder." xml:space="preserve"><value>Das Postfach hat keinen Ordner „Entwürfe“.</value></data>
   <data name="The mailbox holds the user’s mail and folders." xml:space="preserve"><value>Das Postfach enthält die Nachrichten und Ordner des Benutzers.</value></data>
   <data name="The mailbox was created. Add its addresses now." xml:space="preserve"><value>Das Postfach wurde angelegt. Fügen Sie jetzt seine Adressen hinzu.</value></data>
   <data name="The mailbox was deleted." xml:space="preserve"><value>Das Postfach wurde gelöscht.</value></data>
   <data name="The mailbox was saved." xml:space="preserve"><value>Das Postfach wurde gespeichert.</value></data>
   <data name="The message cannot be cancelled." xml:space="preserve"><value>Die Nachricht kann nicht abgebrochen werden.</value></data>
   <data name="The message cannot be tried again." xml:space="preserve"><value>Die Nachricht kann nicht erneut versucht werden.</value></data>
+  <data name="The message could not be sent." xml:space="preserve"><value>Die Nachricht konnte nicht gesendet werden.</value></data>
+  <data name="The message is too large." xml:space="preserve"><value>Die Nachricht ist zu groß.</value></data>
   <data name="The message is tried again now." xml:space="preserve"><value>Die Nachricht wird jetzt erneut versucht.</value></data>
   <data name="The message was deleted." xml:space="preserve"><value>Die Nachricht wurde gelöscht.</value></data>
   <data name="The name cannot be changed while the domain has addresses." xml:space="preserve"><value>Der Name kann nicht geändert werden, solange die Domäne Adressen hat.</value></data>
@@ -677,6 +691,7 @@
   <data name="The owner already has full access." xml:space="preserve"><value>Der Besitzer hat bereits vollen Zugriff.</value></data>
   <data name="The owner always has full access. Users listed here may also work in this mailbox, for example as a substitute." xml:space="preserve"><value>Der Besitzer hat immer vollen Zugriff. Die hier aufgeführten Benutzer dürfen ebenfalls in diesem Postfach arbeiten, z. B. als Vertretung.</value></data>
   <data name="The owner has full access to a personal mailbox." xml:space="preserve"><value>Der Besitzer hat vollen Zugriff auf ein persönliches Postfach.</value></data>
+  <data name="The page is out of date. Reload it and try again." xml:space="preserve"><value>Die Seite ist veraltet. Laden Sie sie neu und versuchen Sie es erneut.</value></data>
   <data name="The password is required." xml:space="preserve"><value>Das Passwort ist erforderlich.</value></data>
   <data name="The password must have at least 10 characters." xml:space="preserve"><value>Das Passwort muss mindestens 10 Zeichen lang sein.</value></data>
   <data name="The passwords do not match." xml:space="preserve"><value>Die Passwörter stimmen nicht überein.</value></data>
@@ -698,6 +713,7 @@
   <data name="The signature was created." xml:space="preserve"><value>Die Signatur wurde angelegt.</value></data>
   <data name="The signature was deleted." xml:space="preserve"><value>Die Signatur wurde gelöscht.</value></data>
   <data name="The signature was saved." xml:space="preserve"><value>Die Signatur wurde gespeichert.</value></data>
+  <data name="The synchronisation is not available in this installation." xml:space="preserve"><value>Die Synchronisierung ist in dieser Installation nicht verfügbar.</value></data>
   <data name="The tenant was created." xml:space="preserve"><value>Der Mandant wurde angelegt.</value></data>
   <data name="The tenant was deleted." xml:space="preserve"><value>Der Mandant wurde gelöscht.</value></data>
   <data name="The tenant was saved." xml:space="preserve"><value>Der Mandant wurde gespeichert.</value></data>
@@ -725,6 +741,7 @@
   <data name="This mailbox has no address yet." xml:space="preserve"><value>Dieses Postfach hat noch keine Adresse.</value></data>
   <data name="This mailbox may send as this address" xml:space="preserve"><value>Dieses Postfach darf mit dieser Adresse senden</value></data>
   <data name="This message no longer exists." xml:space="preserve"><value>Diese Nachricht gibt es nicht mehr.</value></data>
+  <data name="This name is reserved for a system folder." xml:space="preserve"><value>Dieser Name ist für einen Systemordner reserviert.</value></data>
   <data name="This page does not exist." xml:space="preserve"><value>Diese Seite gibt es nicht.</value></data>
   <data name="This role is still assigned to users." xml:space="preserve"><value>Diese Rolle ist noch Benutzern zugewiesen.</value></data>
   <data name="This session" xml:space="preserve"><value>Diese Sitzung</value></data>
@@ -740,6 +757,7 @@
   <data name="To:" xml:space="preserve"><value>An:</value></data>
   <data name="Toggle navigation" xml:space="preserve"><value>Navigation ein-/ausblenden</value></data>
   <data name="Too many failed attempts. Please try again in a few minutes." xml:space="preserve"><value>Zu viele fehlgeschlagene Versuche. Bitte versuchen Sie es in einigen Minuten erneut.</value></data>
+  <data name="Too many recipients." xml:space="preserve"><value>Zu viele Empfänger.</value></data>
   <data name="Trash" xml:space="preserve"><value>Papierkorb</value></data>
   <data name="Try again now" xml:space="preserve"><value>Jetzt erneut versuchen</value></data>
   <data name="Try all failed again" xml:space="preserve"><value>Alle fehlgeschlagenen erneut versuchen</value></data>
@@ -781,6 +799,7 @@
   <data name="Work in this tenant" xml:space="preserve"><value>In diesem Mandanten arbeiten</value></data>
   <data name="Work with the &quot;Unassigned&quot; mailbox and distribute its messages" xml:space="preserve"><value>Mit dem Postfach „Unverteilt“ arbeiten und dessen Nachrichten verteilen</value></data>
   <data name="You are not allowed to open this page." xml:space="preserve"><value>Sie dürfen diese Seite nicht öffnen.</value></data>
+  <data name="You are not allowed to send as this address." xml:space="preserve"><value>Sie dürfen mit dieser Adresse nicht senden.</value></data>
   <data name="You are not allowed to send mail: no sender address is assigned to you." xml:space="preserve"><value>Sie dürfen keine E-Mails senden: Ihnen ist keine Absenderadresse zugewiesen.</value></data>
   <data name="You cannot deactivate the tenant you are working in." xml:space="preserve"><value>Sie können den Mandanten, in dem Sie gerade arbeiten, nicht deaktivieren.</value></data>
   <data name="You cannot deactivate your own account." xml:space="preserve"><value>Das eigene Konto kann nicht deaktiviert werden.</value></data>

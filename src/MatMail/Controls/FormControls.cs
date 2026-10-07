@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Localization;
 
 namespace MatMail.Controls;
@@ -37,6 +38,18 @@ public sealed class FormTagHelper : TagHelper
     [ViewContext]
     public ViewContext ViewContext { get; set; } = default!;
 
+    /// <summary>
+    /// The address of this page without the handler of the request that rendered it: a page that came back from "Test connection"
+    /// (?handler=Test) must still save with "Save" instead of repeating the test.
+    /// </summary>
+    private string CurrentPage()
+    {
+        HttpRequest request = ViewContext.HttpContext.Request;
+        IEnumerable<KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> query =
+            request.Query.Where(pair => !string.Equals(pair.Key, "handler", StringComparison.OrdinalIgnoreCase));
+        return QueryHelpers.AddQueryString(request.PathBase + request.Path, query);
+    }
+
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         output.TagName = "form";
@@ -44,10 +57,7 @@ public sealed class FormTagHelper : TagHelper
         string extra = output.Attributes.TryGetAttribute("class", out TagHelperAttribute? existing) ? " " + existing.Value : string.Empty;
         output.Attributes.SetAttribute("class", "form" + extra);
         output.Attributes.SetAttribute("method", Method);
-        if (!string.IsNullOrEmpty(Action))
-        {
-            output.Attributes.SetAttribute("action", Action);
-        }
+        output.Attributes.SetAttribute("action", string.IsNullOrEmpty(Action) ? CurrentPage() : Action);
 
         if (!string.IsNullOrEmpty(Enctype))
         {

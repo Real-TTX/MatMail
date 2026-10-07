@@ -174,6 +174,22 @@ public sealed class TwoFactorService
         return (null, secret);
     }
 
+    /// <summary>
+    /// Starts the set-up for a person at the web page: asks for the password first, because a stolen session must not be able to switch
+    /// on a second factor of its own (which would lock the owner out).
+    /// </summary>
+    public async Task<(string? Error, string? Secret)> StartEnrolmentAsync(long userId, string? password, string? remoteIp, CancellationToken cancel = default)
+    {
+        User? user = await FindUserAsync(userId, cancel);
+        if (user is null)
+        {
+            return ("The user does not exist.", null);
+        }
+
+        string? error = await _signIn.ConfirmPasswordAsync(user, password, remoteIp);
+        return error is not null ? (error, null) : await BeginEnrolmentAsync(userId, cancel);
+    }
+
     /// <summary>Drops a set-up that was started but not confirmed.</summary>
     public Task CancelEnrolmentAsync(long userId, CancellationToken cancel = default)
         => _db.UserTotps.Where(t => t.UserId == userId && t.ConfirmedDate == null).ExecuteDeleteAsync(cancel);

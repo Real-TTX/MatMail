@@ -86,10 +86,14 @@ internal sealed class SmtpPolicy
             .ToList();
     }
 
-    /// <summary>Whether a signed-in user may still send: a session can outlive disabling the user or the tenant.</summary>
+    /// <summary>
+    /// Whether a signed-in user may still send: a session can outlive disabling the user or the tenant, revoking the app password it
+    /// signed in with, and the start of two-factor authentication for a user who signed in with the account password.
+    /// </summary>
     public async Task<bool> IsStillActiveAsync(MailUser user, CancellationToken cancel)
         => await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == user.UserId && u.IsActive, cancel)
-           && (user.IsSystemAdmin || await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && t.IsActive, cancel));
+           && (user.IsSystemAdmin || await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && t.IsActive, cancel))
+           && await _access.SignInStillCountsAsync(user, cancel);
 
     /// <summary>
     /// "&lt;Postmaster&gt;" without a domain (RFC 5321 4.5.1) is the postmaster of this server: at the first registered domain among the

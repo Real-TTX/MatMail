@@ -13,6 +13,9 @@ public sealed record MailUser(
     bool IsSystemAdmin,
     IReadOnlySet<string> Permissions)
 {
+    /// <summary>The app password this session signed in with (null: the account password).</summary>
+    public long? AppPasswordId { get; init; }
+
     public bool Can(string permission) => IsSystemAdmin || Permissions.Contains(permission);
 }
 
@@ -31,12 +34,14 @@ public sealed class MailAccessService
     private readonly MatMailDbContext _db;
     private readonly SignInService _signIn;
     private readonly CurrentUser _current;
+    private readonly TwoFactorPolicy _twoFactor;
 
-    public MailAccessService(MatMailDbContext db, SignInService signIn, CurrentUser current)
+    public MailAccessService(MatMailDbContext db, SignInService signIn, CurrentUser current, TwoFactorPolicy twoFactor)
     {
         _db = db;
         _signIn = signIn;
         _current = current;
+        _twoFactor = twoFactor;
     }
 
     /// <summary>
@@ -52,7 +57,7 @@ public sealed class MailAccessService
             return null;
         }
 
-        MailUser user = await LoadUserAsync(outcome.User);
+        MailUser user = (await LoadUserAsync(outcome.User)) with { AppPasswordId = outcome.AppPasswordId };
         if (!user.Can(Permissions.MailUse))
         {
             return null;
@@ -64,7 +69,8 @@ public sealed class MailAccessService
 
     /// <summary>
     /// The user as the database sees them now, or null when they may no longer use mail (deactivated, tenant switched off, no more
-    /// mail permission). Protocol sessions live for hours; this is how a change by an administrator reaches them.
+    /// mail permission, or the way they signed in no longer counts: see <see cref="SignInStillCountsAsync"/>). Protocol sessions live
+    /// for hours; this is how a change by an administrator reaches them.
     /// </summary>
     public async Task<MailUser?> RefreshAsync(MailUser user, CancellationToken cancel = default)
     {
@@ -79,8 +85,28 @@ public sealed class MailAccessService
             return null;
         }
 
-        MailUser fresh = await LoadUserAsync(row);
-        return fresh.Can(Permissions.MailUse) ? fresh : null;
+        MailUser fresh = (await LoadUserAsync(row)) with { AppPasswordId = user.AppPasswordId };
+        return fresh.Can(Permissions.MailUse) && await SignInStillCountsAsync(fresh, row, cancel) ? fresh : null;
+    }
+
+    /// <summary>
+    /// Whether the way an open session signed in still counts. A revoked app password ends the sessions that used it; a session that
+    /// used the account password ends once two-factor authentication is on or required (IMAP and SMTP then take app passwords only).
+    /// </summary>
+    public async Task<bool> SignInStillCountsAsync(MailUser user, CancellationToken cancel = default)
+    {
+        User? row = await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.UserId, cancel);
+        return row is not null && await SignInStillCountsAsync(user, row, cancel);
+    }
+
+    private async Task<bool> SignInStillCountsAsync(MailUser user, User row, CancellationToken cancel)
+    {
+        if (user.AppPasswordId is long appPasswordId)
+        {
+            return await _db.AppPasswords.AnyAsync(a => a.Id == appPasswordId && a.UserId == row.Id, cancel);
+        }
+
+        return !(await _twoFactor.GetStatusAsync(row, cancel)).ProtocolsNeedAppPassword;
     }
 
     /// <summary>The signed-in web user (from the session principal), or null when nobody is signed in.</summary>

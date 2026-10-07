@@ -18,6 +18,10 @@ public class SecurityModel(
     CurrentUser currentUser,
     IStringLocalizer<SharedResource> l) : PageModel
 {
+    /// <summary>The password that is asked for before a set-up starts.</summary>
+    [BindProperty]
+    public PasswordInput Start { get; set; } = new();
+
     /// <summary>The first code of the authenticator app, to finish the set-up.</summary>
     [BindProperty]
     public CodeInput Enrol { get; set; } = new();
@@ -32,6 +36,11 @@ public class SecurityModel(
 
     [BindProperty]
     public AppPasswordInput NewAppPassword { get; set; } = new();
+
+    public class PasswordInput
+    {
+        public string Password { get; set; } = string.Empty;
+    }
 
     public class CodeInput
     {
@@ -80,10 +89,12 @@ public class SecurityModel(
 
     public async Task<IActionResult> OnPostStartAsync()
     {
-        (string? error, _) = await twoFactor.BeginEnrolmentAsync(UserId);
+        (string? error, _) = await twoFactor.StartEnrolmentAsync(UserId, Start.Password, HttpContext.ClientAddress());
         if (error is not null)
         {
-            this.Notify(l[error].Value, NoticeKind.Danger);
+            await LoadAsync();
+            AddError("Start.Password", error);
+            return Page();
         }
 
         return RedirectToPage();

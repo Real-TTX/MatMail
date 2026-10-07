@@ -31,6 +31,6 @@ public sealed class MustChangePasswordMiddleware
             || value.StartsWith("/Account/Logout", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/Account/Language", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/healthz", StringComparison.OrdinalIgnoreCase)
-            || Path.HasExtension(value);
+            || GatePaths.IsStatic(value);
     }
 }

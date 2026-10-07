@@ -124,6 +124,8 @@ else
                 <dt>@L["Status"]</dt>
                 <dd><mm-badge kind="muted">@L["Off"]</mm-badge> @if (status.Required) { <mm-badge kind="warn" icon="alert">@L["Required for your account"]</mm-badge> }</dd>
             </dl>
+            <mm-field asp-for="Start.Password" kind="password" label='@L["Your password"]' autocomplete="current-password"
+                      help='@L["Asked once more, so that nobody who only holds your open session can set up a second factor of their own."]' />
             <mm-button-row>
                 <mm-button variant="primary" handler="Start" icon="smartphone">@L["Set up the authenticator app"]</mm-button>
             </mm-button-row>

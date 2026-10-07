@@ -33,12 +33,14 @@ public enum SignInMethod
 
 /// <param name="TwoFactor">The state of the user, when the credentials were right.</param>
 /// <param name="SecondFactorPending">Web sign-in only: the password was right, the session may only be created after a code.</param>
+/// <param name="AppPasswordId">The app password that was used (a protocol sign-in with <see cref="SignInMethod.AppPassword"/>).</param>
 public sealed record SignInOutcome(
     SignInStatus Status,
     User? User,
     TwoFactorStatus? TwoFactor = null,
     SignInMethod Method = SignInMethod.Password,
-    bool SecondFactorPending = false)
+    bool SecondFactorPending = false,
+    long? AppPasswordId = null)
 {
     public bool Succeeded => Status == SignInStatus.Success;
 }
@@ -197,7 +199,7 @@ public sealed class SignInService
             await _appPasswords.RecordUseAsync(check.AppPassword, remoteIp, now);
         }
 
-        return new SignInOutcome(SignInStatus.Success, user, twoFactor, check.Method, secondFactorPending);
+        return new SignInOutcome(SignInStatus.Success, user, twoFactor, check.Method, secondFactorPending, check.AppPassword?.Id);
     }
 
     /// <summary>

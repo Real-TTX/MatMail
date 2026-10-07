@@ -154,6 +154,7 @@
   <data name="Archive" xml:space="preserve"><value>Archiv</value></data>
   <data name="Area" xml:space="preserve"><value>Bereich</value></data>
   <data name="Asked again because an app password signs in without a code." xml:space="preserve"><value>Wird erneut abgefragt, weil sich ein App-Passwort ohne Code anmelden kann.</value></data>
+  <data name="Asked once more, so that nobody who only holds your open session can set up a second factor of their own." xml:space="preserve"><value>Wird noch einmal abgefragt, damit niemand, der nur Ihre offene Sitzung in der Hand hat, einen zweiten Faktor einrichten kann.</value></data>
   <data name="At least 10 characters." xml:space="preserve"><value>Mindestens 10 Zeichen.</value></data>
   <data name="Attach files" xml:space="preserve"><value>Dateien anhängen</value></data>
   <data name="Attempts" xml:space="preserve"><value>Versuche</value></data>

@@ -22,6 +22,9 @@ public class MatMailDbContext : DbContext
     public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<UserTotp> UserTotps => Set<UserTotp>();
+    public DbSet<UserRecoveryCode> UserRecoveryCodes => Set<UserRecoveryCode>();
+    public DbSet<AppPassword> AppPasswords => Set<AppPassword>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Domain> Domains => Set<Domain>();
@@ -108,6 +111,31 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.UserId);
             e.HasIndex(x => x.ExpiresDate);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<UserTotp>(e =>
+        {
+            e.HasIndex(x => x.UserId).IsUnique();
+            e.Property(x => x.Secret).HasMaxLength(400);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<UserRecoveryCode>(e =>
+        {
+            e.HasIndex(x => x.UserId);
+            e.Property(x => x.CodeHash).HasMaxLength(200);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<AppPassword>(e =>
+        {
+            e.HasIndex(x => x.Token).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.Prefix });
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.Property(x => x.Prefix).HasMaxLength(8);
+            e.Property(x => x.SecretHash).HasMaxLength(200);
+            e.Property(x => x.LastUsedIp).HasMaxLength(64);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<Role>(e =>

@@ -455,6 +455,19 @@ public class SmtpServerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_message_for_another_tenant_on_this_server_is_delivered_locally()
+    {
+        long carolMailbox = await AddCustomerTenantAsync();
+        using (SmtpClient client = await TestMailClients.SignInAsync(_server.SubmissionPort, "alice"))
+        {
+            await client.SendAsync(Message("Alice <alice@example.test>", "carol@customer.test", "Hello neighbour", "x"));
+        }
+
+        Assert.Equal("Hello neighbour", Assert.Single(await MessagesAsync(carolMailbox)).Subject);
+        Assert.Empty(await QueueAsync());
+    }
+
+    [DbFact]
     public async Task A_message_for_an_external_address_is_queued_for_the_routed_provider_account()
     {
         long accountId = await AddProviderAccountAsync("alice@example.test");
@@ -1007,6 +1020,23 @@ public class SmtpServerTests : IAsyncLifetime
         }
 
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>A second tenant with the domain customer.test and the user carol (mailbox carol@customer.test).</summary>
+    private async Task<long> AddCustomerTenantAsync()
+    {
+        using IServiceScope scope = _host.Scope();
+        (Tenant? tenant, _) = await scope.ServiceProvider.GetRequiredService<TenantService>().CreateAsync("Customer", null);
+        var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+        db.Domains.Add(new Domain { TenantId = tenant!.Id, Name = "customer.test" });
+        await db.SaveChangesAsync();
+
+        long role = await db.Roles.Where(r => r.TenantId == tenant.Id && r.Name == TenantService.UserRoleName).Select(r => r.Id).FirstAsync();
+        (User? carol, string? error) = await scope.ServiceProvider.GetRequiredService<UserService>().CreateAsync(
+            new UserInput { LoginName = "carol", DisplayName = "Carol", Password = Password, RoleIds = new[] { role }, CreateMailbox = true, PrimaryAddress = "carol@customer.test" },
+            tenant.Id);
+        Assert.Null(error);
+        return await db.Mailboxes.Where(m => m.OwnerUserId == carol!.Id).Select(m => m.Id).FirstAsync();
     }
 
     private async Task AddRelayRuleAsync(string network, params string[] allowedSenderDomains)

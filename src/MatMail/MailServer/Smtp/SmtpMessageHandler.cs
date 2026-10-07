@@ -42,6 +42,7 @@ internal sealed class SmtpMessageHandler
             MailboxId = mailboxId,
             SenderUserId = transaction.User?.UserId,
             Rule = transaction.Rule,
+            Source = transaction.User is null ? SubmissionSource.SmartHost : SubmissionSource.MailProgram,
 
             // Mail clients keep their own copy in "Sent".
             SaveToSent = false,

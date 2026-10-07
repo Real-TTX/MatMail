@@ -84,9 +84,24 @@ public sealed class OutboundQueue
                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OutboundStatus.Cancelled), cancel) > 0;
 }
 
+/// <summary>Where a message comes from; signatures and templates treat the sources differently.</summary>
+public enum SubmissionSource
+{
+    /// <summary>A mail program (Outlook, Thunderbird, a phone) signed in to the SMTP server.</summary>
+    MailProgram,
+
+    /// <summary>The web client: the writer chose the signature in the editor.</summary>
+    Web,
+
+    /// <summary>A device or server in a trusted network (smart host), without signing in.</summary>
+    SmartHost,
+}
+
 /// <summary>What is to be sent.</summary>
 public sealed record SubmissionRequest
 {
+    public SubmissionSource Source { get; init; } = SubmissionSource.MailProgram;
+
     /// <summary>The message (may contain Bcc; it is removed from what recipients get).</summary>
     public required byte[] Raw { get; init; }
     public required string EnvelopeFrom { get; init; }
@@ -163,7 +178,7 @@ public sealed class MailSubmission
         if (request.ApplyFooters)
         {
             SignatureContext context = await BuildContextAsync(request, message, cancel);
-            await _signatures.ApplyFootersAsync(message, request.TenantId, request.MailboxId, request.SenderUserId, context, cancel);
+            await _signatures.ApplyAsync(message, request.Source, request.TenantId, request.MailboxId, request.SenderUserId, context, cancel);
         }
 
         byte[] withBcc = MimeSerializer.ToBytes(message);

@@ -126,6 +126,7 @@ public sealed partial class ComposeService
             MailboxId = identity.Mailbox.Id,
             SenderUserId = user.UserId,
             SaveToSent = true,
+            Source = SubmissionSource.Web,
         }, cancel);
 
         if (!result.Accepted)

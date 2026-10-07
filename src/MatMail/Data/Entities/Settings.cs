@@ -21,6 +21,12 @@ public class Signature : AuditedEntity, ITenantEntity
 
     /// <summary>The signature that is pre-selected when a message is composed.</summary>
     public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// For a signature (not a footer): the server also adds it to messages that were written without it, as it happens in mail programs
+    /// such as Outlook. Messages written in the web client carry the signature the writer chose and are left alone.
+    /// </summary>
+    public bool AddOnServer { get; set; }
     public bool IsActive { get; set; } = true;
 }
 

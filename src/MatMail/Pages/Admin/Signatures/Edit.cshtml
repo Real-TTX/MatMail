@@ -3,6 +3,17 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Signatures / Edit signature" : "Administration / Signatures / New signature";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New signature"].Value;
+    string[] placeholders = { "FullName", "Salutation", "Title", "FirstName", "LastName", "DisplayName", "JobTitle", "Department", "Email", "Phone", "Mobile", "Fax", "Tenant", "Website" };
+    var editorTexts = new Dictionary<string, string>
+    {
+        ["content"] = L["Content"].Value, ["bold"] = L["Bold"].Value, ["italic"] = L["Italic"].Value, ["underline"] = L["Underline"].Value,
+        ["size"] = L["Text size"].Value, ["sizeSmall"] = L["Small"].Value, ["sizeNormal"] = L["Normal"].Value, ["sizeLarge"] = L["Large"].Value, ["sizeHuge"] = L["Very large"].Value,
+        ["color"] = L["Text colour"].Value, ["bulletList"] = L["Bulleted list"].Value, ["numberList"] = L["Numbered list"].Value, ["link"] = L["Link"].Value,
+        ["linkPrompt"] = L["Web address (or mailto:)"].Value, ["picture"] = L["Insert picture"].Value, ["rule"] = L["Horizontal line"].Value,
+        ["clear"] = L["Clear formatting"].Value, ["placeholder"] = L["Insert placeholder"].Value, ["source"] = L["HTML source"].Value,
+        ["pictureWidth"] = L["Width in pixels"].Value, ["pictureRemove"] = L["Remove picture"].Value,
+        ["pictureType"] = L["Only PNG, JPEG, GIF and WebP pictures can be inserted."].Value, ["pictureTooLarge"] = L["The picture is too large, even after shrinking it."].Value,
+    };
 }
 
 <mm-form>
@@ -20,16 +31,10 @@
         <mm-picker asp-for="Input.UserId" asp-items="Model.UserItems" label='@L["User"]' placeholder='@L["Select a user…"]'
                    show-when-field="Input.Scope" show-when-value="User" />
         <div class="form-row">
-            <label for="Input_Html">@L["Content (HTML)"]</label>
-            <textarea asp-for="Input.Html" class="form-control" rows="9" spellcheck="false"></textarea>
+            <label for="Input_Html">@L["Content"]</label>
+            <textarea asp-for="Input.Html" class="form-control" rows="10" spellcheck="false"></textarea>
             <span asp-validation-for="Input.Html" class="field-error"></span>
-            <p class="form-help">
-                @L["Placeholders:"]
-                @foreach (var placeholder in new[] { "FullName", "Salutation", "Title", "FirstName", "LastName", "DisplayName", "JobTitle", "Department", "Email", "Phone", "Mobile", "Fax", "Tenant", "Website" })
-                {
-                    <code class="placeholder-chip" data-insert="{{@placeholder}}">{{@placeholder}}</code>
-                }
-            </p>
+            <p class="form-help">@L["Pictures are embedded; they are shrunk to fit. The placeholders are filled in for every sender, e.g. {{FullName}}. A line whose placeholders are all empty (the phone number of somebody who has none) is left out."]</p>
         </div>
         <div class="form-row">
             <label>@L["Preview"]</label>
@@ -37,6 +42,9 @@
         </div>
         <mm-field asp-for="Input.PlainText" kind="textarea" rows="3" label='@L["Plain text version (optional)"]' help='@L["Created from the HTML when left empty."]' />
         <mm-field asp-for="Input.IsDefault" kind="checkbox" label='@L["Preselect this signature when writing a message"]' show-when-field="Input.Kind" show-when-value="Signature" />
+        <mm-field asp-for="Input.AddOnServer" kind="checkbox" label='@L["Also add it on the server to messages that were written without one"]'
+                  help='@L["For mail programs such as Outlook: when the message does not carry a signature, the server appends the one that applies to the sender. Messages written in the web client are left alone."]'
+                  show-when-field="Input.Kind" show-when-value="Signature" />
         <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
     </mm-form-section>
 
@@ -52,6 +60,7 @@
 </mm-form>
 
 @section Scripts {
+    <script src="~/js/rte.js" asp-append-version="true"></script>
     <script>
         (function () {
           var area = document.getElementById("Input_Html"), frame = document.getElementById("signature-preview");
@@ -64,12 +73,9 @@
             frame.srcdoc = '<!doctype html><meta charset="utf-8"><body style="font:14px/1.5 system-ui,sans-serif;margin:8px;color:#202124">' + html;
           }
           area.addEventListener("input", render);
-          document.querySelectorAll("[data-insert]").forEach(function (chip) {
-            chip.addEventListener("click", function () {
-              var start = area.selectionStart, end = area.selectionEnd;
-              area.value = area.value.slice(0, start) + chip.getAttribute("data-insert") + area.value.slice(end);
-              area.focus(); area.selectionStart = area.selectionEnd = start + chip.getAttribute("data-insert").length; render();
-            });
+          MatRte.attach(area, {
+            placeholders: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(placeholders)),
+            texts: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(editorTexts))
           });
           render();
         })();

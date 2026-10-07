@@ -40,7 +40,14 @@
         {
             <tr data-row-href="/Admin/Signatures/Edit?id=@item.Id" tabindex="0">
                 <td class="cell-title">@item.Name</td>
-                <td>@if (item.Kind == SignatureKind.Footer) { <mm-badge kind="warn" icon="lock">@L["Footer"]</mm-badge> } else { <mm-badge kind="info">@L["Signature"]</mm-badge> }</td>
+                <td>
+                    @if (item.Kind == SignatureKind.Footer) { <mm-badge kind="warn" icon="lock">@L["Footer"]</mm-badge> }
+                    else
+                    {
+                        <mm-badge kind="info">@L["Signature"]</mm-badge>
+                        @if (item.AddOnServer) { <mm-badge kind="warn" icon="lock">@L["Also on the server"]</mm-badge> }
+                    }
+                </td>
                 <td class="hide-sm">@Model.Target(item)</td>
                 <td>
                     @if (!item.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }

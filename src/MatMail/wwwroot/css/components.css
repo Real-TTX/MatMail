@@ -380,6 +380,24 @@ dialog.picker-dialog::backdrop { background: rgba(10, 14, 24, 0.5); }
   .dropdown__item { padding: 0.85rem 0.75rem; font-size: 1rem; }
 }
 
+/* ---- Rich text editor (signatures, templates) ---- */
+.rte { border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); }
+.rte:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+.rte__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface-alt); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.rte__button { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; height: 2rem; padding: 0 0.4rem; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font: 600 0.8rem/1 var(--font-mono); cursor: pointer; }
+.rte__button:hover { background: var(--color-surface-hover); }
+.rte__button[aria-pressed="true"] { background: var(--color-primary-soft); color: var(--color-primary); }
+.rte__separator { width: 1px; height: 1.3rem; margin: 0 0.2rem; background: var(--color-border-strong); }
+.rte__select { height: 2rem; max-width: 11rem; padding: 0 0.4rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 0.85rem; }
+.rte__color { width: 2rem; height: 2rem; padding: 2px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); cursor: pointer; }
+.rte__editor { min-height: 12rem; max-height: 32rem; padding: 0.75rem 0.9rem; overflow: auto; background: #ffffff; color: #202124; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; outline: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.rte__editor img { max-width: 100%; height: auto; cursor: pointer; }
+.rte__editor img.is-selected { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.rte__source { display: block; width: 100%; min-height: 12rem; border: 0; border-radius: 0 0 var(--radius-sm) var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem; resize: vertical; }
+.rte__imagebar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--color-border); background: var(--color-primary-soft); font-size: 0.85rem; }
+.rte__imagebar[hidden] { display: none; }
+.rte__width { width: 6rem; }
+
 /* ---- Admin pages: signature editor, activity log, relay hint ---- */
 .placeholder-chip {
   padding: 0.05rem 0.45rem;

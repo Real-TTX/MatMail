@@ -1,4 +1,5 @@
 using MatMail.Data;
+using MatMail.Messaging;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -43,8 +44,12 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
         public string Html { get; set; } = "<p>{{DisplayName}}<br>{{JobTitle}}<br>{{Tenant}}</p>";
         public string? PlainText { get; set; }
         public bool IsDefault { get; set; }
+        public bool AddOnServer { get; set; }
         public bool IsActive { get; set; } = true;
     }
+
+    /// <summary>The most a signature may hold: pictures are embedded, so it can be large, but not without limit.</summary>
+    private const int MaxHtmlLength = 1_000_000;
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -67,9 +72,11 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
             Scope = signature.Scope.ToString(),
             MailboxId = signature.MailboxId,
             UserId = signature.UserId,
-            Html = signature.Html,
+            // The editor shows it in the browser as markup: whatever somebody stored must not run there.
+            Html = SignatureService.SanitizeTemplate(signature.Html),
             PlainText = signature.PlainText,
             IsDefault = signature.IsDefault,
+            AddOnServer = signature.AddOnServer,
             IsActive = signature.IsActive,
         };
         return Page();
@@ -89,6 +96,10 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
         if (string.IsNullOrWhiteSpace(Input.Html))
         {
             ModelState.AddModelError("Input.Html", l["The content is required."]);
+        }
+        else if (Input.Html.Length > MaxHtmlLength)
+        {
+            ModelState.AddModelError("Input.Html", l["The signature is too large; use smaller pictures."]);
         }
 
         if (scope == SignatureScope.Mailbox && !MailboxItems.Any(m => m.Value == Input.MailboxId?.ToString()))
@@ -117,10 +128,11 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
         signature.Scope = scope;
         signature.MailboxId = scope == SignatureScope.Mailbox ? Input.MailboxId : null;
         signature.UserId = scope == SignatureScope.User ? Input.UserId : null;
-        signature.Html = Input.Html.Trim();
+        signature.Html = SignatureService.SanitizeTemplate(Input.Html.Trim());
         signature.PlainText = string.IsNullOrWhiteSpace(Input.PlainText) ? null : Input.PlainText.Trim();
         signature.IsActive = Input.IsActive;
         signature.IsDefault = kind == SignatureKind.Signature && Input.IsDefault;
+        signature.AddOnServer = kind == SignatureKind.Signature && Input.AddOnServer;
 
         // One default per target: the previous default of the same scope loses it.
         if (signature.IsDefault)

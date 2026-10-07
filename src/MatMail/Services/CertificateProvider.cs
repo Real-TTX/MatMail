@@ -118,7 +118,7 @@ public sealed class CertificateProvider : IDisposable
             return null;
         }
 
-        return X509CertificateLoader.LoadPkcs12FromFile(path, _config.Tls.PfxPassword, X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
+        return X509CertificateLoader.LoadPkcs12FromFile(path, _config.Tls.PfxPassword, KeyStorage);
     }
 
     private X509Certificate2? LoadPem()
@@ -133,7 +133,7 @@ public sealed class CertificateProvider : IDisposable
         using X509Certificate2 pem = X509Certificate2.CreateFromPemFile(certPath, keyPath);
 
         // SslStream on Windows needs a key it can use; re-import through PKCS#12 so this works everywhere.
-        return X509CertificateLoader.LoadPkcs12(pem.Export(X509ContentType.Pfx), null, X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
+        return X509CertificateLoader.LoadPkcs12(pem.Export(X509ContentType.Pfx), null, KeyStorage);
     }
 
     private X509Certificate2 LoadOrCreateSelfSigned()
@@ -143,7 +143,7 @@ public sealed class CertificateProvider : IDisposable
 
         if (File.Exists(path))
         {
-            X509Certificate2 existing = X509CertificateLoader.LoadPkcs12FromFile(path, null, X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
+            X509Certificate2 existing = X509CertificateLoader.LoadPkcs12FromFile(path, null, KeyStorage);
             bool sameHost = existing.Subject.Equals($"CN={host}", StringComparison.OrdinalIgnoreCase);
             if (sameHost && existing.NotAfter.ToUniversalTime() > DateTime.UtcNow.AddDays(30))
             {
@@ -174,8 +174,17 @@ public sealed class CertificateProvider : IDisposable
         byte[] pfx = created.Export(X509ContentType.Pfx);
         File.WriteAllBytes(path, pfx);
         _logger.LogWarning("No TLS certificate found: generated a self-signed one for {Host}. Put your own certificate into {Directory} to replace it.", host, _directory);
-        return X509CertificateLoader.LoadPkcs12(pfx, null, X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
+        return X509CertificateLoader.LoadPkcs12(pfx, null, KeyStorage);
     }
+
+    /// <summary>
+    /// Private keys stay in memory only (EphemeralKeySet) where TLS servers can use such keys. Windows (SChannel) cannot ("the
+    /// platform does not support ephemeral keys"), so there the key goes into a temporary key container that is removed again
+    /// when the certificate is disposed.
+    /// </summary>
+    private static X509KeyStorageFlags KeyStorage => OperatingSystem.IsWindows()
+        ? X509KeyStorageFlags.Exportable
+        : X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable;
 
     private string Resolve(string? configured, string defaultFileName)
         => string.IsNullOrWhiteSpace(configured) ? Path.Combine(_directory, defaultFileName) : configured;

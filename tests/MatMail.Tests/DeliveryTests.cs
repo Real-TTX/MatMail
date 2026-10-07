@@ -337,6 +337,19 @@ public class AccessTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task The_address_of_a_personal_mailbox_signs_in_its_owner_but_a_shared_address_does_not()
+    {
+        using IServiceScope scope = _host.Scope();
+        var access = scope.ServiceProvider.GetRequiredService<MailAccessService>();
+
+        MailUser? byAddress = await access.AuthenticateAsync(" Alice@Example.test ", "Test-Passw0rd!", "127.0.0.1");
+        Assert.NotNull(byAddress);
+        Assert.Equal(_seed.Alice.Id, byAddress.UserId);
+        Assert.Null(await access.AuthenticateAsync("alice@example.test", "wrong-password", "127.0.0.1"));
+        Assert.Null(await access.AuthenticateAsync("info@example.test", "Test-Passw0rd!", "127.0.0.1"));
+    }
+
+    [DbFact]
     public async Task A_user_sees_their_own_mailbox_and_what_is_delegated_to_them()
     {
         using (IServiceScope setup = _host.Scope())

@@ -77,12 +77,7 @@ public sealed class TestHost : IAsyncDisposable
         var builder = new NpgsqlConnectionStringBuilder(admin);
         string databaseName = "matmail_t_" + Guid.NewGuid().ToString("N")[..12];
 
-        await using (var connection = new NpgsqlConnection(admin))
-        {
-            await connection.OpenAsync();
-            await using var command = new NpgsqlCommand($"CREATE DATABASE \"{databaseName}\"", connection);
-            await command.ExecuteNonQueryAsync();
-        }
+        await RunAdminAsync(admin, $"CREATE DATABASE \"{databaseName}\"");
 
         var config = new AppConfig
         {
@@ -176,10 +171,35 @@ public sealed class TestHost : IAsyncDisposable
     {
         await Services.DisposeAsync();
         NpgsqlConnection.ClearAllPools();
-        await using var connection = new NpgsqlConnection(_adminConnection);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{_databaseName}\" WITH (FORCE)", connection);
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await RunAdminAsync(_adminConnection, $"DROP DATABASE IF EXISTS \"{_databaseName}\" WITH (FORCE)");
+        }
+        catch (Exception ex) when (ex is NpgsqlException or TimeoutException)
+        {
+            // Clean-up is best effort: a database server that is busy with hundreds of test databases must not fail the test that already passed.
+            Console.Error.WriteLine($"Test database {_databaseName} was not dropped: {ex.Message}");
+        }
+    }
+
+    /// <summary>Creates or drops a database. The generous timeout and the retry are for servers that are busy with other test classes.</summary>
+    private static async Task RunAdminAsync(string adminConnection, string sql)
+    {
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var connection = new NpgsqlConnection(adminConnection);
+                await connection.OpenAsync();
+                await using var command = new NpgsqlCommand(sql, connection) { CommandTimeout = 180 };
+                await command.ExecuteNonQueryAsync();
+                return;
+            }
+            catch (Exception ex) when (attempt < 3 && ex is NpgsqlException or TimeoutException)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2 * attempt));
+            }
+        }
     }
 }
 

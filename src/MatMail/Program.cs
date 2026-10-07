@@ -3,6 +3,7 @@ using MatMail;
 using MatMail.Api;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.MailServer.Imap;
 using MatMail.MailSync;
 using MatMail.Messaging;
 using MatMail.Services;
@@ -61,6 +62,7 @@ builder.WebHost.ConfigureKestrel(kestrel =>
 builder.Services.AddSingleton(certificates);
 builder.Services.AddMatMailServices(config);
 builder.Services.AddMailSync();
+builder.Services.AddImapServer();
 builder.Services.AddHostedService<MaintenanceService>();
 
 builder.Services.AddDataProtection()

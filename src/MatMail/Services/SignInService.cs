@@ -65,6 +65,24 @@ public sealed class SignInService
     public static string? ValidatePasswordStrength(string? password)
         => string.IsNullOrEmpty(password) || password.Length < MinPasswordLength ? PasswordTooShortMessage : null;
 
+    /// <summary>
+    /// The user for a login name. Mail programs offer the e-mail address as the user name, so the address of a personal mailbox
+    /// signs in its owner as well (addresses are unique across all tenants).
+    /// </summary>
+    private async Task<User?> FindUserAsync(string name)
+    {
+        User? user = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.LoginName == name);
+        if (user is not null || !name.Contains('@'))
+        {
+            return user;
+        }
+
+        return await _db.MailboxAliases.IgnoreQueryFilters()
+            .Where(a => a.Address == name && a.Mailbox!.Type == MailboxType.Personal && a.Mailbox.OwnerUserId != null)
+            .Select(a => a.Mailbox!.OwnerUser)
+            .FirstOrDefaultAsync();
+    }
+
     /// <summary>Checks a login name and password. Used by the web sign-in page and by the IMAP and SMTP servers.</summary>
     public async Task<SignInOutcome> ValidateCredentialsAsync(string? loginName, string? password, string? remoteIp = null)
     {
@@ -72,7 +90,7 @@ public sealed class SignInService
         password ??= string.Empty;
         DateTime now = DateTime.UtcNow;
 
-        User? user = name.Length == 0 ? null : await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.LoginName == name);
+        User? user = name.Length == 0 ? null : await FindUserAsync(name);
         if (user is null)
         {
             _timingHash ??= _hasher.HashPassword(TimingUser, "timing-only-password");

@@ -774,7 +774,7 @@
   <data name="Use a self-signed certificate" xml:space="preserve"><value>Selbstsigniertes Zertifikat verwenden</value></data>
   <data name="Use the same user name and password as for receiving" xml:space="preserve"><value>Denselben Benutzernamen und dasselbe Passwort wie beim Empfang verwenden</value></data>
   <data name="Use the web mail client, IMAP and SMTP" xml:space="preserve"><value>Den Web-Mail-Client, IMAP und SMTP verwenden</value></data>
-  <data name="Use your MatMail login name and password." xml:space="preserve"><value>Verwenden Sie Ihren MatMail-Anmeldenamen und Ihr Passwort.</value></data>
+  <data name="Use your login name or e-mail address and your password." xml:space="preserve"><value>Verwenden Sie Ihren Anmeldenamen oder Ihre E-Mail-Adresse und Ihr Passwort.</value></data>
   <data name="Used for notifications; it is not your login." xml:space="preserve"><value>Wird für Benachrichtigungen verwendet; es ist nicht Ihr Login.</value></data>
   <data name="User" xml:space="preserve"><value>Benutzer</value></data>
   <data name="User name" xml:space="preserve"><value>Benutzername</value></data>

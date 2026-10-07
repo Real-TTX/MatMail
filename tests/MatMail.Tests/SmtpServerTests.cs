@@ -126,22 +126,22 @@ public class SmtpProtocolTests
         DateTime now = new(2026, 10, 7, 12, 0, 0, DateTimeKind.Utc);
 
         // Thirty connections at once: only as many attempts run as failures are left.
-        int started = Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(attacker, now));
+        int started = Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(attacker, "alice", now));
         Assert.Equal(SmtpAuthThrottle.MaxFailures, started);
 
         for (int i = 0; i < started - 1; i++)
         {
-            Assert.False(throttle.EndAttempt(attacker, failed: true, now));
+            Assert.False(throttle.EndAttempt(attacker, "alice", failed: true, now));
         }
 
-        Assert.True(throttle.EndAttempt(attacker, failed: true, now));
-        Assert.False(throttle.TryBeginAttempt(attacker, now));
+        Assert.True(throttle.EndAttempt(attacker, "alice", failed: true, now));
+        Assert.False(throttle.TryBeginAttempt(attacker, "alice", now));
 
         // A successful attempt leaves its place again.
         var office = IPAddress.Parse("192.0.2.30");
-        Assert.True(throttle.TryBeginAttempt(office, now));
-        Assert.False(throttle.EndAttempt(office, failed: false, now));
-        Assert.Equal(SmtpAuthThrottle.MaxFailures, Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(office, now)));
+        Assert.True(throttle.TryBeginAttempt(office, "alice", now));
+        Assert.False(throttle.EndAttempt(office, "alice", failed: false, now));
+        Assert.Equal(SmtpAuthThrottle.MaxFailures, Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(office, "alice", now)));
     }
 
     [Fact]
@@ -215,20 +215,25 @@ public class SmtpProtocolTests
 
         for (int i = 0; i < SmtpAuthThrottle.MaxFailures - 1; i++)
         {
-            Assert.False(throttle.RecordFailure(attacker, start.AddMinutes(i)));
+            Assert.False(throttle.RecordFailure(attacker, "alice", start.AddMinutes(i)));
         }
 
-        Assert.False(throttle.IsBlocked(attacker, start.AddMinutes(5)));
-        Assert.True(throttle.RecordFailure(attacker, start.AddMinutes(5)));
-        Assert.True(throttle.IsBlocked(attacker, start.AddMinutes(14)));
-        Assert.False(throttle.IsBlocked(attacker, start.AddMinutes(16)));
-        Assert.False(throttle.IsBlocked(IPAddress.Parse("192.0.2.11"), start.AddMinutes(6)));
+        Assert.False(throttle.IsBlocked(attacker, "alice", start.AddMinutes(5)));
+        Assert.True(throttle.RecordFailure(attacker, "alice", start.AddMinutes(5)));
+        Assert.True(throttle.IsBlocked(attacker, "alice", start.AddMinutes(14)));
+        Assert.False(throttle.IsBlocked(attacker, "alice", start.AddMinutes(16)));
+        Assert.False(throttle.IsBlocked(IPAddress.Parse("192.0.2.11"), "alice", start.AddMinutes(6)));
+
+        // The block is for the name: everybody else behind the same address is not affected (one wrong password in somebody's
+        // mail program must not lock out the whole office), and the client as such is not blocked.
+        Assert.False(throttle.IsBlocked(attacker, "bob", start.AddMinutes(6)));
+        Assert.False(throttle.IsBlocked(attacker, start.AddMinutes(6)));
 
         // Failures spread wider than the window never add up to a block.
         var slow = new SmtpAuthThrottle();
         for (int i = 0; i < 20; i++)
         {
-            Assert.False(slow.RecordFailure(attacker, start.AddMinutes(i * 3)));
+            Assert.False(slow.RecordFailure(attacker, "alice", start.AddMinutes(i * 3)));
         }
     }
 
@@ -239,11 +244,29 @@ public class SmtpProtocolTests
         DateTime now = new(2026, 10, 7, 12, 0, 0, DateTimeKind.Utc);
         for (int i = 1; i <= SmtpAuthThrottle.MaxFailures; i++)
         {
-            throttle.RecordFailure(IPAddress.Parse($"2001:db8:1:2::{i:x}"), now);
+            throttle.RecordFailure(IPAddress.Parse($"2001:db8:1:2::{i:x}"), "alice", now);
         }
 
-        Assert.True(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:2:abcd::ffff"), now));
-        Assert.False(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:3::1"), now));
+        Assert.True(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:2:abcd::ffff"), "alice", now));
+        Assert.False(throttle.IsBlocked(IPAddress.Parse("2001:db8:1:3::1"), "alice", now));
+    }
+
+    [Fact]
+    public void Guessing_at_many_names_blocks_the_client_as_a_whole()
+    {
+        var throttle = new SmtpAuthThrottle();
+        IPAddress attacker = IPAddress.Parse("192.0.2.40");
+        DateTime now = new(2026, 10, 7, 12, 0, 0, DateTimeKind.Utc);
+
+        for (int i = 0; i < SmtpAuthThrottle.MaxClientFailures - 1; i++)
+        {
+            Assert.False(throttle.RecordFailure(attacker, "name" + i, now));
+        }
+
+        Assert.False(throttle.IsBlocked(attacker, now));
+        Assert.True(throttle.RecordFailure(attacker, "last", now));
+        Assert.True(throttle.IsBlocked(attacker, now));
+        Assert.False(throttle.TryBeginAttempt(attacker, "alice", now));
     }
 
     [Fact]
@@ -484,13 +507,21 @@ public class SmtpServerTests : IAsyncLifetime
             await client.EhloAsync();
             for (int i = 0; i < SmtpAuthThrottle.MaxFailures; i++)
             {
-                Assert.Equal(535, (await client.CommandAsync("AUTH PLAIN " + Plain($"guess{i}", "nope"))).Code);
+                Assert.Equal(535, (await client.CommandAsync("AUTH PLAIN " + Plain("alice", "nope" + i))).Code);
             }
 
-            // Even the right password is refused now, without being checked.
+            // Even the right password is refused now, without being checked ...
             Assert.Equal(
                 "454 4.7.0 Too many failed sign-ins from your address, try again later",
                 (await client.CommandAsync("AUTH PLAIN " + Plain("alice", Password))).ToString());
+        }
+
+        // ... but somebody else behind the same address is not locked out with them.
+        (RawSmtpClient colleague, _) = await RawSmtpClient.ConnectAsync(_server.ImplicitTlsPort, implicitTls: true);
+        await using (colleague)
+        {
+            await colleague.EhloAsync();
+            Assert.Equal(235, (await colleague.CommandAsync("AUTH PLAIN " + Plain("bob", Password))).Code);
         }
 
         (RawSmtpClient again, _) = await RawSmtpClient.ConnectAsync(_server.ImplicitTlsPort, implicitTls: true);
@@ -500,7 +531,8 @@ public class SmtpServerTests : IAsyncLifetime
             Assert.Equal(454, (await again.CommandAsync("AUTH PLAIN " + Plain("alice", Password))).Code);
         }
 
-        Assert.True(_server.Throttle.IsBlocked(IPAddress.Loopback));
+        Assert.True(_server.Throttle.IsBlocked(IPAddress.Loopback, "alice"));
+        Assert.False(_server.Throttle.IsBlocked(IPAddress.Loopback));
         Assert.Contains(await ActivityAsync(), log => log.Category == ActivityCategory.Smtp && log.Message.Contains("blocked"));
     }
 

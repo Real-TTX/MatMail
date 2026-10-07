@@ -369,7 +369,7 @@ internal sealed class SmtpSession
         }
 
         // Reserved right before the check, so parallel connections cannot run more guesses than the client has failures left.
-        if (!_context.Throttle.TryBeginAttempt(_remote))
+        if (!_context.Throttle.TryBeginAttempt(_remote, login))
         {
             Refuse("454 4.7.0 Too many failed sign-ins from your address, try again later");
             return;
@@ -382,13 +382,13 @@ internal sealed class SmtpSession
         }
         catch
         {
-            _context.Throttle.EndAttempt(_remote, failed: false);
+            _context.Throttle.EndAttempt(_remote, login, failed: false);
             throw;
         }
 
         if (user is null)
         {
-            if (_context.Throttle.EndAttempt(_remote, failed: true))
+            if (_context.Throttle.EndAttempt(_remote, login, failed: true))
             {
                 await _context.Activity.WarnAsync(
                     $"auth-blocked:{_remoteText}",
@@ -401,7 +401,7 @@ internal sealed class SmtpSession
             return;
         }
 
-        _context.Throttle.EndAttempt(_remote, failed: false);
+        _context.Throttle.EndAttempt(_remote, login, failed: false);
         _user = user;
         _connection.Write("235 2.7.0 Authentication successful");
     }

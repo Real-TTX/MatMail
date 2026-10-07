@@ -227,12 +227,18 @@ internal sealed partial class ImapSession
     {
         string remoteIp = _connection.RemoteIp;
         ImapLoginThrottle throttle = _context.Throttle;
-        if (throttle.IsBlocked(remoteIp))
+        if (throttle.IsBlocked(remoteIp, login))
         {
             Tagged(command, "NO", "[UNAVAILABLE] Too many failed logins from your address; try again later");
             WriteUntagged("BYE Too many failed login attempts");
             _state = ImapSessionState.Logout;
             return;
+        }
+
+        TimeSpan penalty = throttle.Penalty(remoteIp);
+        if (penalty > TimeSpan.Zero)
+        {
+            await Task.Delay(penalty, _shutdown);
         }
 
         MailUser? user;
@@ -243,7 +249,7 @@ internal sealed partial class ImapSession
 
         if (user is null)
         {
-            await RefuseSignInAsync(command, remoteIp);
+            await RefuseSignInAsync(command, remoteIp, login);
             return;
         }
 
@@ -254,10 +260,10 @@ internal sealed partial class ImapSession
         Tagged(command, "OK", $"[CAPABILITY {Capabilities()}] Logged in");
     }
 
-    private async Task RefuseSignInAsync(ImapCommand command, string remoteIp)
+    private async Task RefuseSignInAsync(ImapCommand command, string remoteIp, string login)
     {
         ImapLoginThrottle throttle = _context.Throttle;
-        int failures = throttle.RecordFailure(remoteIp);
+        int failures = throttle.RecordFailure(remoteIp, login);
         _failedLogins++;
         await Task.Delay(throttle.FailureDelay, _shutdown);
         Tagged(command, "NO", "[AUTHENTICATIONFAILED] Invalid credentials");

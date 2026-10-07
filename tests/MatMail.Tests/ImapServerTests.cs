@@ -193,11 +193,33 @@ public class ImapSignInTests : ImapTestBase
             Assert.Equal("* BYE Too many failed login attempts", await raw.ReadLineAsync());
         }
 
-        // Now the address is blocked: even the right password is not looked at.
+        // Now the name is blocked from this address: even a right password would not be looked at ...
         await using RawImapClient blocked = await Imap.RawAsync(implicitTls: true);
         await blocked.ReadLineAsync();
-        Assert.Equal("c1 NO [UNAVAILABLE] Too many failed logins from your address; try again later", (await blocked.CommandAsync("c1", $"LOGIN alice {ImapTestServer.Password}"))[^1]);
+        Assert.Equal("c1 NO [UNAVAILABLE] Too many failed logins from your address; try again later", (await blocked.CommandAsync("c1", $"LOGIN nobody {ImapTestServer.Password}"))[^1]);
         Assert.Equal("* BYE Too many failed login attempts", await blocked.ReadLineAsync());
+
+        // ... while everybody else behind the same address is not locked out with it.
+        await using RawImapClient colleague = await Imap.RawAsync(implicitTls: true);
+        await colleague.ReadLineAsync();
+        Assert.StartsWith("d1 OK", (await colleague.CommandAsync("d1", $"LOGIN alice {ImapTestServer.Password}"))[^1]);
+    }
+
+    [DbFact]
+    public async Task An_address_that_fails_at_many_names_is_slowed_down_but_not_locked_out()
+    {
+        Imap.Throttle.PenalizeAfterFailures = 4;
+        Imap.Throttle.PenaltyDelay = TimeSpan.FromMilliseconds(400);
+        for (int i = 0; i < 4; i++)
+        {
+            Imap.Throttle.RecordFailure("127.0.0.1", "guess" + i);
+        }
+
+        await using RawImapClient raw = await Imap.RawAsync(implicitTls: true);
+        await raw.ReadLineAsync();
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.StartsWith("a1 OK", (await raw.CommandAsync("a1", $"LOGIN alice {ImapTestServer.Password}"))[^1]);
+        Assert.True(watch.Elapsed >= TimeSpan.FromMilliseconds(350), "The sign-in was not delayed.");
     }
 
     [DbFact]

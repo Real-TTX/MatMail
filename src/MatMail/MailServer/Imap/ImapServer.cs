@@ -59,6 +59,7 @@ public sealed class ImapServer : BackgroundService
     private readonly ImapListenOptions? _listen;
     private readonly ILogger<ImapServer> _logger;
     private readonly ConcurrentDictionary<string, int> _connectionsPerIp = new(StringComparer.Ordinal);
+    private int _openConnections;
     private readonly ConcurrentDictionary<Task, byte> _sessions = new();
     private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -311,19 +312,33 @@ public sealed class ImapServer : BackgroundService
 
     private bool TryEnter(string remoteIp)
     {
-        int limit = _context.Config.Imap.MaxConnectionsPerIp;
-        int count = _connectionsPerIp.AddOrUpdate(remoteIp, 1, (_, current) => current + 1);
-        if (limit <= 0 || count <= limit)
+        int total = _context.Config.Imap.MaxConnections;
+        if (total > 0 && Volatile.Read(ref _openConnections) >= total)
         {
-            return true;
+            _logger.LogWarning("IMAP connection from {RemoteIp} refused: {Limit} connections are open.", remoteIp, total);
+            return false;
         }
 
-        Leave(remoteIp);
-        _logger.LogWarning("IMAP connection from {RemoteIp} refused: more than {Limit} connections.", remoteIp, limit);
-        return false;
+        int limit = _context.Config.Imap.MaxConnectionsPerIp;
+        int count = _connectionsPerIp.AddOrUpdate(remoteIp, 1, (_, current) => current + 1);
+        if (limit > 0 && count > limit)
+        {
+            ReleaseAddress(remoteIp);
+            _logger.LogWarning("IMAP connection from {RemoteIp} refused: more than {Limit} connections.", remoteIp, limit);
+            return false;
+        }
+
+        Interlocked.Increment(ref _openConnections);
+        return true;
     }
 
     private void Leave(string remoteIp)
+    {
+        ReleaseAddress(remoteIp);
+        Interlocked.Decrement(ref _openConnections);
+    }
+
+    private void ReleaseAddress(string remoteIp)
     {
         int remaining = _connectionsPerIp.AddOrUpdate(remoteIp, 0, (_, current) => Math.Max(0, current - 1));
         if (remaining == 0)

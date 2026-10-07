@@ -103,6 +103,9 @@ public class ImapConfig
     /// <summary>Refuse LOGIN until the connection is encrypted.</summary>
     public bool RequireTls { get; set; } = true;
     public int MaxConnectionsPerIp { get; set; } = 50;
+
+    /// <summary>Open connections of all clients together (every session keeps buffers); further clients are turned away. 0 = no limit.</summary>
+    public int MaxConnections { get; set; } = 500;
 }
 
 public class SyncConfig

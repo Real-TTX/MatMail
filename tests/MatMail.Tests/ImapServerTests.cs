@@ -1789,6 +1789,29 @@ public class ImapFormatTests
     }
 
     [Fact]
+    public async Task AddImapServer_registers_one_hosted_server_that_honours_ports_set_to_off()
+    {
+        var config = new Configuration.AppConfig();
+        config.Imap.Port = 0;
+        config.Imap.ImplicitTlsPort = 0;
+        var services = new ServiceCollection();
+        services.AddLogging();
+        Services.ServiceRegistration.AddMatMailServices(services, config);
+        services.AddImapServer();
+        services.AddImapServer();
+
+        await using ServiceProvider provider = services.BuildServiceProvider(validateScopes: true);
+        ImapServer server = Assert.Single(provider.GetServices<Microsoft.Extensions.Hosting.IHostedService>().OfType<ImapServer>());
+        Assert.Same(server, provider.GetRequiredService<ImapServer>());
+
+        await server.StartAsync(CancellationToken.None);
+        await server.Started;
+        Assert.Null(server.PlainEndpoint);
+        Assert.Null(server.TlsEndpoint);
+        await server.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public void Header_fields_keep_their_continuation_lines()
     {
         byte[] header = Encoding.ASCII.GetBytes("Subject: a long\r\n subject\r\nX-Other: 1\r\nReceived: from a\r\n\tby b\r\n\r\n");

@@ -1,0 +1,11 @@
+@model MatMail.Services.Brand
+@* The accent colour of a tenant as the "brand" accent (the layouts set data-accent="brand" when it applies). *@
+@if (Model.AccentColor is { } color)
+{
+    var palette = BrandingService.Palette(color);
+    <style>
+        :root[data-accent="brand"] { --accent-light: @palette.Light; --accent-dark: @palette.Dark; }
+        :root[data-accent="brand"][data-mode="light"] { --color-primary-contrast: @palette.OnLight; }
+        :root[data-accent="brand"][data-mode="dark"] { --color-primary-contrast: @palette.OnDark; }
+    </style>
+}

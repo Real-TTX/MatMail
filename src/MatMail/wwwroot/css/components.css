@@ -401,3 +401,11 @@ dialog.picker-dialog::backdrop { background: rgba(10, 14, 24, 0.5); }
 .log-details { margin-top: 0.15rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 .relay-howto { margin-top: 1rem; }
 .page-note { margin-top: 1rem; }
+
+/* ---- Branding page ---- */
+.brand-logo-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.brand-logo-row__current { max-height: 56px; max-width: 200px; padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: #ffffff; object-fit: contain; }
+.brand-logo-row .form-control { flex: 1 1 14rem; width: auto; }
+.brand-preview { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; padding: 0.75rem 1rem; border: 1px dashed var(--color-border-strong); border-radius: var(--radius); background: var(--color-surface-alt); }
+.brand-preview__bar { display: flex; align-items: center; gap: 0.6rem; font-size: 1.1rem; }
+.brand-preview__bar img { max-height: 28px; max-width: 140px; object-fit: contain; }

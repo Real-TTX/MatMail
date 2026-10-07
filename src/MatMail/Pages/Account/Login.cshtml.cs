@@ -5,8 +5,12 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Account;
 
-public class LoginModel(SignInService signIn, IStringLocalizer<SharedResource> l) : PageModel
+public class LoginModel(SignInService signIn, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
 {
+    /// <summary>The name of a tenant (from /t/name): its logo and colour are shown on the page.</summary>
+    [BindProperty(SupportsGet = true, Name = "t")]
+    public string? TenantName { get; set; }
+
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
@@ -20,8 +24,16 @@ public class LoginModel(SignInService signIn, IStringLocalizer<SharedResource> l
         public bool Remember { get; set; } = true;
     }
 
-    public IActionResult OnGet()
-        => User.Identity?.IsAuthenticated == true ? LocalRedirect(SafeReturnUrl()) : Page();
+    public async Task<IActionResult> OnGetAsync()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return LocalRedirect(SafeReturnUrl());
+        }
+
+        await ApplyBrandAsync();
+        return Page();
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -32,11 +44,21 @@ public class LoginModel(SignInService signIn, IStringLocalizer<SharedResource> l
                 ? l["Too many failed attempts. Please try again in a few minutes."]
                 : l["The login name or the password is wrong."]);
             Input.Password = string.Empty;
+            await ApplyBrandAsync();
             return Page();
         }
 
         await signIn.SignInAsync(result.User!, Input.Remember);
         return LocalRedirect(SafeReturnUrl());
+    }
+
+    private async Task ApplyBrandAsync()
+    {
+        Brand? brand = await branding.FindBySlugAsync(TenantName, HttpContext.RequestAborted);
+        if (brand is not null)
+        {
+            ViewData["Brand"] = brand;
+        }
     }
 
     private string SafeReturnUrl() => !string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl) ? ReturnUrl : "/";

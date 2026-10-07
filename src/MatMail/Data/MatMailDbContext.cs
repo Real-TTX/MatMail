@@ -19,6 +19,7 @@ public class MatMailDbContext : DbContext
     public long? CurrentTenantId => _current.TenantId;
 
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<Role> Roles => Set<Role>();
@@ -69,7 +70,20 @@ public class MatMailDbContext : DbContext
         model.Entity<Tenant>(e =>
         {
             e.HasIndex(x => x.Name).IsUnique();
+            e.HasIndex(x => x.Slug).IsUnique();
             e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Slug).HasMaxLength(40);
+        });
+
+        model.Entity<TenantBranding>(e =>
+        {
+            e.HasIndex(x => x.TenantId).IsUnique();
+            e.HasIndex(x => x.LogoToken);
+            e.Property(x => x.BrandName).HasMaxLength(100);
+            e.Property(x => x.Website).HasMaxLength(300);
+            e.Property(x => x.AccentColor).HasMaxLength(7);
+            e.Property(x => x.LogoContentType).HasMaxLength(100);
+            e.HasOne<Tenant>().WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<User>(e =>

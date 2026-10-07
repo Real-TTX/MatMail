@@ -6,6 +6,30 @@ public class Tenant : AuditedEntity
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+
+    /// <summary>Lower-case, URL-safe name of the tenant's own sign-in address (/t/slug); null = none. Unique across the installation.</summary>
+    public string? Slug { get; set; }
+}
+
+/// <summary>How a tenant presents itself: the name and logo in the header and on its sign-in page, its accent colour, its web address.</summary>
+public class TenantBranding : AuditedEntity, ITenantEntity
+{
+    public long TenantId { get; set; }
+
+    /// <summary>Shown instead of "MatMail" in the header; null = no branding of the name.</summary>
+    public string? BrandName { get; set; }
+
+    /// <summary>The company's web address; available to signatures as {{Website}}.</summary>
+    public string? Website { get; set; }
+
+    /// <summary>"#rrggbb"; null = the installation's accent colour (or the user's own choice).</summary>
+    public string? AccentColor { get; set; }
+
+    public byte[]? Logo { get; set; }
+    public string? LogoContentType { get; set; }
+
+    /// <summary>New with every upload: the unguessable address of the logo and, at the same time, what busts the browser's cache.</summary>
+    public Guid? LogoToken { get; set; }
 }
 
 /// <summary>A person who can sign in (web, IMAP, SMTP). Belongs to exactly one tenant.</summary>

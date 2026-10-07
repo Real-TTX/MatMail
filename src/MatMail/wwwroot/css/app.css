@@ -350,3 +350,7 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
   .page-heading__title { font-size: 1.3rem; }
   .tenant-switch__name { display: none; }
 }
+
+/* ---- Branding of a tenant: logo instead of the product mark, own accent colour ---- */
+.sidebar__brand-logo { max-height: 38px; max-width: 190px; width: auto; height: auto; object-fit: contain; margin-right: auto; flex: none; }
+.auth-brand__logo { max-height: 64px; max-width: 280px; width: auto; height: auto; object-fit: contain; }

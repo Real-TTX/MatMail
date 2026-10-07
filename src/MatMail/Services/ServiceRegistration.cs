@@ -25,6 +25,7 @@ public static class ServiceRegistration
         services.AddSingleton<SetupState>();
         services.AddSingleton<ActivityLogger>();
         services.AddSingleton<Fmt>();
+        services.AddSingleton<BrandingService>();
 
         services.AddScoped<CurrentUser>();
         services.AddScoped<ThemeService>();

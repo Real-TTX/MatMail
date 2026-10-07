@@ -1,9 +1,13 @@
 @inject CurrentUser CurrentUser
 @inject ThemeService Themes
+@inject BrandingService Branding
 @inject MatMail.Data.MatMailDbContext Db
 @using Microsoft.EntityFrameworkCore
 @{
     var theme = Themes.Resolve();
+    Brand brand = await Branding.GetAsync(CurrentUser.TenantId);
+    string accent = !theme.UserHasAccent && brand.AccentColor is not null ? "brand" : theme.Accent;
+    string productName = brand.Name ?? "MatMail";
     var area = ViewData["Area"] as string ?? "admin";   // admin | mail
     var isMail = area == "mail";
 
@@ -62,22 +66,24 @@
         (L["System"].Value, new[]
         {
             new NavEntry("/Admin/Logs", "activity", L["Activity log"].Value, Permissions.LogsView),
+            new NavEntry("/Admin/Branding", "image", L["Branding"].Value, Permissions.BrandingManage),
             new NavEntry("/Admin/Settings", "settings", L["Server settings"].Value, null, true),
             new NavEntry("/Admin/Tenants", "building", L["Tenants"].Value, null, true),
         }),
     };
 }
 <!DOCTYPE html>
-<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@theme.Accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")">
+<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>@(pageTitle == "MatMail" ? "MatMail" : $"{pageTitle} · MatMail")</title>
+    <title>@(pageTitle == "MatMail" ? productName : $"{pageTitle} · {productName}")</title>
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/mail.css" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
     <partial name="_ThemeHead" model="theme" />
+    <partial name="_BrandHead" model="brand" />
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
@@ -87,8 +93,18 @@
 
         <aside class="sidebar" id="sidebar">
             <div class="sidebar__brand">
-                <img class="sidebar__brand-mark" src="~/icons/logo.svg" alt="" width="28" height="28" />
-                <span class="sidebar__brand-text">MatMail</span>
+                @if (brand.LogoUrl is { } logoUrl)
+                {
+                    <img class="sidebar__brand-logo" src="@logoUrl" alt="@productName" />
+                }
+                else
+                {
+                    <img class="sidebar__brand-mark" src="~/icons/logo.svg" alt="" width="28" height="28" />
+                }
+                @if (!brand.HasLogo)
+                {
+                    <span class="sidebar__brand-text">@productName</span>
+                }
                 <button type="button" class="icon-btn sidebar__close" id="sidebar-close" aria-label="@L["Close"]"><mm-icon name="x" /></button>
             </div>
 

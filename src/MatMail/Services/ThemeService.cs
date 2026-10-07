@@ -4,7 +4,7 @@ using MatMail.Configuration;
 namespace MatMail.Services;
 
 /// <summary>The resolved look of the current request. <see cref="UserHasMode"/> tells whether the user saved their own choice.</summary>
-public sealed record ThemeChoice(string Mode, string Accent, bool UserHasMode);
+public sealed record ThemeChoice(string Mode, string Accent, bool UserHasMode, bool UserHasAccent = false);
 
 /// <summary>Decides mode (system / light / dark) and accent colour: the signed-in user's choice, else the installation default.</summary>
 public sealed class ThemeService
@@ -29,8 +29,9 @@ public sealed class ThemeService
 
         bool hasMode = Modes.Contains(userMode);
         string mode = hasMode ? userMode! : Normalize(_config.Display.ThemeMode, Modes, "system");
-        string accent = Accents.Contains(userAccent) ? userAccent! : Normalize(_config.Display.ThemeAccent, Accents, "blue");
-        return new ThemeChoice(mode, accent, hasMode);
+        bool hasAccent = Accents.Contains(userAccent);
+        string accent = hasAccent ? userAccent! : Normalize(_config.Display.ThemeAccent, Accents, "blue");
+        return new ThemeChoice(mode, accent, hasMode, hasAccent);
     }
 
     private static string Normalize(string? value, string[] allowed, string fallback)

@@ -134,6 +134,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Queue", Permissions.QueueManage);
         options.Conventions.AuthorizeFolder("/Admin/Logs", Permissions.LogsView);
         options.Conventions.AuthorizeFolder("/Admin/Unassigned", Permissions.UnassignedManage);
+        options.Conventions.AuthorizeFolder("/Admin/Branding", Permissions.BrandingManage);
         options.Conventions.AuthorizePage("/Mail/Index", Permissions.MailUse);
     })
     .AddViewLocalization()
@@ -215,6 +216,24 @@ app.MapGet("/healthz", async (MatMailDbContext db, CancellationToken cancel) =>
         ? Results.Ok(new { status = "ok", version = AppInfo.Version })
         : Results.Json(new { status = "database unavailable", version = AppInfo.Version }, statusCode: 503);
 }).AllowAnonymous();
+
+// The logo of a tenant (part of its sign-in page, so no sign-in needed). The address holds a token that changes with every upload.
+app.MapGet("/brand/{token:guid}", async (Guid token, HttpContext http, BrandingService branding, CancellationToken cancel) =>
+{
+    (byte[] Bytes, string ContentType)? logo = await branding.FindLogoAsync(token, cancel);
+    if (logo is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    http.Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+    return Results.Bytes(logo.Value.Bytes, logo.Value.ContentType);
+}).AllowAnonymous();
+
+// A tenant's own sign-in address: /t/<name>.
+app.MapGet("/t/{slug}", (string slug) => Results.Redirect("/Account/Login?t=" + Uri.EscapeDataString(slug))).AllowAnonymous();
 
 app.MapRazorPages();
 app.MapMailApi();

@@ -19,6 +19,14 @@ Status: ✅ done · 🔧 in progress · ⏳ planned · ❓ open question · 💤
 | 11 | **A really good viewer** – *Der Viewer muss richtig gut sein … egal ob Telekom, WEB.DE oder Outlook* | ✅ sandboxed reader with fit-to-width, quote folding, dark mode and a corpus of real-world fixtures; keep adding fixtures when something looks wrong |
 | 13 | **Tenant switcher in the web client** – *Tenant Switcher auch im Web Client … falls man Zugriff auf Mails in einem anderen Tenant hat?* | ❓ system administrators have it; a user with access in several tenants needs the "member of several tenants" model first |
 
+## Ideas that came up on the way
+
+| Item | Status |
+|---|---|
+| A reading pane and a conversation view for the web client (list options of the appearance settings) | ⏳ |
+| Recognise a signature that is already in an HTML message of a mail program (not only the marker of the web client) before the server adds its own | ⏳ |
+| "Member of several tenants" for ordinary users (consultants, shared services): the tenant switcher of the web client needs it, cross-tenant delegation has to respect the tenant guard | ❓ |
+
 ## Later
 
 | # | Item | Status |

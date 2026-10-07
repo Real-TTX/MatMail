@@ -241,6 +241,41 @@ public class OutboundWorkerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_message_refused_after_the_data_bounces_for_every_recipient()
+    {
+        _sink.DataReply = () => "554 5.7.1 Message rejected as spam";
+        long id = await EnqueueAsync(await AddAccountAsync(), "alice@example.test", "friend@outside.test", "other@outside.test");
+
+        await Worker().ProcessDueAsync();
+
+        OutboundMessage row = await LoadAsync(id);
+        Assert.Equal(OutboundStatus.Failed, row.Status);
+        Assert.Equal(new[] { "friend@outside.test", "other@outside.test" }, row.Recipients.OrderBy(r => r));
+        string bounce = TextOf(Assert.Single(await InboxAsync(_seed.AliceMailbox.Id)));
+        Assert.Contains("<friend@outside.test>: 127.0.0.1: 554 5.7.1 Message rejected as spam", bounce);
+        Assert.Contains("<other@outside.test>: 127.0.0.1: 554 5.7.1 Message rejected as spam", bounce);
+    }
+
+    [DbFact]
+    public async Task A_disabled_account_holds_its_messages_back()
+    {
+        long account = await AddAccountAsync();
+        using (IServiceScope scope = _host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            await db.MailAccounts.Where(a => a.Id == account).ExecuteUpdateAsync(s => s.SetProperty(a => a.IsEnabled, false));
+        }
+
+        long id = await EnqueueAsync(account, "alice@example.test", "friend@outside.test");
+        await Worker().ProcessDueAsync();
+
+        OutboundMessage row = await LoadAsync(id);
+        Assert.Equal(OutboundStatus.Pending, row.Status);
+        Assert.Contains("is disabled", row.LastError);
+        Assert.Empty(_sink.Messages);
+    }
+
+    [DbFact]
     public async Task A_refused_envelope_sender_is_tried_again_with_the_accounts_own_address()
     {
         long account = await AddAccountAsync(address: "relay@provider.test");

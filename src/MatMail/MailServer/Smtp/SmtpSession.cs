@@ -609,7 +609,7 @@ internal sealed class SmtpSession
         if (recipient == "postmaster")
         {
             // RFC 5321 4.5.1: "<Postmaster>" without a domain must be accepted.
-            recipient = "postmaster@" + Hostname.ToLowerInvariant();
+            recipient = await _policy.PostmasterAddressAsync(Hostname, cancel);
         }
 
         if (!MailAddresses.IsValid(recipient) || MailAddresses.IsCatchAll(recipient))

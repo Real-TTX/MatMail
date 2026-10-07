@@ -70,6 +70,24 @@ internal sealed class SmtpPolicy
     public Task<RelayRule?> FindRuleAsync(IPAddress remote, CancellationToken cancel) => _relay.FindRuleAsync(remote, cancel);
 
     /// <summary>
+    /// "&lt;Postmaster&gt;" without a domain (RFC 5321 4.5.1) is the postmaster of this server: at the first registered domain among the
+    /// host name and its parents (mail.example.com → example.com), else at the host name itself.
+    /// </summary>
+    public async Task<string> PostmasterAddressAsync(string hostname, CancellationToken cancel)
+    {
+        string host = hostname.Trim().TrimEnd('.').ToLowerInvariant();
+        for (string candidate = host; candidate.Contains('.'); candidate = candidate[(candidate.IndexOf('.') + 1)..])
+        {
+            if (await _delivery.IsLocalDomainAsync(candidate, cancel))
+            {
+                return "postmaster@" + candidate;
+            }
+        }
+
+        return "postmaster@" + host;
+    }
+
+    /// <summary>
     /// MAIL FROM: decides who the client is for this transaction. A client of a relay rule whose sender the rule does not allow is
     /// treated like any other client (local recipients only). On the submission ports anonymous clients are refused (RFC 6409).
     /// Returns the transaction, or the reply that refuses the sender.

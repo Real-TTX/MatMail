@@ -235,8 +235,9 @@ internal static class SmtpSendLoop
                 pending.RemoveAt(index);
             }
             catch (SmtpCommandException ex) when (ex.ErrorCode == SmtpErrorCode.SenderNotAccepted && !fallbackTried
-                                                  && fallbackSender is not null && !string.Equals(fallbackSender, sender.Address, StringComparison.OrdinalIgnoreCase)
-                                                  && TryMailbox(fallbackSender, out MailboxAddress? fallback))
+                                                  && MailAddresses.IsValid(fallbackSender)
+                                                  && !string.Equals(fallbackSender, sender.Address, StringComparison.OrdinalIgnoreCase)
+                                                  && TryMailbox(fallbackSender!, out MailboxAddress? fallback))
             {
                 // Many providers only take the address of the signed-in account as envelope sender; the From: header stays.
                 fallbackTried = true;

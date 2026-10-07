@@ -573,6 +573,21 @@ public class SmtpServerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task The_postmaster_without_a_domain_is_accepted()
+    {
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync("mx.sender.test");
+            SmtpReplyLines reply = await client.SendMailAsync("max@sender.test", new[] { "Postmaster" }, Text(RawMail.Build("max@sender.test", "postmaster", "Abuse report", "x")));
+            Assert.Equal(250, reply.Code);
+        }
+
+        // The host name mail.example.test is not registered, its parent example.test is; nobody owns postmaster@ there yet.
+        Assert.Equal("postmaster@example.test", Assert.Single(await MessagesAsync(_seed.UnassignedMailboxId)).EnvelopeRecipients);
+    }
+
+    [DbFact]
     public async Task Other_servers_cannot_relay_to_external_addresses()
     {
         (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
@@ -847,6 +862,42 @@ public class SmtpServerTests : IAsyncLifetime
         }
 
         Assert.Empty(await MessagesAsync(_seed.AliceMailbox.Id));
+    }
+
+    [DbFact]
+    public async Task An_old_fashioned_helo_client_can_deliver_and_tls_is_noted_in_received()
+    {
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
+        await using (client)
+        {
+            Assert.Equal("250 mail.example.test", (await client.CommandAsync("HELO old.sender.test")).ToString());
+            Assert.Equal(250, (await client.SendMailAsync("max@sender.test", new[] { "alice@example.test" }, Text(RawMail.Build("max@sender.test", "alice@example.test", "Plain", "x")))).Code);
+
+            // Other servers may encrypt too; the Received header says so.
+            await client.EhloAsync("mx.sender.test");
+            await client.StartTlsAsync();
+            await client.EhloAsync("mx.sender.test");
+            Assert.Equal(250, (await client.SendMailAsync("max@sender.test", new[] { "bob@example.test" }, Text(RawMail.Build("max@sender.test", "bob@example.test", "Encrypted", "x")))).Code);
+        }
+
+        Assert.Contains("by mail.example.test (MatMail) with SMTP id ", RawText(Assert.Single(await MessagesAsync(_seed.AliceMailbox.Id))));
+        string encrypted = RawText(Assert.Single(await MessagesAsync(_seed.BobMailbox.Id)));
+        Assert.Contains("(using TLSv1.", encrypted);
+        Assert.Contains("by mail.example.test (MatMail) with ESMTPS id ", encrypted);
+    }
+
+    [DbFact]
+    public async Task Stopping_the_server_says_goodbye_to_open_connections()
+    {
+        RunningSmtpServer stopping = await RunningSmtpServer.StartAsync(_host);
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(stopping.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync();
+            await stopping.DisposeAsync();
+            Assert.Equal("421 4.3.2 mail.example.test Service shutting down", (await client.ReadReplyAsync()).ToString());
+            Assert.True(await client.IsClosedAsync());
+        }
     }
 
     [DbFact]

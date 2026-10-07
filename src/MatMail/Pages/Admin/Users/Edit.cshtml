@@ -41,6 +41,25 @@
                     <mm-field asp-for="Input.IsSystemAdmin" kind="checkbox" label='@L["System administrator (manages all tenants and the server)"]' />
                 }
             </mm-form-section>
+
+            @if (Model.IsEdit)
+            {
+                <mm-form-section title='@L["Two-factor authentication"]' icon="smartphone"
+                                 description='@L["A code from an authenticator app after the password. The rules are set under Security and in the roles."]'>
+                    <dl class="kv">
+                        <dt>@L["Status"]</dt>
+                        <dd>
+                            @if (Model.TwoFactor.Enabled) { <mm-badge kind="ok" icon="check">@L["On"]</mm-badge> } else { <mm-badge kind="muted">@L["Off"]</mm-badge> }
+                            @if (Model.TwoFactor.SetupRequired) { <mm-badge kind="warn" icon="alert">@L["Required, not set up yet"]</mm-badge> }
+                            else if (Model.TwoFactor.Required) { <mm-badge kind="info">@L["Required"]</mm-badge> }
+                        </dd>
+                    </dl>
+                    @if (Model.CanResetTwoFactor)
+                    {
+                        <p class="form-help">@L["Lost phone? “Reset two-factor authentication” (at the bottom) removes the authenticator app and the recovery codes and signs the user out everywhere. App passwords stay."]</p>
+                    }
+                </mm-form-section>
+            }
         </mm-tab-panel>
 
         <mm-tab-panel title='@L["Mailbox"]' icon="inbox">
@@ -79,6 +98,12 @@
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
         <mm-button variant="secondary" href="/Admin/Users" icon="arrow-left">@L["Back"]</mm-button>
         <mm-button-spacer />
+        @if (Model.CanResetTwoFactor)
+        {
+            <mm-button variant="danger" type="submit" handler="ResetTwoFactor" icon="rotate-ccw"
+                       confirm='@L["Reset two-factor authentication of this user? They have to set it up again, and they are signed out everywhere."]'>@L["Reset two-factor authentication"]</mm-button>
+        }
+
         @if (Model.IsEdit && !Model.IsSelf)
         {
             @if (Model.Mailbox is not null)

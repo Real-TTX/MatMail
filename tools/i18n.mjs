@@ -165,7 +165,7 @@ function usedKeys() {
       while ((m = sentence.exec(text))) {
         const s = unescapeCSharp(m[1]);
         if (/^[A-Z][^"{}\\]*[.?!]$/.test(s) && s.includes(' ') && s.length > 12) add(s, file);
-        else if (/Permissions\.cs$/.test(file) && /^[A-Z][A-Za-z ,".’-]+$/.test(s) && s.includes(' ')) add(s, file);
+        else if (/Permissions\.cs$/.test(file) && /^[A-Z][A-Za-z ,".’:-]+$/.test(s) && s.includes(' ')) add(s, file);
       }
     }
   }

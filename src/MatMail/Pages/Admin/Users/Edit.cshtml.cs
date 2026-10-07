@@ -9,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Admin.Users;
 
-public class EditModel(MatMailDbContext db, UserService users, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
+public class EditModel(MatMailDbContext db, UserService users, TwoFactorService twoFactor, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public long Id { get; set; }
@@ -21,9 +21,15 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
     public Mailbox? Mailbox { get; private set; }
     public IReadOnlyList<string> MailboxAddresses { get; private set; } = Array.Empty<string>();
 
+    /// <summary>Where the user stands with two-factor authentication (shown on the Access tab).</summary>
+    public TwoFactorStatus TwoFactor { get; private set; } = TwoFactorStatus.Off;
+
     public bool IsEdit => Id != 0;
     public bool IsSelf => Id == currentUser.UserId;
     public bool CanSetSystemAdmin => currentUser.IsSystemAdmin;
+
+    /// <summary>For a lost phone: not for oneself (that needs the password and a code, on the account page).</summary>
+    public bool CanResetTwoFactor => IsEdit && !IsSelf && TwoFactor.Enabled;
 
     public class InputModel : IPersonFields
     {
@@ -162,6 +168,16 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
         return RedirectToPage("Index");
     }
 
+    /// <summary>An administrator takes two-factor authentication away from a user who lost their phone.</summary>
+    public async Task<IActionResult> OnPostResetTwoFactorAsync()
+    {
+        string? error = await twoFactor.ResetAsync(Id);
+        this.Notify(
+            error is null ? l["Two-factor authentication of the user was reset. They sign in with the password again."].Value : l[error].Value,
+            error is null ? NoticeKind.Ok : NoticeKind.Danger);
+        return RedirectToPage(new { Id });
+    }
+
     public Task<IActionResult> OnPostDeleteAsync() => DeleteAsync(deleteMailbox: false);
 
     public Task<IActionResult> OnPostDeleteWithMailboxAsync() => DeleteAsync(deleteMailbox: true);
@@ -196,6 +212,7 @@ public class EditModel(MatMailDbContext db, UserService users, CurrentUser curre
             return;
         }
 
+        TwoFactor = await twoFactor.GetStatusAsync(Id);
         Mailbox = await db.Mailboxes.AsNoTracking().FirstOrDefaultAsync(m => m.OwnerUserId == Id && m.Type == MailboxType.Personal);
         if (Mailbox is not null)
         {

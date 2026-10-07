@@ -120,6 +120,19 @@ public enum SignatureKind
     Footer,
 }
 
+/// <summary>Whether a tenant makes two-factor authentication mandatory (roles can require it for their members on top of this).</summary>
+public enum TwoFactorMode
+{
+    /// <summary>Everybody decides for themselves.</summary>
+    Optional,
+
+    /// <summary>Users who hold any permission other than using mail, and system administrators.</summary>
+    Administrators,
+
+    /// <summary>Every user of the tenant.</summary>
+    Everyone,
+}
+
 public enum ActivityCategory
 {
     System,

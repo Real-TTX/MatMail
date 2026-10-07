@@ -40,12 +40,13 @@ public sealed class MailAccessService
     }
 
     /// <summary>
-    /// Checks a login for IMAP/SMTP: password, active user/tenant, and the permission to use mail. On success the current scope
+    /// Checks a login for IMAP/SMTP: password or app password, active user/tenant, and the permission to use mail. These protocols cannot
+    /// ask for a code, so with two-factor authentication on or required only an app password signs in. On success the current scope
     /// acts as that user (tenant filter, audit columns).
     /// </summary>
     public async Task<MailUser?> AuthenticateAsync(string? loginName, string? password, string? remoteIp)
     {
-        SignInOutcome outcome = await _signIn.ValidateCredentialsAsync(loginName, password, remoteIp);
+        SignInOutcome outcome = await _signIn.ValidateCredentialsAsync(loginName, password, remoteIp, SignInPurpose.Protocol);
         if (!outcome.Succeeded || outcome.User is null)
         {
             return null;

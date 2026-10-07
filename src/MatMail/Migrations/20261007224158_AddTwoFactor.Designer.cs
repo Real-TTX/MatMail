@@ -3,6 +3,7 @@ using System;
 using MatMail.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MatMail.Migrations
 {
     [DbContext(typeof(MatMailDbContext))]
-    partial class MatMailDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261007224158_AddTwoFactor")]
+    partial class AddTwoFactor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -619,85 +622,6 @@ namespace MatMail.Migrations
                     b.ToTable("MailMessageContent");
                 });
 
-            modelBuilder.Entity("MatMail.Data.MailTemplate", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreateDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long?>("CreateUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("ForMailPrograms")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("ForSmartHost")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("ForWebClient")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Html")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<long?>("MailboxId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Mode")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("RelayRuleId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Scope")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<long>("TenantId")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("UpdateDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long?>("UpdateUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("UserId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MailboxId");
-
-                    b.HasIndex("RelayRuleId");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("MailTemplate");
-                });
-
             modelBuilder.Entity("MatMail.Data.Mailbox", b =>
                 {
                     b.Property<long>("Id")
@@ -1082,9 +1006,6 @@ namespace MatMail.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("AddOnServer")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -1268,10 +1189,6 @@ namespace MatMail.Migrations
                     b.Property<string>("Culture")
                         .HasColumnType("text");
 
-                    b.Property<string>("Density")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.Property<string>("Department")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
@@ -1337,27 +1254,14 @@ namespace MatMail.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<bool>("ShowPreviews")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
                     b.Property<long>("TenantId")
                         .HasColumnType("bigint");
-
-                    b.Property<string>("TextSize")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("ThemeAccent")
                         .HasColumnType("text");
 
                     b.Property<string>("ThemeMode")
                         .HasColumnType("text");
-
-                    b.Property<string>("TimeZone")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Title")
                         .HasMaxLength(100)
@@ -1655,30 +1559,6 @@ namespace MatMail.Migrations
                         .IsRequired();
 
                     b.Navigation("Message");
-                });
-
-            modelBuilder.Entity("MatMail.Data.MailTemplate", b =>
-                {
-                    b.HasOne("MatMail.Data.Mailbox", null)
-                        .WithMany()
-                        .HasForeignKey("MailboxId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("MatMail.Data.RelayRule", null)
-                        .WithMany()
-                        .HasForeignKey("RelayRuleId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("MatMail.Data.Tenant", null)
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MatMail.Data.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("MatMail.Data.Mailbox", b =>

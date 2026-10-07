@@ -5,7 +5,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Account;
 
-public class LoginModel(SignInService signIn, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
+public class LoginModel(SignInService signIn, TwoFactorTicket ticket, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
 {
     /// <summary>The name of a tenant (from /t/name): its logo and colour are shown on the page.</summary>
     [BindProperty(SupportsGet = true, Name = "t")]
@@ -41,15 +41,25 @@ public class LoginModel(SignInService signIn, BrandingService branding, IStringL
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, result.Status == SignInStatus.LockedOut
-                ? l["Too many failed attempts. Please try again in a few minutes."]
+                ? l[SignInService.LockedMessage]
                 : l["The login name or the password is wrong."]);
             Input.Password = string.Empty;
             await ApplyBrandAsync();
             return Page();
         }
 
+        if (result.SecondFactorPending)
+        {
+            // The password is right. The session only comes into being after the code: until then a ticket (five minutes, readable
+            // by the server only) is all the browser holds.
+            ticket.Issue(HttpContext, new PendingSignIn(result.User!.Id, Input.Remember, SafeReturnUrl(), TenantName));
+            return RedirectToPage("/Account/TwoFactor");
+        }
+
         await signIn.SignInAsync(result.User!, Input.Remember);
-        return LocalRedirect(SafeReturnUrl());
+
+        // Bound to two-factor authentication without having set it up: straight to the set-up (the rest of the site is closed to them anyway).
+        return result.TwoFactor is { SetupRequired: true } ? Redirect(TwoFactorSetupMiddleware.SecurityPath) : LocalRedirect(SafeReturnUrl());
     }
 
     private async Task ApplyBrandAsync()

@@ -120,6 +120,7 @@ builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AllowAnonymousToPage("/Error");
         options.Conventions.AllowAnonymousToPage("/Account/Login");
+        options.Conventions.AllowAnonymousToPage("/Account/TwoFactor");
         options.Conventions.AllowAnonymousToPage("/Account/Logout");
         options.Conventions.AllowAnonymousToPage("/Account/Setup");
         options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
@@ -140,6 +141,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Logs", Permissions.LogsView);
         options.Conventions.AuthorizeFolder("/Admin/Unassigned", Permissions.UnassignedManage);
         options.Conventions.AuthorizeFolder("/Admin/Branding", Permissions.BrandingManage);
+        options.Conventions.AuthorizeFolder("/Admin/Security", Permissions.SecurityManage);
         options.Conventions.AuthorizePage("/Mail/Index", Permissions.MailUse);
     })
     .AddViewLocalization()
@@ -212,6 +214,7 @@ app.UseAuthentication();
 app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 app.UseMiddleware<SetupRedirectMiddleware>();
 app.UseMiddleware<MustChangePasswordMiddleware>();
+app.UseMiddleware<TwoFactorSetupMiddleware>();
 app.UseAuthorization();
 
 app.MapGet("/healthz", async (MatMailDbContext db, CancellationToken cancel) =>

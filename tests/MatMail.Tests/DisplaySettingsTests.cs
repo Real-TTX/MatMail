@@ -80,7 +80,7 @@ public class DisplaySettingsTests
     {
         var snapshot = new SessionSnapshot(
             1, 1, "Home", 1, "alice", "Alice", false, false, new[] { Permissions.MailUse }, null, null, null,
-            "small", "compact", "Asia/Tokyo", false, DateTime.UtcNow.AddDays(1));
+            "small", "compact", "Asia/Tokyo", false, DateTime.UtcNow.AddDays(1), false, false);
 
         ClaimsPrincipal principal = SignInService.BuildPrincipal(snapshot, Guid.NewGuid());
 

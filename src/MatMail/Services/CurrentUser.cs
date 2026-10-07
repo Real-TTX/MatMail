@@ -50,6 +50,12 @@ public sealed class CurrentUser
     public string? TenantName => Principal?.FindFirstValue(AppClaims.TenantName);
     public bool MustChangePassword => Principal?.FindFirstValue(AppClaims.MustChangePassword) == "1";
 
+    /// <summary>The user signs in with a second factor.</summary>
+    public bool TwoFactorEnabled => Principal?.FindFirstValue(AppClaims.TwoFactor) == "1";
+
+    /// <summary>The rules of the tenant or a role of the user demand two-factor authentication, and it is not set up yet.</summary>
+    public bool TwoFactorSetupRequired => Principal?.FindFirstValue(AppClaims.TwoFactorRequired) == "1" && !TwoFactorEnabled;
+
     public bool IsSystemAdmin => _actor is { } a ? a.IsSystemAdmin : Principal?.FindFirstValue(AppClaims.SystemAdmin) == "1";
 
     /// <summary>The permissions the user holds through roles (system administrators additionally hold everything).</summary>

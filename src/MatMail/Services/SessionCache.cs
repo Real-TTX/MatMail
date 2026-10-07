@@ -20,7 +20,9 @@ public sealed record SessionSnapshot(
     string? Density,
     string? TimeZone,
     bool ShowPreviews,
-    DateTime ExpiresDate);
+    DateTime ExpiresDate,
+    bool TwoFactorEnabled,
+    bool TwoFactorRequired);
 
 /// <summary>
 /// Short-lived cache in front of the session table, so the mail client's frequent background requests do not each cost a

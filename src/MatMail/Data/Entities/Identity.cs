@@ -9,6 +9,9 @@ public class Tenant : AuditedEntity
 
     /// <summary>Lower-case, URL-safe name of the tenant's own sign-in address (/t/slug); null = none. Unique across the installation.</summary>
     public string? Slug { get; set; }
+
+    /// <summary>Who of this tenant has to sign in with a second factor. System administrators follow the policy of the tenant they belong to.</summary>
+    public TwoFactorMode TwoFactorMode { get; set; } = TwoFactorMode.Optional;
 }
 
 /// <summary>How a tenant presents itself: the name and logo in the header and on its sign-in page, its accent colour, its web address.</summary>
@@ -120,6 +123,9 @@ public class Role : AuditedEntity, ITenantEntity
     /// <summary>Built-in roles can be edited but not deleted.</summary>
     public bool IsBuiltIn { get; set; }
     public string[] Permissions { get; set; } = Array.Empty<string>();
+
+    /// <summary>Everybody who holds this role must sign in with a second factor.</summary>
+    public bool RequiresTwoFactor { get; set; }
 }
 
 public class UserRole : AuditedEntity

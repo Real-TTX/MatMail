@@ -1,0 +1,228 @@
+@page "/Account/Security"
+@model MatMail.Pages.Account.SecurityModel
+@{
+    ViewData["Breadcrumb"] = "Account / Security";
+    ViewData["Title"] = L["My account"].Value;
+    TwoFactorStatus status = Model.Status;
+    bool setUpRunning = Model.Overview.PendingSecret is not null;
+}
+
+<partial name="_AccountTabs" model='"security"' />
+
+@if (status.SetupRequired)
+{
+    <div class="notice notice--warn"><mm-icon name="alert" class="notice__icon" /><span class="notice__text">@L["Two-factor authentication is required for your account. Set it up now: everything else stays closed until you have."]</span></div>
+}
+
+@if (Model.NewRecoveryCodes is { Count: > 0 } recoveryCodes)
+{
+    string codeText = string.Join("\n", recoveryCodes);
+    <section class="card secret-card" role="alert">
+        <h2 class="card__title"><mm-icon name="key" />@L["Your recovery codes"]</h2>
+        <p>@L["Keep these codes in a safe place, for example in a password manager. Each code works once, in place of the code of the app. They are shown only now."]</p>
+        <ul class="code-grid">
+            @foreach (string code in recoveryCodes)
+            {
+                <li class="code-grid__item">@code</li>
+            }
+        </ul>
+        <div class="btn-row">
+            <button type="button" class="btn btn--secondary" data-copy="@codeText"><mm-icon name="copy" /><span>@L["Copy"]</span></button>
+            <a class="btn btn--secondary" download="matmail-recovery-codes.txt" href="data:text/plain;charset=utf-8,@Uri.EscapeDataString(codeText + "\n")"><mm-icon name="download" /><span>@L["Download"]</span></a>
+        </div>
+    </section>
+}
+
+@if (Model.CreatedAppPassword is { } created)
+{
+    <section class="card secret-card" role="alert">
+        <h2 class="card__title"><mm-icon name="key" />@string.Format(L["App password “{0}”"].Value, Model.CreatedAppPasswordName)</h2>
+        <p>@L["Enter this instead of your password in the mail program (IMAP and SMTP). It is shown only now. If you lose it, revoke it and create a new one."]</p>
+        <p class="big-secret mono">@created</p>
+        <div class="btn-row">
+            <button type="button" class="btn btn--secondary" data-copy="@created"><mm-icon name="copy" /><span>@L["Copy"]</span></button>
+        </div>
+    </section>
+}
+
+@* ---- The authenticator app ---- *@
+@if (status.Enabled)
+{
+    <div class="security-form">
+        <mm-form-section title='@L["Authenticator app"]' icon="smartphone"
+                         description='@L["Signing in asks for a code from your authenticator app after the password. For a new phone, turn it off and set it up again."]'>
+            <dl class="kv">
+                <dt>@L["Status"]</dt>
+                <dd><mm-badge kind="ok" icon="check">@L["On"]</mm-badge> @if (status.Required) { <mm-badge kind="info">@L["Required for your account"]</mm-badge> }</dd>
+                <dt>@L["On since"]</dt>
+                <dd>@Fmt.DateTimeText(Model.Overview.EnabledSince)</dd>
+                <dt>@L["Recovery codes left"]</dt>
+                <dd>@Model.Overview.RecoveryCodesLeft @if (Model.Overview.RecoveryCodesLeft <= 2) { <mm-badge kind="warn" icon="alert">@L["Create new ones soon"]</mm-badge> }</dd>
+            </dl>
+        </mm-form-section>
+    </div>
+
+    <mm-form class="security-form">
+        <mm-form-section title='@L["Recovery codes"]' icon="key"
+                         description='@L["If you lose your phone, a recovery code takes the place of the code of the app. Creating new codes makes the old ones worthless."]'>
+            <div class="form-grid">
+                <mm-field asp-for="Renew.Password" kind="password" label='@L["Your password"]' autocomplete="current-password" />
+                <mm-field asp-for="Renew.Code" label='@L["Code of the app or a recovery code"]' autocomplete="one-time-code" autocapitalize="none" spellcheck="false" />
+            </div>
+            <mm-button-row>
+                <mm-button variant="secondary" handler="Renew" icon="refresh">@L["Create new recovery codes"]</mm-button>
+            </mm-button-row>
+        </mm-form-section>
+    </mm-form>
+
+    <mm-form class="security-form">
+        <mm-form-section title='@L["Turn off two-factor authentication"]' icon="x-circle"
+                         description='@(status.Required ? L["Your account is bound to two-factor authentication: after turning it off you have to set it up again at once."].Value : L["Signing in needs the password alone again, and mail programs may use your password."].Value)'>
+            <div class="form-grid">
+                <mm-field asp-for="Disable.Password" kind="password" label='@L["Your password"]' autocomplete="current-password" />
+                <mm-field asp-for="Disable.Code" label='@L["Code of the app or a recovery code"]' autocomplete="one-time-code" autocapitalize="none" spellcheck="false" />
+            </div>
+            <mm-button-row>
+                <mm-button variant="danger" handler="Disable" icon="x-circle" confirm='@L["Turn off two-factor authentication?"]'>@L["Turn off"]</mm-button>
+            </mm-button-row>
+        </mm-form-section>
+    </mm-form>
+}
+else if (setUpRunning)
+{
+    <mm-form class="security-form">
+        <mm-form-section title='@L["Set up the authenticator app"]' icon="smartphone"
+                         description='@L["Two steps: add this account to an authenticator app (Google Authenticator, Microsoft Authenticator, Aegis, 1Password …), then enter the code it shows."]'>
+            <div class="setup-grid">
+                <div class="qr-box" role="img" aria-label="@L["QR code for your authenticator app"]">@Html.Raw(Model.SetupQr)</div>
+                <div class="setup-grid__key">
+                    <h4>@L["1. Add the account"]</h4>
+                    <p class="muted">@L["Scan the QR code with the app. Cannot scan it? Enter this key in the app (type: time based):"]</p>
+                    <p class="secret-key mono">@Model.SetupSecret</p>
+                    <div class="btn-row btn-row--tight">
+                        <button type="button" class="btn btn--secondary btn--sm" data-copy="@Model.Overview.PendingSecret"><mm-icon name="copy" /><span>@L["Copy the key"]</span></button>
+                        <a class="btn btn--secondary btn--sm" href="@Model.SetupUri"><mm-icon name="smartphone" /><span>@L["Open in the app on this device"]</span></a>
+                    </div>
+                </div>
+            </div>
+            <h4>@L["2. Enter the code"]</h4>
+            <mm-field asp-for="Enrol.Code" label='@L["Code of the app"]' autocomplete="one-time-code" autofocus="autofocus" placeholder="123 456"
+                      help='@L["The app shows a new 6-digit code every 30 seconds."]' />
+            <mm-button-row>
+                <mm-button variant="primary" handler="Confirm" icon="check">@L["Turn on"]</mm-button>
+                <mm-button variant="secondary" handler="Cancel" icon="x">@L["Cancel"]</mm-button>
+            </mm-button-row>
+        </mm-form-section>
+    </mm-form>
+}
+else
+{
+    <mm-form class="security-form">
+        <mm-form-section title='@L["Authenticator app"]' icon="smartphone"
+                         description='@L["A second step after the password: a 6-digit code from an app on your phone. Someone who knows your password cannot sign in without it."]'>
+            <dl class="kv">
+                <dt>@L["Status"]</dt>
+                <dd><mm-badge kind="muted">@L["Off"]</mm-badge> @if (status.Required) { <mm-badge kind="warn" icon="alert">@L["Required for your account"]</mm-badge> }</dd>
+            </dl>
+            <mm-button-row>
+                <mm-button variant="primary" handler="Start" icon="smartphone">@L["Set up the authenticator app"]</mm-button>
+            </mm-button-row>
+        </mm-form-section>
+    </mm-form>
+}
+
+@* ---- App passwords for mail programs ---- *@
+@if (Model.CanCreateAppPasswords)
+{
+    <section class="form-section security-form">
+        <header class="form-section__header">
+            <h3 class="form-section__title"><mm-icon name="key" />@L["App passwords"]</h3>
+            <p class="form-section__description">
+                @if (status.ProtocolsNeedAppPassword)
+                {
+                    @L["Mail programs such as Outlook, Thunderbird or your phone cannot ask for a code. Create an app password for each of them and enter it instead of your password. Your password itself does not work in mail programs while two-factor authentication is on or required."]
+                }
+                else
+                {
+                    @L["A password of its own for each mail program, which you can revoke one by one. Once two-factor authentication is on, mail programs need one, because they cannot ask for a code."]
+                }
+            </p>
+        </header>
+
+        <mm-table item-count="Model.AppPasswords.Count" empty-text='@L["No app passwords yet."]' empty-icon="key">
+            <thead>
+                <tr>
+                    <th>@L["Name"]</th>
+                    <th class="hide-sm">@L["Created"]</th>
+                    <th>@L["Last used"]</th>
+                    <th class="is-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (AppPassword appPassword in Model.AppPasswords)
+                {
+                    <tr>
+                        <td>
+                            <span class="cell-title">@appPassword.Name</span>
+                            <div class="cell-sub mono">@appPassword.Prefix …</div>
+                        </td>
+                        <td class="hide-sm">@Fmt.DateText(appPassword.CreateDate)</td>
+                        <td>
+                            @if (appPassword.LastUsedDate is { } lastUsed)
+                            {
+                                <span>@Fmt.Ago(lastUsed)</span>
+                                @if (!string.IsNullOrEmpty(appPassword.LastUsedIp))
+                                {
+                                    <div class="cell-sub">@appPassword.LastUsedIp</div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="muted">@L["Never"]</span>
+                            }
+                        </td>
+                        <td class="is-actions">
+                            <form method="post" asp-page-handler="RevokeAppPassword" data-no-busy>
+                                <input type="hidden" name="token" value="@appPassword.Token" />
+                                <button type="submit" class="icon-btn icon-btn--danger" title="@L["Revoke"]" aria-label="@L["Revoke"]"
+                                        data-confirm="@string.Format(L["Revoke the app password “{0}”? Mail programs that use it stop working."].Value, appPassword.Name)">
+                                    <mm-icon name="trash" />
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </mm-table>
+
+        <mm-list-actions>
+            <mm-button variant="primary" type="button" icon="plus" data-dialog-open="new-app-password">@L["New app password"]</mm-button>
+        </mm-list-actions>
+    </section>
+
+    <mm-dialog id="new-app-password" title='@L["New app password"]' size="sm">
+        <mm-form>
+            <mm-field asp-for="NewAppPassword.Name" label='@L["Name"]' placeholder='@L["Thunderbird on my laptop"]' autocomplete="off"
+                      help='@L["What it is used for, so you can tell the passwords apart."]' />
+            <mm-field asp-for="NewAppPassword.Password" kind="password" label='@L["Your password"]' autocomplete="current-password"
+                      help='@L["Asked again because an app password signs in without a code."]' />
+            <mm-button-row>
+                <mm-button variant="primary" handler="CreateAppPassword" icon="key">@L["Create app password"]</mm-button>
+                <mm-button variant="secondary" type="button" icon="x" data-dialog-close="data-dialog-close">@L["Cancel"]</mm-button>
+            </mm-button-row>
+        </mm-form>
+    </mm-dialog>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+          // After a refused request the page comes back at the top: open the dialog again, or show the message.
+          var bad = ".field-error:not(:empty), .form-summary:not(.validation-summary-valid)";
+          var dialog = document.getElementById("new-app-password");
+          if (dialog && dialog.querySelector(bad) && dialog.showModal) { dialog.showModal(); return; }
+          var first = document.querySelector(bad);
+          if (first) { first.scrollIntoView({ block: "center" }); }
+        })();
+    </script>
+}

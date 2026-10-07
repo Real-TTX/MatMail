@@ -7,11 +7,14 @@ using Microsoft.EntityFrameworkCore;
 namespace MatMail.Pages.Account;
 
 /// <summary>The settings for Outlook, Thunderbird, Apple Mail and phones: this server's names, ports and the user's login.</summary>
-public class MailProgramsModel(AppConfig config, MatMailDbContext db, CurrentUser currentUser, CertificateProvider certificates) : PageModel
+public class MailProgramsModel(AppConfig config, MatMailDbContext db, CurrentUser currentUser, CertificateProvider certificates, TwoFactorService twoFactor) : PageModel
 {
     public string Host => config.Server.Hostname;
     public string LoginName => currentUser.Username ?? string.Empty;
     public string? PrimaryAddress { get; private set; }
+
+    /// <summary>Two-factor authentication is on or required: mail programs cannot ask for a code, so they need an app password instead of the password.</summary>
+    public bool NeedsAppPassword { get; private set; }
 
     public bool ImapEnabled => config.Imap.Enabled;
     public int ImapTlsPort => config.Imap.ImplicitTlsPort;
@@ -26,6 +29,7 @@ public class MailProgramsModel(AppConfig config, MatMailDbContext db, CurrentUse
     public async Task OnGetAsync()
     {
         long? userId = currentUser.UserId;
+        NeedsAppPassword = (await twoFactor.GetStatusAsync(userId ?? 0)).ProtocolsNeedAppPassword;
         PrimaryAddress = await db.MailboxAliases.AsNoTracking()
             .Where(a => a.IsPrimary && a.Mailbox!.Type == MailboxType.Personal && a.Mailbox.OwnerUserId == userId)
             .Select(a => a.Address)

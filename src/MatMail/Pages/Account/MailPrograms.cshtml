@@ -10,6 +10,11 @@
 
 <p class="muted">@L["Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed."]</p>
 
+@if (Model.NeedsAppPassword)
+{
+    <div class="notice notice--info"><mm-icon name="info" class="notice__icon" /><span class="notice__text">@L["Mail programs cannot ask for a code. While two-factor authentication is on or required for your account, they sign in with an app password instead of your password."] <a href="/Account/Security">@L["Create an app password"]</a></span></div>
+}
+
 @if (Model.SelfSignedCertificate)
 {
     <div class="notice notice--warn"><mm-icon name="alert" class="notice__icon" /><span class="notice__text">@L["This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings."]</span></div>
@@ -35,7 +40,7 @@
                     <dt>@(Model.ImapTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.ImapStartTlsPort <span class="muted">· STARTTLS</span></dd>
                 }
                 <dt>@L["User name"]</dt><dd class="mono">@user</dd>
-                <dt>@L["Password"]</dt><dd>@L["Your MatMail password"]</dd>
+                <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
             </dl>
         }
     </section>
@@ -58,9 +63,9 @@
                 {
                     <dt>@(Model.SmtpTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.SmtpSubmissionPort <span class="muted">· STARTTLS</span></dd>
                 }
-                <dt>@L["Sign-in"]</dt><dd>@L["Required (normal password)"]</dd>
+                <dt>@L["Sign-in"]</dt><dd>@(Model.NeedsAppPassword ? L["Required (app password)"] : L["Required (normal password)"])</dd>
                 <dt>@L["User name"]</dt><dd class="mono">@user</dd>
-                <dt>@L["Password"]</dt><dd>@L["Your MatMail password"]</dd>
+                <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
             </dl>
         }
     </section>

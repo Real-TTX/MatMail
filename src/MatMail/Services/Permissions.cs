@@ -20,6 +20,7 @@ public static class Permissions
     public const string LogsView = "logs.view";
     public const string UnassignedManage = "unassigned.manage";
     public const string BrandingManage = "branding.manage";
+    public const string SecurityManage = "security.manage";
 
     /// <summary>Policy name for pages only system administrators may open.</summary>
     public const string SystemAdminPolicy = "SystemAdmin";
@@ -39,6 +40,7 @@ public static class Permissions
         new PermissionInfo(QueueManage, "Administration", "Manage the outgoing queue"),
         new PermissionInfo(LogsView, "Administration", "View the activity log"),
         new PermissionInfo(BrandingManage, "Administration", "Manage the branding of the tenant: name, logo and colour"),
+        new PermissionInfo(SecurityManage, "Administration", "Manage the security settings of the tenant, such as two-factor authentication"),
     };
 
     public static readonly IReadOnlyList<string> All = Catalogue.Select(p => p.Key).ToArray();

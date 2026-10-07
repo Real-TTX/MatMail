@@ -30,6 +30,18 @@
         </div>
     </mm-form-section>
 
+    <mm-form-section title='@L["Sign-in"]' icon="lock">
+        @if (Model.CanSetTwoFactor)
+        {
+            <mm-field asp-for="Input.RequiresTwoFactor" kind="checkbox" label='@L["Members must use two-factor authentication"]'
+                      help='@L["Everybody who holds this role signs in with a code from an authenticator app, whatever the policy of the tenant says. Mail programs then need app passwords."]' />
+        }
+        else
+        {
+            <p class="form-help">@(Model.Input.RequiresTwoFactor ? L["Members of this role must use two-factor authentication."] : L["Members of this role do not have to use two-factor authentication."]) @L["Changing this needs the permission to manage security."]</p>
+        }
+    </mm-form-section>
+
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
         <mm-button variant="secondary" href="/Admin/Roles" icon="arrow-left">@L["Back"]</mm-button>

@@ -278,7 +278,7 @@ public class SubmissionTests : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
         db.Signatures.Add(new Signature
         {
-            TenantId = _seed.Tenant.Id, Name = "Disclaimer", Kind = SignatureKind.Footer, Scope = SignatureScope.Tenant,
+            TenantId = _seed.Tenant.Id, Name = "Disclaimer", Kind = SignatureKind.Footer, Scope = AppliesTo.Tenant,
             Html = "<p>Sent by {{DisplayName}} at {{Tenant}}</p>",
         });
         await db.SaveChangesAsync();

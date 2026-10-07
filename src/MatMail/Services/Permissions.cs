@@ -34,7 +34,7 @@ public static class Permissions
         new PermissionInfo(DomainsManage, "Administration", "Manage domains"),
         new PermissionInfo(MailboxesManage, "Administration", "Manage mailboxes, addresses and delegation"),
         new PermissionInfo(AccountsManage, "Administration", "Manage connected provider accounts"),
-        new PermissionInfo(SignaturesManage, "Administration", "Manage signatures and footers"),
+        new PermissionInfo(SignaturesManage, "Administration", "Manage signatures, footers and mail templates"),
         new PermissionInfo(RelayManage, "Administration", "Manage SMTP relay rules"),
         new PermissionInfo(QueueManage, "Administration", "Manage the outgoing queue"),
         new PermissionInfo(LogsView, "Administration", "View the activity log"),

@@ -20,6 +20,7 @@ public static class MessagingServices
         services.AddScoped<RelayPolicy>();
         services.AddScoped<SendRouting>();
         services.AddScoped<SignatureService>();
+        services.AddScoped<TemplateService>();
         services.AddScoped<OutboundQueue>();
         services.AddScoped<MailSubmission>();
         services.AddScoped<ComposeService>();

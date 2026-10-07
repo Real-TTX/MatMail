@@ -1,7 +1,11 @@
 // MatMail – a small rich text editor for signatures and templates: a contenteditable area with a toolbar, pictures, placeholders and a
 // switch to the HTML source. It keeps the <textarea> it replaces up to date, so the form posts like any other.
 //
-//   MatRte.attach(textarea, { placeholders: ["DisplayName", ...], texts: { bold: "Bold", ... } })
+// It is the behaviour of <mm-field kind="richtext">: every textarea[data-rich-text] gets an editor when the page is loaded
+// (data-placeholders: comma separated names, data-texts: the toolbar texts as JSON). A preview frame ([data-rte-preview] in the same
+// row, data-sample: { values, body }) shows the HTML with the placeholders filled in. Also usable by hand:
+//
+//   MatRte.attach(textarea, { placeholders: ["DisplayName", ...], texts: { bold: "Bold", ... }, preview: iframe, sample: { values: {}, body: "" } })
 (function () {
   "use strict";
 
@@ -285,6 +289,48 @@
     var form = textarea.closest("form");
     if (form) { form.addEventListener("submit", function () { if (!sourceMode) { textarea.value = serialize(); } }); }
 
+    // ---- preview ------------------------------------------------------------------------------------------
+    var preview = options.preview;
+    var sample = options.sample || {};
+
+    function escapeHtml(text) { return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+
+    /** The HTML with the placeholders replaced by the sample values ({{Body}}: the sample message, which is markup). */
+    function renderPreview() {
+      if (!preview) { return; }
+      var values = sample.values || {};
+      var html = textarea.value.replace(/\{\{\s*(\w+)\s*\}\}/g, function (found, key) {
+        if (key.toLowerCase() === "body") { return sample.body || ""; }
+        var name = Object.keys(values).filter(function (candidate) { return candidate.toLowerCase() === key.toLowerCase(); })[0];
+        return name ? escapeHtml(values[name]) : found;
+      });
+      preview.srcdoc = '<!doctype html><meta charset="utf-8"><body style="font:14px/1.5 system-ui,sans-serif;margin:8px;color:#202124">' + html;
+    }
+
+    textarea.addEventListener("input", renderPreview);
+    renderPreview();
+
     return { sync: sync, editor: editor };
   }
+
+  function parseJson(text, fallback) {
+    try { return text ? JSON.parse(text) : fallback; } catch (e) { return fallback; }
+  }
+
+  function attachAll() {
+    Array.prototype.forEach.call(doc.querySelectorAll("textarea[data-rich-text]"), function (area) {
+      if (area.getAttribute("data-rte-ready")) { return; }
+      area.setAttribute("data-rte-ready", "true");
+      var row = area.closest(".form-row") || area.parentNode;
+      var frame = row.querySelector("[data-rte-preview]");
+      attach(area, {
+        placeholders: (area.getAttribute("data-placeholders") || "").split(",").map(function (name) { return name.trim(); }).filter(Boolean),
+        texts: parseJson(area.getAttribute("data-texts"), {}),
+        preview: frame,
+        sample: frame ? parseJson(frame.getAttribute("data-sample"), {}) : null
+      });
+    });
+  }
+
+  if (doc.readyState === "loading") { doc.addEventListener("DOMContentLoaded", attachAll); } else { attachAll(); }
 })();

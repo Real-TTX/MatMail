@@ -51,6 +51,7 @@
             new NavEntry("/Admin/Domains", "globe", L["Domains"].Value, Permissions.DomainsManage),
             new NavEntry("/Admin/Accounts", "plug", L["Connected accounts"].Value, Permissions.AccountsManage),
             new NavEntry("/Admin/Signatures", "pen-line", L["Signatures"].Value, Permissions.SignaturesManage),
+            new NavEntry("/Admin/Templates", "file-text", L["Templates"].Value, Permissions.SignaturesManage),
             new NavEntry("/Admin/Unassigned", "alert-circle", L["Unassigned"].Value, Permissions.UnassignedManage),
         }),
         (L["People"].Value, new[]
@@ -287,6 +288,7 @@
 
     <script src="~/js/app.js" asp-append-version="true"></script>
     <script src="~/js/picker.js" asp-append-version="true"></script>
+    <script src="~/js/rte.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

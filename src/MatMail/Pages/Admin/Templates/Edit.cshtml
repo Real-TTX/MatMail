@@ -1,0 +1,47 @@
+@page "/Admin/Templates/Edit"
+@model MatMail.Pages.Admin.Templates.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Templates / Edit template" : "Administration / Templates / New template";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New template"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    <mm-form-section title='@L["Template"]' icon="file-text">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.Html" kind="richtext" label='@L["Content"]' placeholders="@Model.Placeholders" preview="true"
+                  sample-body='@L["Dear Ms Example, the nightly backup finished without errors. Best regards"]'
+                  help='@L["The message is put where {{Body}} stands. Pictures are embedded; they are shrunk to fit. The placeholders of signatures can be used as well."]' />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Which messages"]' icon="sliders">
+        <div class="form-grid">
+            <mm-field asp-for="Input.Scope" kind="select" label='@L["Applies to"]' asp-items="Model.ScopeItems" help='@L["The sender: everybody of the tenant, one mailbox or one user. A more specific template wins."]' />
+            <mm-field asp-for="Input.Priority" kind="number" label='@L["Order of use"]' min="0" max="10000"
+                      help='@L["Of several templates that fit, the lowest number is used."]' />
+        </div>
+        <mm-picker asp-for="Input.MailboxId" asp-items="Model.MailboxItems" label='@L["Mailbox"]' placeholder='@L["Select a mailbox…"]'
+                   show-when-field="Input.Scope" show-when-value="Mailbox" />
+        <mm-picker asp-for="Input.UserId" asp-items="Model.UserItems" label='@L["User"]' placeholder='@L["Select a user…"]'
+                   show-when-field="Input.Scope" show-when-value="User" />
+        <mm-field asp-for="Input.Mode" kind="select" label='@L["Messages"]' asp-items="Model.ModeItems"
+                  help='@L["Messages that only have plain text get an HTML version made from it; the plain text stays next to it. With every message, an HTML message is put into the template as well."]' />
+        <mm-field asp-for="Input.ForWebClient" kind="checkbox" label='@L["Messages written in the web client"]' />
+        <mm-field asp-for="Input.ForMailPrograms" kind="checkbox" label='@L["Messages of mail programs (Outlook, Thunderbird, phones)"]' />
+        <mm-field asp-for="Input.ForSmartHost" kind="checkbox" label='@L["Messages of devices and servers (smart host)"]' />
+        <mm-picker asp-for="Input.RelayRuleId" asp-items="Model.RuleItems" label='@L["Only for this smart host rule"]' placeholder='@L["Every rule"]'
+                   show-when-field="Input.ForSmartHost" show-when-value="true" />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Templates" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this template?"]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

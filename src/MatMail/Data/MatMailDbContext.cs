@@ -36,6 +36,7 @@ public class MatMailDbContext : DbContext
     public DbSet<MailAccountFolderState> MailAccountFolderStates => Set<MailAccountFolderState>();
     public DbSet<RemoteMessageState> RemoteMessageStates => Set<RemoteMessageState>();
     public DbSet<Signature> Signatures => Set<Signature>();
+    public DbSet<MailTemplate> MailTemplates => Set<MailTemplate>();
     public DbSet<RelayRule> RelayRules => Set<RelayRule>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
@@ -239,6 +240,17 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.TenantId);
             e.Property(x => x.Name).HasMaxLength(200);
             e.HasOne(x => x.SendAccount).WithMany().HasForeignKey(x => x.SendAccountId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        model.Entity<MailTemplate>(e =>
+        {
+            e.HasIndex(x => x.TenantId);
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.HasOne<Mailbox>().WithMany().HasForeignKey(x => x.MailboxId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+
+            // A template that was meant for one smart-host rule must not start to apply to every rule when that rule is deleted.
+            e.HasOne<RelayRule>().WithMany().HasForeignKey(x => x.RelayRuleId).OnDelete(DeleteBehavior.Cascade);
         });
 
         model.Entity<ActivityLog>(e =>

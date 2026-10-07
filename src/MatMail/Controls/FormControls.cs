@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using MatMail.Services;
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -133,7 +134,9 @@ public sealed class FormSectionTagHelper : TagHelper
 /// <summary>
 /// A complete field built from an <c>asp-for</c> expression: label, input, validation message and help text. Names and ids derive
 /// from the expression, so any number of fields can live on one page. Kinds: text (default), email, url, tel, password, number,
-/// date, datetime-local, time, color, textarea, select, checkbox, readonly. For select pass <c>asp-items</c> or &lt;option&gt; children.
+/// date, datetime-local, time, color, textarea, richtext, select, checkbox, readonly. For select pass <c>asp-items</c> or &lt;option&gt;
+/// children. Richtext is the editor of rte.js on top of a textarea that keeps the HTML: <c>placeholders</c> lists the {{names}} the
+/// toolbar offers, <c>preview</c> shows the result below with sample values (<c>sample-body</c>: the text that stands for {{Body}}).
 /// Dependent fields: <c>show-when-field</c> + <c>show-when-value</c> (comma separated) show the row only while the controlling input has
 /// one of those values; hidden inputs are disabled so they neither post nor validate (app.js).
 /// Attributes that are not part of this control (readonly, maxlength, min, data-…) go to the input; class goes to the row.
@@ -184,6 +187,18 @@ public sealed class FieldTagHelper : TagHelper
 
     [HtmlAttributeName("asp-items")]
     public IEnumerable<SelectListItem>? Items { get; set; }
+
+    /// <summary>Rich text: the {{placeholders}} the toolbar offers, comma separated.</summary>
+    [HtmlAttributeName("placeholders")]
+    public string? Placeholders { get; set; }
+
+    /// <summary>Rich text: show the result below, with sample values for the placeholders.</summary>
+    [HtmlAttributeName("preview")]
+    public bool Preview { get; set; }
+
+    /// <summary>Rich text: the text that stands for {{Body}} in the preview.</summary>
+    [HtmlAttributeName("sample-body")]
+    public string? SampleBody { get; set; }
 
     [HtmlAttributeName("show-when-field")]
     public string? ShowWhenField { get; set; }
@@ -246,11 +261,21 @@ public sealed class FieldTagHelper : TagHelper
         output.Content.SetHtmlContent(label);
         Dictionary<string, object> attributes = BaseAttributes(passThrough);
         IHtmlContent control;
+        IHtmlContent? afterHelp = null;
 
         switch (kind)
         {
             case "textarea":
                 control = _generator.GenerateTextArea(ViewContext, For.ModelExplorer, For.Name, Rows, 0, attributes);
+                break;
+
+            case "richtext":
+                attributes["data-rich-text"] = "true";
+                attributes["data-placeholders"] = Placeholders ?? string.Empty;
+                attributes["data-texts"] = JsonSerializer.Serialize(RichTextTexts());
+                attributes["spellcheck"] = "false";
+                control = _generator.GenerateTextArea(ViewContext, For.ModelExplorer, For.Name, Rows > 4 ? Rows : 10, 0, attributes);
+                afterHelp = Preview ? PreviewFrame() : null;
                 break;
 
             case "select":
@@ -286,6 +311,10 @@ public sealed class FieldTagHelper : TagHelper
         output.Content.AppendHtml(control);
         output.Content.AppendHtml(validation);
         AppendHelp(output);
+        if (afterHelp is not null)
+        {
+            output.Content.AppendHtml(afterHelp);
+        }
     }
 
     private async Task<IHtmlContent> BuildSelectAsync(TagHelperOutput output, Dictionary<string, object> attributes)
@@ -315,6 +344,37 @@ public sealed class FieldTagHelper : TagHelper
         return new HtmlString(
             $"<button type=\"button\" class=\"icon-btn input-with-action__btn\" data-reveal title=\"{label}\" aria-label=\"{label}\">" +
             "<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#i-eye\"/></svg></button>");
+    }
+
+    /// <summary>The texts of the editor's toolbar and messages (rte.js), in the language of the page.</summary>
+    private Dictionary<string, string> RichTextTexts() => new()
+    {
+        ["content"] = _l["Content"].Value, ["bold"] = _l["Bold"].Value, ["italic"] = _l["Italic"].Value, ["underline"] = _l["Underline"].Value,
+        ["size"] = _l["Text size"].Value, ["sizeSmall"] = _l["Small"].Value, ["sizeNormal"] = _l["Normal"].Value, ["sizeLarge"] = _l["Large"].Value,
+        ["sizeHuge"] = _l["Very large"].Value, ["color"] = _l["Text colour"].Value, ["bulletList"] = _l["Bulleted list"].Value,
+        ["numberList"] = _l["Numbered list"].Value, ["link"] = _l["Link"].Value, ["linkPrompt"] = _l["Web address (or mailto:)"].Value,
+        ["picture"] = _l["Insert picture"].Value, ["rule"] = _l["Horizontal line"].Value, ["clear"] = _l["Clear formatting"].Value,
+        ["placeholder"] = _l["Insert placeholder"].Value, ["source"] = _l["HTML source"].Value, ["pictureWidth"] = _l["Width in pixels"].Value,
+        ["pictureRemove"] = _l["Remove picture"].Value, ["pictureType"] = _l["Only PNG, JPEG, GIF and WebP pictures can be inserted."].Value,
+        ["pictureTooLarge"] = _l["The picture is too large, even after shrinking it."].Value,
+    };
+
+    /// <summary>The frame that shows the HTML with sample values; sandboxed, so nothing in it can run.</summary>
+    private IHtmlContent PreviewFrame()
+    {
+        string tenant = ViewContext.HttpContext.User.FindFirst(AppClaims.TenantName)?.Value ?? "Example GmbH";
+        var sample = new Dictionary<string, string>
+        {
+            ["FullName"] = "Dr. Max Mustermann", ["Salutation"] = "Mr", ["Title"] = "Dr.", ["FirstName"] = "Max", ["LastName"] = "Mustermann",
+            ["DisplayName"] = "Max Mustermann", ["Email"] = "max@example.com", ["JobTitle"] = _l["Managing director"].Value, ["Department"] = _l["Management"].Value,
+            ["Phone"] = "+49 123 456789", ["Mobile"] = "+49 170 1234567", ["Fax"] = "+49 123 456780", ["Website"] = "https://www.example.com", ["Tenant"] = tenant,
+        };
+
+        // {{Body}} is markup (the sample message); everything else is text and gets encoded by rte.js.
+        string body = string.Join("<br>", (SampleBody ?? string.Empty).Split('\n').Select(line => HtmlEncoder.Default.Encode(line.TrimEnd('\r'))));
+        string title = HtmlEncoder.Default.Encode(_l["Preview"].Value);
+        string json = HtmlEncoder.Default.Encode(JsonSerializer.Serialize(new { values = sample, body }));
+        return new HtmlString($"<label>{title}</label><iframe class=\"signature-preview\" sandbox title=\"{title}\" data-rte-preview data-sample=\"{json}\"></iframe>");
     }
 
     private static IHtmlContent Wrap(string cssClass, IHtmlContent control, IHtmlContent addition)

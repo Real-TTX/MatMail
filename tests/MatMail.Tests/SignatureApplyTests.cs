@@ -109,7 +109,7 @@ public class SignatureApplyTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _host.DisposeAsync();
 
-    private async Task AddAsync(string name, SignatureKind kind, SignatureScope scope, string html, bool addOnServer = false, bool isDefault = false, long? userId = null)
+    private async Task AddAsync(string name, SignatureKind kind, AppliesTo scope, string html, bool addOnServer = false, bool isDefault = false, long? userId = null)
     {
         using IServiceScope scope0 = _host.Scope();
         var db = scope0.ServiceProvider.GetRequiredService<MatMailDbContext>();
@@ -145,7 +145,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task A_signature_set_to_be_added_reaches_messages_of_mail_programs_but_not_those_of_the_web_client()
     {
-        await AddAsync("Company", SignatureKind.Signature, SignatureScope.Tenant, "<p>Regards, {{DisplayName}}</p>", addOnServer: true);
+        await AddAsync("Company", SignatureKind.Signature, AppliesTo.Tenant, "<p>Regards, {{DisplayName}}</p>", addOnServer: true);
 
         MimeMessage fromOutlook = Message("<html><body><p>Hi</p></body></html>", "Hi");
         await ApplyAsync(fromOutlook, SubmissionSource.MailProgram);
@@ -161,7 +161,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task A_message_that_carries_the_signature_does_not_get_it_twice()
     {
-        await AddAsync("Company", SignatureKind.Signature, SignatureScope.Tenant, "<p>Regards, {{DisplayName}}</p>", addOnServer: true);
+        await AddAsync("Company", SignatureKind.Signature, AppliesTo.Tenant, "<p>Regards, {{DisplayName}}</p>", addOnServer: true);
 
         MimeMessage message = Message(
             "<div>Hi</div><div class=\"mm-signature\">-- <br><p>Regards, Alice Example</p></div>",
@@ -175,8 +175,8 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task Signatures_that_are_only_offered_are_not_added_and_footers_always_are()
     {
-        await AddAsync("Offered", SignatureKind.Signature, SignatureScope.Tenant, "<p>OFFERED</p>");
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, "<p>LEGAL</p>");
+        await AddAsync("Offered", SignatureKind.Signature, AppliesTo.Tenant, "<p>OFFERED</p>");
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, "<p>LEGAL</p>");
 
         foreach (SubmissionSource source in new[] { SubmissionSource.MailProgram, SubmissionSource.Web, SubmissionSource.SmartHost })
         {
@@ -191,9 +191,9 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task The_signature_of_the_user_wins_over_the_one_of_the_tenant_and_comes_before_the_footer()
     {
-        await AddAsync("Tenant", SignatureKind.Signature, SignatureScope.Tenant, "<p>TENANT</p>", addOnServer: true, isDefault: true);
-        await AddAsync("Alice", SignatureKind.Signature, SignatureScope.User, "<p>ALICE</p>", addOnServer: true, userId: _seed.Alice.Id);
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, "<p>LEGAL</p>");
+        await AddAsync("Tenant", SignatureKind.Signature, AppliesTo.Tenant, "<p>TENANT</p>", addOnServer: true, isDefault: true);
+        await AddAsync("Alice", SignatureKind.Signature, AppliesTo.User, "<p>ALICE</p>", addOnServer: true, userId: _seed.Alice.Id);
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, "<p>LEGAL</p>");
 
         MimeMessage message = Message("<html><body><p>Hi</p></body></html>", "Hi");
         await ApplyAsync(message, SubmissionSource.MailProgram);
@@ -207,7 +207,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task Pictures_of_a_footer_travel_as_inline_parts_of_the_message()
     {
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\" width=\"40\"> LEGAL</p>");
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\" width=\"40\"> LEGAL</p>");
 
         MimeMessage message = Message("<html><body><p>Hi</p></body></html>", "Hi");
         await ApplyAsync(message, SubmissionSource.MailProgram);
@@ -220,7 +220,7 @@ public class SignatureApplyTests : IAsyncLifetime
         // The HTML and its picture live together in one multipart/related, which in turn sits next to the plain-text version.
         TextPart html = message.BodyParts.OfType<TextPart>().Single(p => p.IsHtml);
         Assert.NotNull(message.Body);
-        Multipart related = Assert.IsType<Multipart>(ParentOf(message.Body, picture));
+        Multipart related = Assert.IsAssignableFrom<Multipart>(ParentOf(message.Body, picture));
         Assert.True(related.ContentType.IsMimeType("multipart", "related"));
         Assert.Contains(html, related);
         Assert.Equal("multipart/alternative", message.Body.ContentType.MimeType);
@@ -229,7 +229,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task A_footer_picture_goes_into_the_existing_related_part_of_a_message_that_has_one()
     {
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\"></p>");
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\"></p>");
 
         var existing = new MimePart("image", "gif") { Content = new MimeContent(new MemoryStream(new byte[] { 71, 73, 70 })), ContentId = "own@picture", ContentDisposition = new ContentDisposition(ContentDisposition.Inline) };
         var message = new MimeMessage();
@@ -239,7 +239,7 @@ public class SignatureApplyTests : IAsyncLifetime
 
         await ApplyAsync(message, SubmissionSource.MailProgram);
 
-        var related = Assert.IsType<Multipart>(message.Body);
+        var related = Assert.IsAssignableFrom<Multipart>(message.Body);
         Assert.True(related.ContentType.IsMimeType("multipart", "related"));
         Assert.Equal(3, related.Count);
         Assert.Contains("src=\"cid:own@picture\"", HtmlOf(message));
@@ -249,7 +249,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task Signed_messages_are_left_exactly_as_they_were_written()
     {
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, "<p>LEGAL</p>");
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, "<p>LEGAL</p>");
 
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse("alice@example.test"));
@@ -269,7 +269,7 @@ public class SignatureApplyTests : IAsyncLifetime
     [DbFact]
     public async Task A_message_without_any_html_only_gets_the_text_of_the_footer()
     {
-        await AddAsync("Legal", SignatureKind.Footer, SignatureScope.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\"> LEGAL</p>");
+        await AddAsync("Legal", SignatureKind.Footer, AppliesTo.Tenant, $"<p><img src=\"data:image/png;base64,{Png}\"> LEGAL</p>");
 
         var message = new MimeMessage();
         message.From.Add(MailboxAddress.Parse("alice@example.test"));

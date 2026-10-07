@@ -54,7 +54,7 @@ public static partial class InlinePictures
             return;
         }
 
-        var related = new Multipart("related") { html };
+        var related = new MultipartRelated { html };
         foreach (MimePart picture in pictures)
         {
             related.Add(picture);

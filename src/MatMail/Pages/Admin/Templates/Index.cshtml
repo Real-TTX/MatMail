@@ -1,0 +1,57 @@
+@page "/Admin/Templates"
+@model MatMail.Pages.Admin.Templates.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Templates";
+    ViewData["Description"] = L["A template puts an outgoing message into an HTML frame, chosen by who sends it and where it comes from – for example to turn the plain text of a device into a proper mail."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search templates…"]' />
+    <mm-toolbar-select name="Scope" label='@L["Applies to"]' value="@Model.Scope">
+        <option value="">@L["Everything"]</option>
+        <option value="Tenant">@L["The whole tenant"]</option>
+        <option value="Mailbox">@L["One mailbox"]</option>
+        <option value="User">@L["One user"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="priority">@L["Order of use"]</option>
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No templates yet."]' empty-icon="file-text">
+    <thead>
+        <tr>
+            <th>@L["Name"]</th>
+            <th class="hide-sm">@L["Applies to"]</th>
+            <th class="hide-sm">@L["Messages from"]</th>
+            <th>@L["Messages"]</th>
+            <th>@L["Status"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Templates/Edit?id=@item.Id" tabindex="0">
+                <td class="cell-title">@item.Name</td>
+                <td class="hide-sm">@Model.Target(item)</td>
+                <td class="hide-sm">@Model.Sources(item)</td>
+                <td>
+                    @if (item.Mode == TemplateMode.AllMessages) { <mm-badge kind="info">@L["All messages"]</mm-badge> }
+                    else { <mm-badge kind="muted">@L["Plain text only"]</mm-badge> }
+                </td>
+                <td>@if (item.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Templates/Edit?id=@item.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Templates/Edit" icon="plus">@L["New template"]</mm-button>
+</mm-list-actions>

@@ -96,6 +96,7 @@
   <data name="A self-signed certificate is used again." xml:space="preserve"><value>Es wird wieder ein selbstsigniertes Zertifikat verwendet.</value></data>
   <data name="A signature is offered in the mail client. A footer is appended by the server to every outgoing message in its scope and cannot be removed by the sender." xml:space="preserve"><value>Eine Signatur wird im Mailclient zur Auswahl angeboten. Eine Fußzeile hängt der Server an jede ausgehende Nachricht in ihrem Geltungsbereich an; der Absender kann sie nicht entfernen.</value></data>
   <data name="A single address (192.168.1.20) or a range in CIDR notation (192.168.1.0/24, fd00::/8). The address the server sees is checked: behind Docker’s network address translation use the client’s real address." xml:space="preserve"><value>Eine einzelne Adresse (192.168.1.20) oder ein Bereich in CIDR-Schreibweise (192.168.1.0/24, fd00::/8). Geprüft wird die Adresse, die der Server sieht: Hinter der Netzwerkadressübersetzung von Docker ist die echte Adresse des Clients zu verwenden.</value></data>
+  <data name="A template puts an outgoing message into an HTML frame, chosen by who sends it and where it comes from – for example to turn the plain text of a device into a proper mail." xml:space="preserve"><value>Eine Vorlage setzt eine ausgehende Nachricht in einen HTML-Rahmen – je nachdem, wer sie sendet und woher sie kommt, zum Beispiel um den reinen Text eines Geräts in eine ordentliche Mail zu verwandeln.</value></data>
   <data name="A tenant keeps users, mailboxes and settings apart, e.g. “Home” for your family or the name of a company." xml:space="preserve"><value>Ein Mandant hält Benutzer, Postfächer und Einstellungen getrennt, z. B. „Zuhause“ für Ihre Familie oder der Name einer Firma.</value></data>
   <data name="A tenant with that name already exists." xml:space="preserve"><value>Ein Mandant mit diesem Namen existiert bereits.</value></data>
   <data name="Accent colour" xml:space="preserve"><value>Akzentfarbe</value></data>
@@ -123,6 +124,7 @@
   <data name="After the change your other sessions are signed out." xml:space="preserve"><value>Nach der Änderung werden Ihre anderen Sitzungen abgemeldet.</value></data>
   <data name="All" xml:space="preserve"><value>Alle</value></data>
   <data name="All folders (always for backup and migration)" xml:space="preserve"><value>Alle Ordner (bei Backup und Migration immer)</value></data>
+  <data name="All messages" xml:space="preserve"><value>Alle Nachrichten</value></data>
   <data name="All other sessions were ended." xml:space="preserve"><value>Alle anderen Sitzungen wurden beendet.</value></data>
   <data name="All roles" xml:space="preserve"><value>Alle Rollen</value></data>
   <data name="Also add it on the server to messages that were written without one" xml:space="preserve"><value>Auch auf dem Server an Nachrichten anhängen, die ohne Signatur geschrieben wurden</value></data>
@@ -171,6 +173,7 @@
   <data name="Check every" xml:space="preserve"><value>Prüfen alle</value></data>
   <data name="Choose a certificate file." xml:space="preserve"><value>Wählen Sie eine Zertifikatsdatei aus.</value></data>
   <data name="Choose the mailbox that receives the copies." xml:space="preserve"><value>Wählen Sie das Postfach, das die Kopien erhält.</value></data>
+  <data name="Choose where the messages come from." xml:space="preserve"><value>Wählen Sie, woher die Nachrichten kommen.</value></data>
   <data name="Clear finished" xml:space="preserve"><value>Abgeschlossene entfernen</value></data>
   <data name="Clear formatting" xml:space="preserve"><value>Formatierung entfernen</value></data>
   <data name="Clear search" xml:space="preserve"><value>Suche löschen</value></data>
@@ -200,6 +203,7 @@
   <data name="Database is up to date." xml:space="preserve"><value>Die Datenbank ist auf dem neuesten Stand.</value></data>
   <data name="Date" xml:space="preserve"><value>Datum</value></data>
   <data name="days" xml:space="preserve"><value>Tage</value></data>
+  <data name="Dear Ms Example, the nightly backup finished without errors. Best regards" xml:space="preserve"><value>Sehr geehrte Frau Beispiel, die nächtliche Sicherung ist fehlerfrei durchgelaufen. Mit freundlichen Grüßen</value></data>
   <data name="Default" xml:space="preserve"><value>Standard</value></data>
   <data name="Default (account of the sender address, otherwise direct delivery)" xml:space="preserve"><value>Standard (Konto der Absenderadresse, sonst direkte Zustellung)</value></data>
   <data name="Default (matching account, otherwise direct delivery)" xml:space="preserve"><value>Standard (passendes Konto, sonst direkte Zustellung)</value></data>
@@ -222,6 +226,7 @@
   <data name="Delete this relay rule?" xml:space="preserve"><value>Diese Relay-Regel löschen?</value></data>
   <data name="Delete this role?" xml:space="preserve"><value>Diese Rolle löschen?</value></data>
   <data name="Delete this signature?" xml:space="preserve"><value>Diese Signatur löschen?</value></data>
+  <data name="Delete this template?" xml:space="preserve"><value>Diese Vorlage löschen?</value></data>
   <data name="Delete this tenant with all its users, mailboxes and messages? This cannot be undone." xml:space="preserve"><value>Diesen Mandanten mit allen Benutzern, Postfächern und Nachrichten löschen? Das lässt sich nicht rückgängig machen.</value></data>
   <data name="Delete this user and their mailbox with all messages? This cannot be undone." xml:space="preserve"><value>Diesen Benutzer samt Postfach und allen Nachrichten löschen? Das lässt sich nicht rückgängig machen.</value></data>
   <data name="Delete this user? Their mailbox is kept." xml:space="preserve"><value>Diesen Benutzer löschen? Das Postfach bleibt erhalten.</value></data>
@@ -267,14 +272,18 @@
   <data name="Edit role" xml:space="preserve"><value>Rolle bearbeiten</value></data>
   <data name="Edit rule" xml:space="preserve"><value>Regel bearbeiten</value></data>
   <data name="Edit signature" xml:space="preserve"><value>Signatur bearbeiten</value></data>
+  <data name="Edit template" xml:space="preserve"><value>Vorlage bearbeiten</value></data>
   <data name="Edit tenant" xml:space="preserve"><value>Mandant bearbeiten</value></data>
   <data name="Edit user" xml:space="preserve"><value>Benutzer bearbeiten</value></data>
   <data name="Empty trash now" xml:space="preserve"><value>Papierkorb jetzt leeren</value></data>
   <data name="Enabled" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Encryption" xml:space="preserve"><value>Verschlüsselung</value></data>
+  <data name="Enter a number between 0 and 10000." xml:space="preserve"><value>Geben Sie eine Zahl zwischen 0 und 10000 ein.</value></data>
   <data name="Enter whole minutes, separated by commas." xml:space="preserve"><value>Geben Sie ganze Minuten ein, durch Kommas getrennt.</value></data>
   <data name="Errors" xml:space="preserve"><value>Fehler</value></data>
   <data name="Event" xml:space="preserve"><value>Ereignis</value></data>
+  <data name="Every message" xml:space="preserve"><value>Jede Nachricht</value></data>
+  <data name="Every rule" xml:space="preserve"><value>Jede Regel</value></data>
   <data name="Everything" xml:space="preserve"><value>Alles</value></data>
   <data name="Everywhere you are signed in. Sessions stay valid after a restart of the server; end the ones you do not recognise." xml:space="preserve"><value>Überall, wo Sie angemeldet sind. Sitzungen bleiben nach einem Neustart des Servers gültig; beenden Sie diejenigen, die Sie nicht kennen.</value></data>
   <data name="Example button" xml:space="preserve"><value>Beispiel-Schaltfläche</value></data>
@@ -376,11 +385,13 @@
   <data name="Manage domains" xml:space="preserve"><value>Domänen verwalten</value></data>
   <data name="Manage mailboxes, addresses and delegation" xml:space="preserve"><value>Postfächer, Adressen und Vertretungen verwalten</value></data>
   <data name="Manage roles and permissions" xml:space="preserve"><value>Rollen und Berechtigungen verwalten</value></data>
-  <data name="Manage signatures and footers" xml:space="preserve"><value>Signaturen und Fußzeilen verwalten</value></data>
+  <data name="Manage signatures, footers and mail templates" xml:space="preserve"><value>Signaturen, Fußzeilen und Mail-Vorlagen verwalten</value></data>
   <data name="Manage SMTP relay rules" xml:space="preserve"><value>SMTP-Relay-Regeln verwalten</value></data>
   <data name="Manage the outgoing queue" xml:space="preserve"><value>Die Warteschlange für ausgehende Nachrichten verwalten</value></data>
   <data name="Manage users" xml:space="preserve"><value>Benutzer verwalten</value></data>
+  <data name="Management" xml:space="preserve"><value>Geschäftsleitung</value></data>
   <data name="Manages everything inside this tenant." xml:space="preserve"><value>Verwaltet alles in diesem Mandanten.</value></data>
+  <data name="Managing director" xml:space="preserve"><value>Geschäftsführer</value></data>
   <data name="Mark all as read" xml:space="preserve"><value>Alle als gelesen markieren</value></data>
   <data name="Mark as read" xml:space="preserve"><value>Als gelesen markieren</value></data>
   <data name="Mark as unread" xml:space="preserve"><value>Als ungelesen markieren</value></data>
@@ -391,6 +402,11 @@
   <data name="Message text" xml:space="preserve"><value>Nachrichtentext</value></data>
   <data name="Messages" xml:space="preserve"><value>Nachrichten</value></data>
   <data name="Messages for recipients at other servers wait here until they are delivered. Failed ones are retried automatically." xml:space="preserve"><value>Nachrichten an Empfänger auf anderen Servern warten hier, bis sie zugestellt sind. Fehlgeschlagene werden automatisch erneut versucht.</value></data>
+  <data name="Messages from" xml:space="preserve"><value>Nachrichten von</value></data>
+  <data name="Messages of devices and servers (smart host)" xml:space="preserve"><value>Nachrichten von Geräten und Servern (Smarthost)</value></data>
+  <data name="Messages of mail programs (Outlook, Thunderbird, phones)" xml:space="preserve"><value>Nachrichten von Mailprogrammen (Outlook, Thunderbird, Smartphones)</value></data>
+  <data name="Messages that only have plain text get an HTML version made from it; the plain text stays next to it. With every message, an HTML message is put into the template as well." xml:space="preserve"><value>Nachrichten, die nur aus reinem Text bestehen, erhalten eine daraus erzeugte HTML-Fassung; der Text bleibt daneben erhalten. Bei „Jede Nachricht“ wird auch eine HTML-Nachricht in die Vorlage eingesetzt.</value></data>
+  <data name="Messages written in the web client" xml:space="preserve"><value>Nachrichten aus dem Webclient</value></data>
   <data name="Migration" xml:space="preserve"><value>Migration</value></data>
   <data name="Migration – move an old account" xml:space="preserve"><value>Migration – altes Konto umziehen</value></data>
   <data name="Migration: moves a whole account with all its folders into a mailbox, e.g. when you change the provider." xml:space="preserve"><value>Migration: Verschiebt ein ganzes Konto mit allen Ordnern in ein Postfach, z. B. beim Wechsel des Anbieters.</value></data>
@@ -431,6 +447,7 @@
   <data name="New role" xml:space="preserve"><value>Neue Rolle</value></data>
   <data name="New rule" xml:space="preserve"><value>Neue Regel</value></data>
   <data name="New signature" xml:space="preserve"><value>Neue Signatur</value></data>
+  <data name="New template" xml:space="preserve"><value>Neue Vorlage</value></data>
   <data name="New tenant" xml:space="preserve"><value>Neuer Mandant</value></data>
   <data name="New user" xml:space="preserve"><value>Neuer Benutzer</value></data>
   <data name="Newer" xml:space="preserve"><value>Neuer</value></data>
@@ -458,6 +475,7 @@
   <data name="No signature" xml:space="preserve"><value>Keine Signatur</value></data>
   <data name="No signatures yet." xml:space="preserve"><value>Noch keine Signaturen.</value></data>
   <data name="No spam." xml:space="preserve"><value>Kein Spam.</value></data>
+  <data name="No templates yet." xml:space="preserve"><value>Noch keine Vorlagen.</value></data>
   <data name="No tenant to create the mailbox in." xml:space="preserve"><value>Es gibt keinen Mandanten, in dem das Postfach angelegt werden könnte.</value></data>
   <data name="No tenant to create the user in." xml:space="preserve"><value>Es gibt keinen Mandanten, in dem der Benutzer angelegt werden könnte.</value></data>
   <data name="No tenants match." xml:space="preserve"><value>Keine passenden Mandanten.</value></data>
@@ -475,6 +493,7 @@
   <data name="Nothing here." xml:space="preserve"><value>Hier ist nichts.</value></data>
   <data name="Nothing is waiting. Every message found its mailbox." xml:space="preserve"><value>Nichts wartet. Jede Nachricht hat ihr Postfach gefunden.</value></data>
   <data name="Numbered list" xml:space="preserve"><value>Nummerierte Liste</value></data>
+  <data name="Of several templates that fit, the lowest number is used." xml:space="preserve"><value>Passen mehrere Vorlagen, wird die mit der niedrigsten Zahl verwendet.</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
   <data name="Older" xml:space="preserve"><value>Älter</value></data>
   <data name="Older messages in the trash are deleted. 0 = keep." xml:space="preserve"><value>Ältere Nachrichten im Papierkorb werden gelöscht. 0 = behalten.</value></data>
@@ -485,6 +504,8 @@
   <data name="One mailbox" xml:space="preserve"><value>Ein Postfach</value></data>
   <data name="One of the domains is not valid." xml:space="preserve"><value>Eine der Domänen ist ungültig.</value></data>
   <data name="One user" xml:space="preserve"><value>Ein Benutzer</value></data>
+  <data name="Only for this smart host rule" xml:space="preserve"><value>Nur für diese Smarthost-Regel</value></data>
+  <data name="Only messages without an HTML version (devices, scripts, simple programs)" xml:space="preserve"><value>Nur Nachrichten ohne HTML-Fassung (Geräte, Skripte, einfache Programme)</value></data>
   <data name="Only PNG, JPEG, GIF and WebP pictures can be inserted." xml:space="preserve"><value>Es können nur PNG-, JPEG-, GIF- und WebP-Bilder eingefügt werden.</value></data>
   <data name="Only system administrators can change a system administrator." xml:space="preserve"><value>Nur Systemadministratoren können einen Systemadministrator ändern.</value></data>
   <data name="Only system administrators can change this setting." xml:space="preserve"><value>Nur Systemadministratoren können diese Einstellung ändern.</value></data>
@@ -492,6 +513,7 @@
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
+  <data name="Order of use" xml:space="preserve"><value>Reihenfolge</value></data>
   <data name="Original size" xml:space="preserve"><value>Originalgröße</value></data>
   <data name="Outgoing mail (SMTP)" xml:space="preserve"><value>Postausgangsserver (SMTP)</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
@@ -514,6 +536,7 @@
   <data name="Pictures from the internet are blocked to protect your privacy." xml:space="preserve"><value>Bilder aus dem Internet werden zum Schutz Ihrer Privatsphäre blockiert.</value></data>
   <data name="PKCS#12 file" xml:space="preserve"><value>PKCS#12-Datei</value></data>
   <data name="PKCS#12 files with a password: set it as MATMAIL__Tls__PfxPassword so it can be read after a restart." xml:space="preserve"><value>PKCS#12-Dateien mit Passwort: Setzen Sie es als MATMAIL__Tls__PfxPassword, damit die Datei nach einem Neustart gelesen werden kann.</value></data>
+  <data name="Plain text only" xml:space="preserve"><value>Nur reiner Text</value></data>
   <data name="Plain text version (optional)" xml:space="preserve"><value>Nur-Text-Version (optional)</value></data>
   <data name="PNG, JPEG, GIF, WebP or SVG, at most 512 KB. A wide logo with a transparent background works best." xml:space="preserve"><value>PNG, JPEG, GIF, WebP oder SVG, höchstens 512 KB. Ein breites Logo mit transparentem Hintergrund passt am besten.</value></data>
   <data name="POP3: signed in at {0}; {1} messages are waiting." xml:space="preserve"><value>POP3: Anmeldung bei {0} erfolgreich; {1} Nachrichten warten.</value></data>
@@ -592,6 +615,7 @@
   <data name="Search sender, subject or address…" xml:space="preserve"><value>Absender, Betreff oder Adresse suchen …</value></data>
   <data name="Search signatures…" xml:space="preserve"><value>Signaturen suchen …</value></data>
   <data name="Search subject, sender, recipient or error…" xml:space="preserve"><value>Betreff, Absender, Empfänger oder Fehler suchen …</value></data>
+  <data name="Search templates…" xml:space="preserve"><value>Vorlagen suchen …</value></data>
   <data name="Search tenants…" xml:space="preserve"><value>Mandanten suchen …</value></data>
   <data name="Search the log…" xml:space="preserve"><value>Protokoll durchsuchen …</value></data>
   <data name="Search…" xml:space="preserve"><value>Suchen…</value></data>
@@ -648,6 +672,7 @@
   <data name="Size" xml:space="preserve"><value>Größe</value></data>
   <data name="Sizes must be at least 1 MB." xml:space="preserve"><value>Größen müssen mindestens 1 MB betragen.</value></data>
   <data name="Small" xml:space="preserve"><value>Klein</value></data>
+  <data name="Smart host" xml:space="preserve"><value>Smarthost</value></data>
   <data name="Smart host rule" xml:space="preserve"><value>Smarthost-Regel</value></data>
   <data name="SMTP password" xml:space="preserve"><value>SMTP-Passwort</value></data>
   <data name="SMTP relay" xml:space="preserve"><value>SMTP-Relay</value></data>
@@ -678,6 +703,8 @@
   <data name="System folders cannot be deleted." xml:space="preserve"><value>Systemordner können nicht gelöscht werden.</value></data>
   <data name="System folders cannot be renamed." xml:space="preserve"><value>Systemordner können nicht umbenannt werden.</value></data>
   <data name="Target mailbox" xml:space="preserve"><value>Zielpostfach</value></data>
+  <data name="Template" xml:space="preserve"><value>Vorlage</value></data>
+  <data name="Templates" xml:space="preserve"><value>Vorlagen</value></data>
   <data name="Tenant" xml:space="preserve"><value>Mandant</value></data>
   <data name="Tenants" xml:space="preserve"><value>Mandanten</value></data>
   <data name="Tenants keep users, mailboxes and settings apart: your family, a company, a hosting customer." xml:space="preserve"><value>Mandanten halten Benutzer, Postfächer und Einstellungen getrennt: Ihre Familie, eine Firma, ein Hosting-Kunde.</value></data>
@@ -735,6 +762,7 @@
   <data name="The message cannot be cancelled." xml:space="preserve"><value>Die Nachricht kann nicht abgebrochen werden.</value></data>
   <data name="The message cannot be tried again." xml:space="preserve"><value>Die Nachricht kann nicht erneut versucht werden.</value></data>
   <data name="The message could not be sent." xml:space="preserve"><value>Die Nachricht konnte nicht gesendet werden.</value></data>
+  <data name="The message is put where {{Body}} stands. Pictures are embedded; they are shrunk to fit. The placeholders of signatures can be used as well." xml:space="preserve"><value>Die Nachricht wird dort eingefügt, wo {{Body}} steht. Bilder werden eingebettet und bei Bedarf verkleinert. Die Platzhalter der Signaturen können ebenfalls verwendet werden.</value></data>
   <data name="The message is too large." xml:space="preserve"><value>Die Nachricht ist zu groß.</value></data>
   <data name="The message is tried again now." xml:space="preserve"><value>Die Nachricht wird jetzt erneut versucht.</value></data>
   <data name="The message was deleted." xml:space="preserve"><value>Die Nachricht wurde gelöscht.</value></data>
@@ -757,9 +785,11 @@
   <data name="The role was created." xml:space="preserve"><value>Die Rolle wurde angelegt.</value></data>
   <data name="The role was deleted." xml:space="preserve"><value>Die Rolle wurde gelöscht.</value></data>
   <data name="The role was saved." xml:space="preserve"><value>Die Rolle wurde gespeichert.</value></data>
+  <data name="The rule does not exist." xml:space="preserve"><value>Die Regel gibt es nicht.</value></data>
   <data name="The rule was created." xml:space="preserve"><value>Die Regel wurde angelegt.</value></data>
   <data name="The rule was deleted." xml:space="preserve"><value>Die Regel wurde gelöscht.</value></data>
   <data name="The rule was saved." xml:space="preserve"><value>Die Regel wurde gespeichert.</value></data>
+  <data name="The sender: everybody of the tenant, one mailbox or one user. A more specific template wins." xml:space="preserve"><value>Der Absender: alle im Mandanten, ein Postfach oder ein Benutzer. Die genauere Vorlage gewinnt.</value></data>
   <data name="The server is required." xml:space="preserve"><value>Der Server ist erforderlich.</value></data>
   <data name="The session was ended." xml:space="preserve"><value>Die Sitzung wurde beendet.</value></data>
   <data name="The settings were saved. Ports and server switches apply after a restart of the container." xml:space="preserve"><value>Die Einstellungen wurden gespeichert. Ports und Server-Schalter gelten nach einem Neustart des Containers.</value></data>
@@ -770,6 +800,11 @@
   <data name="The signature was saved." xml:space="preserve"><value>Die Signatur wurde gespeichert.</value></data>
   <data name="The SMTP server is switched off." xml:space="preserve"><value>Der SMTP-Server ist ausgeschaltet.</value></data>
   <data name="The synchronisation is not available in this installation." xml:space="preserve"><value>Die Synchronisierung ist in dieser Installation nicht verfügbar.</value></data>
+  <data name="The template is too large; use smaller pictures." xml:space="preserve"><value>Die Vorlage ist zu groß; verwenden Sie kleinere Bilder.</value></data>
+  <data name="The template must say where the message goes: add the placeholder {{Body}}." xml:space="preserve"><value>Die Vorlage muss sagen, wo die Nachricht hinkommt: Fügen Sie den Platzhalter {{Body}} ein.</value></data>
+  <data name="The template was created." xml:space="preserve"><value>Die Vorlage wurde angelegt.</value></data>
+  <data name="The template was deleted." xml:space="preserve"><value>Die Vorlage wurde gelöscht.</value></data>
+  <data name="The template was saved." xml:space="preserve"><value>Die Vorlage wurde gespeichert.</value></data>
   <data name="The tenant does not exist." xml:space="preserve"><value>Der Mandant existiert nicht.</value></data>
   <data name="The tenant was created." xml:space="preserve"><value>Der Mandant wurde angelegt.</value></data>
   <data name="The tenant was deleted." xml:space="preserve"><value>Der Mandant wurde gelöscht.</value></data>
@@ -856,6 +891,7 @@
   <data name="Warnings" xml:space="preserve"><value>Warnungen</value></data>
   <data name="Web address (or mailto:)" xml:space="preserve"><value>Webadresse (oder mailto:)</value></data>
   <data name="Web address of the company" xml:space="preserve"><value>Webadresse der Firma</value></data>
+  <data name="Web client" xml:space="preserve"><value>Webclient</value></data>
   <data name="Welcome to MatMail" xml:space="preserve"><value>Willkommen bei MatMail</value></data>
   <data name="What happens to mail for an address of this domain that no mailbox has." xml:space="preserve"><value>Was mit Nachrichten für eine Adresse dieser Domäne geschieht, die kein Postfach besitzt.</value></data>
   <data name="What is this account used for?" xml:space="preserve"><value>Wofür wird dieses Konto verwendet?</value></data>
@@ -863,6 +899,7 @@
   <data name="When" xml:space="preserve"><value>Wann</value></data>
   <data name="Where does it belong?" xml:space="preserve"><value>Wohin gehört sie?</value></data>
   <data name="Where mail lives: personal mailboxes of users and shared mailboxes (public folders) that several users work in." xml:space="preserve"><value>Wo die E-Mails liegen: persönliche Postfächer der Benutzer und gemeinsame Postfächer (öffentliche Ordner), in denen mehrere Benutzer arbeiten.</value></data>
+  <data name="Which messages" xml:space="preserve"><value>Welche Nachrichten</value></data>
   <data name="Width in pixels" xml:space="preserve"><value>Breite in Pixel</value></data>
   <data name="With errors" xml:space="preserve"><value>Mit Fehlern</value></data>
   <data name="Work in this tenant" xml:space="preserve"><value>In diesem Mandanten arbeiten</value></data>

@@ -130,6 +130,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Mailboxes", Permissions.MailboxesManage);
         options.Conventions.AuthorizeFolder("/Admin/Accounts", Permissions.AccountsManage);
         options.Conventions.AuthorizeFolder("/Admin/Signatures", Permissions.SignaturesManage);
+        options.Conventions.AuthorizeFolder("/Admin/Templates", Permissions.SignaturesManage);
         options.Conventions.AuthorizeFolder("/Admin/Relay", Permissions.RelayManage);
         options.Conventions.AuthorizeFolder("/Admin/Queue", Permissions.QueueManage);
         options.Conventions.AuthorizeFolder("/Admin/Logs", Permissions.LogsView);

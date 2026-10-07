@@ -63,6 +63,9 @@ public sealed record SignatureContext(string DisplayName, string Email, string? 
 /// </summary>
 public sealed partial class SignatureService
 {
+    /// <summary>The placeholders the editors offer, comma separated, in the order of the toolbar.</summary>
+    public const string Placeholders = "FullName,Salutation,Title,FirstName,LastName,DisplayName,JobTitle,Department,Email,Phone,Mobile,Fax,Tenant,Website";
+
     private static readonly string[] PlaceholderNames =
     {
         "displayname", "name", "fullname", "firstname", "lastname", "salutation", "title", "email", "jobtitle", "position", "department",
@@ -300,9 +303,9 @@ public sealed partial class SignatureService
     public async Task<IReadOnlyList<Signature>> GetSelectableAsync(long tenantId, long? mailboxId, long userId, CancellationToken cancel = default)
         => await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
             .Where(s => s.TenantId == tenantId && s.IsActive && s.Kind == SignatureKind.Signature
-                        && (s.Scope == SignatureScope.Tenant
-                            || (s.Scope == SignatureScope.Mailbox && s.MailboxId == mailboxId)
-                            || (s.Scope == SignatureScope.User && s.UserId == userId)))
+                        && (s.Scope == AppliesTo.Tenant
+                            || (s.Scope == AppliesTo.Mailbox && s.MailboxId == mailboxId)
+                            || (s.Scope == AppliesTo.User && s.UserId == userId)))
             .OrderByDescending(s => s.IsDefault).ThenBy(s => s.Name)
             .ToListAsync(cancel);
 
@@ -321,9 +324,9 @@ public sealed partial class SignatureService
 
         List<Signature> candidates = await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
             .Where(s => s.TenantId == tenantId && s.IsActive && (s.Kind == SignatureKind.Footer || s.AddOnServer)
-                        && (s.Scope == SignatureScope.Tenant
-                            || (s.Scope == SignatureScope.Mailbox && s.MailboxId == mailboxId)
-                            || (s.Scope == SignatureScope.User && s.UserId == userId)))
+                        && (s.Scope == AppliesTo.Tenant
+                            || (s.Scope == AppliesTo.Mailbox && s.MailboxId == mailboxId)
+                            || (s.Scope == AppliesTo.User && s.UserId == userId)))
             .OrderBy(s => s.Scope).ThenBy(s => s.Id)
             .ToListAsync(cancel);
 
@@ -383,7 +386,7 @@ public sealed partial class SignatureService
 
     /// <summary>The signature that applies: the user's own, else the mailbox's, else the tenant's; the default one first.</summary>
     private static Signature? ChooseSignature(IEnumerable<Signature> signatures)
-        => signatures.OrderByDescending(s => s.Scope == SignatureScope.User).ThenByDescending(s => s.Scope == SignatureScope.Mailbox)
+        => signatures.OrderByDescending(s => s.Scope == AppliesTo.User).ThenByDescending(s => s.Scope == AppliesTo.Mailbox)
             .ThenByDescending(s => s.IsDefault).ThenBy(s => s.Id).FirstOrDefault();
 
     /// <summary>The web client wraps the signature it inserts in a block of this class.</summary>

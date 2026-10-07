@@ -94,11 +94,22 @@ public enum MessageStorage
     Remote,
 }
 
-public enum SignatureScope
+/// <summary>Whom a signature, footer or mail template applies to.</summary>
+public enum AppliesTo
 {
     Tenant,
     Mailbox,
     User,
+}
+
+/// <summary>Which messages a mail template is put around.</summary>
+public enum TemplateMode
+{
+    /// <summary>Only messages that have no HTML version (what devices, scripts and simple SMTP clients send): they get one.</summary>
+    PlainTextOnly,
+
+    /// <summary>Every message: an HTML version is put into the template, a plain-text one gets an HTML version first.</summary>
+    AllMessages,
 }
 
 public enum SignatureKind

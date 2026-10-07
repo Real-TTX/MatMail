@@ -42,7 +42,7 @@ public class IndexModel(MatMailDbContext db, IStringLocalizer<SharedResource> l)
             query = query.Where(s => s.Kind == kind);
         }
 
-        if (Enum.TryParse(Scope, out SignatureScope scope))
+        if (Enum.TryParse(Scope, out AppliesTo scope))
         {
             query = query.Where(s => s.Scope == scope);
         }
@@ -62,8 +62,8 @@ public class IndexModel(MatMailDbContext db, IStringLocalizer<SharedResource> l)
 
     public string Target(Signature signature) => signature.Scope switch
     {
-        SignatureScope.Mailbox => l["Mailbox"].Value + ": " + (signature.MailboxId is long m && _mailboxNames.TryGetValue(m, out string? mailbox) ? mailbox : "?"),
-        SignatureScope.User => l["User"].Value + ": " + (signature.UserId is long u && _userNames.TryGetValue(u, out string? user) ? user : "?"),
+        AppliesTo.Mailbox => l["Mailbox"].Value + ": " + (signature.MailboxId is long m && _mailboxNames.TryGetValue(m, out string? mailbox) ? mailbox : "?"),
+        AppliesTo.User => l["User"].Value + ": " + (signature.UserId is long u && _userNames.TryGetValue(u, out string? user) ? user : "?"),
         _ => l["The whole tenant"].Value,
     };
 }

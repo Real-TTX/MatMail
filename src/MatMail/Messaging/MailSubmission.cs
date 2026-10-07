@@ -117,6 +117,8 @@ public sealed record SubmissionRequest
     /// <summary>The smart-host rule when a trusted network sent it without signing in.</summary>
     public RelayRule? Rule { get; init; }
     public bool SaveToSent { get; init; }
+
+    /// <summary>Put the message into its template and add the signature and footers that apply (false: it goes out as it is).</summary>
     public bool ApplyFooters { get; init; } = true;
 }
 
@@ -124,8 +126,8 @@ public sealed record SubmissionResult(bool Accepted, string? Error, int LocalCop
 
 /// <summary>
 /// Sending: takes a finished message and distributes it. Recipients on registered domains are delivered locally at once, all
-/// others are queued for the provider account (or direct delivery) the sender is routed to. Footers are appended here, so every
-/// path (web client, SMTP submission, smart host) gets them.
+/// others are queued for the provider account (or direct delivery) the sender is routed to. Templates, signatures and footers are
+/// applied here, so every path (web client, SMTP submission, smart host) gets them.
 /// </summary>
 public sealed class MailSubmission
 {
@@ -134,6 +136,7 @@ public sealed class MailSubmission
     private readonly SendRouting _routing;
     private readonly OutboundQueue _queue;
     private readonly SignatureService _signatures;
+    private readonly TemplateService _templates;
     private readonly MailStore _store;
     private readonly FolderService _folders;
     private readonly AppConfig _config;
@@ -141,7 +144,7 @@ public sealed class MailSubmission
     private readonly BrandingService _branding;
 
     public MailSubmission(
-        MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures,
+        MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures, TemplateService templates,
         MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes, BrandingService branding)
     {
         _db = db;
@@ -149,6 +152,7 @@ public sealed class MailSubmission
         _routing = routing;
         _queue = queue;
         _signatures = signatures;
+        _templates = templates;
         _store = store;
         _folders = folders;
         _config = config;
@@ -177,7 +181,9 @@ public sealed class MailSubmission
 
         if (request.ApplyFooters)
         {
+            // The template first (it may turn a plain-text message into an HTML one), then the signature and the footers into it.
             SignatureContext context = await BuildContextAsync(request, message, cancel);
+            await _templates.ApplyAsync(message, request.Source, request.TenantId, request.MailboxId, request.SenderUserId, request.Rule?.Id, context, cancel);
             await _signatures.ApplyAsync(message, request.Source, request.TenantId, request.MailboxId, request.SenderUserId, context, cancel);
         }
 

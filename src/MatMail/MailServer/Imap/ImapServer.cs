@@ -253,7 +253,9 @@ public sealed class ImapServer : BackgroundService
             }
             catch (SocketException ex)
             {
+                // E.g. out of file handles: try again after a short pause instead of spinning.
                 _logger.LogDebug(ex, "Accepting an IMAP connection failed.");
+                await Task.Delay(TimeSpan.FromMilliseconds(100), CancellationToken.None);
                 continue;
             }
 

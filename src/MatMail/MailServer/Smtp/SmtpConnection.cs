@@ -16,6 +16,9 @@ internal enum SmtpDataStatus
 {
     Complete,
     TooBig,
+
+    /// <summary>The server-wide budget for buffered messages was used up (many large messages at the same time).</summary>
+    NoMemory,
     Closed,
 }
 
@@ -115,35 +118,54 @@ internal sealed class SmtpConnection : IAsyncDisposable
 
     /// <summary>
     /// Reads the message after DATA up to the terminating "CRLF.CRLF" into <paramref name="target"/>. Only a dot line that ends
-    /// with CRLF and follows a line that ended with CRLF ends the data (bare LF variants are message content: no SMTP smuggling).
-    /// Leading dots are unstuffed, bare LF line ends become CRLF. Beyond <paramref name="maxBytes"/> the data is read but dropped.
+    /// with CRLF and follows a line that ended with CRLF ends the data. A lone CR or LF is a line end of its own that never ends
+    /// the data, and it is stored as CRLF: no SMTP smuggling into this server, and none through it to the next one. Leading dots
+    /// are unstuffed. Beyond <paramref name="maxBytes"/> (or the server-wide <paramref name="budget"/>) the data is read but
+    /// dropped; the caller releases <c>target.Length</c> bytes of the budget when done with the message.
     /// </summary>
-    public async Task<SmtpDataStatus> ReadDataAsync(MemoryStream target, long maxBytes, TimeSpan timeout, CancellationToken cancel)
+    public async Task<SmtpDataStatus> ReadDataAsync(
+        MemoryStream target, long maxBytes, TimeSpan timeout, CancellationToken cancel, SmtpMemoryBudget? budget = null, DateTime? deadline = null)
     {
         bool lineStart = true;
         bool previousLineCrlf = true;
-        bool pendingCr = false;
-        bool tooBig = false;
+        SmtpDataStatus result = SmtpDataStatus.Complete;
 
         void Append(ReadOnlySpan<byte> bytes)
         {
-            if (tooBig || bytes.Length == 0)
+            if (result != SmtpDataStatus.Complete || bytes.Length == 0)
             {
                 return;
             }
 
             if (target.Length + bytes.Length > maxBytes)
             {
-                tooBig = true;
-                return;
+                result = SmtpDataStatus.TooBig;
+            }
+            else if (budget is not null && !budget.TryReserve(bytes.Length))
+            {
+                result = SmtpDataStatus.NoMemory;
+            }
+            else
+            {
+                target.Write(bytes);
+            }
+        }
+
+        // Each read may wait for the read timeout, but never beyond the deadline of the whole message (slow-trickling clients).
+        TimeSpan NextTimeout()
+        {
+            TimeSpan left = deadline is DateTime end ? end - DateTime.UtcNow : timeout;
+            if (left <= TimeSpan.Zero)
+            {
+                throw new TimeoutException("The message took too long.");
             }
 
-            target.Write(bytes);
+            return left < timeout ? left : timeout;
         }
 
         while (true)
         {
-            if (_start == _end && !await FillAsync(timeout, cancel))
+            if (_start == _end && !await FillAsync(NextTimeout(), cancel))
             {
                 return SmtpDataStatus.Closed;
             }
@@ -156,7 +178,7 @@ internal sealed class SmtpConnection : IAsyncDisposable
                     continue;
                 }
 
-                if (!await EnsureAsync(3, timeout, cancel))
+                if (!await EnsureAsync(3, NextTimeout(), cancel))
                 {
                     return SmtpDataStatus.Closed;
                 }
@@ -164,7 +186,7 @@ internal sealed class SmtpConnection : IAsyncDisposable
                 if (previousLineCrlf && _input[_start + 1] == (byte)'\r' && _input[_start + 2] == (byte)'\n')
                 {
                     _start += 3;
-                    return tooBig ? SmtpDataStatus.TooBig : SmtpDataStatus.Complete;
+                    return result;
                 }
 
                 // Dot-unstuffing: the client doubled a leading dot.
@@ -172,50 +194,33 @@ internal sealed class SmtpConnection : IAsyncDisposable
                 continue;
             }
 
-            int available = _end - _start;
-            int newline = Array.IndexOf(_input, (byte)'\n', _start, available);
-            if (newline < 0)
+            int lineEnd = _input.AsSpan(_start, _end - _start).IndexOfAny((byte)'\r', (byte)'\n');
+            if (lineEnd < 0)
             {
-                // No line end yet: keep a trailing CR back, it may be the first half of CRLF.
-                if (pendingCr)
-                {
-                    Append("\r"u8);
-                    pendingCr = false;
-                }
-
-                int take = available;
-                if (_input[_end - 1] == (byte)'\r')
-                {
-                    take--;
-                    pendingCr = true;
-                }
-
-                Append(_input.AsSpan(_start, take));
+                Append(_input.AsSpan(_start, _end - _start));
                 _start = _end;
                 continue;
             }
 
-            int contentLength = newline - _start;
-            bool crlf;
-            if (contentLength > 0)
+            Append(_input.AsSpan(_start, lineEnd));
+            _start += lineEnd;
+            bool crlf = false;
+            if (_input[_start] == (byte)'\r')
             {
-                if (pendingCr)
+                if (!await EnsureAsync(2, NextTimeout(), cancel))
                 {
-                    Append("\r"u8);
-                    pendingCr = false;
+                    return SmtpDataStatus.Closed;
                 }
 
-                crlf = _input[newline - 1] == (byte)'\r';
-                Append(_input.AsSpan(_start, crlf ? contentLength - 1 : contentLength));
+                crlf = _input[_start + 1] == (byte)'\n';
+                _start += crlf ? 2 : 1;
             }
             else
             {
-                crlf = pendingCr;
-                pendingCr = false;
+                _start++;
             }
 
             Append("\r\n"u8);
-            _start = newline + 1;
             previousLineCrlf = crlf;
             lineStart = true;
         }
@@ -287,4 +292,37 @@ internal sealed class SmtpConnection : IAsyncDisposable
 
         return Encoding.UTF8.GetString(line);
     }
+}
+
+/// <summary>
+/// Caps the bytes of messages the server holds in memory at the same time, over all connections. Without it, many clients
+/// trickling large messages could exhaust the memory of the whole application (web interface included).
+/// </summary>
+internal sealed class SmtpMemoryBudget
+{
+    private readonly long _limit;
+    private long _used;
+
+    public SmtpMemoryBudget(long limit) => _limit = limit;
+
+    public long Used => Interlocked.Read(ref _used);
+
+    public bool TryReserve(long bytes)
+    {
+        while (true)
+        {
+            long used = Interlocked.Read(ref _used);
+            if (used + bytes > _limit)
+            {
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _used, used + bytes, used) == used)
+            {
+                return true;
+            }
+        }
+    }
+
+    public void Release(long bytes) => Interlocked.Add(ref _used, -bytes);
 }

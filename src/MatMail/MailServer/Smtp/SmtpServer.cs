@@ -70,11 +70,20 @@ internal sealed class SmtpServerOptions
     /// <summary>Every failed sign-in costs the client this long (slows down password guessing).</summary>
     public TimeSpan AuthFailureDelay { get; init; } = TimeSpan.FromSeconds(1);
 
+    /// <summary>The longest a client may take to send one message, so slow-trickling clients cannot hold connections forever.</summary>
+    public TimeSpan MaxDataDuration { get; init; } = TimeSpan.FromHours(1);
+
     /// <summary>Refused commands after which the connection is closed.</summary>
     public int MaxErrors { get; init; } = 10;
 
+    /// <summary>NOOP, RSET, VRFY and HELP commands after which each further one counts as an error (idle clients cannot stay forever).</summary>
+    public int MaxJunkCommands { get; init; } = 100;
+
     /// <summary>Connections at the same time, over all addresses.</summary>
     public int MaxConnections { get; init; } = 500;
+
+    /// <summary>Message bytes held in memory at the same time, over all connections.</summary>
+    public long MaxBufferedBytes { get; init; } = 256L * 1024 * 1024;
 }
 
 /// <summary>
@@ -95,8 +104,9 @@ public sealed class SmtpServer : BackgroundService
     private readonly ILogger<SmtpServer> _logger;
     private readonly SmtpServerOptions _options;
 
+    private readonly SmtpMemoryBudget _budget;
     private readonly List<(SmtpListenerKind Kind, TcpListener Listener)> _listeners = new();
-    private readonly ConcurrentDictionary<IPAddress, int> _connectionsPerAddress = new();
+    private readonly ConcurrentDictionary<IPAddress, int> _connectionsPerClient = new();
     private readonly ConcurrentDictionary<long, Task> _sessions = new();
     private long _nextSessionId;
     private int _connections;
@@ -119,6 +129,7 @@ public sealed class SmtpServer : BackgroundService
         _logger = logger;
         _certificates = certificates;
         _options = options;
+        _budget = new SmtpMemoryBudget(options.MaxBufferedBytes);
     }
 
     /// <summary>The ports actually listened on, by listener kind (filled when the server starts).</summary>
@@ -126,6 +137,9 @@ public sealed class SmtpServer : BackgroundService
 
     /// <summary>Connections that are open right now.</summary>
     public int ActiveConnections => Volatile.Read(ref _connections);
+
+    /// <summary>Bytes of messages held in memory right now (received or being delivered).</summary>
+    public long BufferedBytes => _budget.Used;
 
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -276,7 +290,7 @@ public sealed class SmtpServer : BackgroundService
                     return;
                 }
 
-                var context = new SmtpSessionContext(_scopes, _config, _throttle, _activity, _options, _logger);
+                var context = new SmtpSessionContext(_scopes, _config, _throttle, _activity, _options, _budget, _logger);
                 var session = new SmtpSession(context, kind, stream, remote, _certificates?.Current);
                 await session.RunAsync(stopping);
             }
@@ -295,19 +309,22 @@ public sealed class SmtpServer : BackgroundService
         }
     }
 
-    /// <summary>Counts the connection; returns the refusing reply when there are too many (the connection is counted anyway).</summary>
+    /// <summary>
+    /// Counts the connection; returns the refusing reply when there are too many (the connection is counted anyway). The limit per
+    /// address applies per <see cref="ClientKey"/>, i.e. per /64 network for IPv6.
+    /// </summary>
     private string? Admit(IPAddress remote)
     {
         int total = Interlocked.Increment(ref _connections);
-        int fromAddress = _connectionsPerAddress.AddOrUpdate(remote, 1, (_, count) => count + 1);
-        int perAddressLimit = _config.Smtp.MaxConnectionsPerIp > 0 ? _config.Smtp.MaxConnectionsPerIp : DefaultConnectionsPerAddress;
+        int fromClient = _connectionsPerClient.AddOrUpdate(ClientKey.Of(remote), 1, (_, count) => count + 1);
+        int perClientLimit = _config.Smtp.MaxConnectionsPerIp > 0 ? _config.Smtp.MaxConnectionsPerIp : DefaultConnectionsPerAddress;
 
         if (total > _options.MaxConnections)
         {
             return $"421 4.7.0 {_config.Server.Hostname} Too many connections, try again later";
         }
 
-        return fromAddress > perAddressLimit
+        return fromClient > perClientLimit
             ? $"421 4.7.0 {_config.Server.Hostname} Too many connections from your address, try again later"
             : null;
     }
@@ -315,11 +332,12 @@ public sealed class SmtpServer : BackgroundService
     private void Release(IPAddress remote)
     {
         Interlocked.Decrement(ref _connections);
-        while (_connectionsPerAddress.TryGetValue(remote, out int count))
+        IPAddress key = ClientKey.Of(remote);
+        while (_connectionsPerClient.TryGetValue(key, out int count))
         {
             bool done = count <= 1
-                ? _connectionsPerAddress.TryRemove(new KeyValuePair<IPAddress, int>(remote, count))
-                : _connectionsPerAddress.TryUpdate(remote, count - 1, count);
+                ? _connectionsPerClient.TryRemove(new KeyValuePair<IPAddress, int>(key, count))
+                : _connectionsPerClient.TryUpdate(key, count - 1, count);
             if (done)
             {
                 return;

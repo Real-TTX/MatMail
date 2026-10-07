@@ -3,6 +3,7 @@ using MatMail.Data;
 using MatMail.Messaging;
 using MatMail.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using MimeKit;
 
 namespace MatMail.MailServer.Outbound;
@@ -95,6 +96,7 @@ internal sealed class OutboundDelivery
     private readonly ActivityLogger _log;
     private readonly AppConfig _config;
     private readonly OutboundTransport _transport;
+    private readonly OutboundWorkerOptions _options;
     private readonly ILogger _logger;
 
     public OutboundDelivery(IServiceProvider services, IMxResolver mx, OutboundWorkerOptions options, ILogger logger)
@@ -104,6 +106,7 @@ internal sealed class OutboundDelivery
         _log = services.GetRequiredService<ActivityLogger>();
         _config = services.GetRequiredService<AppConfig>();
         _transport = new OutboundTransport(services.GetRequiredService<ProviderConnector>(), _config, mx, options);
+        _options = options;
         _logger = logger;
     }
 
@@ -118,42 +121,92 @@ internal sealed class OutboundDelivery
             return;
         }
 
+        // The lease this worker claimed the entry with: the outcome only counts while it still holds.
+        DateTime lease = message.NextAttemptDate;
         List<string> recipients = message.Recipients.Where(r => !string.IsNullOrWhiteSpace(r)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        IReadOnlyList<RecipientOutcome> outcomes;
-        try
+        var outcomes = new AttemptOutcomes();
+        bool interrupted = await SendAsync(message, recipients, outcomes, cancel);
+
+        // Every recipient gets an outcome; one without is tried again.
+        outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, interrupted ? "The delivery was interrupted by a shutdown." : "No answer for this recipient.");
+
+        DateTime now = DateTime.UtcNow;
+        OutboundAttempt attempt = OutboundSchedule.Apply(message, outcomes.All, now, _config.Queue);
+        if (interrupted && message.Status == OutboundStatus.Pending)
         {
-            outcomes = recipients.Count == 0 ? Array.Empty<RecipientOutcome>() : await _transport.SendAsync(message, LoadForSending(message.Raw), recipients, cancel);
-        }
-        catch (OperationCanceledException) when (cancel.IsCancellationRequested)
-        {
-            // Shutting down in the middle: the entry goes back into the queue without counting the attempt.
-            message.Status = OutboundStatus.Pending;
-            message.NextAttemptDate = DateTime.UtcNow;
-            await _db.SaveChangesAsync(CancellationToken.None);
-            throw;
-        }
-        catch (FormatException ex)
-        {
-            outcomes = OutboundTransport.Fail(recipients, RecipientState.PermanentFailure, $"The queued message cannot be read: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Sending queue entry {Id} failed.", id);
-            outcomes = OutboundTransport.Fail(recipients, RecipientState.TemporaryFailure, ex.Message);
+            // Right after the restart.
+            message.NextAttemptDate = now;
         }
 
-        // Every recipient gets an outcome; one the transport did not mention is tried again.
-        var missing = recipients.Where(r => !outcomes.Any(o => string.Equals(o.Address, r, StringComparison.OrdinalIgnoreCase))).ToList();
-        if (missing.Count > 0)
+        if (!await SaveIfStillClaimedAsync(message, lease))
         {
-            outcomes = outcomes.Concat(OutboundTransport.Fail(missing, RecipientState.TemporaryFailure, "No answer for this recipient.")).ToList();
+            _logger.LogWarning("Queue entry {Id} was taken over by another worker while it was being sent; this outcome is dropped.", id);
+            return;
         }
-
-        OutboundAttempt attempt = OutboundSchedule.Apply(message, outcomes, DateTime.UtcNow, _config.Queue);
-        await _db.SaveChangesAsync(CancellationToken.None);
 
         bool bounceDelivered = attempt.Bounced.Count > 0 && await DeliverBounceAsync(message, attempt);
         await LogAsync(message, attempt, bounceDelivered);
+    }
+
+    /// <summary>
+    /// One delivery attempt, cut off after <see cref="OutboundWorkerOptions.MaxAttemptDuration"/> (a server answering byte by byte
+    /// must not hold a delivery slot for ever). Outcomes are recorded as they come. True when a shutdown interrupted the attempt.
+    /// </summary>
+    private async Task<bool> SendAsync(OutboundMessage message, List<string> recipients, AttemptOutcomes outcomes, CancellationToken cancel)
+    {
+        if (recipients.Count == 0)
+        {
+            return false;
+        }
+
+        using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        attempt.CancelAfter(_options.MaxAttemptDuration);
+        try
+        {
+            await _transport.SendAsync(message, LoadForSending(message.Raw), recipients, outcomes, attempt.Token);
+        }
+        catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+        {
+            return true;
+        }
+        catch (OperationCanceledException) when (attempt.IsCancellationRequested)
+        {
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, $"The delivery took longer than {_options.MaxAttemptDuration.TotalMinutes:0.#} minutes and was stopped.");
+        }
+        catch (FormatException ex)
+        {
+            outcomes.RecordRest(recipients, RecipientState.PermanentFailure, $"The queued message cannot be read: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sending queue entry {Id} failed.", message.Id);
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, ex.Message);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Saves the outcome only while this worker still holds the entry (status Sending with the lease it claimed it with). When the
+    /// lease ran out and another worker took the entry over, that worker's state wins.
+    /// </summary>
+    private async Task<bool> SaveIfStillClaimedAsync(OutboundMessage message, DateTime lease)
+    {
+        await using IDbContextTransaction transaction = await _db.Database.BeginTransactionAsync(CancellationToken.None);
+        string sending = nameof(OutboundStatus.Sending);
+        List<long> stillClaimed = await _db.Database.SqlQuery<long>($"""
+            SELECT "Id" AS "Value" FROM "OutboundMessage"
+            WHERE "Id" = {message.Id} AND "Status" = {sending} AND "NextAttemptDate" = {lease}
+            FOR UPDATE
+            """).ToListAsync(CancellationToken.None);
+        if (stillClaimed.Count == 0)
+        {
+            return false;
+        }
+
+        await _db.SaveChangesAsync(CancellationToken.None);
+        await transaction.CommitAsync(CancellationToken.None);
+        return true;
     }
 
     /// <summary>The message as stored, without Return-Path: that is set by whoever delivers it in the end (RFC 5321 4.4).</summary>

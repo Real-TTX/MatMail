@@ -56,7 +56,8 @@ internal sealed class RunningSmtpServer : IAsyncDisposable
     public int SubmissionPort => Server.BoundPorts[SmtpListenerKind.Submission];
     public int ImplicitTlsPort => Server.BoundPorts[SmtpListenerKind.ImplicitTls];
 
-    public static async Task<RunningSmtpServer> StartAsync(TestHost host, bool withTls = true, TimeSpan? commandTimeout = null)
+    public static async Task<RunningSmtpServer> StartAsync(
+        TestHost host, bool withTls = true, TimeSpan? commandTimeout = null, int maxJunkCommands = 100, long maxBufferedBytes = 256L * 1024 * 1024)
     {
         var options = new SmtpServerOptions
         {
@@ -69,6 +70,8 @@ internal sealed class RunningSmtpServer : IAsyncDisposable
             CommandTimeout = commandTimeout ?? TimeSpan.FromSeconds(30),
             DataTimeout = TimeSpan.FromSeconds(30),
             AuthFailureDelay = TimeSpan.Zero,
+            MaxJunkCommands = maxJunkCommands,
+            MaxBufferedBytes = maxBufferedBytes,
         };
 
         var throttle = new SmtpAuthThrottle();

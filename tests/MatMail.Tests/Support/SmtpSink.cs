@@ -44,6 +44,9 @@ internal sealed class SmtpSink : IAsyncDisposable
     /// <summary>Reply after the message data; null = "250".</summary>
     public Func<string?> DataReply { get; set; } = () => null;
 
+    /// <summary>Awaited after the message data, before the reply: lets a test play a slow server.</summary>
+    public Func<Task> BeforeDataReply { get; set; } = () => Task.CompletedTask;
+
     public static SmtpSink Start() => new();
 
     public async ValueTask DisposeAsync()
@@ -163,6 +166,7 @@ internal sealed class SmtpSink : IAsyncDisposable
                     data.Append(dataLine.StartsWith('.') ? dataLine[1..] : dataLine).Append("\r\n");
                 }
 
+                await BeforeDataReply();
                 string? reply = DataReply();
                 if (reply is null)
                 {

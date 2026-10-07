@@ -22,8 +22,37 @@ public enum RecipientState
 public sealed record RecipientOutcome(string Address, RecipientState State, string Detail);
 
 /// <summary>
+/// The outcomes of one delivery attempt, recorded as they become known: whatever was learnt survives a failure (or a shutdown)
+/// halfway through, so a recipient that already got the message is never sent it again. The first outcome of a recipient counts.
+/// </summary>
+internal sealed class AttemptOutcomes
+{
+    private readonly Dictionary<string, RecipientOutcome> _byAddress = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<RecipientOutcome> _all = new();
+
+    public IReadOnlyList<RecipientOutcome> All => _all;
+
+    public void Record(RecipientOutcome outcome)
+    {
+        if (_byAddress.TryAdd(outcome.Address, outcome))
+        {
+            _all.Add(outcome);
+        }
+    }
+
+    /// <summary>Gives every listed recipient that has no outcome yet this one.</summary>
+    public void RecordRest(IEnumerable<string> recipients, RecipientState state, string detail)
+    {
+        foreach (string recipient in recipients)
+        {
+            Record(new RecipientOutcome(recipient, state, detail));
+        }
+    }
+}
+
+/// <summary>
 /// Sends a queued message over SMTP — through the provider account it is routed to, or directly to the recipients' mail
-/// servers (MX) — and reports the outcome per recipient.
+/// servers (MX) — and records the outcome per recipient.
 /// </summary>
 internal sealed class OutboundTransport
 {
@@ -44,41 +73,47 @@ internal sealed class OutboundTransport
     public static string DescribeRoute(OutboundMessage message)
         => message.MailAccountId is null ? "direct delivery" : $"account '{message.MailAccount?.Name ?? message.MailAccountId.ToString()}'";
 
-    public async Task<IReadOnlyList<RecipientOutcome>> SendAsync(OutboundMessage message, MimeMessage mime, IReadOnlyList<string> recipients, CancellationToken cancel)
+    public async Task SendAsync(OutboundMessage message, MimeMessage mime, IReadOnlyList<string> recipients, AttemptOutcomes outcomes, CancellationToken cancel)
     {
         if (message.MailAccountId is not null)
         {
-            return await SendThroughAccountAsync(message.MailAccount, message.EnvelopeFrom, mime, recipients, cancel);
+            await SendThroughAccountAsync(message.MailAccount, message.EnvelopeFrom, mime, recipients, outcomes, cancel);
+            return;
         }
 
         if (!_config.Queue.AllowDirectDelivery)
         {
-            return Fail(recipients, RecipientState.TemporaryFailure, "No sending account is set for this message and direct delivery is switched off.");
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, "No sending account is set for this message and direct delivery is switched off.");
+            return;
         }
 
-        var outcomes = new List<RecipientOutcome>();
         foreach (IGrouping<string, string> domain in recipients.GroupBy(MailAddresses.DomainOf, StringComparer.OrdinalIgnoreCase))
         {
-            outcomes.AddRange(await SendToDomainAsync(domain.Key, domain.ToList(), message.EnvelopeFrom, mime, cancel));
+            try
+            {
+                await SendToDomainAsync(domain.Key, domain.ToList(), message.EnvelopeFrom, mime, outcomes, cancel);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancel.IsCancellationRequested)
+            {
+                // One domain's problem must not cost the outcomes of the others.
+                outcomes.RecordRest(domain, RecipientState.TemporaryFailure, $"{domain.Key}: {ex.Message}");
+            }
         }
-
-        return outcomes;
     }
 
-    internal static IReadOnlyList<RecipientOutcome> Fail(IEnumerable<string> recipients, RecipientState state, string detail)
-        => recipients.Select(r => new RecipientOutcome(r, state, detail)).ToList();
-
-    private async Task<IReadOnlyList<RecipientOutcome>> SendThroughAccountAsync(
-        MailAccount? account, string envelopeFrom, MimeMessage mime, IReadOnlyList<string> recipients, CancellationToken cancel)
+    private async Task SendThroughAccountAsync(
+        MailAccount? account, string envelopeFrom, MimeMessage mime, IReadOnlyList<string> recipients, AttemptOutcomes outcomes, CancellationToken cancel)
     {
         if (account is null)
         {
-            return Fail(recipients, RecipientState.TemporaryFailure, "The sending account of this message does not exist any more.");
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, "The sending account of this message does not exist any more.");
+            return;
         }
 
         if (!account.IsEnabled || string.IsNullOrWhiteSpace(account.SendHost))
         {
-            return Fail(recipients, RecipientState.TemporaryFailure, $"The sending account '{account.Name}' is disabled or has no SMTP server.");
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, $"The sending account '{account.Name}' is disabled or has no SMTP server.");
+            return;
         }
 
         SmtpClient client;
@@ -88,25 +123,26 @@ internal sealed class OutboundTransport
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancel.IsCancellationRequested)
         {
-            return Fail(recipients, RecipientState.TemporaryFailure, ProviderConnector.Describe(ex, account.SendHost));
+            outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, ProviderConnector.Describe(ex, account.SendHost));
+            return;
         }
 
         using (client)
         {
-            IReadOnlyList<RecipientOutcome> outcomes = await SmtpSendLoop.SendAsync(client, mime, envelopeFrom, account.Address, recipients, account.SendHost, cancel);
+            await SmtpSendLoop.SendAsync(client, mime, envelopeFrom, account.Address, recipients, account.SendHost, outcomes, cancel);
             await DisconnectQuietlyAsync(client);
-            return outcomes;
         }
     }
 
     /// <summary>Direct delivery to one domain: its MX hosts in order until one answers.</summary>
-    private async Task<IReadOnlyList<RecipientOutcome>> SendToDomainAsync(
-        string domain, IReadOnlyList<string> recipients, string envelopeFrom, MimeMessage mime, CancellationToken cancel)
+    private async Task SendToDomainAsync(
+        string domain, IReadOnlyList<string> recipients, string envelopeFrom, MimeMessage mime, AttemptOutcomes outcomes, CancellationToken cancel)
     {
         MxLookup lookup = await _mx.ResolveAsync(domain, cancel);
         if (lookup.Error is not null)
         {
-            return Fail(recipients, lookup.IsPermanent ? RecipientState.PermanentFailure : RecipientState.TemporaryFailure, lookup.Error);
+            outcomes.RecordRest(recipients, lookup.IsPermanent ? RecipientState.PermanentFailure : RecipientState.TemporaryFailure, lookup.Error);
+            return;
         }
 
         string lastError = $"No mail server of {domain} could be reached.";
@@ -121,13 +157,13 @@ internal sealed class OutboundTransport
 
             using (client)
             {
-                IReadOnlyList<RecipientOutcome> outcomes = await SmtpSendLoop.SendAsync(client, mime, envelopeFrom, null, recipients, host, cancel);
+                await SmtpSendLoop.SendAsync(client, mime, envelopeFrom, null, recipients, host, outcomes, cancel);
                 await DisconnectQuietlyAsync(client);
-                return outcomes;
+                return;
             }
         }
 
-        return Fail(recipients, RecipientState.TemporaryFailure, lastError);
+        outcomes.RecordRest(recipients, RecipientState.TemporaryFailure, lastError);
     }
 
     /// <summary>
@@ -190,11 +226,10 @@ internal sealed class OutboundTransport
 /// </summary>
 internal static class SmtpSendLoop
 {
-    public static async Task<IReadOnlyList<RecipientOutcome>> SendAsync(
+    public static async Task SendAsync(
         SmtpClient client, MimeMessage message, string envelopeFrom, string? fallbackSender, IReadOnlyList<string> recipients, string host,
-        CancellationToken cancel)
+        AttemptOutcomes outcomes, CancellationToken cancel)
     {
-        var outcomes = new List<RecipientOutcome>();
         var pending = new List<(string Address, MailboxAddress Mailbox)>();
         foreach (string recipient in recipients)
         {
@@ -204,14 +239,14 @@ internal static class SmtpSendLoop
             }
             else
             {
-                outcomes.Add(new RecipientOutcome(recipient, RecipientState.PermanentFailure, "The recipient address is not valid."));
+                outcomes.Record(new RecipientOutcome(recipient, RecipientState.PermanentFailure, "The recipient address is not valid."));
             }
         }
 
         if (!TryMailbox(envelopeFrom, out MailboxAddress? sender))
         {
-            outcomes.AddRange(pending.Select(p => new RecipientOutcome(p.Address, RecipientState.PermanentFailure, "The sender address is not valid.")));
-            return outcomes;
+            outcomes.RecordRest(pending.Select(p => p.Address), RecipientState.PermanentFailure, "The sender address is not valid.");
+            return;
         }
 
         bool fallbackTried = false;
@@ -219,19 +254,19 @@ internal static class SmtpSendLoop
         {
             if (!client.IsConnected)
             {
-                outcomes.AddRange(pending.Select(p => new RecipientOutcome(p.Address, RecipientState.TemporaryFailure, $"{host}: the connection was closed.")));
-                break;
+                outcomes.RecordRest(pending.Select(p => p.Address), RecipientState.TemporaryFailure, $"{host}: the connection was closed.");
+                return;
             }
 
             try
             {
                 string response = await client.SendAsync(FormatOptions.Default, message, sender, pending.Select(p => p.Mailbox), cancel);
-                outcomes.AddRange(pending.Select(p => new RecipientOutcome(p.Address, RecipientState.Delivered, $"{host}: {response}".Trim())));
-                break;
+                outcomes.RecordRest(pending.Select(p => p.Address), RecipientState.Delivered, $"{host}: {response}".Trim());
+                return;
             }
             catch (SmtpCommandException ex) when (ex.ErrorCode == SmtpErrorCode.RecipientNotAccepted && IndexOf(pending, ex.Mailbox) is int index and >= 0)
             {
-                outcomes.Add(new RecipientOutcome(pending[index].Address, StateOf(ex.StatusCode), Describe(host, ex)));
+                outcomes.Record(new RecipientOutcome(pending[index].Address, StateOf(ex.StatusCode), Describe(host, ex)));
                 pending.RemoveAt(index);
             }
             catch (SmtpCommandException ex) when (ex.ErrorCode == SmtpErrorCode.SenderNotAccepted && !fallbackTried
@@ -245,17 +280,15 @@ internal static class SmtpSendLoop
             }
             catch (SmtpCommandException ex)
             {
-                outcomes.AddRange(pending.Select(p => new RecipientOutcome(p.Address, StateOf(ex.StatusCode), Describe(host, ex))));
-                break;
+                outcomes.RecordRest(pending.Select(p => p.Address), StateOf(ex.StatusCode), Describe(host, ex));
+                return;
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !cancel.IsCancellationRequested)
             {
-                outcomes.AddRange(pending.Select(p => new RecipientOutcome(p.Address, RecipientState.TemporaryFailure, ProviderConnector.Describe(ex, host))));
-                break;
+                outcomes.RecordRest(pending.Select(p => p.Address), RecipientState.TemporaryFailure, ProviderConnector.Describe(ex, host));
+                return;
             }
         }
-
-        return outcomes;
     }
 
     private static RecipientState StateOf(SmtpStatusCode code)

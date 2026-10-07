@@ -22,6 +22,7 @@ internal sealed record SmtpSessionContext(
     SmtpAuthThrottle Throttle,
     SmtpActivityLog Activity,
     SmtpServerOptions Options,
+    SmtpMemoryBudget Budget,
     ILogger Logger);
 
 /// <summary>
@@ -43,8 +44,7 @@ internal sealed class SmtpSession
     private readonly SmtpMessageHandler _handler;
 
     private SmtpPolicy _policy = null!;
-    private RelayRule? _rule;
-    private bool _ruleLoaded;
+    private IReadOnlyList<RelayRule>? _rules;
     private string? _helo;
     private bool _extended;
     private bool _secure;
@@ -52,6 +52,7 @@ internal sealed class SmtpSession
     private MailUser? _user;
     private SmtpTransaction? _transaction;
     private int _errors;
+    private int _junkCommands;
     private bool _closing;
 
     public SmtpSession(SmtpSessionContext context, SmtpListenerKind listener, Stream stream, IPAddress remote, X509Certificate2? certificate)
@@ -157,16 +158,20 @@ internal sealed class SmtpSession
                     await DataAsync(argument, cancel);
                     break;
                 case "RSET":
+                    CountJunkCommand();
                     _transaction = null;
                     _connection.Write("250 2.0.0 OK");
                     break;
                 case "NOOP":
+                    CountJunkCommand();
                     _connection.Write("250 2.0.0 OK");
                     break;
                 case "VRFY":
+                    CountJunkCommand();
                     _connection.Write("252 2.5.0 Cannot VRFY user, but will accept message and attempt delivery");
                     break;
                 case "HELP":
+                    CountJunkCommand();
                     _connection.Write("214 2.0.0 Commands: EHLO HELO STARTTLS AUTH MAIL RCPT DATA RSET NOOP VRFY QUIT");
                     break;
                 case "QUIT":
@@ -363,10 +368,27 @@ internal sealed class SmtpSession
             return;
         }
 
-        MailUser? user = await VerifyAsync(login, password);
+        // Reserved right before the check, so parallel connections cannot run more guesses than the client has failures left.
+        if (!_context.Throttle.TryBeginAttempt(_remote))
+        {
+            Refuse("454 4.7.0 Too many failed sign-ins from your address, try again later");
+            return;
+        }
+
+        MailUser? user;
+        try
+        {
+            user = await VerifyAsync(login, password);
+        }
+        catch
+        {
+            _context.Throttle.EndAttempt(_remote, failed: false);
+            throw;
+        }
+
         if (user is null)
         {
-            if (_context.Throttle.RecordFailure(_remote))
+            if (_context.Throttle.EndAttempt(_remote, failed: true))
             {
                 await _context.Activity.WarnAsync(
                     $"auth-blocked:{_remoteText}",
@@ -379,6 +401,7 @@ internal sealed class SmtpSession
             return;
         }
 
+        _context.Throttle.EndAttempt(_remote, failed: false);
         _user = user;
         _connection.Write("235 2.7.0 Authentication successful");
     }
@@ -517,14 +540,22 @@ internal sealed class SmtpSession
             return;
         }
 
-        if (_user is null && !_ruleLoaded)
+        if (_user is not null && !await _policy.IsStillActiveAsync(_user, cancel))
         {
-            _rule = await _policy.FindRuleAsync(_remote, cancel);
-            _ruleLoaded = true;
+            // Disabled while this session was open: the sign-in does not count any more.
+            _user = null;
+            Refuse("530 5.7.0 Authentication required");
+            return;
+        }
+
+        if (_user is null)
+        {
+            _rules ??= await _policy.FindRulesAsync(_remote, cancel);
         }
 
         bool submissionPort = _listener != SmtpListenerKind.Relay;
-        (SmtpTransaction? transaction, string? rejection) = await _policy.CheckSenderAsync(sender, _user, _user is null ? _rule : null, submissionPort, cancel);
+        (SmtpTransaction? transaction, string? rejection) = await _policy.CheckSenderAsync(
+            sender, _user, _user is null ? _rules! : Array.Empty<RelayRule>(), submissionPort, cancel);
         if (transaction is null)
         {
             await ReportRefusedSenderAsync(sender, rejection!);
@@ -676,26 +707,40 @@ internal sealed class SmtpSession
 
         _connection.Write("354 End data with <CR><LF>.<CR><LF>");
         using var buffer = new MemoryStream();
-        SmtpDataStatus status = await _connection.ReadDataAsync(buffer, MaxMessageBytes, Options.DataTimeout, cancel);
-        if (status == SmtpDataStatus.Closed)
+        try
         {
-            _closing = true;
-            return;
-        }
+            SmtpDataStatus status = await _connection.ReadDataAsync(
+                buffer, MaxMessageBytes, Options.DataTimeout, cancel, _context.Budget, DateTime.UtcNow + Options.MaxDataDuration);
+            switch (status)
+            {
+                case SmtpDataStatus.Closed:
+                    _closing = true;
+                    return;
+                case SmtpDataStatus.TooBig:
+                    _connection.Write("552 5.3.4 Message size exceeds fixed maximum message size");
+                    return;
+                case SmtpDataStatus.NoMemory:
+                    await _context.Activity.WarnAsync(
+                        "memory-budget",
+                        $"SMTP: a message from {_remoteText} was refused for now: too many large messages are being received at the same time.",
+                        remoteIp: _remoteText);
+                    _connection.Write("452 4.3.1 Insufficient system storage, please try again later");
+                    return;
+            }
 
-        if (status == SmtpDataStatus.TooBig)
+            if (buffer.Length == 0)
+            {
+                Refuse("554 5.6.0 Error: the message is empty");
+                return;
+            }
+
+            _connection.Write(await AcceptMessageAsync(transaction, buffer.ToArray(), cancel));
+        }
+        finally
         {
-            _connection.Write("552 5.3.4 Message size exceeds fixed maximum message size");
-            return;
+            // The message's share of the server-wide budget is free again once it is delivered (or refused).
+            _context.Budget.Release(buffer.Length);
         }
-
-        if (buffer.Length == 0)
-        {
-            Refuse("554 5.6.0 Error: the message is empty");
-            return;
-        }
-
-        _connection.Write(await AcceptMessageAsync(transaction, buffer.ToArray(), cancel));
     }
 
     /// <summary>Checks the From: header of signed-in users, stamps the trace headers and delivers or submits the message.</summary>
@@ -786,6 +831,15 @@ internal sealed class SmtpSession
     {
         _connection.Write(reply);
         _errors++;
+    }
+
+    /// <summary>Commands that do nothing are fine, but not endlessly: beyond the limit each one counts as an error.</summary>
+    private void CountJunkCommand()
+    {
+        if (++_junkCommands > Options.MaxJunkCommands)
+        {
+            _errors++;
+        }
     }
 
     private async Task SayGoodbyeAsync(string reply)

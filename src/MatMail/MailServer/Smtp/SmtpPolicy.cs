@@ -3,6 +3,7 @@ using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Messaging;
 using MatMail.Services;
+using Microsoft.EntityFrameworkCore;
 using MimeKit;
 
 namespace MatMail.MailServer.Smtp;
@@ -52,6 +53,7 @@ internal sealed class SmtpTransaction
 /// </summary>
 internal sealed class SmtpPolicy
 {
+    private readonly MatMailDbContext _db;
     private readonly MailAccessService _access;
     private readonly RelayPolicy _relay;
     private readonly MailDelivery _delivery;
@@ -60,6 +62,7 @@ internal sealed class SmtpPolicy
 
     public SmtpPolicy(IServiceProvider services)
     {
+        _db = services.GetRequiredService<MatMailDbContext>();
         _access = services.GetRequiredService<MailAccessService>();
         _relay = services.GetRequiredService<RelayPolicy>();
         _delivery = services.GetRequiredService<MailDelivery>();
@@ -67,7 +70,26 @@ internal sealed class SmtpPolicy
         _config = services.GetRequiredService<AppConfig>();
     }
 
-    public Task<RelayRule?> FindRuleAsync(IPAddress remote, CancellationToken cancel) => _relay.FindRuleAsync(remote, cancel);
+    /// <summary>
+    /// Every enabled relay rule whose network contains the address, the most specific network first. Networks of several tenants
+    /// may overlap (a hoster's 10.0.0.0/8 and a customer's 10.1.2.3), so all of them are asked, not just the first.
+    /// </summary>
+    public async Task<IReadOnlyList<RelayRule>> FindRulesAsync(IPAddress remote, CancellationToken cancel)
+    {
+        List<RelayRule> rules = await _db.RelayRules.IgnoreQueryFilters().AsNoTracking().Where(r => r.IsEnabled).OrderBy(r => r.Id).ToListAsync(cancel);
+        return rules
+            .Select(rule => (Rule: rule, Prefix: RelayPolicy.TryParseNetwork(rule.Network, out IPNetwork network) ? network.PrefixLength : -1))
+            .Where(r => r.Prefix >= 0 && RelayPolicy.Matches(r.Rule.Network, remote))
+            .OrderByDescending(r => r.Prefix)
+            .ThenBy(r => r.Rule.Id)
+            .Select(r => r.Rule)
+            .ToList();
+    }
+
+    /// <summary>Whether a signed-in user may still send: a session can outlive disabling the user or the tenant.</summary>
+    public async Task<bool> IsStillActiveAsync(MailUser user, CancellationToken cancel)
+        => await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == user.UserId && u.IsActive, cancel)
+           && (user.IsSystemAdmin || await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && t.IsActive, cancel));
 
     /// <summary>
     /// "&lt;Postmaster&gt;" without a domain (RFC 5321 4.5.1) is the postmaster of this server: at the first registered domain among the
@@ -88,12 +110,12 @@ internal sealed class SmtpPolicy
     }
 
     /// <summary>
-    /// MAIL FROM: decides who the client is for this transaction. A client of a relay rule whose sender the rule does not allow is
-    /// treated like any other client (local recipients only). On the submission ports anonymous clients are refused (RFC 6409).
-    /// Returns the transaction, or the reply that refuses the sender.
+    /// MAIL FROM: decides who the client is for this transaction. Of the relay <paramref name="rules"/> matching the client, the
+    /// first that allows the sender applies; when none does, the client is treated like any other (local recipients only). On the
+    /// submission ports anonymous clients are refused (RFC 6409). Returns the transaction, or the reply that refuses the sender.
     /// </summary>
     public async Task<(SmtpTransaction? Transaction, string? Rejection)> CheckSenderAsync(
-        string sender, MailUser? user, RelayRule? rule, bool submissionPort, CancellationToken cancel)
+        string sender, MailUser? user, IReadOnlyList<RelayRule> rules, bool submissionPort, CancellationToken cancel)
     {
         if (user is not null)
         {
@@ -103,9 +125,12 @@ internal sealed class SmtpPolicy
                 : (new SmtpTransaction(SmtpClientKind.Authenticated, sender) { TenantId = user.TenantId, User = user, Identity = identity }, null);
         }
 
-        if (rule is not null && await _relay.IsSenderAllowedAsync(rule, sender, cancel))
+        foreach (RelayRule rule in rules)
         {
-            return (new SmtpTransaction(SmtpClientKind.Trusted, sender) { TenantId = rule.TenantId, Rule = rule }, null);
+            if (await _relay.IsSenderAllowedAsync(rule, sender, cancel))
+            {
+                return (new SmtpTransaction(SmtpClientKind.Trusted, sender) { TenantId = rule.TenantId, Rule = rule }, null);
+            }
         }
 
         if (submissionPort)

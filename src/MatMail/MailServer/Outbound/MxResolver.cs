@@ -33,7 +33,12 @@ public sealed class DnsMxResolver : IMxResolver
         {
             response = await _dns.QueryAsync(domain, QueryType.MX, QueryClass.IN, cancel);
         }
-        catch (DnsResponseException ex)
+        catch (ArgumentException)
+        {
+            // E.g. a label that is longer than 63 octets once encoded: no such domain can exist.
+            return new MxLookup(Array.Empty<string>(), $"The domain {domain} is not a valid DNS name.", IsPermanent: true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return new MxLookup(Array.Empty<string>(), $"The DNS lookup for {domain} failed: {ex.Message}");
         }

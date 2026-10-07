@@ -13,9 +13,11 @@ public sealed class SmtpActivityLog
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(10);
 
     private const int MaxKeys = 10_000;
+    private static readonly TimeSpan PruneInterval = TimeSpan.FromMinutes(1);
 
     private readonly ActivityLogger _log;
     private readonly ConcurrentDictionary<string, Counter> _recent = new(StringComparer.Ordinal);
+    private long _lastPruneTicks;
 
     public SmtpActivityLog(ActivityLogger log) => _log = log;
 
@@ -37,7 +39,9 @@ public sealed class SmtpActivityLog
     public Task WriteAsync(string key, ActivityLevel level, string message, long? tenantId = null, long? userId = null, string? remoteIp = null, string? details = null)
     {
         DateTime now = DateTime.UtcNow;
-        if (_recent.Count > MaxKeys)
+        long lastPrune = Interlocked.Read(ref _lastPruneTicks);
+        if (_recent.Count > MaxKeys && now.Ticks - lastPrune > PruneInterval.Ticks
+            && Interlocked.CompareExchange(ref _lastPruneTicks, now.Ticks, lastPrune) == lastPrune)
         {
             Prune(now);
         }

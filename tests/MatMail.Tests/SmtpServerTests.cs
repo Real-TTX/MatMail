@@ -63,11 +63,85 @@ public class SmtpProtocolTests
         SmtpDataStatus status = await connection.ReadDataAsync(target, 1_000_000, TimeSpan.FromSeconds(5), CancellationToken.None);
 
         Assert.Equal(SmtpDataStatus.Complete, status);
-        Assert.Equal("Subject: x\r\n\r\n.dotted\r\nbare lf\r\n\r\nstill data\r\n\r\nmore\r\ncr\rinside\r\n", Encoding.ASCII.GetString(target.ToArray()));
+        Assert.Equal("Subject: x\r\n\r\n.dotted\r\nbare lf\r\n\r\nstill data\r\n\r\nmore\r\ncr\r\ninside\r\n", Encoding.ASCII.GetString(target.ToArray()));
 
         // The connection is in sync: the next command follows the end of the data.
         SmtpLine next = await connection.ReadLineAsync(512, TimeSpan.FromSeconds(5), CancellationToken.None);
         Assert.Equal(new SmtpLine(SmtpLineStatus.Ok, "NOOP"), next);
+    }
+
+    [Fact]
+    public async Task A_lone_cr_is_stored_as_a_line_end_so_it_cannot_smuggle_through_to_the_next_server()
+    {
+        // A next hop that took "\r.\r\n" for the end of the data would run the rest as a second, forged transaction.
+        string data = "Subject: x\r\n\r\nHi\r.\r\nMAIL FROM:<ceo@victim.test>\r\nDATA\r\n.\r\n";
+        await using var stream = new ScriptedStream(Encoding.ASCII.GetBytes(data), chunkSize: 1);
+        var connection = new SmtpConnection(stream);
+        using var target = new MemoryStream();
+
+        Assert.Equal(SmtpDataStatus.Complete, await connection.ReadDataAsync(target, 1_000_000, TimeSpan.FromSeconds(5), CancellationToken.None));
+
+        string stored = Encoding.ASCII.GetString(target.ToArray());
+        Assert.Equal("Subject: x\r\n\r\nHi\r\n\r\nMAIL FROM:<ceo@victim.test>\r\nDATA\r\n", stored);
+        for (int i = 0; i < stored.Length; i++)
+        {
+            Assert.True(stored[i] != '\r' || stored[i + 1] == '\n', $"lone CR at {i}");
+            Assert.True(stored[i] != '\n' || stored[i - 1] == '\r', $"lone LF at {i}");
+        }
+    }
+
+    [Fact]
+    public async Task Data_beyond_the_server_wide_budget_is_refused_for_now()
+    {
+        var budget = new SmtpMemoryBudget(1000);
+        string data = string.Concat(Enumerable.Repeat(new string('x', 98) + "\r\n", 20)) + ".\r\n";
+        await using var stream = new ScriptedStream(Encoding.ASCII.GetBytes(data), chunkSize: 300);
+        var connection = new SmtpConnection(stream);
+        using var target = new MemoryStream();
+
+        Assert.Equal(SmtpDataStatus.NoMemory, await connection.ReadDataAsync(target, 1_000_000, TimeSpan.FromSeconds(5), CancellationToken.None, budget));
+        Assert.True(target.Length <= 1000);
+        Assert.Equal(target.Length, budget.Used);
+
+        budget.Release(target.Length);
+        Assert.Equal(0, budget.Used);
+    }
+
+    [Fact]
+    public async Task A_message_that_takes_longer_than_allowed_times_out()
+    {
+        await using var stream = new ScriptedStream(Encoding.ASCII.GetBytes("Subject: x\r\n\r\nslow"), chunkSize: 1);
+        var connection = new SmtpConnection(stream);
+        using var target = new MemoryStream();
+
+        await Assert.ThrowsAsync<TimeoutException>(() => connection.ReadDataAsync(
+            target, 1000, TimeSpan.FromSeconds(5), CancellationToken.None, deadline: DateTime.UtcNow.AddSeconds(-1)));
+    }
+
+    [Fact]
+    public void Parallel_sign_in_attempts_cannot_add_up_to_more_guesses()
+    {
+        var throttle = new SmtpAuthThrottle();
+        IPAddress attacker = IPAddress.Parse("192.0.2.20");
+        DateTime now = new(2026, 10, 7, 12, 0, 0, DateTimeKind.Utc);
+
+        // Thirty connections at once: only as many attempts run as failures are left.
+        int started = Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(attacker, now));
+        Assert.Equal(SmtpAuthThrottle.MaxFailures, started);
+
+        for (int i = 0; i < started - 1; i++)
+        {
+            Assert.False(throttle.EndAttempt(attacker, failed: true, now));
+        }
+
+        Assert.True(throttle.EndAttempt(attacker, failed: true, now));
+        Assert.False(throttle.TryBeginAttempt(attacker, now));
+
+        // A successful attempt leaves its place again.
+        var office = IPAddress.Parse("192.0.2.30");
+        Assert.True(throttle.TryBeginAttempt(office, now));
+        Assert.False(throttle.EndAttempt(office, failed: false, now));
+        Assert.Equal(SmtpAuthThrottle.MaxFailures, Enumerable.Range(0, 30).Count(_ => throttle.TryBeginAttempt(office, now)));
     }
 
     [Fact]
@@ -951,6 +1025,116 @@ public class SmtpServerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_user_disabled_during_the_session_cannot_send_any_more()
+    {
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.ImplicitTlsPort, implicitTls: true);
+        await using (client)
+        {
+            await client.EhloAsync();
+            Assert.Equal(235, (await client.CommandAsync("AUTH PLAIN " + Plain("alice", Password))).Code);
+            Assert.Equal(250, (await client.SendMailAsync("alice@example.test", new[] { "bob@example.test" }, Text(RawMail.Build("alice@example.test", "bob@example.test", "Before", "x")))).Code);
+
+            using (IServiceScope scope = _host.Scope())
+            {
+                await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().Users
+                    .Where(u => u.Id == _seed.Alice.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, false));
+            }
+
+            Assert.Equal("530 5.7.0 Authentication required", (await client.CommandAsync("MAIL FROM:<alice@example.test>")).ToString());
+        }
+
+        Assert.Single(await MessagesAsync(_seed.BobMailbox.Id));
+    }
+
+    [DbFact]
+    public async Task Endless_noop_commands_end_the_session()
+    {
+        await using RunningSmtpServer strict = await RunningSmtpServer.StartAsync(_host, maxJunkCommands: 3);
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(strict.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync();
+
+            // Three are free, then each one counts as an error; the tenth error ends the session.
+            for (int i = 0; i < 3 + 9; i++)
+            {
+                Assert.Equal(250, (await client.CommandAsync("NOOP")).Code);
+            }
+
+            Assert.Equal(250, (await client.CommandAsync("NOOP")).Code);
+            Assert.Equal("421 4.7.0 mail.example.test Error: too many errors", (await client.ReadReplyAsync()).ToString());
+        }
+    }
+
+    [DbFact]
+    public async Task Messages_beyond_the_memory_budget_are_deferred_and_the_budget_is_given_back()
+    {
+        await using RunningSmtpServer small = await RunningSmtpServer.StartAsync(_host, maxBufferedBytes: 10_000);
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(small.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync("mx.sender.test");
+            string big = Text(RawMail.Build("max@sender.test", "alice@example.test", "Big", string.Concat(Enumerable.Repeat(new string('x', 98) + "\r\n", 200))));
+            Assert.Equal(
+                "452 4.3.1 Insufficient system storage, please try again later",
+                (await client.SendMailAsync("max@sender.test", new[] { "alice@example.test" }, big)).ToString());
+            Assert.Equal(250, (await client.SendMailAsync("max@sender.test", new[] { "alice@example.test" }, Text(RawMail.Build("max@sender.test", "alice@example.test", "Small", "x")))).Code);
+        }
+
+        Assert.Equal(0, small.Server.BufferedBytes);
+        Assert.Equal("Small", Assert.Single(await MessagesAsync(_seed.AliceMailbox.Id)).Subject);
+    }
+
+    [DbFact]
+    public async Task Overlapping_relay_networks_of_two_tenants_each_relay_for_their_own_domains()
+    {
+        await AddCustomerTenantAsync();
+        long customer;
+        using (IServiceScope scope = _host.Scope())
+        {
+            customer = await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().Tenants.Where(t => t.Name == "Customer").Select(t => t.Id).SingleAsync();
+        }
+
+        // The customer's broad network was entered first; the Home tenant's single address is more specific.
+        await AddRelayRuleAsync(customer, "127.0.0.0/8");
+        await AddRelayRuleAsync("127.0.0.1");
+
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync("printer.local");
+            Assert.Equal(250, (await client.SendMailAsync("scanner@example.test", new[] { "a@outside.test" }, Text(RawMail.Build("scanner@example.test", "a@outside.test", "Home", "x")))).Code);
+            Assert.Equal(250, (await client.SendMailAsync("printer@customer.test", new[] { "b@outside.test" }, Text(RawMail.Build("printer@customer.test", "b@outside.test", "Customer", "x")))).Code);
+        }
+
+        List<OutboundMessage> queued = await QueueAsync();
+        Assert.Equal(_seed.Tenant.Id, queued.Single(o => o.EnvelopeFrom == "scanner@example.test").TenantId);
+        Assert.Equal(customer, queued.Single(o => o.EnvelopeFrom == "printer@customer.test").TenantId);
+    }
+
+    [DbFact]
+    public async Task A_lone_cr_in_relayed_mail_never_reaches_the_queue()
+    {
+        await AddRelayRuleAsync("127.0.0.1");
+        string message = "From: scanner@example.test\r\nTo: friend@outside.test\r\nSubject: Smuggle\r\n\r\nHi\r.\r\nMAIL FROM:<ceo@victim.test>\r\n";
+
+        (RawSmtpClient client, _) = await RawSmtpClient.ConnectAsync(_server.RelayPort);
+        await using (client)
+        {
+            await client.EhloAsync("printer.local");
+            Assert.Equal(250, (await client.SendMailAsync("scanner@example.test", new[] { "friend@outside.test" }, message)).Code);
+        }
+
+        string raw = Text(Assert.Single(await QueueAsync()).Raw);
+        Assert.Contains("Hi\r\n", raw);
+        for (int i = 0; i < raw.Length; i++)
+        {
+            Assert.True(raw[i] != '\r' || (i + 1 < raw.Length && raw[i + 1] == '\n'), $"lone CR at {i}");
+        }
+    }
+
+    [DbFact]
     public async Task Idle_connections_are_closed_after_the_command_timeout()
     {
         await using RunningSmtpServer quick = await RunningSmtpServer.StartAsync(_host, commandTimeout: TimeSpan.FromSeconds(1));
@@ -1085,11 +1269,14 @@ public class SmtpServerTests : IAsyncLifetime
         return await db.Mailboxes.Where(m => m.OwnerUserId == carol!.Id).Select(m => m.Id).FirstAsync();
     }
 
-    private async Task AddRelayRuleAsync(string network, params string[] allowedSenderDomains)
+    private Task AddRelayRuleAsync(string network, params string[] allowedSenderDomains)
+        => AddRelayRuleAsync(_seed.Tenant.Id, network, allowedSenderDomains);
+
+    private async Task AddRelayRuleAsync(long tenantId, string network, params string[] allowedSenderDomains)
     {
         using IServiceScope scope = _host.Scope();
         var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
-        db.RelayRules.Add(new RelayRule { TenantId = _seed.Tenant.Id, Name = "Office", Network = network, AllowedSenderDomains = allowedSenderDomains });
+        db.RelayRules.Add(new RelayRule { TenantId = tenantId, Name = "Office", Network = network, AllowedSenderDomains = allowedSenderDomains });
         await db.SaveChangesAsync();
     }
 }

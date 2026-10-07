@@ -12,17 +12,21 @@ internal sealed class OutboundWorkerOptions
     public int MaxParallel { get; init; } = 4;
     public int DirectPort { get; init; } = 25;
     public TimeSpan DirectTimeout { get; init; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>The longest one delivery attempt may take; must stay well below <see cref="OutboundWorker.ClaimLease"/>.</summary>
+    public TimeSpan MaxAttemptDuration { get; init; } = TimeSpan.FromMinutes(15);
 }
 
 /// <summary>
 /// The outgoing delivery worker: sends the queued <see cref="OutboundMessage"/>s that are due — up to four at a time, each in its
 /// own scope as the system — through the provider account they are routed to, or directly to the recipients' mail servers.
-/// It wakes up when something is queued (<see cref="OutboundSignal"/>) and otherwise looks every 30 seconds; once an hour it
-/// removes old entries.
+/// It wakes up when something is queued (<see cref="OutboundSignal"/>) or a delivery slot becomes free, and otherwise looks every
+/// 30 seconds; a slow receiving server only ever holds its own slot. Once an hour it removes old entries.
 /// <para>
 /// Claiming is a single UPDATE … RETURNING with FOR UPDATE SKIP LOCKED, so two workers (or two installations on one database)
 /// never send the same message. A claimed entry is "Sending" with <see cref="OutboundMessage.NextAttemptDate"/> as the end of
-/// its lease: if the worker dies, the entry is taken up again after <see cref="ClaimLease"/>.
+/// its lease: if the worker dies, the entry is taken up again after <see cref="ClaimLease"/>. An attempt is cut off long before
+/// (<see cref="OutboundWorkerOptions.MaxAttemptDuration"/>), and its outcome is only saved while the lease still holds.
 /// </para>
 /// </summary>
 public sealed class OutboundWorker : BackgroundService
@@ -67,12 +71,14 @@ public sealed class OutboundWorker : BackgroundService
             return;
         }
 
+        var running = new List<Task>();
         DateTime nextHousekeeping = DateTime.UtcNow;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await ProcessDueAsync(stoppingToken);
+                running.RemoveAll(task => task.IsCompleted);
+                await StartDueAsync(running, stoppingToken);
                 if (DateTime.UtcNow >= nextHousekeeping)
                 {
                     await CleanUpAsync(stoppingToken);
@@ -96,6 +102,42 @@ public sealed class OutboundWorker : BackgroundService
             {
                 break;
             }
+        }
+
+        // Deliveries that are running record what they achieved and end.
+        await Task.WhenAll(running);
+    }
+
+    /// <summary>Claims due entries while delivery slots are free; each one runs on its own and frees its slot when done.</summary>
+    private async Task StartDueAsync(List<Task> running, CancellationToken stopping)
+    {
+        await ReleaseExpiredClaimsAsync(stopping);
+        while (running.Count(task => !task.IsCompleted) < Math.Max(1, _options.MaxParallel))
+        {
+            long? id = await ClaimNextAsync(stopping);
+            if (id is null)
+            {
+                return;
+            }
+
+            running.Add(RunInSlotAsync(id.Value, stopping));
+        }
+    }
+
+    private async Task RunInSlotAsync(long id, CancellationToken stopping)
+    {
+        try
+        {
+            await ProcessAsync(id, stopping);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Queue entry {Id} ended with the shutdown.", id);
+        }
+        finally
+        {
+            // A slot is free: look for more work at once instead of waiting for the next poll.
+            _signal.Notify();
         }
     }
 
@@ -212,17 +254,18 @@ public sealed class OutboundWorker : BackgroundService
         }
         catch (OperationCanceledException) when (cancel.IsCancellationRequested)
         {
-            throw;
+            // Shut down before the attempt began: the entry is due again right after the restart.
+            await ReturnToQueueAsync(id, null, TimeSpan.Zero);
         }
         catch (Exception ex)
         {
             // A claimed entry is never left behind: it goes back into the queue for a later attempt.
             _logger.LogError(ex, "Queue entry {Id} could not be processed.", id);
-            await ReturnToQueueAsync(id, ex.Message);
+            await ReturnToQueueAsync(id, ex.Message, RetryAfterInternalError);
         }
     }
 
-    private async Task ReturnToQueueAsync(long id, string error)
+    private async Task ReturnToQueueAsync(long id, string? error, TimeSpan delay)
     {
         try
         {
@@ -230,14 +273,19 @@ public sealed class OutboundWorker : BackgroundService
             scope.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
             var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
             DateTime now = DateTime.UtcNow;
-            DateTime next = now + RetryAfterInternalError;
+            DateTime next = now + delay;
             await db.OutboundMessages.IgnoreQueryFilters()
                 .Where(o => o.Id == id && o.Status == OutboundStatus.Sending)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(o => o.Status, OutboundStatus.Pending)
-                    .SetProperty(o => o.NextAttemptDate, next)
-                    .SetProperty(o => o.LastError, error)
-                    .SetProperty(o => o.UpdateDate, now));
+                .ExecuteUpdateAsync(s =>
+                {
+                    s.SetProperty(o => o.Status, OutboundStatus.Pending);
+                    s.SetProperty(o => o.NextAttemptDate, next);
+                    s.SetProperty(o => o.UpdateDate, now);
+                    if (error is not null)
+                    {
+                        s.SetProperty(o => o.LastError, error);
+                    }
+                });
         }
         catch (Exception ex)
         {

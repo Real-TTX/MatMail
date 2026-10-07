@@ -72,6 +72,15 @@ public class OutboundScheduleTests
     }
 
     [Fact]
+    public async Task A_domain_name_that_dns_cannot_carry_fails_for_good()
+    {
+        // Valid for the address syntax, but the label is longer than 63 octets once encoded (punycode).
+        MxLookup lookup = await new DnsMxResolver().ResolveAsync(new string('ä', 60) + ".test", CancellationToken.None);
+        Assert.True(lookup.IsPermanent);
+        Assert.Empty(lookup.Hosts);
+    }
+
+    [Fact]
     public void A_domain_without_mx_is_its_own_mail_server_and_a_null_mx_takes_no_mail()
     {
         Assert.Equal(new[] { "example.test" }, DnsMxResolver.Order("example.test", Array.Empty<(int, string)>()).Hosts);
@@ -391,6 +400,112 @@ public class OutboundWorkerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_failing_domain_does_not_cost_the_outcome_of_the_others()
+    {
+        _mx.Answer = domain => domain == "broken.test" ? throw new InvalidOperationException("resolver exploded") : new MxLookup(new[] { "127.0.0.1" });
+        long id = await EnqueueAsync(null, "alice@example.test", "friend@outside.test", "x@broken.test");
+        OutboundWorker worker = Worker();
+
+        await worker.ProcessDueAsync();
+
+        Assert.Equal(new[] { "friend@outside.test" }, Assert.Single(_sink.Messages).Recipients);
+        OutboundMessage row = await LoadAsync(id);
+        Assert.Equal(OutboundStatus.Pending, row.Status);
+        Assert.Equal(new[] { "x@broken.test" }, row.Recipients);
+        Assert.Contains("resolver exploded", row.LastError);
+
+        // The next attempt goes to the broken domain only: friend@ never gets a second copy.
+        _mx.Answer = _ => new MxLookup(new[] { "127.0.0.1" });
+        await MakeDueAsync(id);
+        await worker.ProcessDueAsync();
+        Assert.Equal(2, _sink.Messages.Count);
+        Assert.Equal(new[] { "x@broken.test" }, _sink.Messages[1].Recipients);
+        Assert.Equal(OutboundStatus.Sent, (await LoadAsync(id)).Status);
+    }
+
+    [DbFact]
+    public async Task An_attempt_that_takes_too_long_is_cut_off_and_tried_again_later()
+    {
+        var hold = new TaskCompletionSource();
+        _sink.BeforeDataReply = () => hold.Task;
+        long id = await EnqueueAsync(await AddAccountAsync(), "alice@example.test", "friend@outside.test");
+        try
+        {
+            await Worker(maxAttempt: TimeSpan.FromSeconds(2)).ProcessDueAsync();
+
+            OutboundMessage row = await LoadAsync(id);
+            Assert.Equal(OutboundStatus.Pending, row.Status);
+            Assert.Equal(1, row.AttemptCount);
+            Assert.Contains("took longer than", row.LastError);
+        }
+        finally
+        {
+            hold.TrySetResult();
+        }
+    }
+
+    [DbFact]
+    public async Task A_slow_receiving_server_does_not_hold_up_other_mail()
+    {
+        var hold = new TaskCompletionSource();
+        var holding = new TaskCompletionSource();
+        await using SmtpSink slow = SmtpSink.Start();
+        slow.BeforeDataReply = () =>
+        {
+            holding.TrySetResult();
+            return hold.Task;
+        };
+        long slowAccount = await AddAccountAsync(address: "slow@example.test", port: slow.Port);
+        long fastAccount = await AddAccountAsync();
+        using OutboundWorker worker = Worker();
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            long slowId = await EnqueueAsync(slowAccount, "alice@example.test", "slow@outside.test");
+            await holding.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            await EnqueueAsync(fastAccount, "alice@example.test", "fast@outside.test");
+            await WaitUntilAsync(() => _sink.Messages.Count == 1);
+            Assert.Empty(slow.Messages);
+
+            hold.TrySetResult();
+            await WaitUntilAsync(() => slow.Messages.Count == 1);
+            await WaitUntilAsync(async () => (await LoadAsync(slowId)).Status == OutboundStatus.Sent);
+        }
+        finally
+        {
+            hold.TrySetResult();
+            await worker.StopAsync(CancellationToken.None);
+        }
+    }
+
+    [DbFact]
+    public async Task An_outcome_is_dropped_when_another_worker_took_the_entry_over()
+    {
+        var hold = new TaskCompletionSource();
+        var holding = new TaskCompletionSource();
+        _sink.BeforeDataReply = () =>
+        {
+            holding.TrySetResult();
+            return hold.Task;
+        };
+        long id = await EnqueueAsync(await AddAccountAsync(), "alice@example.test", "friend@outside.test");
+
+        Task processing = Worker().ProcessDueAsync();
+        await holding.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        // Meanwhile the lease ran out and another worker claimed the entry with a lease of its own.
+        await UpdateAsync(id, s => s.SetProperty(o => o.NextAttemptDate, DateTime.UtcNow.AddMinutes(50)));
+        hold.TrySetResult();
+        await processing;
+
+        OutboundMessage row = await LoadAsync(id);
+        Assert.Equal(OutboundStatus.Sending, row.Status);
+        Assert.Equal(0, row.AttemptCount);
+        Assert.Null(row.SentDate);
+    }
+
+    [DbFact]
     public async Task Without_an_account_and_without_direct_delivery_the_message_waits()
     {
         _host.Config.Queue.AllowDirectDelivery = false;
@@ -441,13 +556,7 @@ public class OutboundWorkerTests : IAsyncLifetime
             await EnqueueAsync(account, "alice@example.test", "friend@outside.test");
 
             // The poll interval is 30 seconds; the signal makes it immediate.
-            DateTime until = DateTime.UtcNow.AddSeconds(10);
-            while (_sink.Messages.Count == 0 && DateTime.UtcNow < until)
-            {
-                await Task.Delay(50);
-            }
-
-            Assert.Single(_sink.Messages);
+            await WaitUntilAsync(() => _sink.Messages.Count == 1);
         }
         finally
         {
@@ -484,13 +593,25 @@ public class OutboundWorkerTests : IAsyncLifetime
     // Helpers
     // -------------------------------------------------------------------------------------------------------------------
 
-    private OutboundWorker Worker() => new(
+    private OutboundWorker Worker(TimeSpan? maxAttempt = null) => new(
         _host.Services.GetRequiredService<IServiceScopeFactory>(),
         _host.Config,
         _host.Services.GetRequiredService<OutboundSignal>(),
         _mx,
         _host.Services.GetRequiredService<ILogger<OutboundWorker>>(),
-        new OutboundWorkerOptions { DirectPort = _sink.Port, DirectTimeout = TimeSpan.FromSeconds(10) });
+        new OutboundWorkerOptions { DirectPort = _sink.Port, DirectTimeout = TimeSpan.FromSeconds(10), MaxAttemptDuration = maxAttempt ?? TimeSpan.FromMinutes(15) });
+
+    private static Task WaitUntilAsync(Func<bool> condition) => WaitUntilAsync(() => Task.FromResult(condition()));
+
+    private static async Task WaitUntilAsync(Func<Task<bool>> condition)
+    {
+        DateTime until = DateTime.UtcNow.AddSeconds(15);
+        while (!await condition())
+        {
+            Assert.True(DateTime.UtcNow < until, "The condition was not met in time.");
+            await Task.Delay(25);
+        }
+    }
 
     private async Task<long> AddAccountAsync(string address = "alice@example.test", int? port = null)
     {

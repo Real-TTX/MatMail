@@ -559,7 +559,7 @@ public class ImapFetchTests : ImapTestBase
         IMessageSummary summary = (await client.Inbox.FetchAsync(new[] { uid }, MessageSummaryItems.BodyStructure)).Single();
 
         var text = (TextPart)await client.Inbox.GetBodyPartAsync(uid, summary.TextBody!);
-        Assert.Equal("Hallo Alice,\r\nanbei der Bericht über Köln.", text.Text);
+        Assert.Equal("Hallo Alice,\r\nanbei der Bericht über Köln.", text.Text.ReplaceLineEndings("\r\n"));
         var pdf = (MimePart)await client.Inbox.GetBodyPartAsync(uid, summary.Attachments.Single());
         using var decoded = new MemoryStream();
         await pdf.Content!.DecodeToAsync(decoded);

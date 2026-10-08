@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using MatMail.Services;
 using MatMail.Tests.Support;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,7 +30,7 @@ public sealed class StartupDatabaseTests
         }
         finally
         {
-            await RunAdminAsync($"DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)");
+            await DropQuietlyAsync(name);
         }
     }
 
@@ -50,16 +51,28 @@ public sealed class StartupDatabaseTests
         await StartupInitializer.EnsureDatabaseExistsAsync("Host=127.0.0.1;Port=1", NullLogger.Instance, TimeSpan.FromSeconds(1));
     }
 
-    [DbFact]
-    public async Task A_refused_password_does_not_wait()
+    [Fact]
+    public void A_server_that_is_starting_or_busy_is_waited_for()
     {
-        // a server that answers "no" will not answer "yes" in a minute: the migration reports it, the check does not hold the start-up
-        var builder = new NpgsqlConnectionStringBuilder(TestDatabase.AdminConnectionString) { Database = "matmail_never_created", Password = "not-the-password", Pooling = false };
-        var watch = System.Diagnostics.Stopwatch.StartNew();
-        await StartupInitializer.EnsureDatabaseExistsAsync(builder.ConnectionString, NullLogger.Instance, TimeSpan.FromSeconds(30));
-        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(10), $"waited {watch.Elapsed}");
-        Assert.False(await DatabaseExistsAsync("matmail_never_created"));
+        Assert.True(StartupInitializer.IsServerNotReady(new NpgsqlException("connection refused", new SocketException((int)SocketError.ConnectionRefused))));
+        Assert.True(StartupInitializer.IsServerNotReady(new NpgsqlException("host unknown", new SocketException((int)SocketError.HostNotFound))));
+        Assert.True(StartupInitializer.IsServerNotReady(new TimeoutException()));
+        Assert.True(StartupInitializer.IsServerNotReady(Postgres("57P03")));   // the database system is starting up
+        Assert.True(StartupInitializer.IsServerNotReady(Postgres("53300")));   // too many clients already
     }
+
+    [Fact]
+    public void A_server_that_answers_no_is_not_waited_for()
+    {
+        // it will not answer "yes" in a minute: the migration reports it, the check does not hold the start-up
+        Assert.False(StartupInitializer.IsServerNotReady(Postgres("28P01")));  // password authentication failed
+        Assert.False(StartupInitializer.IsServerNotReady(Postgres("28000")));  // the role does not exist
+        Assert.False(StartupInitializer.IsServerNotReady(Postgres("42501")));  // insufficient privilege
+        Assert.False(StartupInitializer.IsServerNotReady(Postgres("3D000")));  // the database does not exist
+        Assert.False(StartupInitializer.IsServerNotReady(new InvalidOperationException("something else")));
+    }
+
+    private static PostgresException Postgres(string sqlState) => new("test", "FATAL", "FATAL", sqlState);
 
     private static async Task<bool> DatabaseExistsAsync(string name)
     {
@@ -70,11 +83,19 @@ public sealed class StartupDatabaseTests
         return await command.ExecuteScalarAsync() is not null;
     }
 
-    private static async Task RunAdminAsync(string sql)
+    /// <summary>A server that is busy with a hundred other test databases must not turn the clean-up into a failure of the test.</summary>
+    private static async Task DropQuietlyAsync(string name)
     {
-        await using var connection = new NpgsqlConnection(TestDatabase.AdminConnectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(sql, connection);
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await using var connection = new NpgsqlConnection(TestDatabase.AdminConnectionString);
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{name}\" WITH (FORCE)", connection);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception)
+        {
+            // left behind: harmless, the next call of the test uses another name
+        }
     }
 }

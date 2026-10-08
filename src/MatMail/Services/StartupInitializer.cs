@@ -109,7 +109,7 @@ public static class StartupInitializer
     }
 
     /// <summary>Connection refused, host not known yet, "the database system is starting up", timeouts: it may work in a moment.</summary>
-    private static bool IsServerNotReady(Exception ex) => ex is NpgsqlException { IsTransient: true } || ex is TimeoutException;
+    internal static bool IsServerNotReady(Exception ex) => ex is NpgsqlException { IsTransient: true } || ex is TimeoutException;
 
     /// <summary>
     /// Unattended installation: with MATMAIL_ADMIN_USER and MATMAIL_ADMIN_PASSWORD set (and no user yet) the first tenant and

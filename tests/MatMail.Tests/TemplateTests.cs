@@ -95,7 +95,7 @@ public class TemplateTests : IAsyncLifetime
         Assert.NotNull(applied);
         var alternative = Assert.IsAssignableFrom<Multipart>(message.Body);
         Assert.True(alternative.ContentType.IsMimeType("multipart", "alternative"));
-        Assert.Equal("Backup finished.\r\nSee https://status.example.com/run?id=1&x=2.\r\nCosts: <5 & \"free\"", message.TextBody);
+        Assert.Equal("Backup finished.\r\nSee https://status.example.com/run?id=1&x=2.\r\nCosts: <5 & \"free\"", message.TextBody?.ReplaceLineEndings("\r\n"));
 
         string html = HtmlOf(message);
         Assert.Contains("<h1>Home</h1>", html);

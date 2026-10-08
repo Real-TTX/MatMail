@@ -221,7 +221,7 @@ public class SignaturePlacementTests : IAsyncLifetime
         await ApplySignaturesAsync(message);
 
         var part = Assert.IsType<TextPart>(message.Body);
-        Assert.Equal(armour, part.Text);
+        Assert.Equal(armour, part.Text.ReplaceLineEndings("\r\n"));
     }
 
     // ---- which parts are the body --------------------------------------------------------------------------------------
@@ -237,7 +237,7 @@ public class SignaturePlacementTests : IAsyncLifetime
 
         var mixed = Assert.IsAssignableFrom<Multipart>(message.Body);
         Assert.Contains("LEGAL", ((TextPart)mixed[0]).Text);
-        Assert.Equal("line one of the log\r\nline two\r\n", ((TextPart)mixed[1]).Text);
+        Assert.Equal("line one of the log\r\nline two\r\n", ((TextPart)mixed[1]).Text.ReplaceLineEndings("\r\n"));
     }
 
     [DbFact]

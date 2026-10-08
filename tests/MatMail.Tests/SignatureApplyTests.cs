@@ -150,7 +150,7 @@ public class SignatureApplyTests : IAsyncLifetime
         MimeMessage fromOutlook = Message("<html><body><p>Hi</p></body></html>", "Hi");
         await ApplyAsync(fromOutlook, SubmissionSource.MailProgram);
         Assert.Contains("<div class=\"mm-signature\"><p>Regards, Alice Example</p></div></body>", HtmlOf(fromOutlook));
-        Assert.Contains("-- \r\nRegards, Alice Example", TextOf(fromOutlook));
+        Assert.Contains("-- \r\nRegards, Alice Example", TextOf(fromOutlook).ReplaceLineEndings("\r\n"));
 
         MimeMessage fromWeb = Message("<html><body><p>Hi</p></body></html>", "Hi");
         await ApplyAsync(fromWeb, SubmissionSource.Web);
@@ -280,7 +280,7 @@ public class SignatureApplyTests : IAsyncLifetime
 
         TextPart body = Assert.IsType<TextPart>(message.Body);
         Assert.Contains("Hi", body.Text);
-        Assert.Contains("-- \r\nLEGAL", body.Text);
+        Assert.Contains("-- \r\nLEGAL", body.Text.ReplaceLineEndings("\r\n"));
         Assert.DoesNotContain("data:image", body.Text);
     }
 

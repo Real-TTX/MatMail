@@ -81,7 +81,8 @@ jobs:
         env:
           MATMAIL_TEST_DB: Host=localhost;Port=5432;Database=matmail_test;Username=postgres;Password=matmail
           MATMAIL_TEST_IMAP: localhost:3143;pop3=localhost:3110;smtp=localhost:3025;api=localhost:8080
-        run: dotnet test MatMail.slnx -c Release --no-build --verbosity normal
+        # The GitHubActions logger shows every failed test as an annotation of the run (and in the summary of a pull request).
+        run: dotnet test MatMail.slnx -c Release --no-build --verbosity normal --logger GitHubActions
 
       - name: Resolve version string
         id: appver

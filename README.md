@@ -47,8 +47,13 @@ branding.
   the sender address, or directly (MX lookup) when none is configured
 
 **The web client**
-- Folders (also those of the provider), search, stars, drafts with auto-save, attachments, address
+- Folders (also those of the provider), stars, drafts with auto-save, attachments, address
   suggestions, **live updates** when mail arrives
+- **Search like in Gmail**: `from:anna has:attachment newer_than:7d`, several operators at once,
+  `OR`, `-` to leave out, brackets and quoted phrases; the operators work in German too (`von:`,
+  `hat:anhang`, `ist:ungelesen`). An **advanced search** panel builds the text for you. When a search
+  (or a folder) has more hits than a page, **select all** offers to take *all* of them – and then
+  mark them as read, move, archive or delete them in one go
 - **Shared mailboxes** and mailboxes **delegated** by others
 - **A reader that copes with what the world sends**: foreign HTML is sanitised, shown in a sandboxed
   frame and scaled to the width, quoted history is folded, remote pictures stay blocked until you

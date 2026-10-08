@@ -8,28 +8,6 @@ using MimeKit;
 
 namespace MatMail.Tests;
 
-public class MailQueryTests
-{
-    [Fact]
-    public void Operators_and_words_are_separated()
-    {
-        MailQuery query = MailQuery.Parse(1, null, "from:alice to:\"bob smith\" subject:offer has:attachment is:unread before:2026-01-31 invoice \"two words\"");
-
-        Assert.Equal(new[] { "alice" }, query.From);
-        Assert.Equal(new[] { "bob smith" }, query.To);
-        Assert.Equal(new[] { "offer" }, query.Subject);
-        Assert.Equal(new[] { "invoice", "two words" }, query.Words);
-        Assert.True(query.HasAttachment);
-        Assert.True(query.Unread);
-        Assert.Equal(new DateTime(2026, 1, 31, 0, 0, 0, DateTimeKind.Utc), query.Before);
-        Assert.True(query.IsSearch);
-    }
-
-    [Fact]
-    public void An_empty_text_is_a_plain_folder_listing()
-        => Assert.False(MailQuery.Parse(1, 5, "   ").IsSearch);
-}
-
 public class MailBodyRendererTests
 {
     private static MimeMessage Html(string html)

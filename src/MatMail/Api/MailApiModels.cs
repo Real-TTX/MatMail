@@ -25,6 +25,9 @@ public sealed record MessageListItemDto(
 
 public sealed record MessageListDto(int Total, int Page, int PageSize, List<MessageListItemDto> Items);
 
+/// <summary>All messages a list request matches (the newest ones when there are very many), with the folder of each.</summary>
+public sealed record MessageIdsDto(int Total, long[] Ids, long[] FolderIds, bool Capped);
+
 public sealed record AttachmentDto(int Index, string FileName, string ContentType, long Size, string Url);
 
 public sealed record MessageDetailDto(

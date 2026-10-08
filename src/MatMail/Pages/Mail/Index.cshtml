@@ -25,6 +25,7 @@
         <mm-icon name="search" class="mail-search__icon" />
         <input type="search" id="mail-search-input" class="mail-search__input" placeholder="@L["Search mail"]" aria-label="@L["Search mail"]" />
         <button type="button" class="icon-btn mail-search__clear" id="mail-search-clear" aria-label="@L["Clear search"]" hidden><mm-icon name="x" /></button>
+        <button type="button" class="icon-btn mail-search__options" id="mail-search-options" title="@L["Search options"]" aria-label="@L["Search options"]" aria-haspopup="dialog" aria-expanded="false"><mm-icon name="sliders" /></button>
     </form>
 }
 
@@ -32,6 +33,8 @@
 <div class="mail-app" id="mail-app">
     <section class="mail-pane mail-pane--list" id="mail-list-pane">
         <div class="mail-toolbar" id="mail-list-toolbar"></div>
+        @* "All 50 on this page are selected. Select all 1,234 that match": offered when the selection fills the page and there are more hits. *@
+        <div class="mail-selectbar" id="mail-selectbar" hidden></div>
         <div class="mail-notice" id="mail-notice" hidden></div>
         <div class="mail-list" id="mail-list" role="list"></div>
         <div class="mail-empty" id="mail-empty" hidden>
@@ -54,10 +57,13 @@
 <div class="compose-dock" id="compose-dock" aria-live="polite"></div>
 <div class="mail-toasts" id="mail-toasts" role="status" aria-live="polite"></div>
 <div class="menu-layer" id="mail-menu-layer" hidden></div>
+@* The advanced search lives out here, not in the header: its blurred background would make a full-screen sheet as small as the header. *@
+<div class="search-layer" id="mail-search-layer" hidden></div>
 
 @section Scripts {
     <script src="~/js/mail-core.js" asp-append-version="true"></script>
     <script src="~/js/mail-compose.js" asp-append-version="true"></script>
     <script src="~/js/mail-viewer.js" asp-append-version="true"></script>
+    <script src="~/js/mail-search.js" asp-append-version="true"></script>
     <script src="~/js/mail-ui.js" asp-append-version="true"></script>
 }

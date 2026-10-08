@@ -9,7 +9,7 @@
     boot: null,                 // /api/mail/bootstrap
     state: {
       mailboxId: 0, folderId: 0, query: "", page: 1, messageId: 0,
-      items: [], total: 0, pageSize: 50, selected: new Set(), cursor: -1, loading: false
+      items: [], total: 0, pageSize: 50, selected: new Set(), allMatching: false, cursor: -1, loading: false
     },
     handlers: {}                // filled by mail-ui.js / mail-compose.js
   });

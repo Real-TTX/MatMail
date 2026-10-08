@@ -85,8 +85,16 @@
   <data name="{0}: the TLS connection failed (certificate or protocol problem): {1}" xml:space="preserve"><value>{0}: Die TLS-Verbindung ist fehlgeschlagen (Zertifikats- oder Protokollproblem): {1}</value></data>
   <data name="{0}: the user name or password was refused." xml:space="preserve"><value>{0}: Benutzername oder Passwort wurden abgelehnt.</value></data>
   <data name="0 = keep." xml:space="preserve"><value>0 = behalten.</value></data>
+  <data name="1 day" xml:space="preserve"><value>1 Tag</value></data>
+  <data name="1 month" xml:space="preserve"><value>1 Monat</value></data>
+  <data name="1 week" xml:space="preserve"><value>1 Woche</value></data>
+  <data name="1 year" xml:space="preserve"><value>1 Jahr</value></data>
   <data name="1. Add the account" xml:space="preserve"><value>1. Konto hinzufügen</value></data>
+  <data name="2 months" xml:space="preserve"><value>2 Monate</value></data>
+  <data name="2 weeks" xml:space="preserve"><value>2 Wochen</value></data>
   <data name="2. Enter the code" xml:space="preserve"><value>2. Code eingeben</value></data>
+  <data name="3 days" xml:space="preserve"><value>3 Tage</value></data>
+  <data name="6 months" xml:space="preserve"><value>6 Monate</value></data>
   <data name="A backup never deletes mail at the provider." xml:space="preserve"><value>Ein Backup löscht niemals E-Mails beim Anbieter.</value></data>
   <data name="A code from an authenticator app after the password. The rules are set under Security and in the roles." xml:space="preserve"><value>Ein Code aus einer Authenticator-App nach dem Passwort. Die Regeln werden unter „Sicherheit“ und in den Rollen festgelegt.</value></data>
   <data name="A folder cannot be moved into itself." xml:space="preserve"><value>Ein Ordner kann nicht in sich selbst verschoben werden.</value></data>
@@ -128,10 +136,14 @@
   <data name="Addresses" xml:space="preserve"><value>Adressen</value></data>
   <data name="Administration" xml:space="preserve"><value>Administration</value></data>
   <data name="Administrators are users who hold any permission besides using mail, and system administrators. You can also bind single roles: tick “Members must use two-factor authentication” in the role." xml:space="preserve"><value>Administratoren sind Benutzer, die eine andere Berechtigung als die Nutzung von E-Mail haben, sowie Systemadministratoren. Sie können auch einzelne Rollen binden: Setzen Sie in der Rolle den Haken bei „Mitglieder müssen die Zwei-Faktor-Authentifizierung verwenden“.</value></data>
+  <data name="Advanced search" xml:space="preserve"><value>Erweiterte Suche</value></data>
   <data name="After saving you can add addresses and delegate access." xml:space="preserve"><value>Nach dem Speichern können Sie Adressen hinzufügen und Zugriff vergeben.</value></data>
   <data name="After the change your other sessions are signed out." xml:space="preserve"><value>Nach der Änderung werden Ihre anderen Sitzungen abgemeldet.</value></data>
   <data name="After the password, signing in asks for a code from an authenticator app. People who are bound to it and have not set it up yet can do nothing else until they have. Mail programs (IMAP and SMTP) cannot ask for a code: they sign in with app passwords then." xml:space="preserve"><value>Nach dem Passwort fragt die Anmeldung nach einem Code aus einer Authenticator-App. Wer daran gebunden ist und sie noch nicht eingerichtet hat, kann nichts anderes tun, bis es erledigt ist. Mailprogramme (IMAP und SMTP) können nicht nach einem Code fragen: Sie melden sich dann mit App-Passwörtern an.</value></data>
   <data name="All" xml:space="preserve"><value>Alle</value></data>
+  <data name="All {0} messages are selected." xml:space="preserve"><value>Alle {0} Nachrichten sind ausgewählt.</value></data>
+  <data name="All {0} messages on this page are selected." xml:space="preserve"><value>Alle {0} Nachrichten auf dieser Seite sind ausgewählt.</value></data>
+  <data name="All {0} selected" xml:space="preserve"><value>Alle {0} ausgewählt</value></data>
   <data name="All folders (always for backup and migration)" xml:space="preserve"><value>Alle Ordner (bei Backup und Migration immer)</value></data>
   <data name="All messages" xml:space="preserve"><value>Alle Nachrichten</value></data>
   <data name="All other sessions were ended." xml:space="preserve"><value>Alle anderen Sitzungen wurden beendet.</value></data>
@@ -145,12 +157,14 @@
   <data name="An app password" xml:space="preserve"><value>Ein App-Passwort</value></data>
   <data name="An attachment is no longer available. Please add it again." xml:space="preserve"><value>Ein Anhang ist nicht mehr verfügbar. Bitte fügen Sie ihn erneut hinzu.</value></data>
   <data name="An inactive tenant cannot sign in or receive mail." xml:space="preserve"><value>Ein inaktiver Mandant kann sich nicht anmelden und keine E-Mails empfangen.</value></data>
+  <data name="Any time" xml:space="preserve"><value>Beliebig</value></data>
   <data name="App password “{0}”" xml:space="preserve"><value>App-Passwort „{0}“</value></data>
   <data name="App passwords" xml:space="preserve"><value>App-Passwörter</value></data>
   <data name="Appearance" xml:space="preserve"><value>Erscheinungsbild</value></data>
   <data name="Appearance and language" xml:space="preserve"><value>Darstellung und Sprache</value></data>
   <data name="Applies to" xml:space="preserve"><value>Gilt für</value></data>
   <data name="Apply" xml:space="preserve"><value>Anwenden</value></data>
+  <data name="Apply this to all {0} selected messages, not only the ones on this page?" xml:space="preserve"><value>Das auf alle {0} ausgewählten Nachrichten anwenden, nicht nur auf die dieser Seite?</value></data>
   <data name="Archive" xml:space="preserve"><value>Archiv</value></data>
   <data name="Area" xml:space="preserve"><value>Bereich</value></data>
   <data name="Asked again because an app password signs in without a code." xml:space="preserve"><value>Wird erneut abgefragt, weil sich ein App-Passwort ohne Code anmelden kann.</value></data>
@@ -195,6 +209,7 @@
   <data name="Clear finished" xml:space="preserve"><value>Abgeschlossene entfernen</value></data>
   <data name="Clear formatting" xml:space="preserve"><value>Formatierung entfernen</value></data>
   <data name="Clear search" xml:space="preserve"><value>Suche löschen</value></data>
+  <data name="Clear selection" xml:space="preserve"><value>Auswahl aufheben</value></data>
   <data name="Close" xml:space="preserve"><value>Schließen</value></data>
   <data name="Close a message window first." xml:space="preserve"><value>Schließen Sie zuerst ein Nachrichtenfenster.</value></data>
   <data name="Code" xml:space="preserve"><value>Code</value></data>
@@ -232,6 +247,7 @@
   <data name="Dashboard" xml:space="preserve"><value>Übersicht</value></data>
   <data name="Database is up to date." xml:space="preserve"><value>Die Datenbank ist auf dem neuesten Stand.</value></data>
   <data name="Date" xml:space="preserve"><value>Datum</value></data>
+  <data name="Date within" xml:space="preserve"><value>Datum innerhalb von</value></data>
   <data name="Dates and times are shown in this time zone." xml:space="preserve"><value>Datum und Uhrzeit werden in dieser Zeitzone angezeigt.</value></data>
   <data name="days" xml:space="preserve"><value>Tage</value></data>
   <data name="Dear Ms Example, the nightly backup finished without errors. Best regards" xml:space="preserve"><value>Sehr geehrte Frau Beispiel, die nächtliche Sicherung ist fehlerfrei durchgelaufen. Mit freundlichen Grüßen</value></data>
@@ -244,6 +260,7 @@
   <data name="Delegation" xml:space="preserve"><value>Vertretung</value></data>
   <data name="Delete" xml:space="preserve"><value>Löschen</value></data>
   <data name="Delete after download" xml:space="preserve"><value>Nach Download löschen</value></data>
+  <data name="Delete all {0} selected messages for good? This cannot be undone." xml:space="preserve"><value>Alle {0} ausgewählten Nachrichten endgültig löschen? Das kann nicht rückgängig gemacht werden.</value></data>
   <data name="Delete all messages in this folder for good?" xml:space="preserve"><value>Alle Nachrichten in diesem Ordner endgültig löschen?</value></data>
   <data name="Delete all spam now" xml:space="preserve"><value>Spam jetzt komplett löschen</value></data>
   <data name="Delete folder" xml:space="preserve"><value>Ordner löschen</value></data>
@@ -283,6 +300,7 @@
   <data name="Discard this message?" xml:space="preserve"><value>Diese Nachricht verwerfen?</value></data>
   <data name="Display" xml:space="preserve"><value>Anzeige</value></data>
   <data name="DNS" xml:space="preserve"><value>DNS</value></data>
+  <data name="Doesn't have" xml:space="preserve"><value>Enthält nicht</value></data>
   <data name="Domain" xml:space="preserve"><value>Domäne</value></data>
   <data name="Domain name" xml:space="preserve"><value>Domänenname</value></data>
   <data name="Domains" xml:space="preserve"><value>Domänen</value></data>
@@ -323,7 +341,9 @@
   <data name="Every rule" xml:space="preserve"><value>Jede Regel</value></data>
   <data name="Everybody who holds this role signs in with a code from an authenticator app, whatever the policy of the tenant says. Mail programs then need app passwords." xml:space="preserve"><value>Jeder, der diese Rolle hat, meldet sich mit einem Code aus einer Authenticator-App an, unabhängig von der Richtlinie des Mandanten. Mailprogramme brauchen dann App-Passwörter.</value></data>
   <data name="Everything" xml:space="preserve"><value>Alles</value></data>
+  <data name="Everywhere except spam and trash" xml:space="preserve"><value>Überall außer Spam und Papierkorb</value></data>
   <data name="Everywhere you are signed in. Sessions stay valid after a restart of the server; end the ones you do not recognise." xml:space="preserve"><value>Überall, wo Sie angemeldet sind. Sitzungen bleiben nach einem Neustart des Servers gültig; beenden Sie diejenigen, die Sie nicht kennen.</value></data>
+  <data name="Everywhere, including spam and trash" xml:space="preserve"><value>Überall, auch Spam und Papierkorb</value></data>
   <data name="Example button" xml:space="preserve"><value>Beispiel-Schaltfläche</value></data>
   <data name="Expired" xml:space="preserve"><value>Abgelaufen</value></data>
   <data name="Expires soon" xml:space="preserve"><value>Läuft bald ab</value></data>
@@ -351,6 +371,8 @@
   <data name="Hand over" xml:space="preserve"><value>Übergeben</value></data>
   <data name="Hand over all other waiting messages for these addresses as well" xml:space="preserve"><value>Alle weiteren wartenden Nachrichten für diese Adressen ebenfalls übergeben</value></data>
   <data name="Hand over to a mailbox" xml:space="preserve"><value>An ein Postfach übergeben</value></data>
+  <data name="Has an attachment" xml:space="preserve"><value>Hat einen Anhang</value></data>
+  <data name="Has the words" xml:space="preserve"><value>Enthält die Wörter</value></data>
   <data name="Horizontal line" xml:space="preserve"><value>Horizontale Linie</value></data>
   <data name="Host name" xml:space="preserve"><value>Hostname</value></data>
   <data name="hours" xml:space="preserve"><value>Stunden</value></data>
@@ -382,6 +404,7 @@
   <data name="Keep these codes in a safe place, for example in a password manager. Each code works once, in place of the code of the app. They are shown only now." xml:space="preserve"><value>Bewahren Sie diese Codes sicher auf, zum Beispiel in einem Passwort-Manager. Jeder Code funktioniert einmal, anstelle des Codes der App. Sie werden nur jetzt angezeigt.</value></data>
   <data name="Language" xml:space="preserve"><value>Sprache</value></data>
   <data name="Large" xml:space="preserve"><value>Groß</value></data>
+  <data name="Larger than (MB)" xml:space="preserve"><value>Größer als (MB)</value></data>
   <data name="Largest message" xml:space="preserve"><value>Größte Nachricht</value></data>
   <data name="Largest message / attachment upload" xml:space="preserve"><value>Größte Nachricht / größter Anhang beim Hochladen</value></data>
   <data name="Last active" xml:space="preserve"><value>Zuletzt aktiv</value></data>
@@ -565,6 +588,7 @@
   <data name="Only system administrators can change a system administrator." xml:space="preserve"><value>Nur Systemadministratoren können einen Systemadministrator ändern.</value></data>
   <data name="Only system administrators can change this setting." xml:space="preserve"><value>Nur Systemadministratoren können diese Einstellung ändern.</value></data>
   <data name="Only system administrators can create system administrators." xml:space="preserve"><value>Nur Systemadministratoren können Systemadministratoren anlegen.</value></data>
+  <data name="Only the newest {0} messages were included." xml:space="preserve"><value>Berücksichtigt wurden nur die neuesten {0} Nachrichten.</value></data>
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
   <data name="Open in the app on this device" xml:space="preserve"><value>In der App auf diesem Gerät öffnen</value></data>
@@ -625,6 +649,8 @@
   <data name="Read the message" xml:space="preserve"><value>Nachricht lesen</value></data>
   <data name="Read, edit and send" xml:space="preserve"><value>Lesen, bearbeiten und senden</value></data>
   <data name="Received" xml:space="preserve"><value>Empfangen</value></data>
+  <data name="Received after" xml:space="preserve"><value>Empfangen nach</value></data>
+  <data name="Received before" xml:space="preserve"><value>Empfangen vor</value></data>
   <data name="Receives mail from other servers, accepts mail from mail programs and relays for trusted networks. Port 0 switches a listener off." xml:space="preserve"><value>Empfängt E-Mails von anderen Servern, nimmt E-Mails von Mailprogrammen an und leitet für vertrauenswürdige Netzwerke weiter. Port 0 schaltet einen Listener ab.</value></data>
   <data name="Receiving" xml:space="preserve"><value>Empfang</value></data>
   <data name="Recent activity" xml:space="preserve"><value>Letzte Aktivitäten</value></data>
@@ -660,6 +686,7 @@
   <data name="Required for everyone" xml:space="preserve"><value>Für alle vorgeschrieben</value></data>
   <data name="Required for your account" xml:space="preserve"><value>Für Ihr Konto vorgeschrieben</value></data>
   <data name="Required, not set up yet" xml:space="preserve"><value>Vorgeschrieben, noch nicht eingerichtet</value></data>
+  <data name="Reset" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="Reset filters" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="Reset two-factor authentication" xml:space="preserve"><value>Zwei-Faktor-Authentifizierung zurücksetzen</value></data>
   <data name="Reset two-factor authentication of this user? They have to set it up again, and they are signed out everywhere." xml:space="preserve"><value>Zwei-Faktor-Authentifizierung dieses Benutzers zurücksetzen? Der Benutzer muss sie neu einrichten und wird überall abgemeldet.</value></data>
@@ -677,10 +704,12 @@
   <data name="Scan the QR code with the app. Cannot scan it? Enter this key in the app (type: time based):" xml:space="preserve"><value>Scannen Sie den QR-Code mit der App. Scannen nicht möglich? Geben Sie diesen Schlüssel in der App ein (Typ: zeitbasiert):</value></data>
   <data name="Search" xml:space="preserve"><value>Suche</value></data>
   <data name="Search domains…" xml:space="preserve"><value>Domänen suchen …</value></data>
+  <data name="Search in" xml:space="preserve"><value>Suchen in</value></data>
   <data name="Search mail" xml:space="preserve"><value>E-Mails durchsuchen</value></data>
   <data name="Search name or address…" xml:space="preserve"><value>Name oder Adresse suchen …</value></data>
   <data name="Search name, address or server…" xml:space="preserve"><value>Name, Adresse oder Server suchen …</value></data>
   <data name="Search name, login or e-mail…" xml:space="preserve"><value>Name, Login oder E-Mail suchen …</value></data>
+  <data name="Search options" xml:space="preserve"><value>Suchoptionen</value></data>
   <data name="Search roles…" xml:space="preserve"><value>Rollen suchen …</value></data>
   <data name="Search rules or networks…" xml:space="preserve"><value>Regeln oder Netzwerke suchen …</value></data>
   <data name="Search sender, subject or address…" xml:space="preserve"><value>Absender, Betreff oder Adresse suchen …</value></data>
@@ -698,6 +727,8 @@
   <data name="Select a user." xml:space="preserve"><value>Wählen Sie einen Benutzer aus.</value></data>
   <data name="Select a user…" xml:space="preserve"><value>Benutzer auswählen …</value></data>
   <data name="Select all" xml:space="preserve"><value>Alle auswählen</value></data>
+  <data name="Select all {0} messages in this folder" xml:space="preserve"><value>Alle {0} Nachrichten in diesem Ordner auswählen</value></data>
+  <data name="Select all {0} messages that match the search" xml:space="preserve"><value>Alle {0} Nachrichten auswählen, die zur Suche passen</value></data>
   <data name="Self-signed" xml:space="preserve"><value>Selbstsigniert</value></data>
   <data name="Self-signed (generated)" xml:space="preserve"><value>Selbstsigniert (erzeugt)</value></data>
   <data name="Send" xml:space="preserve"><value>Senden</value></data>
@@ -749,6 +780,7 @@
   <data name="Size" xml:space="preserve"><value>Größe</value></data>
   <data name="Sizes must be at least 1 MB." xml:space="preserve"><value>Größen müssen mindestens 1 MB betragen.</value></data>
   <data name="Small" xml:space="preserve"><value>Klein</value></data>
+  <data name="Smaller than (MB)" xml:space="preserve"><value>Kleiner als (MB)</value></data>
   <data name="Smart host" xml:space="preserve"><value>Smarthost</value></data>
   <data name="Smart host rule" xml:space="preserve"><value>Smarthost-Regel</value></data>
   <data name="SMTP password" xml:space="preserve"><value>SMTP-Passwort</value></data>
@@ -915,6 +947,7 @@
   <data name="The whole tenant" xml:space="preserve"><value>Der ganze Mandant</value></data>
   <data name="Theme" xml:space="preserve"><value>Darstellung</value></data>
   <data name="There must be at least one active system administrator." xml:space="preserve"><value>Es muss mindestens einen aktiven Systemadministrator geben.</value></data>
+  <data name="These also work typed into the search box, for example from:anna has:attachment newer_than:7d. Combine with OR, leave out with -, group with ( )." xml:space="preserve"><value>Das geht auch direkt im Suchfeld, zum Beispiel von:anna hat:anhang neuer_als:7d. Mit OR kombinieren, mit - ausschließen, mit ( ) gruppieren.</value></data>
   <data name="These details appear in your signature and in the user list." xml:space="preserve"><value>Diese Angaben erscheinen in Ihrer Signatur und in der Benutzerliste.</value></data>
   <data name="They set it up at their next sign-in" xml:space="preserve"><value>Sie richten sie bei der nächsten Anmeldung ein</value></data>
   <data name="This address is already in use." xml:space="preserve"><value>Diese Adresse wird bereits verwendet.</value></data>

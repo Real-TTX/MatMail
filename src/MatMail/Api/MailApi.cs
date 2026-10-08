@@ -28,6 +28,7 @@ public static class MailApi
         api.MapGet("/bootstrap", Bootstrap);
         api.MapGet("/counts", Counts);
         api.MapGet("/messages", ListMessages);
+        api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
         api.MapGet("/messages/{id:long}/body", GetBody);
         api.MapGet("/messages/{id:long}/attachment/{index:int}", GetAttachment);
@@ -160,6 +161,7 @@ public static class MailApi
         }
 
         MailQuery query = MailQuery.Parse(mailboxId, folderId, q);
+        await query.ResolveFoldersAsync(db, cancel);
         int size = Math.Clamp(pageSize ?? 50, 10, 100);
         IQueryable<MailMessage> filtered = query.Apply(db.MailMessages.AsNoTracking(), db);
         int total = await filtered.CountAsync(cancel);
@@ -173,6 +175,30 @@ public static class MailApi
                 m.IsRead, m.IsStarred, m.HasAttachments, m.IsDraft, m.IsAnswered, m.IsForwarded, m.Folder!.Kind.ToString()))
             .ToListAsync(cancel);
         return Results.Ok(new MessageListDto(total, pageNumber, size, items));
+    }
+
+    /// <summary>The most messages that "select everything that matches" takes along; the newest come first.</summary>
+    public const int MaxBulk = 10_000;
+
+    /// <summary>
+    /// Every message the list of this request would show over all its pages (the newest <see cref="MaxBulk"/> at most), for "select all that
+    /// match": the client then changes them in chunks through the usual calls, which check the rights again.
+    /// </summary>
+    private static async Task<IResult> ListMessageIds(
+        long mailboxId, long? folderId, string? q, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+    {
+        (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
+        if (user is null)
+        {
+            return error!;
+        }
+
+        MailQuery query = MailQuery.Parse(mailboxId, folderId, q);
+        await query.ResolveFoldersAsync(db, cancel);
+        IQueryable<MailMessage> filtered = query.Apply(db.MailMessages.AsNoTracking(), db);
+        int total = await filtered.CountAsync(cancel);
+        var rows = await filtered.Select(m => new { m.Id, m.FolderId }).Take(MaxBulk).ToListAsync(cancel);
+        return Results.Ok(new MessageIdsDto(total, rows.Select(r => r.Id).ToArray(), rows.Select(r => r.FolderId).ToArray(), total > rows.Count));
     }
 
     private static async Task<IResult> GetMessage(

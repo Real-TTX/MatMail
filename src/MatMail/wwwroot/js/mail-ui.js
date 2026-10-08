@@ -26,6 +26,7 @@
     els.emptyText = doc.getElementById("mail-empty-text");
     els.notice = doc.getElementById("mail-notice");
     els.loading = doc.getElementById("mail-loading");
+    els.selectBar = doc.getElementById("mail-selectbar");
     els.search = doc.getElementById("mail-search");
     els.searchInput = doc.getElementById("mail-search-input");
     els.searchClear = doc.getElementById("mail-search-clear");
@@ -35,9 +36,10 @@
 
     doc.getElementById("mail-compose-button").addEventListener("click", function () { App.compose.open({}); });
     doc.getElementById("mail-compose-fab").addEventListener("click", function () { App.compose.open({}); });
-    els.search.addEventListener("submit", function (e) { e.preventDefault(); navigate({ q: els.searchInput.value.trim(), page: 1, m: 0 }); });
+    els.search.addEventListener("submit", function (e) { e.preventDefault(); search(els.searchInput.value.trim()); });
     els.searchClear.addEventListener("click", function () { els.searchInput.value = ""; navigate({ q: "", page: 1, m: 0 }); els.searchInput.focus(); });
     els.searchInput.addEventListener("input", function () { els.searchClear.hidden = !els.searchInput.value; });
+    App.search.attach({ wrap: els.search, input: els.searchInput, options: doc.getElementById("mail-search-options"), run: search });
     window.addEventListener("hashchange", route);
     doc.addEventListener("keydown", onKey);
 
@@ -81,6 +83,11 @@
     if (location.hash === hash) { route(); } else { location.hash = hash; }
   }
 
+  /** A search covers the whole mailbox (without spam and trash), like in Gmail; in: narrows it down. Without text the list is back where it was. */
+  function search(text) {
+    navigate(text ? { q: text, folder: 0, page: 1, m: 0 } : { q: "", page: 1, m: 0 });
+  }
+
   function route() {
     if (!App.boot) { return; }
     var h = readHash();
@@ -90,6 +97,7 @@
     if (!folder && !h.q) { folder = mailbox.folders.filter(function (f) { return f.kind === "Inbox"; })[0] || mailbox.folders[0]; }
 
     var sameList = S.mailboxId === mailbox.id && S.folderId === (folder ? folder.id : 0) && S.page === h.page && S.query === h.q;
+    if (!sameList) { S.allMatching = false; }
     S.mailboxId = mailbox.id;
     S.folderId = folder ? folder.id : 0;
     S.page = h.page;
@@ -249,9 +257,12 @@
       S.total = data.total;
       S.page = data.page;
       S.pageSize = data.pageSize;
-      // Keep the selection of messages that are still there.
+      // Keep the selection of messages that are still there; "everything that matches" selects whatever the page shows.
       var ids = new Set(S.items.map(function (i) { return i.id; }));
       S.selected.forEach(function (id) { if (!ids.has(id)) { S.selected.delete(id); } });
+      if (S.allMatching) {
+        if (S.items.length) { S.selected = ids; } else { S.allMatching = false; }
+      }
       S.cursor = Math.min(S.cursor, S.items.length - 1);
       renderListToolbar();
       renderList();
@@ -339,6 +350,7 @@
   }
 
   function toggleSelect(id, on, row) {
+    S.allMatching = false;
     if (on) { S.selected.add(id); } else { S.selected.delete(id); }
     if (row) { row.classList.toggle("is-selected", on); }
     renderListToolbar();
@@ -363,9 +375,10 @@
     var count = S.selected.size;
 
     var selectAll = App.el("input", { type: "checkbox", "aria-label": T("selectAll") });
-    selectAll.checked = count > 0 && count === S.items.length;
-    selectAll.indeterminate = count > 0 && count < S.items.length;
+    selectAll.checked = S.allMatching || (count > 0 && count === S.items.length);
+    selectAll.indeterminate = !S.allMatching && count > 0 && count < S.items.length;
     selectAll.addEventListener("change", function () {
+      S.allMatching = false;
       S.selected = new Set(selectAll.checked ? S.items.map(function (i) { return i.id; }) : []);
       renderList(); renderListToolbar();
     });
@@ -388,31 +401,92 @@
         bar.appendChild(more);
       }
     } else {
-      var ids = function () { return Array.from(S.selected); };
+      // A search lists several folders (folder is null then); archive and spam make sense for those as well.
+      var kind = folder ? folder.kind : "";
       if (box && box.canEdit) {
-        if (folder && folder.kind !== "Archive" && folder.kind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { act("archive", ids()); })); }
-        if (folder && folder.kind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { act("notspam", ids()); })); }
-        else if (folder && folder.kind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { act("spam", ids()); })); }
-        bar.appendChild(App.iconButton("trash", folder && folder.kind === "Trash" ? T("deleteForever") : T("delete"), function () { act("delete", ids()); }));
+        if (kind !== "Archive" && kind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { actSelected("archive"); })); }
+        if (kind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { actSelected("notspam"); })); }
+        else if (kind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { actSelected("spam"); })); }
+        bar.appendChild(App.iconButton("trash", kind === "Trash" ? T("deleteForever") : T("delete"), function () { actSelected("delete"); }));
         bar.appendChild(App.el("span", { class: "mail-toolbar__sep" }));
-        bar.appendChild(App.iconButton("mail-open", T("markRead"), function () { act("read", ids()); }));
-        bar.appendChild(App.iconButton("mail", T("markUnread"), function () { act("unread", ids()); }));
-        bar.appendChild(App.iconButton("folder-input", T("moveTo"), function (e) { moveMenu(e.currentTarget, ids()); }));
+        bar.appendChild(App.iconButton("mail-open", T("markRead"), function () { actSelected("read"); }));
+        bar.appendChild(App.iconButton("mail", T("markUnread"), function () { actSelected("unread"); }));
+        bar.appendChild(App.iconButton("folder-input", T("moveTo"), function (e) { moveMenu(e.currentTarget, Array.from(S.selected), S.allMatching); }));
         bar.appendChild(App.iconButton("more-vertical", T("more"), function (e) {
           App.showMenu(e.currentTarget, [
-            { label: T("addStar"), icon: "star", onClick: function () { act("star", ids()); } },
-            { label: T("removeStar"), icon: "star", onClick: function () { act("unstar", ids()); } }
+            { label: T("addStar"), icon: "star", onClick: function () { actSelected("star"); } },
+            { label: T("removeStar"), icon: "star", onClick: function () { actSelected("unstar"); } }
           ]);
         }));
       }
-      bar.appendChild(App.el("span", { class: "mail-toolbar__count", text: T("selectedCount").replace("{0}", count) }));
+      bar.appendChild(App.el("span", { class: "mail-toolbar__count", text: (S.allMatching ? T("allSelectedCount").replace("{0}", S.total.toLocaleString()) : T("selectedCount").replace("{0}", count)) }));
     }
 
     bar.appendChild(App.el("span", { class: "mail-toolbar__spacer" }));
     bar.appendChild(pager());
+    renderSelectBar();
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // "Select everything that matches" (like Gmail): the whole page is selected and there are more hits than the page shows
+  // ---------------------------------------------------------------------------------------------
+  function renderSelectBar() {
+    var bar = els.selectBar;
+    bar.innerHTML = "";
+    var offer = !S.allMatching && S.items.length > 0 && S.selected.size === S.items.length && S.total > S.items.length;
+    bar.hidden = !(offer || S.allMatching);
+    if (bar.hidden) { return; }
+    if (S.allMatching) {
+      bar.appendChild(App.el("span", { text: T("allMatchingSelected").replace("{0}", S.total.toLocaleString()) }));
+      var clear = App.el("button", { type: "button", class: "mail-selectbar__link", text: T("clearSelection") });
+      clear.addEventListener("click", function () { S.allMatching = false; S.selected.clear(); renderList(); renderListToolbar(); });
+      bar.appendChild(clear);
+    } else {
+      bar.appendChild(App.el("span", { text: T("pageSelected").replace("{0}", S.items.length.toLocaleString()) }));
+      var all = App.el("button", { type: "button", class: "mail-selectbar__link", text: T(S.query ? "selectAllMatching" : "selectAllInFolder").replace("{0}", S.total.toLocaleString()) });
+      all.addEventListener("click", function () { S.allMatching = true; renderListToolbar(); });
+      bar.appendChild(all);
+    }
+  }
+
+  var BULK_CHUNK = 500;   // the server changes at most a thousand messages per call
+
+  /** The action for what is selected: the messages on the screen, or everything the list matches over all its pages. */
+  function actSelected(kind, targetFolderId) {
+    if (!S.allMatching) { act(kind, Array.from(S.selected), targetFolderId); return; }
+    var folder = currentFolder();
+    var gentle = kind === "read" || kind === "unread" || kind === "star" || kind === "unstar";
+    var question = kind === "delete" && folder && folder.kind === "Trash" ? T("confirmDeleteForeverAll") : T("confirmAllMatching");
+    (gentle ? Promise.resolve(true) : App.confirm(question.replace("{0}", S.total.toLocaleString()))).then(function (ok) {
+      if (!ok) { return; }
+      showLoading(true);
+      var url = "/api/mail/messages/ids?mailboxId=" + S.mailboxId + (S.folderId ? "&folderId=" + S.folderId : "") + (S.query ? "&q=" + encodeURIComponent(S.query) : "");
+      return App.get(url).then(function (all) {
+        showLoading(false);
+        if (all.capped) { App.toast(T("onlyNewest").replace("{0}", all.ids.length.toLocaleString())); }
+        var origin = all.ids.map(function (id, i) { return { id: id, folderId: all.folderIds[i] }; });
+        act(kind, all.ids, targetFolderId, { origin: origin, confirmed: true });
+      });
+    }).catch(function (e) { showLoading(false); App.toast(e.message, { error: true }); });
+  }
+
+  /** Posts the ids in chunks (one call when there are few) and adds the answers up. */
+  function postIds(url, ids, extra) {
+    var chunks = [];
+    for (var i = 0; i < ids.length; i += BULK_CHUNK) { chunks.push(ids.slice(i, i + BULK_CHUNK)); }
+    var merged = { changed: 0, counts: {} };
+    return chunks.reduce(function (previous, chunk) {
+      return previous.then(function () {
+        return App.post(url, Object.assign({ ids: chunk }, extra)).then(function (result) {
+          merged.changed += result.changed || 0;
+          Object.keys(result.counts || {}).forEach(function (folderId) { merged.counts[folderId] = result.counts[folderId]; });
+        });
+      });
+    }, Promise.resolve()).then(function () { return merged; });
   }
 
   function selectWhere(predicate) {
+    S.allMatching = false;
     S.selected = new Set(S.items.filter(predicate).map(function (i) { return i.id; }));
     renderList(); renderListToolbar();
   }
@@ -431,18 +505,20 @@
     return wrap;
   }
 
-  function moveMenu(anchor, ids) {
+  /** everything: move whatever the list matches (see actSelected) instead of the given ids. */
+  function moveMenu(anchor, ids, everything) {
     var box = currentBox();
     var items = [];
+    var run = function (target) { if (everything) { actSelected("move", target); } else { act("move", ids, target); } };
     box.folders.forEach(function (f) {
-      if (f.id !== S.folderId) { items.push({ label: App.folderLabel(f), icon: KIND_ICONS[f.kind] || "folder", indent: f.depth, onClick: function () { act("move", ids, f.id); } }); }
+      if (f.id !== S.folderId) { items.push({ label: App.folderLabel(f), icon: KIND_ICONS[f.kind] || "folder", indent: f.depth, onClick: function () { run(f.id); } }); }
     });
     if (box.type === "Unassigned" || App.boot.mailboxes.length > 1) {
       items.push({ divider: true });
       App.boot.mailboxes.forEach(function (other) {
         if (other.id === box.id || !other.canEdit) { return; }
         var inbox = other.folders.filter(function (f) { return f.kind === "Inbox"; })[0];
-        if (inbox) { items.push({ label: other.name + " – " + T("inbox"), icon: "inbox", onClick: function () { act("move", ids, inbox.id); } }); }
+        if (inbox) { items.push({ label: other.name + " – " + T("inbox"), icon: "inbox", onClick: function () { run(inbox.id); } }); }
       });
     }
     App.showMenu(anchor, items, { title: T("moveTo") });
@@ -451,30 +527,32 @@
   // ---------------------------------------------------------------------------------------------
   // Actions on messages (list and reader)
   // ---------------------------------------------------------------------------------------------
-  function act(kind, ids, targetFolderId) {
+  /** options: { origin: where the messages were (when the caller knows), confirmed: a question was asked already }. */
+  function act(kind, ids, targetFolderId, options) {
     if (!ids.length) { return; }
+    options = options || {};
     var byId = {};
     S.items.forEach(function (i) { byId[i.id] = i; });
-    var origin = ids.map(function (id) { return { id: id, folderId: byId[id] ? byId[id].folderId : S.folderId }; });
-    var box = currentBox();
+    var origin = options.origin || ids.map(function (id) { return { id: id, folderId: byId[id] ? byId[id].folderId : S.folderId }; });
     var request, undo = null, message = null, removes = false;
     var folder = currentFolder();
 
     switch (kind) {
-      case "archive": var archive = App.folderByKind(S.mailboxId, "Archive"); if (!archive) { return; } request = App.post("/api/mail/messages/move", { ids: ids, folderId: archive.id }); message = T("movedToArchive"); undo = true; removes = true; break;
-      case "move": request = App.post("/api/mail/messages/move", { ids: ids, folderId: targetFolderId }); message = T("moved"); undo = true; removes = true; break;
+      case "archive": var archive = App.folderByKind(S.mailboxId, "Archive"); if (!archive) { return; } request = postIds("/api/mail/messages/move", ids, { folderId: archive.id }); message = T("movedToArchive"); undo = true; removes = true; break;
+      case "move": request = postIds("/api/mail/messages/move", ids, { folderId: targetFolderId }); message = T("moved"); undo = true; removes = true; break;
       case "delete":
         if (folder && folder.kind === "Trash") {
-          App.confirm(T("confirmDeleteForever")).then(function (ok) { if (ok) { send(App.post("/api/mail/messages/delete", { ids: ids, permanent: true }), T("deletedForever"), false, true); } });
+          var forever = function () { send(postIds("/api/mail/messages/delete", ids, { permanent: true }), T("deletedForever"), false, true); };
+          if (options.confirmed) { forever(); } else { App.confirm(T("confirmDeleteForever")).then(function (ok) { if (ok) { forever(); } }); }
           return;
         }
-        request = App.post("/api/mail/messages/delete", { ids: ids, permanent: false }); message = T("movedToTrash"); undo = true; removes = true; break;
-      case "spam": request = App.post("/api/mail/messages/spam", { ids: ids, notSpam: false }); message = T("movedToSpam"); undo = true; removes = true; break;
-      case "notspam": request = App.post("/api/mail/messages/spam", { ids: ids, notSpam: true }); message = T("movedToInbox"); removes = true; break;
-      case "read": request = App.post("/api/mail/messages/flags", { ids: ids, isRead: true }); patch(ids, { isRead: true }); break;
-      case "unread": request = App.post("/api/mail/messages/flags", { ids: ids, isRead: false }); patch(ids, { isRead: false }); break;
-      case "star": request = App.post("/api/mail/messages/flags", { ids: ids, isStarred: true }); patch(ids, { isStarred: true }); break;
-      case "unstar": request = App.post("/api/mail/messages/flags", { ids: ids, isStarred: false }); patch(ids, { isStarred: false }); break;
+        request = postIds("/api/mail/messages/delete", ids, { permanent: false }); message = T("movedToTrash"); undo = true; removes = true; break;
+      case "spam": request = postIds("/api/mail/messages/spam", ids, { notSpam: false }); message = T("movedToSpam"); undo = true; removes = true; break;
+      case "notspam": request = postIds("/api/mail/messages/spam", ids, { notSpam: true }); message = T("movedToInbox"); removes = true; break;
+      case "read": request = postIds("/api/mail/messages/flags", ids, { isRead: true }); patch(ids, { isRead: true }); break;
+      case "unread": request = postIds("/api/mail/messages/flags", ids, { isRead: false }); patch(ids, { isRead: false }); break;
+      case "star": request = postIds("/api/mail/messages/flags", ids, { isStarred: true }); patch(ids, { isStarred: true }); break;
+      case "unstar": request = postIds("/api/mail/messages/flags", ids, { isStarred: false }); patch(ids, { isStarred: false }); break;
       default: return;
     }
 
@@ -486,6 +564,7 @@
       App.applyCounts(result.counts);
       if (removes) {
         S.selected.clear();
+        S.allMatching = false;
         if (S.messageId) { navigate({ m: 0 }); } else { loadList(true); }
       } else {
         renderList(); renderListToolbar();
@@ -502,7 +581,7 @@
     var byFolder = {};
     origin.forEach(function (o) { (byFolder[o.folderId] = byFolder[o.folderId] || []).push(o.id); });
     Promise.all(Object.keys(byFolder).map(function (folderId) {
-      return App.post("/api/mail/messages/move", { ids: byFolder[folderId], folderId: parseInt(folderId, 10) });
+      return postIds("/api/mail/messages/move", byFolder[folderId], { folderId: parseInt(folderId, 10) });
     })).then(function (results) {
       results.forEach(function (r) { App.applyCounts(r.counts); });
       loadList(true);
@@ -705,13 +784,20 @@
     else if (key === "u" && inReader) { navigate({ m: 0 }); }
     else if (key === "x" && !inReader && cursorItem) { toggleSelect(cursorItem.id, !S.selected.has(cursorItem.id)); renderList(); }
     else if (key === "s" && !inReader && cursorItem) { act(cursorItem.isStarred ? "unstar" : "star", [cursorItem.id]); }
-    else if (key === "e") { var ids = targetIds(); if (ids.length) { act("archive", ids); } }
-    else if (key === "#" || key === "Delete") { var del = targetIds(); if (del.length) { act("delete", del); } }
-    else if (key === "I" && !inReader) { act("read", targetIds()); }
-    else if (key === "U" && !inReader) { act("unread", targetIds()); }
+    else if (key === "e") { shortcutAct("archive"); }
+    else if (key === "#" || key === "Delete") { shortcutAct("delete"); }
+    else if (key === "I" && !inReader) { shortcutAct("read"); }
+    else if (key === "U" && !inReader) { shortcutAct("unread"); }
     else if (inReader && key === "r") { e.preventDefault(); App.compose.reply(S.messageId, "reply"); }
     else if (inReader && key === "a") { e.preventDefault(); App.compose.reply(S.messageId, "replyall"); }
     else if (inReader && key === "f") { e.preventDefault(); App.compose.reply(S.messageId, "forward"); }
+  }
+
+  /** A key for the selection: with "everything that matches" selected it covers all of it. */
+  function shortcutAct(kind) {
+    if (S.allMatching && !S.messageId) { actSelected(kind); return; }
+    var ids = targetIds();
+    if (ids.length) { act(kind, ids); }
   }
 
   function targetIds() {

@@ -13,7 +13,7 @@
 .mail-search__input {
   width: 100%;
   height: 2.6rem;
-  padding: 0 2.6rem 0 2.8rem;
+  padding: 0 5.1rem 0 2.8rem;
   border: 1px solid transparent;
   border-radius: 999px;
   background: var(--color-surface-alt);
@@ -22,7 +22,39 @@
   transition: background var(--transition), box-shadow var(--transition);
 }
 .mail-search__input:focus { outline: none; background: var(--color-surface); border-color: var(--color-border-strong); box-shadow: var(--shadow-sm); }
-.mail-search__clear { position: absolute; right: 0.25rem; }
+.mail-search__clear { position: absolute; right: 2.6rem; }
+.mail-search__options { position: absolute; right: 0.25rem; }
+.mail-search__options[aria-expanded="true"] { background: var(--color-primary-soft); color: var(--color-primary); }
+
+/* ---- Advanced search: the panel under the search box (a full-screen sheet on phones) ---- */
+.search-layer { position: fixed; inset: 0; z-index: 120; pointer-events: none; }
+.search-layer[hidden] { display: none; }
+.search-panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--header-height) - 1rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  overflow: hidden;
+}
+.search-panel__header { display: none; align-items: center; justify-content: space-between; padding: 0.25rem 0.25rem 0.25rem 1rem; border-bottom: 1px solid var(--color-border); flex: none; }
+.search-panel__title { font-weight: 600; }
+.search-panel__form { display: flex; flex-direction: column; min-height: 0; }
+.search-panel__body { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem 0.9rem; padding: 1.1rem 1.1rem 0.6rem; overflow-y: auto; }
+.search-panel__field--wide { grid-column: span 2; }
+.search-panel__field--full { grid-column: 1 / -1; }
+.search-panel__checks { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; margin-top: 0.25rem; }
+.search-panel__footer { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1.1rem 1rem; flex: none; }
+
+/* ---- "Select everything that matches" (like Gmail): the strip under the list toolbar ---- */
+.mail-selectbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.2rem 0.75rem; padding: 0.55rem 1rem; border-bottom: 1px solid var(--color-border); background: var(--color-primary-soft); font-size: 0.875rem; text-align: center; flex: none; }
+.mail-selectbar[hidden] { display: none; }
+.mail-selectbar__link { padding: 0; border: 0; background: none; color: var(--color-primary); font: inherit; font-weight: 700; cursor: pointer; }
+.mail-selectbar__link:hover { text-decoration: underline; }
 
 /* ---- Sidebar: compose + folders ---- */
 .mail-sidebar { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0.25rem 0.5rem 0.75rem; overflow-y: auto; }
@@ -351,6 +383,13 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
   .compose__header-actions .icon-btn:nth-child(1), .compose__header-actions .icon-btn:nth-child(2) { display: none; }
   .compose__footer { padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
   .compose__status { display: none; }
+
+  .search-layer { background: rgba(10, 14, 24, 0.45); }
+  .search-panel { inset: 0 !important; width: 100vw !important; max-height: none; height: 100dvh; border: 0; border-radius: 0; }
+  .search-panel__header { display: flex; }
+  .search-panel__form { flex: 1; }
+  .search-panel__body { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; padding: 1rem 0.9rem 0.5rem; }
+  .search-panel__footer { padding: 0.7rem 0.9rem calc(0.9rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border); }
 
   .menu-layer { background: rgba(10, 14, 24, 0.45); }
   .menu { inset: 0 !important; width: 100vw; max-width: none; max-height: none; height: 100dvh; border: 0; border-radius: 0; padding: 0 0.75rem 1rem; }

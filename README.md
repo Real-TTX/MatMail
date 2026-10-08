@@ -297,12 +297,13 @@ service:
 
 ### After the first sign-in
 
-*Administration* in the menu opens the admin area – dashboard, mailboxes, domains, connected
-accounts, signatures, templates, unassigned mail, users, roles, SMTP relay, queue, activity log,
-branding, security, server settings and tenants; everybody sees what their role allows. For
-production, look at **Administration → Security** first: it decides whether two-factor
-authentication is optional, mandatory for the administrators or mandatory for everybody in the
-tenant.
+*Administration*, at the bottom of the sidebar right above your account, opens the admin area –
+dashboard, mailboxes, domains, connected accounts, signatures, templates, unassigned mail, users,
+roles, SMTP relay, queue, activity log, branding, security, server settings and tenants; everybody
+sees what their role allows. For production, look at **Administration → Security** first: it
+decides whether two-factor authentication is optional, mandatory for the administrators or
+mandatory for everybody in the tenant. Whoever administers several tenants switches between them
+in the account menu.
 
 ### Updates, backups and a lost second factor
 

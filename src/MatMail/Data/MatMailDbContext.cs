@@ -18,6 +18,7 @@ public class MatMailDbContext : DbContext
     /// <summary>The tenant filter applied to every <see cref="ITenantEntity"/> query (null = no restriction).</summary>
     public long? CurrentTenantId => _current.TenantId;
 
+    public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
     public DbSet<User> Users => Set<User>();
@@ -158,6 +159,13 @@ public class MatMailDbContext : DbContext
             // Existing rows (there are none yet) and new ones: only the own mailbox, unless the user chose more.
             e.Property(x => x.OwnMailboxOnly).HasDefaultValue(true);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<SystemSetting>(e =>
+        {
+            e.HasIndex(x => x.Key).IsUnique();
+            e.Property(x => x.Key).HasMaxLength(100);
+            e.Property(x => x.Value).HasMaxLength(2000);
         });
 
         model.Entity<Role>(e =>

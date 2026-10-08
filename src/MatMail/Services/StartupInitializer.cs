@@ -1,5 +1,7 @@
 using MatMail.Data;
+using MatMail.Versioning;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 
 namespace MatMail.Services;
@@ -28,9 +30,17 @@ public static class StartupInitializer
                 scope.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
                 var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
                 logger.LogInformation("Applying database migrations (attempt {Attempt}/{Max}).", attempt, maxAttempts);
+
+                // Old data may be used by a newer program, never the other way round.
+                VersionGuard.EnsureNotNewer(await db.Database.GetAppliedMigrationsAsync(), db.Database.GetMigrations(), dataVersion: 1, knownDataVersion: DataMigrations.Latest);
                 await db.Database.MigrateAsync();
+                await RecordVersionsAsync(db, AppInfo.DataDir, logger);
                 logger.LogInformation("Database is up to date.");
                 return;
+            }
+            catch (IncompatibleVersionException)
+            {
+                throw;   // retrying does not make a newer database older
             }
             catch (Exception ex) when (attempt < maxAttempts)
             {
@@ -38,6 +48,39 @@ public static class StartupInitializer
                 await Task.Delay(TimeSpan.FromSeconds(3));
             }
         }
+    }
+
+    /// <summary>
+    /// After the schema is current: the id of this installation, the files of the data volume brought to the layout this version expects
+    /// (the steps of <see cref="DataMigrations"/>), and the versions noted down, so that a backup and a restore know what they deal with.
+    /// </summary>
+    internal static async Task RecordVersionsAsync(MatMailDbContext db, string dataDir, ILogger logger)
+    {
+        await SystemSettings.GetOrCreateInstallationIdAsync(db);
+        int dataVersion = await SystemSettings.GetDataVersionAsync(db);
+        VersionGuard.EnsureNotNewer([], [], dataVersion, DataMigrations.Latest);
+
+        if (dataVersion < DataMigrations.Latest)
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await db.Database.OpenConnectionAsync();
+            var context = new DataMigrationContext
+            {
+                DataDir = dataDir,
+                Connection = (NpgsqlConnection)db.Database.GetDbConnection(),
+                Transaction = (NpgsqlTransaction)transaction.GetDbTransaction(),
+                Logger = logger,
+            };
+            dataVersion = await DataMigrations.RunAsync(dataVersion, context);
+            await SystemSettings.SetAsync(db, SystemSettings.DataVersion, dataVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            await transaction.CommitAsync();
+        }
+        else
+        {
+            await SystemSettings.SetAsync(db, SystemSettings.DataVersion, dataVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        await SystemSettings.SetAsync(db, SystemSettings.AppVersion, AppInfo.Version);
     }
 
     /// <summary>

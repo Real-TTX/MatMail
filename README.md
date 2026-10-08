@@ -198,20 +198,14 @@ services:
     image: ghcr.io/real-ttx/matmail:latest
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     ports:
       - "9933:9933"   # web interface (HTTPS)
-      - "25:25"       # SMTP: mail from other servers, relay for trusted networks
-      - "587:587"     # SMTP submission (STARTTLS): mail programs
-      - "465:465"     # SMTPS (TLS): mail programs
-      - "143:143"     # IMAP (STARTTLS)
-      - "993:993"     # IMAPS (TLS)
-    environment:
-      MATMAIL__Server__Hostname: mail.example.com
-      MATMAIL__Database__Password: change-me
-    sysctls:
-      net.ipv4.ip_unprivileged_port_start: 0
+      - "25:25"       # SMTP
+      - "587:587"     # SMTP submission
+      - "465:465"     # SMTPS
+      - "143:143"     # IMAP
+      - "993:993"     # IMAPS
     volumes:
       - matmail-data:/data
 
@@ -219,13 +213,7 @@ services:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: change-me
-      POSTGRES_DB: matmail
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d matmail"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+      POSTGRES_PASSWORD: matmail
     volumes:
       - matmail-db:/var/lib/postgresql/data
 
@@ -238,9 +226,14 @@ volumes:
 docker compose up -d
 ```
 
-Open **https://your-server:9933**. The first visit asks for the name of the first tenant and the
-administrator account (or set `MATMAIL_ADMIN_USER` and `MATMAIL_ADMIN_PASSWORD` for an unattended
-start). The same file lives in the repository as `docker-compose.release.yml`.
+Open **https://localhost:9933** (or `https://<your-server>:9933`; the certificate is self-signed
+until you bring your own, so the browser asks once). The first visit asks for the name of the first
+tenant and the administrator account. The `matmail-data` volume keeps the configuration, the keys
+and the certificates, `matmail-db` the mail – an update is just `docker compose pull && docker
+compose up -d`. The same file lives in the repository as `docker-compose.yml`.
+
+Set the real host name under **Administration → Server settings** (*Public host name*); after a
+restart of the container the self-signed certificate carries it. Everything else is optional.
 
 At this point MatMail has no mail yet – which brings us to the interesting part.
 
@@ -268,7 +261,12 @@ Worth knowing:
   `certs/server.pfx`) and it is picked up right away; **Server settings → TLS certificate** shows
   what is in use.
 - **Behind a reverse proxy** that terminates TLS, set `MATMAIL__Server__WebHttps: "false"` and
-  `MATMAIL__Server__TrustProxyHeaders: "true"`.
+  `MATMAIL__Server__TrustProxyHeaders: "true"` on the `matmail` service.
+- **The database is not exposed.** PostgreSQL has no published port, so its password stays inside
+  the compose network. To choose your own, set `POSTGRES_PASSWORD` and `MATMAIL__Database__Password`
+  to the same value.
+- **Rootless Podman and very old Docker versions** do not let the non-root app user open ports below
+  1024. Add `net.ipv4.ip_unprivileged_port_start: 0` under `sysctls:` to the `matmail` service.
 
 ### 3. From source
 
@@ -280,8 +278,9 @@ dotnet test MatMail.slnx      # see "Development"
 
 ### Settings that matter
 
-Settings live in `/data/config/app.json` (edited under *Server settings*) and can be overridden by
-environment variables `MATMAIL__Section__Key`:
+None of these is needed to start. Settings live in `/data/config/app.json` (edited under *Server
+settings*) and can be overridden by environment variables `MATMAIL__Section__Key` on the `matmail`
+service:
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -300,9 +299,10 @@ environment variables `MATMAIL__Section__Key`:
 
 *Administration* in the menu opens the admin area – dashboard, mailboxes, domains, connected
 accounts, signatures, templates, unassigned mail, users, roles, SMTP relay, queue, activity log,
-branding, security, server settings and tenants; everybody sees what their role allows. For production, look at
-**Administration → Security** first: it decides whether two-factor authentication is optional,
-mandatory for the administrators or mandatory for everybody in the tenant.
+branding, security, server settings and tenants; everybody sees what their role allows. For
+production, look at **Administration → Security** first: it decides whether two-factor
+authentication is optional, mandatory for the administrators or mandatory for everybody in the
+tenant.
 
 ### Updates, backups and a lost second factor
 

@@ -1,14 +1,24 @@
 using MatMail.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace MatMail.Services;
 
 /// <summary>Work that happens once at start-up: bring the database up to date and, if asked, create the first administrator.</summary>
 public static class StartupInitializer
 {
-    /// <summary>Applies the migrations; retries for a while because PostgreSQL may still be starting.</summary>
+    /// <summary>
+    /// Applies the migrations. PostgreSQL may still be starting (a first start initialises its data directory first) and may not
+    /// have the database yet, so the server is waited for and the database created quietly first; what then still fails is retried.
+    /// </summary>
     public static async Task MigrateDatabaseAsync(IServiceProvider services, ILogger logger)
     {
+        using (IServiceScope scope = services.CreateScope())
+        {
+            string? connectionString = scope.ServiceProvider.GetRequiredService<MatMailDbContext>().Database.GetConnectionString();
+            await EnsureDatabaseExistsAsync(connectionString, logger);
+        }
+
         const int maxAttempts = 20;
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -29,6 +39,77 @@ public static class StartupInitializer
             }
         }
     }
+
+    /// <summary>
+    /// Waits until the PostgreSQL server answers and creates the database when the server has none of that name: a fresh container
+    /// only has "postgres", so the stack needs neither a health check nor <c>POSTGRES_DB</c>. EF Core would manage both as well, but
+    /// logs an error for every failed probe, which looks like a failure on every first start. Anything else that goes wrong here (no
+    /// right to create databases, no access to the maintenance database, a server that stays away) is left to the migration, which
+    /// decides as before. Never throws.
+    /// </summary>
+    /// <param name="maxWait">How long a server that is not there yet is waited for (default: 90 seconds).</param>
+    public static async Task EnsureDatabaseExistsAsync(string? connectionString, ILogger logger, TimeSpan? maxWait = null)
+    {
+        DateTime giveUp = DateTime.UtcNow + (maxWait ?? TimeSpan.FromSeconds(90));
+        bool announced = false;
+        while (true)
+        {
+            try
+            {
+                var builder = new NpgsqlConnectionStringBuilder(connectionString);
+                string? name = builder.Database;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    return;
+                }
+
+                string host = $"{builder.Host}:{builder.Port}";
+                builder.Database = "postgres";
+                builder.Pooling = false;
+                try
+                {
+                    await CreateDatabaseWhenMissingAsync(builder.ConnectionString, name, logger);
+                    return;
+                }
+                catch (Exception ex) when (IsServerNotReady(ex) && DateTime.UtcNow < giveUp)
+                {
+                    if (!announced)
+                    {
+                        logger.LogInformation("Waiting for PostgreSQL at {Host} …", host);
+                        announced = true;
+                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Could not check whether the database exists; the migration decides.");
+                return;
+            }
+        }
+    }
+
+    private static async Task CreateDatabaseWhenMissingAsync(string maintenanceConnectionString, string name, ILogger logger)
+    {
+        await using var connection = new NpgsqlConnection(maintenanceConnectionString);
+        await connection.OpenAsync();
+
+        await using var exists = new NpgsqlCommand("SELECT 1 FROM pg_database WHERE datname = @name", connection);
+        exists.Parameters.AddWithValue("name", name);
+        if (await exists.ExecuteScalarAsync() is not null)
+        {
+            return;
+        }
+
+        // An identifier cannot be a parameter: it is quoted.
+        await using var create = new NpgsqlCommand($"CREATE DATABASE \"{name.Replace("\"", "\"\"")}\"", connection);
+        await create.ExecuteNonQueryAsync();
+        logger.LogInformation("Created the database '{Database}'.", name);
+    }
+
+    /// <summary>Connection refused, host not known yet, "the database system is starting up", timeouts: it may work in a moment.</summary>
+    private static bool IsServerNotReady(Exception ex) => ex is NpgsqlException { IsTransient: true } || ex is TimeoutException;
 
     /// <summary>
     /// Unattended installation: with MATMAIL_ADMIN_USER and MATMAIL_ADMIN_PASSWORD set (and no user yet) the first tenant and

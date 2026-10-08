@@ -109,6 +109,18 @@ Foreign HTML – newsletters of T-Online, WEB.DE and Telekom, mails of Outlook �
 shown in a sandboxed frame, scaled to the width of the window. Wide tables get an *Original size*
 button, quoted history is folded, and remote pictures stay blocked until you allow them.
 
+### Search like in Gmail
+
+| The advanced search | Select all that match |
+|---|---|
+| ![The advanced search panel under the search box](docs/images/mail-search.png) | ![All 93 hits of a search selected for one action](docs/images/mail-select-all.png) |
+
+`from:netcup has:attachment newer_than:7d` – typed into the search box or built with the panel
+beside it. The operators work in English and German (`von:`, `hat:anhang`, `ist:ungelesen`) and
+combine with `OR`, `-` and brackets. When a search (or a folder) has more hits than fit on a page,
+*select all* offers to take **all of them** – then mark them as read, move, archive or delete them in
+one go.
+
 ### Compose with the right signature
 
 ![The compose window with a signature](docs/images/mail-compose.png)
@@ -116,6 +128,17 @@ button, quoted history is folded, and remote pictures stay blocked until you all
 Rich text, pictures by paste or drop, address suggestions, drafts that save themselves. The
 signature chooser at the bottom offers the signatures of the sender's scope – the default is
 already in place.
+
+### An app, also without a connection
+
+| The app page | Writing offline |
+|---|---|
+| ![Install the app, turn on notifications, the devices that get them](docs/images/account-app.png) | ![Writing a message without a connection: it waits on the device](docs/images/mail-offline.png) |
+
+MatMail installs like an app (PWA) and opens in a window of its own. Without a connection it still
+opens; what you write – with attachments – waits in an outbox on the device and goes out as soon as
+you are back online. New mail can be announced on every device you turn notifications on for (Web
+Push; it needs https, and on an iPhone the app on the home screen).
 
 ### Plain text in, HTML out
 

@@ -1,0 +1,113 @@
+@page "/Admin/Backup/RestoreConfirm"
+@model MatMail.Pages.Admin.Backup.RestoreConfirmModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups / Restore / Confirm";
+    ViewData["Title"] = L["Restore a backup"].Value;
+}
+
+<script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+@if (!Model.SourceOk)
+{
+    <div class="notice notice--danger" role="status">
+        <mm-icon name="alert-circle" class="notice__icon" />
+        <span class="notice__text">@Model.Error</span>
+    </div>
+    <mm-button-row><mm-button variant="secondary" href="/Admin/Backup/Restore" icon="arrow-left">@L["Back"]</mm-button></mm-button-row>
+    return;
+}
+
+<section class="card">
+    <h2 class="card__title"><mm-icon name="archive" />@Model.FileLabel</h2>
+    <dl class="kv">
+        @if (Model.Info is { } info)
+        {
+            <dt>@L["Made"]</dt><dd>@Fmt.DateTimeText(info.CreatedUtc)@if (!string.IsNullOrEmpty(info.Host)) { <span class="muted"> · @info.Host</span> }</dd>
+            <dt>@L["Version"]</dt><dd class="mono">@info.AppVersion</dd>
+            <dt>@L["Contents"]</dt><dd>@string.Format(L["{0} tables with {1} rows, {2} files ({3})"].Value, info.Tables, info.Rows.ToString("N0"), info.Files, Fmt.Size(info.FilesBytes))</dd>
+        }
+        else if (Model.Parsed is { } parsed)
+        {
+            <dt>@L["Made"]</dt><dd>@Fmt.DateTimeText(parsed.CreatedUtc)</dd>
+            <dt>@L["Version"]</dt><dd class="mono">@parsed.Version</dd>
+        }
+        @if (Model.Bytes is long bytes)
+        {
+            <dt>@L["Size"]</dt><dd>@Fmt.Size(bytes)</dd>
+        }
+        <dt>@L["Protection"]</dt><dd>@if (Model.Encrypted) { <mm-badge kind="info" icon="lock">@L["Encrypted"]</mm-badge> } else { <span class="muted">@L["Not encrypted"]</span> }</dd>
+    </dl>
+</section>
+
+@if (Model.Problem is not null)
+{
+    <div class="notice notice--danger" role="status">
+        <mm-icon name="alert-circle" class="notice__icon" />
+        <span class="notice__text"><b>@L["This version cannot restore the backup."]</b> @Model.Problem</span>
+    </div>
+}
+else if (Model.Error is not null)
+{
+    <div class="notice notice--danger" role="status">
+        <mm-icon name="alert-circle" class="notice__icon" />
+        <span class="notice__text">@Model.Error</span>
+    </div>
+}
+
+@if (Model.Preparation.State != MatMail.Backup.PreparationState.Idle)
+{
+    <section class="card card--spaced" id="restore-preparation" data-status-url="/Admin/Backup?handler=Status">
+        <h2 class="card__title"><mm-icon name="rotate-ccw" />@L["The restore is being prepared"]</h2>
+        <div class="progress" id="restore-progress"><div class="progress__bar"></div></div>
+        <p class="muted" id="restore-progress-text">@(Model.Preparation.State == MatMail.Backup.PreparationState.Failed ? Model.Preparation.Message : L["Getting ready …"].Value)</p>
+        <form method="post" asp-page-handler="Reset" id="restore-back" hidden="@(Model.Preparation.State != MatMail.Backup.PreparationState.Failed)">
+            <input type="hidden" name="target" value="@Model.Target" />
+            <input type="hidden" name="file" value="@Model.FileName" />
+            <input type="hidden" name="upload" value="@Model.Upload" />
+            <button type="submit" class="btn btn--secondary"><mm-icon name="arrow-left" /><span>@L["Back"]</span></button>
+        </form>
+    </section>
+}
+else if (Model.Problem is null)
+{
+    <mm-form>
+        <input type="hidden" name="target" value="@Model.Target" />
+        <input type="hidden" name="file" value="@Model.FileName" />
+        <input type="hidden" name="upload" value="@Model.Upload" />
+
+        <mm-form-section title='@L["Restore"]' icon="rotate-ccw">
+            @if (Model.Encrypted)
+            {
+                <mm-field asp-for="Input.Passphrase" kind="password" label='@L["Passphrase of the backup"]' autocomplete="off" reveal="true"
+                          help='@L["The backup is encrypted. Without its passphrase it cannot be opened."]' />
+            }
+
+            <mm-field asp-for="Input.SafetyBackup" kind="checkbox" label='@L["Save the current state first (recommended)"]'
+                      help='@L["A backup of what is here now is made before it is replaced, and kept in the folder “backups” of the data volume (the last three). If the wrong backup was chosen, restore that one."]' />
+            <mm-field asp-for="Input.VerifyFirst" kind="checkbox" label='@L["Read the whole backup first and check it against its checksums"]'
+                      help='@L["Takes as long as reading the file once. A damaged backup is found before MatMail is stopped; without this it is found while restoring, and nothing is changed either way."]' />
+            <mm-field asp-for="Input.HoldQueue" kind="checkbox" label='@L["Hold the outgoing mail that was waiting when the backup was made"]'
+                      help='@L["It may have been sent in the meantime. Held mail is shown as failed in the outgoing queue; retry what is really missing."]' />
+            <mm-field asp-for="Input.Understand" kind="checkbox" label='@L["I know that the current data is replaced and that MatMail restarts"]' />
+        </mm-form-section>
+
+        <div class="notice notice--info" role="status">
+            <mm-icon name="info" class="notice__icon" />
+            <span class="notice__text">@L["MatMail stops, restores the backup and starts again; this takes from seconds to many minutes, depending on the size. Everybody is disconnected meanwhile. How this server is deployed (database connection, ports, HTTPS) stays as it is."]</span>
+        </div>
+
+        <mm-button-row>
+            <mm-button variant="danger" type="submit" handler="Start" icon="rotate-ccw">@L["Restore"]</mm-button>
+            <mm-button variant="secondary" type="submit" handler="Check" icon="search">@L["Check the backup"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Backup/Restore" icon="arrow-left">@L["Back"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+}
+else
+{
+    <mm-button-row><mm-button variant="secondary" href="/Admin/Backup/Restore" icon="arrow-left">@L["Back"]</mm-button></mm-button-row>
+}
+
+@section Scripts {
+    <script src="~/js/backup.js" asp-append-version="true"></script>
+}

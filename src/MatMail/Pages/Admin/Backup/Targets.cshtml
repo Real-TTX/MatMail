@@ -1,0 +1,58 @@
+@page "/Admin/Backup/Targets"
+@model MatMail.Pages.Admin.Backup.TargetsModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups / Targets";
+    ViewData["Title"] = L["Backups"].Value;
+    ViewData["Description"] = L["A target is a place for backups: a folder of this server (a mounted disk or share) or a folder on a network share (NAS) that MatMail reaches itself."].Value;
+}
+
+<partial name="_BackupTabs" model='"targets"' />
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search targets…"]' />
+    <mm-toolbar-select name="Kind" label='@L["Type"]' value="@Model.Kind">
+        <option value="">@L["All"]</option>
+        <option value="local">@L["Folder of this server"]</option>
+        <option value="smb">@L["Network share (SMB)"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No target yet. Add the folder or the share the backups should go to."]' empty-icon="hard-drive">
+    <thead>
+        <tr>
+            <th>@L["Name"]</th>
+            <th class="hide-sm">@L["Type"]</th>
+            <th>@L["Where"]</th>
+            <th class="hide-sm">@L["Last check"]</th>
+            <th class="hide-sm">@L["Schedules"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var target in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Backup/Target?id=@target.Id" tabindex="0">
+                <td class="cell-title">@target.Name@if (!target.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</td>
+                <td class="hide-sm">@(target.Kind == BackupTargetKind.Smb ? L["Network share (SMB)"].Value : L["Folder of this server"].Value)</td>
+                <td class="mono cell-sub">@TargetsModel.Where(target)</td>
+                <td class="hide-sm">
+                    @if (target.LastCheckOk is true) { <mm-badge kind="ok" icon="check-circle">@Fmt.Ago(target.LastCheckDate)</mm-badge> }
+                    else if (target.LastCheckOk is false) { <mm-badge kind="danger" icon="alert-circle">@L["Failed"]</mm-badge><div class="cell-sub">@target.LastCheckMessage</div> }
+                    else { <span class="muted">–</span> }
+                </td>
+                <td class="hide-sm">@(Model.PlanCounts.GetValueOrDefault(target.Id))</td>
+                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Backup/Target?id=@target.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Backup/Target" icon="plus">@L["New target"]</mm-button>
+</mm-list-actions>

@@ -1,0 +1,102 @@
+@page "/Admin/Backup/Plan"
+@model MatMail.Pages.Admin.Backup.PlanModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Backups / Edit schedule" : "Administration / Backups / New schedule";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New schedule"].Value;
+}
+
+@if (Model.TargetItems.Count == 0)
+{
+    <div class="notice notice--warn" role="status">
+        <mm-icon name="alert" class="notice__icon" />
+        <span class="notice__text">@L["There is no target yet. A backup needs a place to go to."] <a href="/Admin/Backup/Target">@L["Add a target"]</a></span>
+    </div>
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    @if (Model.IsEdit && Model.Plan is { } plan)
+    {
+        <div class="notice notice--@(plan.LastStatus == BackupRunStatus.Failed ? "danger" : "info")">
+            <mm-icon name="@(plan.LastStatus == BackupRunStatus.Failed ? "alert-circle" : "clock")" class="notice__icon" />
+            <span class="notice__text">
+                <b>@L["Last run"]:</b> @(plan.LastRunDate is null ? L["Never"].Value : Fmt.DateTimeText(plan.LastRunDate))
+                @if (plan.IsActive && plan.NextRunDate is not null) { <span class="muted"> · @L["next"]: @Fmt.DateTimeText(plan.NextRunDate)</span> }
+            </span>
+        </div>
+    }
+
+    <mm-form-section title='@L["Schedule"]' icon="calendar">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Every night to the NAS"]' autofocus="autofocus" />
+        <mm-picker asp-for="Input.TargetId" asp-items="Model.TargetItems" label='@L["Target"]' placeholder='@L["Choose a target"]' />
+        <mm-field asp-for="Input.Frequency" kind="select" label='@L["How often"]' asp-items="Model.FrequencyItems" />
+        <mm-field asp-for="Input.EveryHours" kind="number" label='@L["Every"]' suffix='@L["hours"]' min="1" max="12"
+                  show-when-field="Input.Frequency" show-when-value="Hourly" />
+        <mm-field asp-for="Input.Weekday" kind="select" label='@L["On"]' asp-items="Model.WeekdayItems"
+                  show-when-field="Input.Frequency" show-when-value="Weekly" />
+        <mm-field asp-for="Input.DayOfMonth" kind="number" label='@L["On day"]' min="1" max="28"
+                  help='@L["Up to the 28th, so that every month has the day."]'
+                  show-when-field="Input.Frequency" show-when-value="Monthly" />
+        <mm-field asp-for="Input.Time" kind="time" label='@L["At"]'
+                  help='@L["In the time zone of this server. For a plan that runs every few hours only the minute counts."]' />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Enabled"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["What is kept"]' icon="archive"
+                     description='@L["A backup stays as long as any of these rules keeps it. Only the backups of this schedule are ever removed."]'>
+        <div class="form-grid">
+            <mm-field asp-for="Input.KeepLast" kind="number" label='@L["The newest"]' suffix='@L["copies"]' min="1" />
+            <mm-field asp-for="Input.KeepDaily" kind="number" label='@L["One per day for"]' suffix='@L["days"]' min="0" />
+        </div>
+        <div class="form-grid">
+            <mm-field asp-for="Input.KeepWeekly" kind="number" label='@L["One per week for"]' suffix='@L["weeks"]' min="0" />
+            <mm-field asp-for="Input.KeepMonthly" kind="number" label='@L["One per month for"]' suffix='@L["months"]' min="0" />
+        </div>
+    </mm-form-section>
+
+    <mm-form-section title='@L["Protection"]' icon="lock">
+        <mm-field asp-for="Input.Encrypt" kind="checkbox" label='@L["Encrypt the backups with a passphrase"]'
+                  help='@L["A backup holds everything: all mail, all passwords of the connected accounts, the keys. Encrypt it when it leaves this server."]' />
+        <div class="form-grid" data-encrypt-fields>
+            <mm-field asp-for="Input.Passphrase" kind="password" label='@L["Passphrase"]' autocomplete="new-password" reveal="true"
+                      help='@(Model.HasStoredPassphrase ? L["Leave empty to keep the passphrase. It is stored encrypted on this server."].Value : string.Format(L["At least {0} characters. It is stored encrypted on this server, so that scheduled backups can be encrypted."].Value, PlanModel.MinPassphraseLength))'
+                      show-when-field="Input.Encrypt" show-when-value="true" />
+            <mm-field asp-for="Input.PassphraseRepeat" kind="password" label='@L["Passphrase once more"]' autocomplete="new-password"
+                      show-when-field="Input.Encrypt" show-when-value="true" />
+        </div>
+        <div class="notice notice--warn" show-encrypt-note>
+            <mm-icon name="alert" class="notice__icon" />
+            <span class="notice__text">@L["Keep the passphrase somewhere else, too. An encrypted backup cannot be opened without it, and a new server does not have it: it is only inside the backups."]</span>
+        </div>
+        <mm-field asp-for="Input.Verify" kind="checkbox" label='@L["Read every backup back and compare it with its checksums before it counts"]' />
+        <mm-field asp-for="Input.NotifyOnFailure" kind="checkbox" label='@L["Tell the administrators (a message in their mailbox) when a backup fails"]' />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Backup/Plans" icon="arrow-left">@L["Back"]</mm-button>
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="secondary" type="submit" handler="RunNow" icon="play">@L["Back up now"]</mm-button>
+        }
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this schedule? The backups it made are not deleted."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        (function () {
+          var encrypt = document.getElementById("Input_Encrypt");
+          var note = document.querySelector("[show-encrypt-note]");
+          function sync() { if (note) { note.hidden = !encrypt.checked; } }
+          encrypt.addEventListener("change", sync);
+          sync();
+        }());
+    </script>
+}

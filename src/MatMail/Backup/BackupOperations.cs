@@ -224,6 +224,65 @@ public sealed class RestorePreparation
         return Path.Combine(PendingRestore.IncomingFolder(_config.DataDir), id.ToString("N") + extension);
     }
 
+    /// <summary>
+    /// Takes a backup file that is sent as the body of a request (no form: a backup is gigabytes, and a form would be copied to a temporary
+    /// file first). It appears under its id when it is whole and looks like a backup; the id is what the pages ask for.
+    /// </summary>
+    /// <exception cref="BackupCorruptException">It is no backup.</exception>
+    public async Task<(Guid Id, long Bytes, bool Encrypted)> SaveUploadAsync(Stream body, string? originalName, CancellationToken cancel)
+    {
+        Guid id = Guid.NewGuid();
+        string path = NewUploadPath(id, originalName ?? "backup.zip");
+        string partial = path + ".partial";
+        try
+        {
+            await using (var file = new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None, 128 * 1024, FileOptions.Asynchronous))
+            {
+                await body.CopyToAsync(file, cancel);
+            }
+
+            byte[] start = new byte[4];
+            using (var check = new FileStream(partial, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                int read = check.ReadAtLeast(start, start.Length, throwOnEndOfStream: false);
+                if (read < 4 || !(BackupEncryption.LooksEncrypted(start) || (start[0] == 'P' && start[1] == 'K')))
+                {
+                    throw new BackupCorruptException("This is not a MatMail backup.");
+                }
+            }
+
+            File.Move(partial, path);
+            return (id, new FileInfo(path).Length, BackupFiles.IsEncrypted(path));
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(partial);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // the next clean-up gets it
+            }
+        }
+    }
+
+    /// <summary>Removes an uploaded file that is not going to be restored after all.</summary>
+    public void DiscardUpload(Guid id)
+    {
+        if (FindUpload(id) is { } path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // the next clean-up gets it
+            }
+        }
+    }
+
     public string? FindUpload(Guid id)
     {
         string folder = PendingRestore.IncomingFolder(_config.DataDir);
@@ -407,6 +466,40 @@ public sealed class RestorePreparation
             _state = state;
             _message = message;
         }
+    }
+
+    /// <summary>Removes uploaded or fetched backups that nobody went on with (older than <paramref name="age"/>), unless a restore is under way.</summary>
+    public int CleanUp(TimeSpan age)
+    {
+        lock (_lock)
+        {
+            if (_state is PreparationState.Running or PreparationState.Restarting)
+            {
+                return 0;
+            }
+        }
+
+        string folder = PendingRestore.IncomingFolder(_config.DataDir);
+        if (!Directory.Exists(folder))
+        {
+            return 0;
+        }
+
+        int removed = 0;
+        foreach (FileInfo file in new DirectoryInfo(folder).EnumerateFiles().Where(f => DateTime.UtcNow - f.LastWriteTimeUtc > age))
+        {
+            try
+            {
+                file.Delete();
+                removed++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // the next clean-up gets it
+            }
+        }
+
+        return removed;
     }
 
     /// <summary>Forgets a failure (after it was shown).</summary>

@@ -35,6 +35,16 @@ public interface IBackupStorage : IDisposable
     Task DeleteAsync(string name, CancellationToken cancel);
 }
 
+/// <summary>Why a folder cannot be a local target.</summary>
+public enum LocalTargetProblem
+{
+    None,
+    Missing,
+    NotAbsolute,
+    Dots,
+    InsideDataVolume,
+}
+
 /// <summary>Which folders of the server a local target may be.</summary>
 public static class LocalTargetPolicy
 {
@@ -42,33 +52,37 @@ public static class LocalTargetPolicy
     /// A folder outside the data volume (a mounted disk or share), or one inside <c>backups</c> of the data volume. Anywhere else in the
     /// data volume would make every backup contain the backups before it, and a restore would move them aside.
     /// </summary>
-    public static string? Validate(string? path, string dataDir)
+    public static LocalTargetProblem Check(string? path, string dataDir)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            return "The folder is missing.";
+            return LocalTargetProblem.Missing;
         }
 
         if (!Path.IsPathRooted(path))
         {
-            return "The folder must be a full path, e.g. /backups.";
+            return LocalTargetProblem.NotAbsolute;
         }
 
         if (path.Split('/', '\\').Contains(".."))
         {
-            return "The folder must not contain “..”.";
+            return LocalTargetProblem.Dots;
         }
 
         string full = Path.GetFullPath(path);
         string data = Path.GetFullPath(dataDir);
-        string allowed = Path.Combine(data, "backups");
-        if (IsInside(full, data) && !IsInside(full, allowed))
-        {
-            return $"Inside the data volume only {allowed} may be used (anywhere else the backups would end up in the next backup).";
-        }
-
-        return null;
+        return IsInside(full, data) && !IsInside(full, Path.Combine(data, "backups")) ? LocalTargetProblem.InsideDataVolume : LocalTargetProblem.None;
     }
+
+    /// <summary>The problem in English (for the history of a run and for logs); null when the folder is fine. The pages translate <see cref="Check"/> themselves.</summary>
+    public static string? Validate(string? path, string dataDir) => Check(path, dataDir) switch
+    {
+        LocalTargetProblem.Missing => "The folder is missing.",
+        LocalTargetProblem.NotAbsolute => "The folder must be a full path, e.g. /backups.",
+        LocalTargetProblem.Dots => "The folder must not contain “..”.",
+        LocalTargetProblem.InsideDataVolume => $"Inside the data volume only {Path.Combine(Path.GetFullPath(dataDir), "backups")} may be used (anywhere else the backups would end up in the next backup).",
+        _ => null,
+    };
 
     public static bool IsInside(string path, string folder)
     {

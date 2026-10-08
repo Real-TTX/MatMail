@@ -1,0 +1,135 @@
+@page "/Admin/Backup"
+@model MatMail.Pages.Admin.Backup.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups";
+    ViewData["Title"] = L["Backups"].Value;
+    ViewData["Description"] = L["Everything of this installation – the database and the files of the data volume – is backed up as a whole, so that it can be restored on any server. Backups are made on a schedule to a folder or to a network share (NAS)."].Value;
+}
+
+<partial name="_BackupTabs" model='"overview"' />
+
+<script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+@if (Model.Report is { } report)
+{
+    <div class="notice notice--@(report.Succeeded ? "ok" : "danger")" role="status">
+        <mm-icon name="@(report.Succeeded ? "check-circle" : "alert-circle")" class="notice__icon" />
+        <span class="notice__text">
+            @if (report.Succeeded)
+            {
+                <b>@L["A backup was restored."]</b>
+                <span> @(report.BackupCreatedUtc is null ? string.Empty : string.Format(L["It was made on {0}"].Value, Fmt.DateTimeText(report.BackupCreatedUtc)))@(report.BackupVersion is null ? string.Empty : " (" + report.BackupVersion + ")").</span>
+                @if (!string.IsNullOrEmpty(report.SafetyBackup))
+                {
+                    <span> @string.Format(L["The state before is saved as {0}."].Value, report.SafetyBackup)</span>
+                }
+                <span class="muted"> @Fmt.DateTimeText(report.FinishedUtc)</span>
+            }
+            else
+            {
+                <b>@L["The restore failed. Nothing was changed."]</b>
+                <span> @report.Message</span>
+                <span class="muted"> @Fmt.DateTimeText(report.FinishedUtc)</span>
+            }
+        </span>
+        <form method="post" asp-page-handler="Dismiss" data-no-busy><button type="submit" class="icon-btn" title="@L["Dismiss"]" aria-label="@L["Dismiss"]"><mm-icon name="x" /></button></form>
+    </div>
+}
+
+@foreach ((NoticeKind kind, string text) in Model.Warnings)
+{
+    <div class="notice notice--@kind.ToString().ToLowerInvariant()" role="status">
+        <mm-icon name="@(kind == NoticeKind.Danger ? "alert-circle" : "alert")" class="notice__icon" />
+        <span class="notice__text">@text</span>
+    </div>
+}
+
+<section class="card" id="backup-activity" data-status-url="@Url.Page("/Admin/Backup/Index", "Status")" data-running="@(Model.Activity is null ? "false" : "true")" hidden="@(Model.Activity is null)">
+    <h2 class="card__title"><mm-icon name="refresh" /><span id="backup-activity-title">@(Model.Activity is null ? string.Empty : L["A backup is running"].Value)</span></h2>
+    <div class="progress" id="backup-progress"><div class="progress__bar"></div></div>
+    <p class="muted" id="backup-activity-text">@(Model.Activity?.Stage)</p>
+    <form method="post" asp-page-handler="Cancel" data-no-busy>
+        <button type="submit" class="btn btn--secondary"><mm-icon name="x" /><span>@L["Cancel"]</span></button>
+    </form>
+</section>
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search backups…"]' />
+    <mm-toolbar-select name="Status" label='@L["Result"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="succeeded">@L["Succeeded"]</option>
+        <option value="failed">@L["Failed"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="date_desc">@L["Newest first"]</option>
+        <option value="date_asc">@L["Oldest first"]</option>
+        <option value="size_desc">@L["Largest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No backup was made yet."]' empty-icon="archive">
+    <thead>
+        <tr>
+            <th>@L["When"]</th>
+            <th>@L["Schedule"]</th>
+            <th class="hide-sm">@L["Target"]</th>
+            <th class="hide-sm">@L["Size"]</th>
+            <th class="hide-sm">@L["Duration"]</th>
+            <th>@L["Result"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var run in Model.Paged.Rows)
+        {
+            <tr>
+                <td class="nowrap">@Fmt.DateTimeText(run.StartedDate)@if (run.Kind == BackupRunKind.Manual) { <span class="cell-sub"> · @L["manual run"]</span> }</td>
+                <td class="cell-title">@run.PlanName</td>
+                <td class="hide-sm">@run.TargetName</td>
+                <td class="hide-sm nowrap">@(run.Bytes is null ? "–" : Fmt.Size(run.Bytes.Value))@if (run.Encrypted) { <mm-icon name="lock" class="cell-icon" /> }</td>
+                <td class="hide-sm nowrap">@(run.FinishedDate is null ? "–" : (run.FinishedDate.Value - run.StartedDate).ToString(@"m\:ss"))</td>
+                <td>
+                    @if (run.Status == BackupRunStatus.Succeeded)
+                    {
+                        <mm-badge kind="ok" icon="check-circle">@L["Succeeded"]</mm-badge>
+                        @if (!string.IsNullOrEmpty(run.Message)) { <div class="cell-sub">@run.Message</div> }
+                    }
+                    else
+                    {
+                        <mm-badge kind="danger" icon="alert-circle">@L["Failed"]</mm-badge>
+                        <div class="cell-sub">@run.Message</div>
+                    }
+                </td>
+                <td class="is-actions">
+                    @if (run.Status == BackupRunStatus.Succeeded && run.FileName is not null && run.TargetId is not null)
+                    {
+                        <span class="icon-actions">
+                            <a class="icon-btn" href="/Admin/Backup/Restore?handler=File&target=@run.TargetId&file=@Uri.EscapeDataString(run.FileName)" title="@L["Download"]" aria-label="@L["Download"]"><mm-icon name="download" /></a>
+                            <a class="icon-btn" href="/Admin/Backup/RestoreConfirm?target=@run.TargetId&file=@Uri.EscapeDataString(run.FileName)" title="@L["Restore this backup"]" aria-label="@L["Restore this backup"]"><mm-icon name="rotate-ccw" /></a>
+                        </span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    @if (Model.PlanItems.Count > 0)
+    {
+        <form method="post" asp-page-handler="Run" class="inline-form" data-no-busy>
+            <select name="planId" class="form-control form-control--inline" aria-label="@L["Schedule"]">
+                @foreach (var item in Model.PlanItems) { <option value="@item.Value">@item.Text</option> }
+            </select>
+            <button type="submit" class="btn btn--primary"><mm-icon name="play" /><span>@L["Back up now"]</span></button>
+        </form>
+    }
+    <mm-button variant="secondary" href="/Admin/Backup/Download" icon="download">@L["Download a backup"]</mm-button>
+    <mm-button variant="secondary" href="/Admin/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
+</mm-list-actions>
+
+@section Scripts {
+    <script src="~/js/backup.js" asp-append-version="true"></script>
+}

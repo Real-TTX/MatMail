@@ -137,6 +137,7 @@ builder.Services.AddRazorPages(options =>
         // One line per admin area: who may open it.
         options.Conventions.AuthorizeFolder("/Admin/Tenants", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Settings", Permissions.SystemAdminPolicy);
+        options.Conventions.AuthorizeFolder("/Admin/Backup", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Users", Permissions.UsersManage);
         options.Conventions.AuthorizeFolder("/Admin/Roles", Permissions.RolesManage);
         options.Conventions.AuthorizeFolder("/Admin/Domains", Permissions.DomainsManage);

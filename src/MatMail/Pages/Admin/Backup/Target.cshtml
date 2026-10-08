@@ -1,0 +1,61 @@
+@page "/Admin/Backup/Target"
+@model MatMail.Pages.Admin.Backup.TargetModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Backups / Edit target" : "Administration / Backups / New target";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New target"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    @if (Model.IsEdit && Model.Target is { LastCheckOk: false } failed)
+    {
+        <div class="notice notice--danger">
+            <mm-icon name="alert-circle" class="notice__icon" />
+            <span class="notice__text"><b>@L["Last check"]:</b> @failed.LastCheckMessage <span class="muted">@Fmt.DateTimeText(failed.LastCheckDate)</span></span>
+        </div>
+    }
+
+    <mm-form-section title='@L["Target"]' icon="hard-drive">
+        <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. NAS in the basement"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.Kind" kind="select" label='@L["Type"]' asp-items="Model.KindItems" />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Enabled"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Folder of this server"]' icon="folder" show-when-field="Input.Kind" show-when-value="Local"
+                     description='@L["A folder that the program can write to: a mounted disk or network share, or a folder of the data volume."]'>
+        <mm-field asp-for="Input.LocalFolder" label='@L["Folder"]' placeholder="/backups"
+                  help='@string.Format(L["A full path inside the container. Inside the data volume only {0} may be used."].Value, Model.DataBackupFolder)' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["Network share (SMB)"]' icon="network" show-when-field="Input.Kind" show-when-value="Smb"
+                     description='@L["MatMail connects to the share itself (SMB 2 or 3, port 445): nothing has to be mounted. The server must not demand encrypted connections (SMB 3 encryption)."]'>
+        <div class="form-grid">
+            <mm-field asp-for="Input.Host" label='@L["Server"]' placeholder="nas.local" autocomplete="off" />
+            <mm-field asp-for="Input.Share" label='@L["Share"]' placeholder="backups" autocomplete="off" />
+        </div>
+        <mm-field asp-for="Input.ShareFolder" label='@L["Folder in the share"]' placeholder="matmail"
+                  help='@L["Made when it is not there. Empty: the root of the share."]' />
+        <div class="form-grid">
+            <mm-field asp-for="Input.Username" label='@L["User name"]' autocomplete="off" />
+            <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true"
+                      help='@(Model.HasStoredPassword ? L["Leave empty to keep the stored password. It is stored encrypted."].Value : L["Stored encrypted."].Value)' />
+        </div>
+        <mm-field asp-for="Input.Domain" label='@L["Domain (optional)"]' autocomplete="off" />
+        <div class="btn-row btn-row--tight">
+            <mm-button variant="secondary" type="submit" handler="Shares" icon="list">@L["Show the shares of the server"]</mm-button>
+        </div>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Backup/Targets" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" type="submit" handler="Test" icon="plug">@L["Test connection"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@L["Delete this target? The backups in it are not deleted."]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>

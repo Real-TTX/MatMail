@@ -24,6 +24,11 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
     public IReadOnlyList<MailAccount> AccountProblems { get; private set; } = Array.Empty<MailAccount>();
     public IReadOnlyList<ActivityLog> RecentLogs { get; private set; } = Array.Empty<ActivityLog>();
 
+    /// <summary>The newest backup that worked (system administrators only), and whether any schedule exists or the last run of one failed.</summary>
+    public DateTime? LastBackup { get; private set; }
+    public int BackupPlans { get; private set; }
+    public bool BackupFailed { get; private set; }
+
     public bool Can(string permission) => currentUser.Can(permission);
 
     public async Task<Microsoft.AspNetCore.Mvc.IActionResult> OnGetAsync()
@@ -34,6 +39,13 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
         }
 
         long? tenantId = currentUser.TenantId;
+        if (IsSystemAdmin)
+        {
+            LastBackup = await db.BackupRuns.AsNoTracking().Where(r => r.Status == BackupRunStatus.Succeeded).MaxAsync(r => (DateTime?)r.StartedDate);
+            BackupPlans = await db.BackupPlans.CountAsync(p => p.IsActive);
+            BackupFailed = await db.BackupPlans.AnyAsync(p => p.IsActive && p.LastStatus == BackupRunStatus.Failed);
+        }
+
         if (Can(Permissions.UsersManage))
         {
             UserCount = await db.Users.CountAsync();

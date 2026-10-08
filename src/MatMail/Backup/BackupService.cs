@@ -437,13 +437,17 @@ public sealed class BackupScheduler : BackgroundService
     private readonly BackupService _service;
     private readonly AppConfig _config;
     private readonly ILogger<BackupScheduler> _logger;
+    private readonly BackupDownloads? _downloads;
+    private readonly RestorePreparation? _preparation;
 
-    public BackupScheduler(IServiceScopeFactory scopes, BackupService service, AppConfig config, ILogger<BackupScheduler> logger)
+    public BackupScheduler(IServiceScopeFactory scopes, BackupService service, AppConfig config, ILogger<BackupScheduler> logger, BackupDownloads? downloads = null, RestorePreparation? preparation = null)
     {
         _scopes = scopes;
         _service = service;
         _config = config;
         _logger = logger;
+        _downloads = downloads;
+        _preparation = preparation;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -458,6 +462,9 @@ public sealed class BackupScheduler : BackgroundService
                 {
                     await RunDueAsync(stoppingToken);
                 }
+
+                _downloads?.CleanUp(TimeSpan.FromHours(1));
+                _preparation?.CleanUp(TimeSpan.FromHours(24));
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -516,6 +523,8 @@ public static class BackupRegistration
         services.AddSingleton<BackupStorageFactory>();
         services.AddSingleton<BackupCoordinator>();
         services.AddSingleton<BackupService>();
+        services.AddSingleton<BackupDownloads>();
+        services.AddSingleton<RestorePreparation>();
         return services;
     }
 }

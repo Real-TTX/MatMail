@@ -32,6 +32,7 @@
         <mm-field asp-for="Input.ForMailPrograms" kind="checkbox" label='@L["Messages of mail programs (Outlook, Thunderbird, phones)"]' />
         <mm-field asp-for="Input.ForSmartHost" kind="checkbox" label='@L["Messages of devices and servers (smart host)"]' />
         <mm-picker asp-for="Input.RelayRuleId" asp-items="Model.RuleItems" label='@L["Only for this smart host rule"]' placeholder='@L["Every rule"]'
+                   help='@L["With a rule chosen, the template is only for the messages that came in through it, whatever the boxes above say."]'
                    show-when-field="Input.ForSmartHost" show-when-value="true" />
     </mm-form-section>
 

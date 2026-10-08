@@ -69,7 +69,7 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         user.Culture = Cultures.Any(c => c.Value == Input.Culture && c.Value.Length > 0) ? Input.Culture : null;
         user.TextSize = ThemeService.TextSizes.Contains(Input.TextSize) ? Input.TextSize : "normal";
         user.Density = ThemeService.Densities.Contains(Input.Density) ? Input.Density : "comfortable";
-        user.TimeZone = Fmt.IsKnownZone(Input.TimeZone) ? Input.TimeZone : null;
+        user.TimeZone = TimeZones.Any(z => z.Value == Input.TimeZone) && Fmt.IsKnownZone(Input.TimeZone) ? Input.TimeZone : null;
         user.ShowPreviews = Input.ShowPreviews;
         await db.SaveChangesAsync();
         cache.InvalidateUser(user.Id);

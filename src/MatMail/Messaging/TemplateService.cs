@@ -15,6 +15,12 @@ namespace MatMail.Messaging;
 /// </summary>
 public sealed partial class TemplateService
 {
+    /// <summary>
+    /// The longest text that is put into a template (bytes of the part as it came in). A message beyond it goes out as it is: turning
+    /// 50 MB of text into HTML would cost several times that in memory.
+    /// </summary>
+    private const long MaxTextLength = 4_000_000;
+
     private readonly MatMailDbContext _db;
 
     public TemplateService(MatMailDbContext db) => _db = db;
@@ -54,9 +60,19 @@ public sealed partial class TemplateService
             return null;
         }
 
-        TextPart? plain = message.BodyParts.OfType<TextPart>().FirstOrDefault(p => !p.IsAttachment && p.IsPlain);
-        TextPart? html = message.BodyParts.OfType<TextPart>().FirstOrDefault(p => !p.IsAttachment && p.IsHtml);
-        if (plain is null && html is null)
+        // What the sender wrote, not what a script attached as text. A message that is cut into several texts (pictures in between) is
+        // not framed: where would the frame begin?
+        IReadOnlyList<TextPart> bodies = MessageContent.BodyParts(message);
+        TextPart[] plains = bodies.Where(p => p.IsPlain).ToArray();
+        TextPart[] htmls = bodies.Where(p => p.IsHtml).ToArray();
+        if (plains.Length + htmls.Length == 0 || plains.Length > 1 || htmls.Length > 1)
+        {
+            return null;
+        }
+
+        TextPart? plain = plains.FirstOrDefault();
+        TextPart? html = htmls.FirstOrDefault();
+        if (Size(plain) > MaxTextLength || Size(html) > MaxTextLength)
         {
             return null;
         }
@@ -95,13 +111,14 @@ public sealed partial class TemplateService
 
         if (html is not null)
         {
-            html.Text = WrapDocument(html.Text, frame);
+            MessageContent.SetText(html, WrapDocument(html.Text, frame));
             InlinePictures.Attach(message, html, pictures);
             return;
         }
 
         string document = "<!DOCTYPE html>\r\n<html><head><meta charset=\"utf-8\"></head><body>" + Insert(frame, TextToHtml(plain!.Text)) + "</body></html>";
-        var created = new TextPart("html") { Text = document };
+        var created = new TextPart("html");
+        MessageContent.SetText(created, document);
         AddAlternative(message, plain, created);
         InlinePictures.Attach(message, created, pictures);
     }
@@ -115,15 +132,60 @@ public sealed partial class TemplateService
         return BodyInParagraph().Replace(frame, match => $"<div{match.Groups[1].Value}>{{{{Body}}}}</div>");
     }
 
-    private static string Insert(string frame, string bodyHtml) => BodyPlaceholder().Replace(frame, _ => bodyHtml);
+    private static long Size(TextPart? part) => part?.Content?.Stream?.Length ?? 0;
+
+    /// <summary>The message goes where the first {{Body}} stands; a second one is left empty rather than showing as text.</summary>
+    private static string Insert(string frame, string bodyHtml)
+    {
+        bool first = true;
+        return BodyPlaceholder().Replace(frame, _ =>
+        {
+            if (!first)
+            {
+                return string.Empty;
+            }
+
+            first = false;
+            return bodyHtml;
+        });
+    }
 
     /// <summary>The message HTML with its body (what is inside &lt;body&gt;) put into the template; the head and the rest stay.</summary>
     private static string WrapDocument(string messageHtml, string frame)
     {
-        Match document = Document().Match(messageHtml);
-        return document.Success
-            ? document.Groups["before"].Value + Insert(frame, document.Groups["inner"].Value) + document.Groups["after"].Value
-            : Insert(frame, messageHtml);
+        int bodyTag = IndexOfBodyTag(messageHtml);
+        if (bodyTag >= 0)
+        {
+            int open = messageHtml.IndexOf('>', bodyTag);
+            int close = messageHtml.LastIndexOf("</body", StringComparison.OrdinalIgnoreCase);
+            if (open >= 0 && close > open)
+            {
+                return messageHtml[..(open + 1)] + Insert(frame, messageHtml[(open + 1)..close]) + messageHtml[close..];
+            }
+        }
+
+        return Insert(frame, messageHtml);
+    }
+
+    /// <summary>Where "&lt;body" starts as a tag of its own (not "&lt;bodyguard"); -1 when there is none.</summary>
+    private static int IndexOfBodyTag(string html)
+    {
+        for (int from = 0; ;)
+        {
+            int index = html.IndexOf("<body", from, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                return -1;
+            }
+
+            int next = index + "<body".Length;
+            if (next >= html.Length || html[next] is '>' or '/' || char.IsWhiteSpace(html[next]))
+            {
+                return index;
+            }
+
+            from = next;
+        }
     }
 
     /// <summary>Plain text as HTML: escaped, line breaks kept, web addresses made clickable.</summary>
@@ -161,9 +223,6 @@ public sealed partial class TemplateService
 
     [GeneratedRegex(@"<p(\s[^>]*)?>\s*\{\{\s*Body\s*\}\}\s*</p>", RegexOptions.IgnoreCase, 2000)]
     private static partial Regex BodyInParagraph();
-
-    [GeneratedRegex(@"^(?<before>.*?<body\b[^>]*>)(?<inner>.*)(?<after></body\s*>.*)$", RegexOptions.IgnoreCase | RegexOptions.Singleline, 2000)]
-    private static partial Regex Document();
 
     [GeneratedRegex(@"\bhttps?://(?:(?!&(?:lt|gt|quot|#39);)[^\s<>""])+", RegexOptions.IgnoreCase, 2000)]
     private static partial Regex Url();

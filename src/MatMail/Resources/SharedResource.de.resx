@@ -1011,6 +1011,7 @@
   <data name="Which messages" xml:space="preserve"><value>Welche Nachrichten</value></data>
   <data name="Who uses it" xml:space="preserve"><value>Wer sie verwendet</value></data>
   <data name="Width in pixels" xml:space="preserve"><value>Breite in Pixel</value></data>
+  <data name="With a rule chosen, the template is only for the messages that came in through it, whatever the boxes above say." xml:space="preserve"><value>Ist eine Regel gewählt, gilt die Vorlage nur für Nachrichten, die über sie hereingekommen sind – gleich, was oben angehakt ist.</value></data>
   <data name="With errors" xml:space="preserve"><value>Mit Fehlern</value></data>
   <data name="Work in this tenant" xml:space="preserve"><value>In diesem Mandanten arbeiten</value></data>
   <data name="Work with the &quot;Unassigned&quot; mailbox and distribute its messages" xml:space="preserve"><value>Mit dem Postfach „Unverteilt“ arbeiten und dessen Nachrichten verteilen</value></data>

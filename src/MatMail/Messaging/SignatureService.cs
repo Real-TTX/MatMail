@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using Ganss.Xss;
 using MatMail.Data;
 using Microsoft.EntityFrameworkCore;
 using MimeKit;
@@ -76,14 +75,17 @@ public sealed partial class SignatureService
     private static readonly HashSet<string> BlockElements = new(StringComparer.Ordinal)
     {
         "p", "div", "li", "ul", "ol", "table", "tbody", "thead", "tfoot", "tr", "td", "th", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6",
-        "section", "article", "header", "footer", "address", "pre",
+        "section", "article", "header", "footer", "address",
     };
 
     /// <summary>Block elements that disappear when their last line was left out (cells and rows stay: a table keeps its shape).</summary>
     private static readonly HashSet<string> RemovableBlocks = new(StringComparer.Ordinal)
     {
-        "p", "div", "li", "ul", "ol", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article", "header", "footer", "address", "pre",
+        "p", "div", "li", "ul", "ol", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article", "header", "footer", "address",
     };
+
+    /// <summary>Elements that make an inline wrapper more than a piece of a line: it holds lines of its own.</summary>
+    private const string LineStructure = "br, p, div, li, ul, ol, table, blockquote, h1, h2, h3, h4, h5, h6, pre, section, article, header, footer, address";
 
     private readonly MatMailDbContext _db;
 
@@ -134,14 +136,16 @@ public sealed partial class SignatureService
     private static string DropEmptyTextLines(string template, SignatureContext context)
     {
         HashSet<string> empty = EmptyPlaceholders(context);
-        if (empty.Count == 0)
-        {
-            return template;
-        }
+        return empty.Count == 0 ? template : DropEmptyTextLines(template, empty);
+    }
 
-        string[] lines = template.Split('\n');
+    /// <summary>Plain text, line by line; the line ends of the text (CRLF or LF) stay what they were.</summary>
+    private static string DropEmptyTextLines(string text, HashSet<string> empty)
+    {
+        string newline = text.Contains("\r\n") ? "\r\n" : "\n";
+        string[] lines = text.Replace("\r\n", "\n").Split('\n');
         string[] kept = lines.Where(line => !OnlyEmptyPlaceholders(NamesIn(line), empty)).ToArray();
-        return kept.Length == lines.Length ? template : string.Join('\n', kept);
+        return kept.Length == lines.Length ? text : string.Join(newline, kept);
     }
 
     private static string DropEmptyHtmlLines(string template, SignatureContext context)
@@ -158,14 +162,17 @@ public sealed partial class SignatureService
             return template;
         }
 
-        return DropEmptyLines(body, empty) || body.InnerHtml.Length != template.Length ? body.InnerHtml : template;
+        (bool dropped, _) = DropEmptyLines(body, empty);
+        return dropped ? body.InnerHtml : template;
     }
 
     /// <summary>
-    /// Goes through the lines of a block: the runs between line breaks and nested blocks. Returns true when lines were left out and
-    /// nothing visible remains in the block (the caller then removes the block as well).
+    /// Goes through the lines of a block: the runs between line breaks and nested blocks. An inline wrapper that holds line breaks
+    /// or blocks (a font element around a paragraph with &lt;br&gt;) is gone through as a block of its own, so one empty line in it
+    /// does not take the whole wrapper along. Text in &lt;pre&gt; has its lines separated by newlines.
+    /// Returns whether lines were left out, and whether nothing visible remains in the block (the caller then removes it as well).
     /// </summary>
-    private static bool DropEmptyLines(INode container, HashSet<string> empty)
+    private static (bool Dropped, bool Emptied) DropEmptyLines(INode container, HashSet<string> empty)
     {
         bool dropped = false;
         var line = new List<INode>();
@@ -177,14 +184,28 @@ public sealed partial class SignatureService
                 dropped |= DropLine(line, lineBreak, empty);
                 line.Clear();
             }
-            else if (child is IElement block && BlockElements.Contains(block.LocalName))
+            else if (child is IElement { LocalName: "pre" } pre)
             {
                 dropped |= DropLine(line, null, empty);
                 line.Clear();
-                if (DropEmptyLines(block, empty) && RemovableBlocks.Contains(block.LocalName))
+                if (DropEmptyPreLines(pre, empty))
                 {
-                    block.Remove();
                     dropped = true;
+                    if (!HasVisibleContent(pre))
+                    {
+                        pre.Remove();
+                    }
+                }
+            }
+            else if (child is IElement element && (BlockElements.Contains(element.LocalName) || element.QuerySelector(LineStructure) is not null))
+            {
+                dropped |= DropLine(line, null, empty);
+                line.Clear();
+                (bool innerDropped, bool innerEmptied) = DropEmptyLines(element, empty);
+                dropped |= innerDropped;
+                if (innerEmptied && IsRemovable(element))
+                {
+                    element.Remove();
                 }
             }
             else
@@ -194,7 +215,26 @@ public sealed partial class SignatureService
         }
 
         dropped |= DropLine(line, null, empty);
-        return dropped && container is IElement element && !HasVisibleContent(element);
+        return (dropped, dropped && container is IElement self && !HasVisibleContent(self));
+    }
+
+    /// <summary>Block elements go when they are empty, inline wrappers too; the cells and rows of a table stay.</summary>
+    private static bool IsRemovable(IElement element) => RemovableBlocks.Contains(element.LocalName) || !BlockElements.Contains(element.LocalName);
+
+    private static bool DropEmptyPreLines(IElement pre, HashSet<string> empty)
+    {
+        bool dropped = false;
+        foreach (IText text in SelfAndDescendants(pre).OfType<IText>().ToList())
+        {
+            string result = DropEmptyTextLines(text.Data, empty);
+            if (result != text.Data)
+            {
+                text.Data = result;
+                dropped = true;
+            }
+        }
+
+        return dropped;
     }
 
     /// <summary>Removes a line (and the line break that ends it, or else the one before it) when all its placeholders are empty.</summary>
@@ -255,10 +295,13 @@ public sealed partial class SignatureService
         _ => Enumerable.Empty<string>(),
     };
 
-    /// <summary>HTML of a signature or footer without anything active in it. Pictures may be embedded (data: addresses), nothing else.</summary>
+    /// <summary>
+    /// HTML of a signature or footer for the page: nothing active in it, no forms and no positioning (see <see cref="EditorHtml"/>).
+    /// Pictures may be embedded (data: addresses), nothing else.
+    /// </summary>
     public static string Sanitize(string html)
     {
-        var sanitizer = new HtmlSanitizer { AllowedSchemes = { "mailto", "tel", "data" } };
+        Ganss.Xss.HtmlSanitizer sanitizer = EditorHtml.CreateSanitizer("mailto", "tel", "data");
         sanitizer.FilterUrl += (_, e) =>
         {
             if (e.OriginalUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && !(e.Tag?.TagName == "IMG" && DataPicture().IsMatch(e.OriginalUrl)))
@@ -288,7 +331,11 @@ public sealed partial class SignatureService
             return Render(signature.PlainText, context, html: false);
         }
 
-        string html = Render(signature.Html, context, html: true);
+        return ToPlainText(Render(signature.Html, context, html: true));
+    }
+
+    private static string ToPlainText(string html)
+    {
         try
         {
             return HtmlText.ToPlainText(html).Trim();
@@ -299,20 +346,26 @@ public sealed partial class SignatureService
         }
     }
 
-    /// <summary>The signatures a user can choose from for a mailbox: tenant-wide, the mailbox' own and the user's own.</summary>
+    /// <summary>
+    /// The signatures a user can choose from for a mailbox: tenant-wide, the mailbox' own and the user's own. The default ones come
+    /// first, the most specific (user, mailbox, tenant) of them first of all: the web client preselects the first one.
+    /// </summary>
     public async Task<IReadOnlyList<Signature>> GetSelectableAsync(long tenantId, long? mailboxId, long userId, CancellationToken cancel = default)
-        => await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
+    {
+        List<Signature> selectable = await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
             .Where(s => s.TenantId == tenantId && s.IsActive && s.Kind == SignatureKind.Signature
                         && (s.Scope == AppliesTo.Tenant
                             || (s.Scope == AppliesTo.Mailbox && s.MailboxId == mailboxId)
                             || (s.Scope == AppliesTo.User && s.UserId == userId)))
-            .OrderByDescending(s => s.IsDefault).ThenBy(s => s.Name)
             .ToListAsync(cancel);
+        return selectable.OrderByDescending(s => s.IsDefault).ThenByDescending(s => (int)s.Scope).ThenBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
 
     /// <summary>
     /// Adds what the server adds to an outgoing message: the signature of the sender when it is set to be added on the server and the
     /// message does not carry it yet (mail programs only), then every footer that applies (tenant-wide, the sending mailbox', the
-    /// sending user's). Signed and encrypted messages are left as they are.
+    /// sending user's), at the end of the text. Signed and encrypted messages are left as they are, and so are attachments that only
+    /// look like text.
     /// </summary>
     public async Task ApplyAsync(
         MimeMessage message, SubmissionSource source, long tenantId, long? mailboxId, long? userId, SignatureContext context, CancellationToken cancel = default)
@@ -322,66 +375,92 @@ public sealed partial class SignatureService
             return;
         }
 
-        List<Signature> candidates = await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
-            .Where(s => s.TenantId == tenantId && s.IsActive && (s.Kind == SignatureKind.Footer || s.AddOnServer)
-                        && (s.Scope == AppliesTo.Tenant
-                            || (s.Scope == AppliesTo.Mailbox && s.MailboxId == mailboxId)
-                            || (s.Scope == AppliesTo.User && s.UserId == userId)))
-            .OrderBy(s => s.Scope).ThenBy(s => s.Id)
-            .ToListAsync(cancel);
+        List<Signature> candidates = (await _db.Signatures.IgnoreQueryFilters().AsNoTracking()
+                .Where(s => s.TenantId == tenantId && s.IsActive && (s.Kind == SignatureKind.Footer || s.AddOnServer)
+                            && (s.Scope == AppliesTo.Tenant
+                                || (s.Scope == AppliesTo.Mailbox && s.MailboxId == mailboxId)
+                                || (s.Scope == AppliesTo.User && s.UserId == userId)))
+                .ToListAsync(cancel))
+            .OrderBy(s => (int)s.Scope).ThenBy(s => s.Id)
+            .ToList();
 
-        List<Signature> footers = candidates.Where(s => s.Kind == SignatureKind.Footer).ToList();
-        Signature? signature = source == SubmissionSource.Web ? null : ChooseSignature(candidates.Where(s => s.Kind == SignatureKind.Signature));
+        // What each of them comes to for this sender; one that comes to nothing is not added at all (no empty "-- " separator).
+        Signature? chosen = source == SubmissionSource.Web ? null : ChooseSignature(candidates.Where(s => s.Kind == SignatureKind.Signature));
+        Rendered? signature = chosen is null ? null : RenderFor(chosen, context);
+        List<Rendered> footers = candidates.Where(s => s.Kind == SignatureKind.Footer).Select(f => RenderFor(f, context)).Where(r => !r.IsBlank).ToList();
+        if (signature is { IsBlank: true })
+        {
+            signature = null;
+        }
+
         if (footers.Count == 0 && signature is null)
         {
             return;
         }
 
+        // The end of the text: the last part of each kind (a message that is cut into pieces by pictures is signed after its last piece).
+        IReadOnlyList<TextPart> bodies = MessageContent.BodyParts(message);
+        TextPart? html = bodies.LastOrDefault(p => p.IsHtml);
+        TextPart? plain = bodies.LastOrDefault(p => p.IsPlain);
         var pictures = new List<MimePart>();
-        TextPart? firstHtml = message.BodyParts.OfType<TextPart>().FirstOrDefault(p => !p.IsAttachment && p.IsHtml);
-        foreach (TextPart part in message.BodyParts.OfType<TextPart>().Where(p => !p.IsAttachment))
+
+        if (html is not null)
         {
-            if (part.IsHtml)
+            string addition = string.Empty;
+            if (signature is { Html.Length: > 0 } && !HtmlCarriesSignature(html.Text, signature.Plain))
             {
-                string html = string.Empty;
-                if (signature is not null && !HasSignatureMarker(part.Text))
-                {
-                    html += "<div class=\"mm-signature\">" + Render(signature.Html, context, html: true) + "</div>";
-                }
-
-                html += string.Concat(footers.Select(f => "<div class=\"mm-footer\">" + Render(f.Html, context, html: true) + "</div>"));
-                if (html.Length > 0)
-                {
-                    if (ReferenceEquals(part, firstHtml))
-                    {
-                        html = InlinePictures.Reference(html, pictures);
-                    }
-
-                    int body = part.Text.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
-                    part.Text = body >= 0 ? part.Text.Insert(body, html) : part.Text + html;
-                }
+                addition += "<div class=\"mm-signature\">" + signature.Html + "</div>";
             }
-            else if (part.IsPlain)
+
+            addition += string.Concat(footers.Select(f => "<div class=\"mm-footer\">" + f.Html + "</div>"));
+            if (addition.Length > 0)
             {
-                string text = part.Text.TrimEnd();
-                if (signature is not null && !ContainsText(text, ToPlainText(signature, context)))
-                {
-                    text += "\r\n\r\n-- \r\n" + ToPlainText(signature, context);
-                }
-
-                if (footers.Count > 0)
-                {
-                    text += "\r\n\r\n-- \r\n" + string.Join("\r\n\r\n", footers.Select(f => ToPlainText(f, context)));
-                }
-
-                part.Text = text + "\r\n";
+                addition = InlinePictures.Reference(addition, pictures);
+                string text = html.Text;
+                int body = text.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+                MessageContent.SetText(html, body >= 0 ? text.Insert(body, addition) : text + addition);
             }
         }
 
-        if (firstHtml is not null)
+        if (plain is not null)
         {
-            InlinePictures.Attach(message, firstHtml, pictures);
+            string text = plain.Text.TrimEnd();
+            string original = text;
+            if (signature is { Plain.Length: > 0 } && !PlainCarriesSignature(text, signature.Plain))
+            {
+                text += "\r\n\r\n-- \r\n" + signature.Plain;
+            }
+
+            string[] footerTexts = footers.Select(f => f.Plain).Where(t => t.Length > 0).ToArray();
+            if (footerTexts.Length > 0)
+            {
+                text += "\r\n\r\n-- \r\n" + string.Join("\r\n\r\n", footerTexts);
+            }
+
+            if (text != original)
+            {
+                MessageContent.SetText(plain, text + "\r\n");
+            }
         }
+
+        if (html is not null)
+        {
+            InlinePictures.Attach(message, html, pictures);
+        }
+    }
+
+    /// <summary>A signature or footer as it comes out for one sender, as HTML and as text.</summary>
+    private sealed record Rendered(string Html, string Plain)
+    {
+        /// <summary>Nothing to show: no text and no picture.</summary>
+        public bool IsBlank => Plain.Length == 0 && !Html.Contains("<img", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static Rendered RenderFor(Signature signature, SignatureContext context)
+    {
+        string html = Render(signature.Html, context, html: true);
+        string plain = ToPlainText(signature, context);
+        return new Rendered(string.IsNullOrWhiteSpace(plain) && !html.Contains("<img", StringComparison.OrdinalIgnoreCase) ? string.Empty : html, plain);
     }
 
     /// <summary>The signature that applies: the user's own, else the mailbox's, else the tenant's; the default one first.</summary>
@@ -389,11 +468,31 @@ public sealed partial class SignatureService
         => signatures.OrderByDescending(s => s.Scope == AppliesTo.User).ThenByDescending(s => s.Scope == AppliesTo.Mailbox)
             .ThenByDescending(s => s.IsDefault).ThenBy(s => s.Id).FirstOrDefault();
 
-    /// <summary>The web client wraps the signature it inserts in a block of this class.</summary>
-    private static bool HasSignatureMarker(string html) => SignatureMarker().IsMatch(html);
+    /// <summary>
+    /// Whether the message already carries the signature: the marker of the web client, or its text. What is quoted from an older
+    /// message (a block quote) does not count: a reply to a message that was signed is not signed itself.
+    /// </summary>
+    private static bool HtmlCarriesSignature(string html, string signatureText)
+    {
+        IHtmlDocument document = new HtmlParser().ParseDocument(html);
+        foreach (IElement quote in document.QuerySelectorAll("blockquote").ToList())
+        {
+            quote.Remove();
+        }
 
+        return document.QuerySelector(".mm-signature") is not null || ContainsText(ToPlainText(document.Body?.InnerHtml ?? string.Empty), signatureText);
+    }
+
+    /// <summary>Plain text: quoted lines (those that begin with "&gt;") do not count.</summary>
+    private static bool PlainCarriesSignature(string text, string signatureText)
+        => ContainsText(string.Join('\n', text.Split('\n').Where(line => !line.TrimStart().StartsWith('>'))), signatureText);
+
+    /// <summary>Whether the snippet is in the text, whatever the line breaks and the spacing.</summary>
     private static bool ContainsText(string text, string snippet)
-        => !string.IsNullOrWhiteSpace(snippet) && text.Replace("\r\n", "\n").Contains(snippet.Trim().Replace("\r\n", "\n"), StringComparison.Ordinal);
+    {
+        string wanted = Whitespace().Replace(snippet, " ").Trim();
+        return wanted.Length > 0 && Whitespace().Replace(text, " ").Contains(wanted, StringComparison.Ordinal);
+    }
 
     [GeneratedRegex(@"mmph(\w+?)mmph")]
     private static partial Regex GuardedPlaceholder();
@@ -401,8 +500,8 @@ public sealed partial class SignatureService
     [GeneratedRegex(@"^data:image/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=\s]+$", RegexOptions.IgnoreCase)]
     private static partial Regex DataPicture();
 
-    [GeneratedRegex(@"class=""[^""]*\bmm-signature\b", RegexOptions.IgnoreCase)]
-    private static partial Regex SignatureMarker();
+    [GeneratedRegex(@"\s+")]
+    private static partial Regex Whitespace();
 
     [GeneratedRegex(@"\{\{\s*(\w+)\s*\}\}")]
     private static partial Regex Placeholder();

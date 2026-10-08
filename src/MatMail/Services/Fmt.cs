@@ -11,7 +11,7 @@ namespace MatMail.Services;
 /// </summary>
 public sealed class Fmt
 {
-    private static readonly ConcurrentDictionary<string, TimeZoneInfo?> Zones = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, TimeZoneInfo> Zones = new(StringComparer.Ordinal);
 
     private readonly TimeZoneInfo _serverZone;
     private readonly IHttpContextAccessor _http;
@@ -28,25 +28,35 @@ public sealed class Fmt
     /// <summary>Whether the id names a time zone this server knows.</summary>
     public static bool IsKnownZone(string? id) => Find(id) is not null;
 
+    /// <summary>
+    /// The zone of an id, or null. Ids that cannot be one ("Europe/Berlin", "Etc/GMT+5", "UTC" are the shapes) are not even looked up,
+    /// and only zones that exist are remembered: what a person posts must not grow the memory of the server or reach into its files.
+    /// </summary>
     private static TimeZoneInfo? Find(string? id)
     {
-        if (string.IsNullOrWhiteSpace(id))
+        if (string.IsNullOrWhiteSpace(id) || id.Length > 64 || !ZoneId.IsMatch(id) || id.Contains(".."))
         {
             return null;
         }
 
-        return Zones.GetOrAdd(id, key =>
+        if (Zones.TryGetValue(id, out TimeZoneInfo? known))
         {
-            try
-            {
-                return TimeZoneInfo.FindSystemTimeZoneById(key);
-            }
-            catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
-            {
-                return null;
-            }
-        });
+            return known;
+        }
+
+        try
+        {
+            TimeZoneInfo zone = TimeZoneInfo.FindSystemTimeZoneById(id);
+            Zones[id] = zone;
+            return zone;
+        }
+        catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+        {
+            return null;
+        }
     }
+
+    private static readonly System.Text.RegularExpressions.Regex ZoneId = new(@"^[A-Za-z][A-Za-z0-9_+\-]*(/[A-Za-z0-9_+\-]+){0,2}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
     public DateTime ToLocal(DateTime utc)
     {

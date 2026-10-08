@@ -99,3 +99,38 @@ public class MessageEncodingTests : IAsyncLifetime
         Assert.True(result.Accepted, result.Error);
     }
 }
+
+public class TransferEncodingTests
+{
+    private static MimeMessage Parse(string transferEncoding)
+    {
+        string raw = "From: a@example.test\r\nTo: b@example.test\r\nSubject: x\r\nMIME-Version: 1.0\r\n" +
+                     "Content-Type: text/plain; charset=us-ascii\r\nContent-Transfer-Encoding: " + transferEncoding + "\r\n\r\nPlain ascii text\r\n";
+        return MimeMessage.Load(new MemoryStream(Encoding.ASCII.GetBytes(raw)));
+    }
+
+    [Theory]
+    [InlineData("7bit")]
+    [InlineData("8bit")]
+    [InlineData("quoted-printable")]
+    [InlineData("base64")]
+    public void A_text_with_umlauts_written_into_a_part_leaves_with_an_encoding_that_fits(string transferEncoding)
+    {
+        MimeMessage message = Parse(transferEncoding);
+        var part = (TextPart)message.Body!;
+
+        MessageContent.SetText(part, "Grüße aus Köln €");
+
+        byte[] bytes = MimeSerializer.ToBytes(message);
+        string wire = Encoding.ASCII.GetString(bytes);
+        string header = wire[..wire.IndexOf("\r\n\r\n", StringComparison.Ordinal)];
+
+        // Either the text is encoded (quoted-printable, base64) or the message says it is 8-bit; never 8-bit bytes under a 7bit label.
+        bool highBytes = bytes.Any(b => b > 127);
+        bool labelledSevenBit = !header.Contains("Content-Transfer-Encoding", StringComparison.OrdinalIgnoreCase) || header.Contains("Content-Transfer-Encoding: 7bit", StringComparison.OrdinalIgnoreCase);
+        Assert.False(highBytes && labelledSevenBit, header);
+
+        MimeMessage roundTrip = MimeMessage.Load(new MemoryStream(bytes));
+        Assert.Equal("Grüße aus Köln €", roundTrip.TextBody!.TrimEnd());
+    }
+}

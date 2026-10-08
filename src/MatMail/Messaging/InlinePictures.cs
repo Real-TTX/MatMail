@@ -28,7 +28,8 @@ public static partial class InlinePictures
             {
                 Content = new MimeContent(new MemoryStream(bytes)),
                 ContentTransferEncoding = ContentEncoding.Base64,
-                ContentId = MimeKit.Utils.MimeUtils.GenerateMessageId(),
+                // Not the name of this machine (in a container it is a hash that says nothing and is nobody's business).
+                ContentId = Guid.NewGuid().ToString("N") + "@picture.invalid",
                 ContentDisposition = new ContentDisposition(ContentDisposition.Inline),
             };
             pictures.Add(picture);

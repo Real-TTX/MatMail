@@ -113,8 +113,9 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
         {
             ModelState.AddModelError("Input.Html", l["The template is too large; use smaller pictures."]);
         }
-        else if (!TemplateService.HasPlaceForBody(Input.Html))
+        else if (!TemplateService.HasPlaceForBody(SignatureService.SanitizeTemplate(Input.Html)))
         {
+            // Checked on what is stored: a {{Body}} inside something the cleaning removes (a script) would be gone.
             ModelState.AddModelError("Input.Html", l["The template must say where the message goes: add the placeholder {{Body}}."]);
         }
 
@@ -158,10 +159,12 @@ public class EditModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) 
         template.Scope = scope;
         template.MailboxId = scope == AppliesTo.Mailbox ? Input.MailboxId : null;
         template.UserId = scope == AppliesTo.User ? Input.UserId : null;
-        template.ForWebClient = Input.ForWebClient;
-        template.ForMailPrograms = Input.ForMailPrograms;
-        template.ForSmartHost = Input.ForSmartHost;
         template.RelayRuleId = Input.ForSmartHost ? Input.RelayRuleId : null;
+
+        // A template for one smart-host rule is for what came in through that rule: the other sources cannot come through a rule.
+        template.ForWebClient = template.RelayRuleId is null && Input.ForWebClient;
+        template.ForMailPrograms = template.RelayRuleId is null && Input.ForMailPrograms;
+        template.ForSmartHost = Input.ForSmartHost;
         template.Mode = mode;
         template.Html = SignatureService.SanitizeTemplate(Input.Html.Trim());
         template.Priority = Input.Priority;

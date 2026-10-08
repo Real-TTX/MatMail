@@ -231,21 +231,34 @@
 
     editor.addEventListener("dragover", function (e) { if (e.dataTransfer && Array.prototype.some.call(e.dataTransfer.types || [], function (t) { return t === "Files"; })) { e.preventDefault(); } });
     editor.addEventListener("drop", function (e) {
-      var files = Array.prototype.filter.call((e.dataTransfer && e.dataTransfer.files) || [], function (f) { return /^image\//.test(f.type); });
-      if (files.length) { e.preventDefault(); files.forEach(insertPicture); }
+      var all = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []);
+      if (!all.length) { return; }
+      // Any file that is dropped here is taken: left alone, the browser would open it and leave the page with the edit.
+      e.preventDefault();
+      var images = all.filter(function (f) { return /^image\//.test(f.type); });
+      images.forEach(insertPicture);
+      if (images.length < all.length) { complain(T("pictureType", "Only PNG, JPEG, GIF and WebP pictures can be inserted.")); }
     });
 
-    /** Pasted HTML (Word, web pages) without scripts, styles of the source and Office leftovers. */
+    /**
+     * Pasted HTML (Word, web pages) and whatever the editor is given, without scripts, forms, positioning, styles of the source and
+     * Office leftovers. A deny-list for convenience only: the server cleans what is saved (and what is loaded) with an allow-list.
+     */
     function clean(html) {
       var parsed = new DOMParser().parseFromString(html, "text/html");
-      parsed.querySelectorAll("script,style,meta,link,title,xml,object,embed,iframe,frame,frameset,applet,base,form,noscript,template").forEach(function (node) { node.remove(); });
+      parsed.querySelectorAll("script,style,meta,link,title,xml,object,embed,iframe,frame,frameset,applet,base,form,noscript,template,input,button,select,textarea,option,optgroup,fieldset,label,datalist,output,svg,math,audio,video,canvas,dialog,details").forEach(function (node) { node.remove(); });
       parsed.querySelectorAll("*").forEach(function (node) {
         Array.prototype.slice.call(node.attributes).forEach(function (attribute) {
           var name = attribute.name.toLowerCase();
           var value = attribute.value || "";
-          if (name.indexOf("on") === 0 || name === "class" || name === "lang" || /^\s*javascript:/i.test(value)) { node.removeAttribute(attribute.name); }
+          // Browsers ignore tabs, line breaks and spaces inside an address: "jav&#9;ascript:" is a script address too.
+          var address = value.replace(/[\u0000-  ]+/g, "");
+          var scriptAddress = /^(javascript|vbscript):/i.test(address);
+          var foreignData = /^data:/i.test(address) && !(node.tagName === "IMG" && name === "src" && /^data:image\//i.test(address));
+          if (name.indexOf("on") === 0 || scriptAddress || foreignData
+              || /^(class|lang|id|name|for|form|formaction|action|method|tabindex|accesskey|contenteditable|autofocus|draggable)$/.test(name)) { node.removeAttribute(attribute.name); }
           else if (name === "style") {
-            var kept = value.split(";").filter(function (rule) { return rule.trim() && !/^\s*(mso-|position|z-index)/i.test(rule); }).join(";");
+            var kept = value.split(";").filter(function (rule) { return rule.trim() && !/^\s*(mso-|position|z-index|top|left|right|bottom|inset|pointer-events|clip|transform|filter|cursor|content)/i.test(rule); }).join(";");
             if (kept) { node.setAttribute("style", kept); } else { node.removeAttribute("style"); }
           }
         });

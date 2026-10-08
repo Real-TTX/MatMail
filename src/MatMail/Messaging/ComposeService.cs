@@ -187,7 +187,8 @@ public sealed partial class ComposeService
             Cc = message.Cc.Mailboxes.Select(Format).ToList(),
             Bcc = message.Bcc.Mailboxes.Select(Format).ToList(),
             Subject = message.Subject ?? string.Empty,
-            Html = message.HtmlBody ?? TextToHtmlBody(message.TextBody),
+            // A draft can come from elsewhere (a mail program, another person with access to the mailbox): into the page only as clean as a reply.
+            Html = EditorHtml.Clean(message.HtmlBody ?? TextToHtmlBody(message.TextBody), "data", "cid", "mailto", "tel"),
             InReplyTo = message.InReplyTo is null ? null : "<" + message.InReplyTo.Trim('<', '>') + ">",
             References = message.References.Count == 0 ? null : string.Join(' ', message.References.Select(r => "<" + r.Trim('<', '>') + ">")),
         };
@@ -480,10 +481,10 @@ public sealed partial class ComposeService
     private static string OriginalBodyForQuote(MimeMessage original)
     {
         string html = original.HtmlBody ?? TextToHtmlBody(original.TextBody);
-        var sanitizer = new HtmlSanitizer();
+        // The quoted message comes from anybody and goes into the page of the editor: see EditorHtml.
+        HtmlSanitizer sanitizer = EditorHtml.CreateSanitizer("mailto");
         sanitizer.AllowedTags.Remove("img");
         sanitizer.AllowedTags.Remove("style");
-        sanitizer.AllowedSchemes.Add("mailto");
         return sanitizer.Sanitize(html);
     }
 
@@ -499,12 +500,7 @@ public sealed partial class ComposeService
 
     private static string SanitizeOutgoing(string html)
     {
-        var sanitizer = new HtmlSanitizer();
-        sanitizer.AllowedSchemes.Add("data");
-        sanitizer.AllowedSchemes.Add("cid");
-        sanitizer.AllowedSchemes.Add("mailto");
-        sanitizer.AllowedSchemes.Add("tel");
-        return sanitizer.Sanitize(html);
+        return EditorHtml.Clean(html, "data", "cid", "mailto", "tel");
     }
 
     private static string WrapHtml(string body)

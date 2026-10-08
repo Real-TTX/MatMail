@@ -44,6 +44,7 @@
   transition: box-shadow var(--transition), background var(--transition);
 }
 .fab-compose { display: none; }
+.mm-signature { contain: paint; }   /* whatever a signature does, it stays inside its own block */
 .btn-compose:hover { box-shadow: var(--shadow-md); background: color-mix(in srgb, var(--color-primary) 20%, transparent); }
 .btn-compose .icon { width: 1.4rem; height: 1.4rem; }
 

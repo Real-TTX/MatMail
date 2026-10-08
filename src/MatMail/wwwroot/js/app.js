@@ -25,7 +25,7 @@
     if (backdrop) { backdrop.addEventListener("click", function () { setOpen(false); }); }
     if (close) { close.addEventListener("click", function () { setOpen(false); }); }
     sidebar.addEventListener("click", function (e) {
-      if (e.target.closest("a.nav-item, a.area-switch__item") && window.matchMedia("(max-width: 960px)").matches) { setOpen(false); }
+      if (e.target.closest("a.nav-item, a.area-link") && window.matchMedia("(max-width: 960px)").matches) { setOpen(false); }
     });
     window.MatMail = window.MatMail || {};
     window.MatMail.setSidebarOpen = setOpen;

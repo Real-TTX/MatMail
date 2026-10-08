@@ -305,6 +305,7 @@ dialog.dialog--lg { width: min(56rem, 96vw); }
 .dropdown__divider { height: 1px; margin: 0.35rem 0.25rem; background: var(--color-border); }
 .dropdown__label { padding: 0.25rem 0.7rem; font-size: 0.74rem; font-weight: 600; color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
 .dropdown__form { margin: 0; }
+.dropdown__scroll { max-height: 15rem; overflow-y: auto; }   /* a hoster with many tenants: the list scrolls, the menu stays small */
 .dropdown__version { padding: 0.4rem 0.7rem 0.2rem; font-size: 0.74rem; color: var(--color-text-faint); }
 .dropdown .segmented { margin: 0.1rem 0.5rem 0.3rem; }
 
@@ -376,8 +377,10 @@ dialog.picker-dialog::backdrop { background: rgba(10, 14, 24, 0.5); }
     border-radius: 0;
     overflow-y: auto;
   }
+  .dropdown--up .dropdown__menu { inset: 0; }   /* the account menu opens upwards on a larger screen: as a sheet it fills the drawer */
   .dropdown__header { display: flex; margin: 0 -0.75rem 0.5rem; }
   .dropdown__item { padding: 0.85rem 0.75rem; font-size: 1rem; }
+  .dropdown__scroll { max-height: none; overflow: visible; }   /* the sheet scrolls */
 }
 
 /* ---- Rich text editor (signatures, templates) ---- */

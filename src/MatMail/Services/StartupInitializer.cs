@@ -84,7 +84,7 @@ public static class StartupInitializer
             }
             catch (Exception ex)
             {
-                logger.LogDebug(ex, "Could not check whether the database exists; the migration decides.");
+                logger.LogDebug(ex, "Could not check whether the database exists ({Reason}); the migration decides.", ex.GetType().Name);
                 return;
             }
         }

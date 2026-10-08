@@ -180,33 +180,6 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
 .sidebar__brand-text { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; flex: 1; }
 .sidebar .sidebar__close { display: none; }
 
-.area-switch {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0.25rem 0.75rem 0.5rem;
-  padding: 0.25rem;
-  background: var(--color-surface-alt);
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  flex: none;
-}
-.area-switch__item {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 999px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-  font-size: 0.875rem;
-  text-decoration: none;
-  transition: background var(--transition), color var(--transition);
-}
-.area-switch__item:hover { text-decoration: none; color: var(--color-text); }
-.area-switch__item.is-active { background: var(--color-surface); color: var(--color-primary); box-shadow: var(--shadow-sm); }
-
 .sidebar__nav {
   flex: 1;
   overflow-y: auto;
@@ -256,6 +229,22 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
   padding: 0.6rem 0.75rem;
   border-top: 1px solid var(--color-border);
 }
+
+/* The way to the other area (administration / mail), flush above the account: icon over the avatar, text over the name. */
+.area-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.2rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--transition);
+}
+.area-link:hover { background: var(--color-surface-hover); text-decoration: none; }
+.area-link__icon { flex: none; width: 2.1rem; display: inline-flex; justify-content: center; color: var(--color-text-muted); }
 
 .account {
   width: 100%;
@@ -314,9 +303,6 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
 .breadcrumb__sep { color: var(--color-text-faint); }
 .breadcrumb__current { color: var(--color-text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.tenant-switch { max-width: 15rem; }
-.tenant-switch__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 .app-content { flex: 1; min-width: 0; padding: 1.5rem 1.75rem 3rem; max-width: 1280px; width: 100%; }
 .app-content.app-content--bleed { padding: 0; max-width: none; }   /* the mail client: edge to edge, also on phones */
 
@@ -358,7 +344,6 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
   .app-header { padding: 0 0.75rem; }
   .app-content { padding: 1rem 1rem 3rem; }
   .page-heading__title { font-size: 1.3rem; }
-  .tenant-switch__name { display: none; }
 }
 
 /* Phones: only the page itself in the breadcrumb (the earlier crumbs would squeeze it down to a single letter). */

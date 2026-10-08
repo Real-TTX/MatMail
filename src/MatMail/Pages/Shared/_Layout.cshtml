@@ -110,20 +110,6 @@
                 <button type="button" class="icon-btn sidebar__close" id="sidebar-close" aria-label="@L["Close"]"><mm-icon name="x" /></button>
             </div>
 
-            @if (CurrentUser.Can(Permissions.MailUse) || CurrentUser.CanAdminister)
-            {
-                <div class="area-switch" role="tablist">
-                    @if (CurrentUser.Can(Permissions.MailUse))
-                    {
-                        <a class="area-switch__item @(isMail ? "is-active" : "")" href="/Mail"><mm-icon name="mail" /><span>@L["Mail"]</span></a>
-                    }
-                    @if (CurrentUser.CanAdminister)
-                    {
-                        <a class="area-switch__item @(!isMail ? "is-active" : "")" href="/Admin"><mm-icon name="settings" /><span>@L["Administration"]</span></a>
-                    }
-                </div>
-            }
-
             @if (IsSectionDefined("Sidebar"))
             {
                 @await RenderSectionAsync("Sidebar")
@@ -165,6 +151,17 @@
             }
 
             <div class="sidebar__footer">
+                @* The way to the other area sits right above the account: from the mail client to the administration, from every other page back to mail. *@
+                @{
+                    string? otherAreaHref = isMail ? (CurrentUser.CanAdminister ? "/Admin" : null) : (CurrentUser.Can(Permissions.MailUse) ? "/Mail" : null);
+                }
+                @if (otherAreaHref is not null)
+                {
+                    <a class="area-link" href="@otherAreaHref">
+                        <span class="area-link__icon"><mm-icon name="@(isMail ? "settings" : "mail")" /></span>
+                        <span>@(isMail ? L["Administration"] : L["Mail"])</span>
+                    </a>
+                }
                 <div class="dropdown dropdown--up" data-dropdown>
                     <button type="button" class="account" data-dropdown-toggle aria-haspopup="menu" title="@L["Account"]">
                         <span class="avatar" aria-hidden="true">@avatarLetter</span>
@@ -182,6 +179,25 @@
                         <a class="dropdown__item" href="/Account" role="menuitem"><mm-icon name="user" /><span>@L["My account"]</span></a>
                         <a class="dropdown__item" href="/Account/Appearance" role="menuitem"><mm-icon name="sliders" /><span>@L["Appearance and language"]</span></a>
                         <a class="dropdown__item" href="/Account/MailPrograms" role="menuitem"><mm-icon name="server" /><span>@L["IMAP / SMTP settings"]</span></a>
+                        @if (switchableTenants.Count > 1)
+                        {
+                            @* System administrators work in one tenant at a time; the list sits here, not in the crowded header of a phone. *@
+                            <div class="dropdown__divider"></div>
+                            <div class="dropdown__label">@L["Switch tenant"]</div>
+                            <div class="dropdown__scroll">
+                                @foreach (var tenant in switchableTenants)
+                                {
+                                    <form method="post" action="/Account/SwitchTenant" class="dropdown__form" data-no-busy>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="tenantId" value="@tenant.Id" />
+                                        <input type="hidden" name="returnUrl" value="@(isMail ? "/Mail" : "/Admin")" />
+                                        <button type="submit" class="dropdown__item @(tenant.Id == CurrentUser.TenantId ? "is-active" : "")" role="menuitem">
+                                            <mm-icon name="@(tenant.Id == CurrentUser.TenantId ? "check" : "building")" /><span>@tenant.Name</span>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        }
                         <div class="dropdown__divider"></div>
                         <div class="dropdown__label">@L["Theme"]</div>
                         <div class="segmented" data-theme-switch data-save-url="/Account/Appearance?handler=Mode">
@@ -233,31 +249,6 @@
 
                 <div class="app-header__spacer"></div>
 
-                @if (switchableTenants.Count > 1)
-                {
-                    <div class="dropdown" data-dropdown>
-                        <button type="button" class="btn btn--ghost tenant-switch" data-dropdown-toggle aria-haspopup="menu" title="@L["Switch tenant"]">
-                            <mm-icon name="building" /><span class="tenant-switch__name">@CurrentUser.TenantName</span><mm-icon name="chevron-down" />
-                        </button>
-                        <div class="dropdown__menu dropdown__menu--right" role="menu" hidden>
-                            <div class="dropdown__header">
-                                <span class="dropdown__title">@L["Switch tenant"]</span>
-                                <button type="button" class="icon-btn dropdown__close" data-dropdown-close aria-label="@L["Close"]"><mm-icon name="x" /></button>
-                            </div>
-                            @foreach (var tenant in switchableTenants)
-                            {
-                                <form method="post" action="/Account/SwitchTenant" class="dropdown__form" data-no-busy>
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="tenantId" value="@tenant.Id" />
-                                    <input type="hidden" name="returnUrl" value="@(isMail ? "/Mail" : "/Admin")" />
-                                    <button type="submit" class="dropdown__item @(tenant.Id == CurrentUser.TenantId ? "is-active" : "")" role="menuitem">
-                                        <mm-icon name="@(tenant.Id == CurrentUser.TenantId ? "check" : "building")" /><span>@tenant.Name</span>
-                                    </button>
-                                </form>
-                            }
-                        </div>
-                    </div>
-                }
             </header>
 
             <main class="app-content @(isMail ? "app-content--bleed" : "")">

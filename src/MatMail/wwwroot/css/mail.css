@@ -26,15 +26,17 @@
 
 /* ---- Sidebar: compose + folders ---- */
 .mail-sidebar { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0.25rem 0.5rem 0.75rem; overflow-y: auto; }
+/* Full width of the folder column and slim. On a phone the round button over the list does the job (see below). */
 .btn-compose {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
-  align-self: flex-start;
-  margin: 0.25rem 0 1rem 0.25rem;
-  padding: 0.95rem 1.5rem 0.95rem 1.1rem;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin: 0.25rem 0 0.9rem;
+  padding: 0.6rem 1rem;
   border: 0;
-  border-radius: 1rem;
+  border-radius: 0.75rem;
   background: var(--color-primary-soft);
   color: var(--color-primary);
   font: inherit;
@@ -46,7 +48,7 @@
 .fab-compose { display: none; }
 .mm-signature { contain: paint; }   /* whatever a signature does, it stays inside its own block */
 .btn-compose:hover { box-shadow: var(--shadow-md); background: color-mix(in srgb, var(--color-primary) 20%, transparent); }
-.btn-compose .icon { width: 1.4rem; height: 1.4rem; }
+.btn-compose .icon { width: 1.25rem; height: 1.25rem; }
 
 .mail-folders { display: flex; flex-direction: column; gap: 1px; }
 .folder-group { display: flex; flex-direction: column; gap: 1px; margin-bottom: 0.5rem; }
@@ -293,6 +295,28 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
   .app-shell[data-area="mail"] .app-header__spacer { display: none; }   /* the search box takes the room */
   .mail-toolbar__count { display: none; }
   .mail-pager__text { display: none; }
+
+  /* The folders are a drawer from here on, so compose floats over the list, bottom right, like in Gmail (not while reading). */
+  .fab-compose {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    z-index: 35;   /* over the list, under the backdrop (40) and the drawer (50) */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border: 0;
+    border-radius: 1.1rem;
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    box-shadow: var(--shadow-lg);
+    cursor: pointer;
+  }
+  .fab-compose .icon { width: 1.5rem; height: 1.5rem; }
+  .mail-app.is-reading .fab-compose { display: none; }
+  .mail-list { padding-bottom: 5.5rem; }   /* the last rows can be scrolled clear of the button */
 }
 
 @media (max-width: 720px) {
@@ -318,26 +342,6 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
   .reader__details { margin-left: 0; }
   .reader__sender { flex-wrap: wrap; }
   .reader__meta { margin-left: 3.35rem; }
-
-  .fab-compose {
-    position: fixed;
-    right: 1rem;
-    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    z-index: 40;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 3.5rem;
-    height: 3.5rem;
-    border: 0;
-    border-radius: 1.1rem;
-    background: var(--color-primary);
-    color: var(--color-primary-contrast);
-    box-shadow: var(--shadow-lg);
-    cursor: pointer;
-  }
-  .fab-compose .icon { width: 1.5rem; height: 1.5rem; }
-  .mail-app.is-reading .fab-compose { display: none; }
 
   .compose-dock { right: 0; left: 0; }
   .compose, .compose.is-maximized { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; border: 0; border-radius: 0; z-index: 130; }

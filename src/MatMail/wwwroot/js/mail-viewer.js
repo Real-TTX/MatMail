@@ -39,6 +39,9 @@
     foldQuotes(viewer, doc);
     fit(viewer);
 
+    // A pinch on the mail must not zoom the page around it either (iPhones: gesture events of the frame's own document).
+    ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) { doc.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false }); });
+
     // Pictures and fonts that arrive late change the size; so do the toggles of folded quotes.
     if (window.ResizeObserver) {
       new ResizeObserver(function () { resize(viewer); }).observe(doc.documentElement);

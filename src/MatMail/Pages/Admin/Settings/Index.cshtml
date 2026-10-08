@@ -56,6 +56,9 @@
                 <mm-field asp-for="Input.SyncEnabled" kind="checkbox" label='@L["Fetch mail from connected accounts"]' />
                 <mm-field asp-for="Input.SyncMaxParallel" kind="number" label='@L["Accounts synchronised at the same time"]' />
             </mm-form-section>
+            <mm-form-section title='@L["Notifications"]'>
+                <mm-field asp-for="Input.PushEnabled" kind="checkbox" label='@L["Notify devices about new mail"]' help='@L["People turn this on per device in their account (App). The push service of the browser carries the message; it needs https."]' />
+            </mm-form-section>
         </mm-tab-panel>
 
         <mm-tab-panel title='@L["Housekeeping"]' icon="trash">

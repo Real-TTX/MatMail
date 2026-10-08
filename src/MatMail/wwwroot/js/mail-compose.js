@@ -9,7 +9,7 @@
   var windows = [];
   var EMAIL = /^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/;
 
-  App.compose = { setup: setup, open: open, openDraft: openDraft, reply: reply };
+  App.compose = { setup: setup, open: open, openDraft: openDraft, reply: reply, openFromOutbox: openFromOutbox };
 
   function setup() { /* identities and signatures come with the bootstrap data */ }
 
@@ -25,6 +25,17 @@
 
   function openDraft(id) {
     return App.get("/api/mail/compose/draft/" + id).then(function (model) { open({ model: model, isDraft: true }); }).catch(function (e) { App.toast(e.message, { error: true }); });
+  }
+
+  /** Writes a message again that waits in the outbox of the device (see mail-outbox.js): its files come back as files, the uploaded ones by their ids. */
+  function openFromOutbox(item) {
+    var model = Object.assign({}, item.model, { attachments: item.uploaded || [] });
+    var win = open({ model: model, isDraft: true });
+    if (win) {
+      if (item.files && item.files.length) { addFiles(win, item.files.map(function (f) { return new File([f.blob], f.name, { type: f.type }); })); }
+      win.dirty = true;
+    }
+    return win;
   }
 
   function reply(messageId, mode) {
@@ -296,31 +307,66 @@
   function addFiles(win, files) {
     files.forEach(function (file) {
       if (file.size > App.boot.settings.maxUploadMb * 1024 * 1024) { App.toast(T("fileTooLarge").replace("{0}", file.name).replace("{1}", App.boot.settings.maxUploadMb), { error: true }); return; }
-      var entry = { id: null, name: file.name, size: file.size, done: false, progress: 0 };
+      var entry = { id: null, name: file.name, size: file.size, done: false, progress: 0, file: file, pending: false };
       win.attachments.push(entry);
+      if (App.outbox.isOffline()) { keepForLater(entry); renderAttachments(win); markDirty(win); return; }
       win.uploading++;
       renderAttachments(win);
+      uploadEntry(win, entry).then(function () { markDirty(win); }, function (error) {
+        // No connection (or it went): the file is kept and goes up with the message. Anything else is the server saying no.
+        if (App.outbox.isNetworkError(error)) { keepForLater(entry); markDirty(win); }
+        else { win.attachments.splice(win.attachments.indexOf(entry), 1); App.toast(file.name + ": " + error.message, { error: true }); }
+      }).then(function () { win.uploading--; renderAttachments(win); });
+    });
+  }
+
+  /** A file that is not on the server yet but stays with the message. */
+  function keepForLater(entry) { entry.pending = true; entry.done = true; }
+
+  function pendingEntries(win) { return win.attachments.filter(function (a) { return a.pending && a.file; }); }
+
+  /** Rejects with an error that has a status when the server refused, and without one when the connection is gone. */
+  function uploadEntry(win, entry) {
+    return new Promise(function (resolve, reject) {
       var form = new FormData();
-      form.append("file", file, file.name);
+      form.append("file", entry.file, entry.name);
       var xhr = new XMLHttpRequest();
       xhr.open("POST", "/api/mail/attachments");
       xhr.setRequestHeader("X-CSRF-TOKEN", doc.querySelector('meta[name="csrf-token"]').getAttribute("content"));
       xhr.upload.onprogress = function (e) { if (e.lengthComputable) { entry.progress = e.loaded / e.total; renderAttachments(win); } };
       xhr.onload = function () {
-        win.uploading--;
-        if (xhr.status === 200) { var data = JSON.parse(xhr.responseText); entry.id = data.id; entry.done = true; entry.size = data.size; markDirty(win); }
-        else { win.attachments.splice(win.attachments.indexOf(entry), 1); var message = T("uploadFailed"); try { message = JSON.parse(xhr.responseText).error || message; } catch (e) { /* default */ } App.toast(file.name + ": " + message, { error: true }); }
-        renderAttachments(win);
+        if (xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          entry.id = data.id; entry.done = true; entry.pending = false; entry.size = data.size; entry.file = null;
+          resolve();
+        } else {
+          var message = T("uploadFailed");
+          try { message = JSON.parse(xhr.responseText).error || message; } catch (e) { /* default */ }
+          var error = new Error(message);
+          error.status = xhr.status;
+          reject(error);
+        }
       };
-      xhr.onerror = function () { win.uploading--; win.attachments.splice(win.attachments.indexOf(entry), 1); renderAttachments(win); App.toast(T("uploadFailed"), { error: true }); };
+      xhr.onerror = function () { reject(new Error(T("uploadFailed"))); };
       xhr.send(form);
     });
+  }
+
+  /** Uploads what was kept for later, one file after the other; on a failure the files that are left stay kept. */
+  function uploadPending(win) {
+    return pendingEntries(win).reduce(function (chain, entry) {
+      return chain.then(function () {
+        entry.pending = false; entry.done = false; entry.progress = 0;
+        renderAttachments(win);
+        return uploadEntry(win, entry);
+      }).catch(function (error) { keepForLater(entry); renderAttachments(win); throw error; });
+    }, Promise.resolve());
   }
 
   function renderAttachments(win) {
     win.attachmentsBox.innerHTML = "";
     win.attachments.forEach(function (entry) {
-      var chip = App.el("span", { class: "attachment" + (entry.done ? "" : " is-uploading") }, [
+      var chip = App.el("span", { class: "attachment" + (entry.done ? "" : " is-uploading") + (entry.pending ? " is-pending" : ""), title: entry.pending ? T("attachmentWaiting") : null }, [
         App.icon("paperclip"),
         App.el("span", { class: "attachment__name", text: entry.name }),
         App.el("span", { class: "attachment__size", text: entry.done ? App.formatSize(entry.size) : Math.round((entry.progress || 0) * 100) + " %" })
@@ -387,7 +433,7 @@
       win.draftId = result.draftId;
       win.status.textContent = T("draftSaved");
       if (App.handlers.reloadList && App.state.query === "" && App.folder(App.state.folderId) && App.folder(App.state.folderId).folder.kind === "Drafts") { App.handlers.reloadList(); }
-    }).catch(function (e) { win.dirty = true; win.status.textContent = e.message; }).then(function () { win.saving = null; });
+    }).catch(function (e) { win.dirty = true; win.status.textContent = App.outbox.isNetworkError(e) ? T("offlineDraftStatus") : e.message; }).then(function () { win.saving = null; });
     return win.saving;
   }
 
@@ -402,13 +448,18 @@
       win.sending = true;
       win.send.disabled = true;
       win.status.textContent = T("sending");
+      win.status.classList.remove("is-error");
       Promise.resolve(win.saving).then(function () {
+        if (App.outbox.isOffline()) { throw new Error("offline"); }   // no status: the connection is gone
+        return uploadPending(win);
+      }).then(function () {
         return App.post("/api/mail/send", buildModel(win));
       }).then(function () {
         closeWindow(win, false);
         App.toast(T("messageSent"));
         if (App.handlers.reloadList) { App.handlers.reloadList(); }
       }).catch(function (e) {
+        if (App.outbox.isNetworkError(e)) { return queueWindow(win, "send"); }   // kept on the device, sent as soon as the connection is back
         win.sending = false; win.send.disabled = false;
         win.status.textContent = e.message;
         win.status.classList.add("is-error");
@@ -418,10 +469,27 @@
     if (!win.subject.value.trim()) { App.confirm(T("sendWithoutSubject")).then(function (ok) { if (ok) { proceed(); } }); } else { proceed(); }
   }
 
+  /** Keeps the message on the device (the outbox) instead of on the server: it is sent, or saved as a draft, when the connection is back. */
+  function queueWindow(win, kind) {
+    var files = pendingEntries(win).map(function (a) { return { name: a.name, type: a.file.type, blob: a.file }; });
+    var uploaded = win.attachments.filter(function (a) { return a.id; }).map(function (a) { return { id: a.id, fileName: a.name, size: a.size }; });
+    return App.outbox.add(kind, buildModel(win), files, uploaded).then(function () {
+      closeWindow(win, false);
+      App.toast(kind === "send" ? T("queuedToSend") : T("savedOnDevice"));
+    }, function () {
+      win.sending = false; win.send.disabled = false;
+      win.status.textContent = T("queueFailed");
+      win.status.classList.add("is-error");
+    });
+  }
+
   function closeWindow(win, saveFirst) {
     var finish = function () { clearInterval(win.timer); win.root.remove(); windows.splice(windows.indexOf(win), 1); };
     if (saveFirst && win.dirty && hasContent(win) && !win.sending) {
-      autosave(win).then(function () { finish(); App.toast(T("draftSaved")); if (App.handlers.reloadList) { App.handlers.reloadList(); } });
+      autosave(win).then(function () {
+        if (win.dirty) { return queueWindow(win, "draft"); }   // the server could not be reached: the draft stays on this device
+        finish(); App.toast(T("draftSaved")); if (App.handlers.reloadList) { App.handlers.reloadList(); }
+      });
     } else {
       Promise.resolve(win.saving).then(finish);
     }

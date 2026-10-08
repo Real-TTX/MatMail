@@ -1,7 +1,7 @@
 @model MatMail.Services.ThemeChoice
 @* Theme bootstrap for both layouts; render it inside <head> after the stylesheets. The <html> element carries
    data-theme-mode, data-mode, data-accent and data-theme-source (see the layouts). *@
-<meta name="theme-color" content="#1a73e8" />
+<meta name="theme-color" content="@(Model.Mode == "dark" ? MatMail.Services.PwaManifest.DarkColour : MatMail.Services.PwaManifest.LightColour)" />
 <script>
     // Runs before the first paint: turns the mode into data-mode="light|dark" so the page never flashes the wrong brightness.
     // Without a saved account mode the browser's own choice (localStorage; also used on the sign-in page) wins over the default.
@@ -17,8 +17,14 @@
         var dark = mode === "dark" || (mode === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
         root.setAttribute("data-theme-mode", mode);
         root.setAttribute("data-mode", dark ? "dark" : "light");
-        var meta = document.querySelector('meta[name="theme-color"]');
-        var bar = getComputedStyle(root).getPropertyValue("--color-surface").trim();
-        if (meta && bar) { meta.setAttribute("content", bar); }
+
+        // The bar of the browser (and of the app on Android and in Safari) has the colour of the header, in every theme.
+        // It is set again whenever the theme changes (app.js), so a switch to dark does not leave a light bar behind.
+        window.matmailBar = function () {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            var colour = getComputedStyle(root).getPropertyValue("--color-bg").trim();
+            if (meta && colour) { meta.setAttribute("content", colour); }
+        };
+        window.matmailBar();
     })();
 </script>

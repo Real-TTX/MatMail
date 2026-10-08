@@ -1,0 +1,15 @@
+@model string
+@* What makes the pages an app on a phone: the manifest, the name and icons for the home screen, and the status bar of an iPhone.
+   The status bar is "default" on purpose: the page starts below it and ends at the lower edge of the screen, and it is light in the light
+   theme and dark in the dark one. "black-translucent" lets the page run under the bar, but on iPhones with a Dynamic Island that leaves a dead
+   strip at the bottom (MatGate ran into it), and its white text is unreadable on a light header. iOS reads these tags when the app is put
+   on the home screen: an app installed earlier has to be removed and added again. *@
+<meta name="application-name" content="@Model" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="@Model" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="color-scheme" content="light dark" />
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+<link rel="apple-touch-icon" sizes="180x180" href="~/icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="~/icons/icon-192.png" />

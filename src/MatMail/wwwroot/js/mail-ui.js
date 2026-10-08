@@ -27,6 +27,7 @@
     els.notice = doc.getElementById("mail-notice");
     els.loading = doc.getElementById("mail-loading");
     els.selectBar = doc.getElementById("mail-selectbar");
+    els.offline = doc.getElementById("mail-offline");
     els.search = doc.getElementById("mail-search");
     els.searchInput = doc.getElementById("mail-search-input");
     els.searchClear = doc.getElementById("mail-search-clear");
@@ -43,6 +44,21 @@
     window.addEventListener("hashchange", route);
     doc.addEventListener("keydown", onKey);
 
+    // The connection comes and goes: the banner follows, and what was written offline goes out (mail-outbox.js).
+    els.offline.textContent = T("offlineNotice");
+    window.addEventListener("offline", updateOffline);
+    window.addEventListener("online", function () { updateOffline(); if (App.boot) { refreshBootstrap(); } });
+    window.addEventListener("matmail:outbox", function (e) {
+      renderFolders();
+      var result = e.detail;
+      if (result && result.sent + result.saved > 0) {
+        App.toast(T("outboxSent").replace("{0}", result.sent + result.saved));
+        refreshCounts();
+        if (!S.messageId) { loadList(true); }
+      }
+    });
+    updateOffline();
+
     showLoading(true);
     App.get("/api/mail/bootstrap").then(function (boot) {
       App.boot = boot;
@@ -50,6 +66,8 @@
       renderFolders();
       route();
       connectEvents();
+      App.outbox.refresh().then(function () { renderFolders(); App.outbox.flush(); });
+      openComposeShortcut();
     }).catch(function (error) {
       showLoading(false);
       showNotice(T("loadFailed") + " " + error.message, true);
@@ -81,6 +99,15 @@
     if (current.m) { params.set("m", current.m); }
     var hash = "#" + params.toString();
     if (location.hash === hash) { route(); } else { location.hash = hash; }
+  }
+
+  function updateOffline() { els.offline.hidden = !App.outbox.isOffline(); }
+
+  /** The shortcut of the installed app ("New message", long press on the icon) opens the address /Mail?compose=1. */
+  function openComposeShortcut() {
+    if (new URLSearchParams(location.search).get("compose") !== "1") { return; }
+    history.replaceState(null, "", location.pathname + location.hash);
+    App.compose.open({});
   }
 
   /** A search covers the whole mailbox (without spam and trash), like in Gmail; in: narrows it down. Without text the list is back where it was. */
@@ -134,6 +161,14 @@
   function renderFolders() {
     if (!App.boot) { return; }
     els.folders.innerHTML = "";
+    if (App.outbox.state.count) {
+      // What was written without a connection and waits for it: always in sight until it is gone.
+      var waiting = App.el("button", { type: "button", class: "folder-item folder-item--outbox", title: T("outbox") }, [
+        App.icon("clock"), App.el("span", { class: "folder-item__name", text: T("outbox") }), App.el("span", { class: "folder-item__count", text: String(App.outbox.state.count) })
+      ]);
+      waiting.addEventListener("click", function () { App.outbox.open(); });
+      els.folders.appendChild(waiting);
+    }
     App.boot.mailboxes.forEach(function (box, index) {
       var group = App.el("div", { class: "folder-group" });
       var collapsedKey = "matmail-collapsed-" + box.id;
@@ -269,7 +304,8 @@
     }).catch(function (error) {
       if (request !== listRequest) { return; }
       showLoading(false);
-      showNotice(T("loadFailed") + " " + error.message, true);
+      var lost = App.outbox.isOffline() || App.outbox.isNetworkError(error);
+      showNotice(lost ? T("offlineList") : T("loadFailed") + " " + error.message, !lost);
     });
   }
 

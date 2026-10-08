@@ -225,6 +225,8 @@ input[type="color"].form-control { padding: 0.2rem; min-width: 4rem; max-width: 
 .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
 .card__title { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; font-size: 1rem; }
 .card__title .icon { color: var(--color-text-muted); }
+.card--spaced { margin-top: 1rem; }
+.push-scope { margin: 0.9rem 0 0.3rem; gap: 0.45rem; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
 .stat { display: flex; align-items: center; gap: 0.9rem; padding: 1rem 1.1rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-text); text-decoration: none; }

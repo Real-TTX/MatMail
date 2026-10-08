@@ -279,6 +279,7 @@
       var dark = mode === "dark" || (mode === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
       root.setAttribute("data-theme-mode", mode);
       root.setAttribute("data-mode", dark ? "dark" : "light");
+      if (window.matmailBar) { window.matmailBar(); }   // the bar of the browser follows (see _ThemeHead)
     }
     $$("[data-theme-switch]").forEach(function (group) {
       group.addEventListener("click", function (e) {

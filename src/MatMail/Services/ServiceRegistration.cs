@@ -1,6 +1,7 @@
 using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Messaging;
+using MatMail.Push;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -43,6 +44,7 @@ public static class ServiceRegistration
         services.AddScoped<SetupService>();
 
         services.AddMessaging();
+        services.AddPushNotifications();
         return services;
     }
 }

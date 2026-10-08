@@ -128,6 +128,15 @@ public class QueueConfig
     public bool AllowDirectDelivery { get; set; } = true;
 }
 
+public class PushConfig
+{
+    /// <summary>Notifications on phones and desktops when mail arrives (Web Push). Off: the switch disappears from the account page.</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Who the push services can contact about this server: a mailto: or https: address. Empty = postmaster@ the host name.</summary>
+    public string? Contact { get; set; }
+}
+
 public class RetentionConfig
 {
     public int ActivityLogDays { get; set; } = 60;
@@ -150,6 +159,7 @@ public class AppConfig
     public ImapConfig Imap { get; set; } = new();
     public SyncConfig Sync { get; set; } = new();
     public QueueConfig Queue { get; set; } = new();
+    public PushConfig Push { get; set; } = new();
     public RetentionConfig Retention { get; set; } = new();
 }
 

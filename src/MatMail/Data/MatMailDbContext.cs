@@ -25,6 +25,7 @@ public class MatMailDbContext : DbContext
     public DbSet<UserTotp> UserTotps => Set<UserTotp>();
     public DbSet<UserRecoveryCode> UserRecoveryCodes => Set<UserRecoveryCode>();
     public DbSet<AppPassword> AppPasswords => Set<AppPassword>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
     public DbSet<Domain> Domains => Set<Domain>();
@@ -142,6 +143,20 @@ public class MatMailDbContext : DbContext
             e.Property(x => x.Prefix).HasMaxLength(8);
             e.Property(x => x.SecretHash).HasMaxLength(200);
             e.Property(x => x.LastUsedIp).HasMaxLength(64);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<PushSubscription>(e =>
+        {
+            e.HasIndex(x => x.Endpoint).IsUnique();
+            e.HasIndex(x => x.UserId);
+            e.Property(x => x.Endpoint).HasMaxLength(1000);
+            e.Property(x => x.P256dh).HasMaxLength(200);
+            e.Property(x => x.Auth).HasMaxLength(100);
+            e.Property(x => x.DeviceName).HasMaxLength(100);
+
+            // Existing rows (there are none yet) and new ones: only the own mailbox, unless the user chose more.
+            e.Property(x => x.OwnMailboxOnly).HasDefaultValue(true);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -49,4 +49,16 @@ public sealed record RenameFolderRequest(string Path);
 
 public sealed record CountsDto(int Unread, int Total);
 
+/// <summary>What a browser needs to subscribe to notifications: whether the server offers them and its public key.</summary>
+public sealed record PushConfigDto(bool Enabled, string? PublicKey);
+
+/// <summary>A subscription as the browser's <c>toJSON()</c> makes it, plus the choice of the person and the old address when the browser replaced one.</summary>
+public sealed record PushSubscribeRequest(string? Endpoint, PushKeysDto? Keys, bool? OwnMailboxOnly, string? Replaces);
+
+public sealed record PushKeysDto(string? P256dh, string? Auth);
+
+public sealed record PushEndpointRequest(string? Endpoint);
+
+public sealed record PushStatusDto(bool Subscribed, bool OwnMailboxOnly);
+
 public sealed record ChangeResult(int Changed, Dictionary<long, CountsDto> Counts);

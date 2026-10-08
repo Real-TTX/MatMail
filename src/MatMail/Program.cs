@@ -7,6 +7,7 @@ using MatMail.MailServer.Imap;
 using MatMail.MailServer.Smtp;
 using MatMail.MailSync;
 using MatMail.Messaging;
+using MatMail.Push;
 using MatMail.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -66,6 +67,7 @@ builder.Services.AddMailSync();
 builder.Services.AddImapServer();
 builder.Services.AddSmtpServer();
 builder.Services.AddHostedService<MaintenanceService>();
+builder.Services.AddHostedService<PushNotifier>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
@@ -238,6 +240,16 @@ app.MapGet("/brand/{token:guid}", async (Guid token, HttpContext http, BrandingS
     http.Response.Headers.XContentTypeOptions = "nosniff";
     http.Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
     return Results.Bytes(logo.Value.Bytes, logo.Value.ContentType);
+}).AllowAnonymous();
+
+// The web app manifest. The link in the layouts asks with the cookies, so a signed-in person gets the name of their tenant and the
+// colours of their theme; without a session it is the plain MatMail one.
+app.MapGet("/manifest.webmanifest", async (HttpContext http, BrandingService branding, CurrentUser user, ThemeService themes, Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> l, CancellationToken cancel) =>
+{
+    Brand brand = await branding.GetAsync(user.TenantId, cancel);
+    string json = System.Text.Json.JsonSerializer.Serialize(PwaManifest.Build(brand.Name ?? "MatMail", l["Compose"].Value, themes.Resolve().Mode == "dark"));
+    http.Response.Headers.CacheControl = "no-cache";
+    return Results.Text(json, "application/manifest+json");
 }).AllowAnonymous();
 
 // A tenant's own sign-in address: /t/<name>.

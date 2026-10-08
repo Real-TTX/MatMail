@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Messaging;
+using MatMail.Push;
 using MatMail.Services;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
@@ -55,6 +56,69 @@ public static class MailApi
         api.MapPost("/send", Send);
         api.MapGet("/contacts", Contacts);
         api.MapGet("/events", Events);
+
+        // The app around the client: a fresh anti-forgery token for what runs without the page (the outbox, the service worker),
+        // and the devices that get notifications.
+        api.MapGet("/csrf", Csrf);
+        api.MapGet("/push/config", PushConfigOf);
+        api.MapPost("/push/status", PushStatus);
+        api.MapPost("/push/subscribe", PushSubscribe);
+        api.MapPost("/push/unsubscribe", PushUnsubscribe);
+        api.MapPost("/push/test", PushTest);
+    }
+
+    private static IResult Csrf(HttpContext http, IAntiforgery antiforgery)
+    {
+        // The headers the anti-forgery service sets itself: with the same values it does not complain about overriding them.
+        http.Response.Headers.CacheControl = "no-cache, no-store";
+        http.Response.Headers.Pragma = "no-cache";
+        return Results.Ok(new { token = antiforgery.GetAndStoreTokens(http).RequestToken });
+    }
+
+    private static IResult PushConfigOf(PushService push) => Results.Ok(new PushConfigDto(push.Enabled, push.Enabled ? push.PublicKey : null));
+
+    private static async Task<IResult> PushStatus(PushEndpointRequest request, PushService push, CurrentUser current, CancellationToken cancel)
+    {
+        PushSubscription? device = string.IsNullOrEmpty(request.Endpoint) || current.UserId is not long userId ? null : await push.FindAsync(userId, request.Endpoint, cancel);
+        return Results.Ok(new PushStatusDto(device is not null, device?.OwnMailboxOnly ?? true));
+    }
+
+    private static async Task<IResult> PushSubscribe(PushSubscribeRequest request, PushService push, CurrentUser current, HttpContext http, CancellationToken cancel)
+    {
+        if (current.UserId is not long userId)
+        {
+            return Results.Unauthorized();
+        }
+
+        string? error = await push.SubscribeAsync(
+            userId, request.Endpoint, request.Keys?.P256dh, request.Keys?.Auth, http.Request.Headers.UserAgent.ToString(), request.OwnMailboxOnly, request.Replaces, cancel);
+        return error is null ? Results.NoContent() : new Failure(error);
+    }
+
+    private static async Task<IResult> PushUnsubscribe(PushEndpointRequest request, PushService push, CurrentUser current, CancellationToken cancel)
+    {
+        if (current.UserId is long userId && !string.IsNullOrEmpty(request.Endpoint))
+        {
+            await push.UnsubscribeAsync(userId, request.Endpoint, cancel);
+        }
+
+        return Results.NoContent();
+    }
+
+    /// <summary>A notification to one device of the person, to see that it works.</summary>
+    private static async Task<IResult> PushTest(
+        PushEndpointRequest request, PushService push, CurrentUser current, IPushSender sender, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
+    {
+        PushSubscription? device = string.IsNullOrEmpty(request.Endpoint) || current.UserId is not long userId ? null : await push.FindAsync(userId, request.Endpoint, cancel);
+        if (device is null)
+        {
+            return new Failure("This device is not registered for notifications.");
+        }
+
+        byte[] message = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { title = l["Notifications are on"].Value, body = l["New mail will show up here."].Value, url = "/Mail", tag = "test" });
+        PushOutcome outcome = await sender.SendAsync(device, message, new PushOptions(TtlSeconds: 60, Urgency: "high"), cancel);
+        await PushService.RecordOutcomesAsync(db, new Dictionary<long, PushOutcome> { [device.Id] = outcome }, PushNotifier.MaxFailures, cancel);
+        return outcome == PushOutcome.Delivered ? Results.NoContent() : new Failure("The notification could not be sent. Turn notifications off and on again.");
     }
 
     private static async ValueTask<object?> RequireAntiforgery(EndpointFilterInvocationContext context, EndpointFilterDelegate next)

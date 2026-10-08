@@ -30,6 +30,35 @@ public class UserRecoveryCode : AuditedEntity
 }
 
 /// <summary>
+/// One browser or app on one device that wants a notification when mail arrives (Web Push, RFC 8030). The push service of the
+/// browser (Google, Mozilla, Apple, Microsoft) hands the message to the device; the keys let only that device read it.
+/// </summary>
+public class PushSubscription : AuditedEntity
+{
+    public long UserId { get; set; }
+
+    /// <summary>Where to post the message: an address of the browser's push service, unique per browser profile.</summary>
+    public string Endpoint { get; set; } = string.Empty;
+
+    /// <summary>The public key of the device (P-256, uncompressed, base64url): the message is encrypted for it.</summary>
+    public string P256dh { get; set; } = string.Empty;
+
+    /// <summary>The 16 byte secret of the subscription (base64url), part of the encryption.</summary>
+    public string Auth { get; set; } = string.Empty;
+
+    /// <summary>"Chrome / Windows": what the list of devices shows.</summary>
+    public string DeviceName { get; set; } = string.Empty;
+
+    /// <summary>Notify only for the user's own mailbox; off: also for shared and delegated mailboxes the user can read.</summary>
+    public bool OwnMailboxOnly { get; set; } = true;
+
+    public DateTime? LastSuccessDate { get; set; }
+
+    /// <summary>Failed attempts since the last success; a subscription that keeps failing is dropped.</summary>
+    public int FailureCount { get; set; }
+}
+
+/// <summary>
 /// A password for mail programs (IMAP, SMTP) that cannot ask for a second factor. Random, shown once when it is created,
 /// named after the device, usable for IMAP and SMTP only and never on the web sign-in page.
 /// </summary>

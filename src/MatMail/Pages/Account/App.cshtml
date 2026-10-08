@@ -1,0 +1,90 @@
+@page "/Account/App"
+@model MatMail.Pages.Account.AppModel
+@{
+    ViewData["Breadcrumb"] = "Account / App";
+    ViewData["Title"] = L["My account"].Value;
+}
+
+<partial name="_AccountTabs" model='"app"' />
+
+<p class="muted">@L["MatMail can run like an app on your phone or computer: it opens in a window of its own, it still opens without a connection (what you write is kept and sent as soon as you are back online) and it can tell you when mail arrives."]</p>
+
+<script type="application/json" id="app-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+<div class="card-grid" id="app-page">
+    <section class="card">
+        <h2 class="card__title"><mm-icon name="download" />@L["Install the app"]</h2>
+        <p class="muted" id="app-install-text">@L["One moment …"]</p>
+        <div class="btn-row btn-row--tight">
+            <button type="button" class="btn btn--primary" id="app-install-button" hidden><mm-icon name="download" /><span>@L["Install app"]</span></button>
+        </div>
+    </section>
+
+    @if (Model.CanUseMail)
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="bell" />@L["Notifications"]</h2>
+            @if (!Model.PushEnabled)
+            {
+                <p class="muted">@L["Notifications are switched off on this server."]</p>
+            }
+            else
+            {
+                <p class="muted" id="push-text">@L["One moment …"]</p>
+                <div id="push-controls" hidden>
+                    <div class="form-check">
+                        <input type="checkbox" id="push-toggle" />
+                        <label for="push-toggle">@L["Tell me about new mail on this device"]</label>
+                    </div>
+                    <div class="form-row push-scope" id="push-scope">
+                        <label>@L["Which mailboxes"]</label>
+                        <div class="form-check"><input type="radio" name="push-scope" id="push-scope-own" value="own" checked /><label for="push-scope-own">@L["Only my own mailbox"]</label></div>
+                        <div class="form-check"><input type="radio" name="push-scope" id="push-scope-all" value="all" /><label for="push-scope-all">@L["Also shared and delegated mailboxes I can read"]</label></div>
+                    </div>
+                    <div class="btn-row btn-row--tight">
+                        <button type="button" class="btn btn--secondary" id="push-test" hidden><mm-icon name="bell" /><span>@L["Send a test notification"]</span></button>
+                    </div>
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@if (Model.CanUseMail && Model.PushEnabled)
+{
+    <section class="card card--spaced">
+    <h2 class="card__title"><mm-icon name="smartphone" />@L["Devices that get notifications"]</h2>
+    <mm-table item-count="Model.Devices.Count" empty-text='@L["No device yet."]'>
+        <thead>
+            <tr>
+                <th>@L["Device"]</th>
+                <th class="hide-sm">@L["Mailboxes"]</th>
+                <th>@L["Last notified"]</th>
+                <th class="hide-sm">@L["Added"]</th>
+                <th class="is-actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var device in Model.Devices)
+            {
+                <tr>
+                    <td><span class="cell-title">@device.DeviceName</span></td>
+                    <td class="hide-sm">@(device.OwnMailboxOnly ? L["Only my own mailbox"] : L["Also shared and delegated"])</td>
+                    <td>@(device.LastSuccessDate is null ? "–" : Fmt.Ago(device.LastSuccessDate))</td>
+                    <td class="hide-sm">@Fmt.DateTimeText(device.CreateDate)</td>
+                    <td class="is-actions">
+                        <form method="post" asp-page-handler="Remove" data-no-busy>
+                            <input type="hidden" name="id" value="@device.Id" />
+                            <button type="submit" class="icon-btn icon-btn--danger" title="@L["Remove"]" aria-label="@L["Remove"]"><mm-icon name="trash" /></button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </mm-table>
+    </section>
+}
+
+@section Scripts {
+    <script src="~/js/account-app.js" asp-append-version="true"></script>
+}

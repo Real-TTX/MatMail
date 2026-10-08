@@ -48,6 +48,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         public bool QueueAllowDirectDelivery { get; set; }
         public bool SyncEnabled { get; set; }
         public int SyncMaxParallel { get; set; }
+        public bool PushEnabled { get; set; }
 
         public int ActivityLogDays { get; set; }
         public int TrashDays { get; set; }
@@ -151,7 +152,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         SmtpMaxMessageSizeMb = c.Smtp.MaxMessageSizeMb, SmtpMaxRecipients = c.Smtp.MaxRecipients, SmtpRequireTlsForAuth = c.Smtp.RequireTlsForAuth,
         ImapEnabled = c.Imap.Enabled, ImapPort = c.Imap.Port, ImapImplicitTlsPort = c.Imap.ImplicitTlsPort, ImapRequireTls = c.Imap.RequireTls,
         QueueEnabled = c.Queue.Enabled, QueueRetryMinutes = string.Join(", ", c.Queue.RetryMinutes), QueueMaxAgeHours = c.Queue.MaxAgeHours, QueueAllowDirectDelivery = c.Queue.AllowDirectDelivery,
-        SyncEnabled = c.Sync.Enabled, SyncMaxParallel = c.Sync.MaxParallel,
+        SyncEnabled = c.Sync.Enabled, SyncMaxParallel = c.Sync.MaxParallel, PushEnabled = c.Push.Enabled,
         ActivityLogDays = c.Retention.ActivityLogDays, TrashDays = c.Retention.TrashDays, JunkDays = c.Retention.JunkDays, SentQueueDays = c.Retention.SentQueueDays,
         TimeZone = c.Display.TimeZone, Culture = c.Display.Culture, ThemeMode = c.Display.ThemeMode, ThemeAccent = c.Display.ThemeAccent,
     };
@@ -180,6 +181,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         c.Queue.AllowDirectDelivery = Input.QueueAllowDirectDelivery;
         c.Sync.Enabled = Input.SyncEnabled;
         c.Sync.MaxParallel = Math.Clamp(Input.SyncMaxParallel, 1, 32);
+        c.Push.Enabled = Input.PushEnabled;
         c.Retention.ActivityLogDays = Math.Max(1, Input.ActivityLogDays);
         c.Retention.TrashDays = Math.Max(0, Input.TrashDays);
         c.Retention.JunkDays = Math.Max(0, Input.JunkDays);

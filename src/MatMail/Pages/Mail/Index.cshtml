@@ -31,6 +31,7 @@
 
 <script type="application/json" id="mail-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
 <div class="mail-app" id="mail-app">
+    <div class="mail-offline" id="mail-offline" role="status" hidden></div>
     <section class="mail-pane mail-pane--list" id="mail-list-pane">
         <div class="mail-toolbar" id="mail-list-toolbar"></div>
         @* "All 50 on this page are selected. Select all 1,234 that match": offered when the selection fills the page and there are more hits. *@
@@ -62,6 +63,7 @@
 
 @section Scripts {
     <script src="~/js/mail-core.js" asp-append-version="true"></script>
+    <script src="~/js/mail-outbox.js" asp-append-version="true"></script>
     <script src="~/js/mail-compose.js" asp-append-version="true"></script>
     <script src="~/js/mail-viewer.js" asp-append-version="true"></script>
     <script src="~/js/mail-search.js" asp-append-version="true"></script>

@@ -126,7 +126,7 @@ public sealed partial class MailBodyRenderer
         + "@media print{.mm-print-bar{display:none}.mm-print-head{padding:0 0 6px}#mm-body{padding:10px 0}a{color:inherit}}";
 
     private const string DocumentCss =
-        "html{background:transparent}"
+        "html{background:transparent;touch-action:pan-x pan-y}"
         + "body{margin:0;padding:0;font:14px/1.55 system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#202124;background:#fff;overflow-wrap:break-word}"
         + "#mm-body{padding:14px 18px}"
         + "img{max-width:100%;height:auto}"

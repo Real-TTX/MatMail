@@ -183,6 +183,19 @@ html[data-previews="off"] .mail-row__snippet { display: none; }
 .mail-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--color-text-muted); padding: 3rem 1rem; }
 .mail-empty[hidden] { display: none; }
 .mail-empty__icon { width: 4rem; height: 4rem; opacity: 0.4; stroke-width: 1.25; }
+.mail-offline { flex: none; padding: 0.45rem 1rem; background: var(--color-warn-soft); color: var(--color-text); font-size: 0.85rem; text-align: center; border-bottom: 1px solid var(--color-border); }
+.mail-offline[hidden] { display: none; }
+.folder-item--outbox { color: var(--color-warn); font-weight: 600; }
+.folder-item--outbox .icon { color: var(--color-warn); }
+.folder-item--outbox:hover .folder-item__count { display: inline; }
+.outbox { display: flex; flex-direction: column; gap: 0.35rem; }
+.outbox__item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--color-border); }
+.outbox__item:last-child { border-bottom: 0; }
+.outbox__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.outbox__main b, .outbox__main span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.outbox__error { color: var(--color-danger); white-space: normal !important; font-size: 0.85rem; }
+.outbox__actions { display: inline-flex; flex: none; }
+.attachment.is-pending { border-style: dashed; }
 .mail-notice { margin: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius); background: var(--color-info-soft); color: var(--color-text); }
 .mail-notice.is-error { background: var(--color-danger-soft); color: var(--color-danger); }
 .mail-notice[hidden] { display: none; }

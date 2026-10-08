@@ -59,6 +59,14 @@ branding.
   frame and scaled to the width, quoted history is folded, remote pictures stay blocked until you
   allow them
 - Compose with rich text, pictures (paste or drop), a signature chooser and keyboard shortcuts
+- **An app on your phone or computer** (PWA): put it on the home screen or install it; it opens in a
+  window of its own with the colour of your theme in the status bar, cannot be zoomed by accident and
+  keeps working **without a connection** – mail you write offline (also with attachments) waits in an
+  outbox on the device and goes out as soon as you are back online
+- **Notifications** for new mail on every device you turn them on for (Web Push, no third-party
+  service of ours: the push service of your browser carries a message only your device can read); you
+  choose your own mailbox only or also the shared and delegated ones. Needs https (a certificate your
+  phone trusts), and on an iPhone the app on the home screen
 - **Print** a message as a clean page of its own (subject, people, date and attachments above the
   text), also from a phone; there the share sheet is offered as well (the message as `.eml`)
 - **Light, dark and phone**: a first-class mobile layout, accent colour, text size, density and time
@@ -197,7 +205,9 @@ Ready-made images are published to the GitHub Container Registry:
 
 ### 1. Just run it
 
-Copy this into `docker-compose.yml`, change the host name and the two passwords, and start it:
+Copy this into `docker-compose.yml` and start it. The only password in it belongs to the database;
+the app brings the same value as its default, so it needs no entry of its own (to choose another
+one, see the notes below *2. First steps in the app*):
 
 ```yaml
 services:
@@ -338,7 +348,8 @@ The mail itself lives in the PostgreSQL volume.
 | Area | Content | Status |
 |---|---|---|
 | Mail core | Connected accounts, routing, catch-all, Unassigned, own IMAP and SMTP servers, smart host, outgoing queue | ✅ |
-| Web client | Folders, search, drafts, shared mailboxes, reader for foreign HTML, compose, phone layout | ✅ |
+| Web client | Folders, search (Gmail operators, select all hits), drafts, shared mailboxes, reader for foreign HTML, compose, print, phone layout | ✅ |
+| App | Installable (PWA), offline outbox, notifications for new mail (Web Push) | ✅ |
 | Signatures, footers, templates | Rich text editor, pictures, placeholders, added by the server, templates by rule | ✅ |
 | Tenants and rights | Tenants, roles, delegation, branding per tenant | ✅ |
 | Two-factor authentication | Authenticator app, recovery codes, app passwords, enforced per tenant or role | ✅ |

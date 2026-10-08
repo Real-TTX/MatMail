@@ -78,12 +78,14 @@
 <html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    @* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>@(pageTitle == "MatMail" ? productName : $"{pageTitle} · {productName}")</title>
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/mail.css" asp-append-version="true" />
     <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
+    <partial name="_PwaHead" model="productName" />
     <partial name="_ThemeHead" model="theme" />
     <partial name="_BrandHead" model="brand" />
     @await RenderSectionAsync("Head", required: false)
@@ -279,6 +281,7 @@
     </dialog>
 
     <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/js/pwa.js" asp-append-version="true" data-worker="/sw.js?v=@AppInfo.Version"></script>
     <script src="~/js/picker.js" asp-append-version="true"></script>
     <script src="~/js/rte.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)

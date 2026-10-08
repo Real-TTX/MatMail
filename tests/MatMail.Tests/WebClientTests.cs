@@ -70,6 +70,36 @@ public class MailBodyRendererTests
         Assert.NotNull(renderer.FindByContentId(message, "<pic>"));
         Assert.NotNull(renderer.FindAttachment(message, 0));
     }
+
+    [Fact]
+    public void The_print_page_has_a_header_the_body_and_only_its_own_script()
+    {
+        var renderer = new MailBodyRenderer();
+        RenderedBody body = renderer.Render(Html("<p>Dear all</p><script>steal()</script><img src=\"cid:logo\">"), 5, allowRemoteImages: false);
+        var rows = new List<PrintRow>
+        {
+            new("From", "Anna <anna@partner.test>"),
+            new("Cc", string.Empty),
+            new("Attachments", "plan.pdf (12 KB)"),
+        };
+
+        string page = MailBodyRenderer.BuildPrintDocument(body, "Offer <2026>", rows, "Print", "Close", "en", "abc123=");
+
+        Assert.Contains("<title>Offer &lt;2026&gt;</title>", page);
+        Assert.Contains("<h1>Offer &lt;2026&gt;</h1>", page);
+        Assert.Contains("<th>From</th><td>Anna &lt;anna@partner.test&gt;</td>", page);
+        Assert.Contains("<th>Attachments</th><td>plan.pdf (12 KB)</td>", page);
+        Assert.DoesNotContain("<th>Cc</th>", page);           // an empty line is left out
+        Assert.Contains("<p>Dear all</p>", page);
+        Assert.Contains("/api/mail/messages/5/cid/logo", page);
+        Assert.DoesNotContain("steal()", page);                 // the mail cannot bring a script along
+
+        // Exactly one script, the page's own, carrying the nonce that the Content-Security-Policy names.
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(page, "<script", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        Assert.Contains("<script nonce=\"abc123=\">", page);
+        Assert.Contains("window.print()", page);
+        Assert.Contains("lang=\"en\"", page);
+    }
 }
 
 public class ComposeTests : IAsyncLifetime

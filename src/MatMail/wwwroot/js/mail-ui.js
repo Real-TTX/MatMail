@@ -652,11 +652,13 @@
     }
     bar.appendChild(App.el("span", { class: "mail-toolbar__spacer" }));
     bar.appendChild(App.iconButton("more-vertical", T("more"), function (e) {
-      App.showMenu(e.currentTarget, [
-        { label: T("print"), icon: "printer", onClick: function () { var frame = els.reader.querySelector("iframe"); if (frame) { frame.contentWindow.focus(); frame.contentWindow.print(); } } },
+      var items = [{ label: T("print"), icon: "printer", onClick: function () { printMessage(m); } }];
+      if (canShare()) { items.push({ label: T("share"), icon: "share", onClick: function () { shareMessage(m); } }); }
+      items.push(
         { label: T("downloadEml"), icon: "download", onClick: function () { window.location.href = "/api/mail/messages/" + m.id + "/raw"; } },
         { label: T("showOriginal"), icon: "file-text", onClick: function () { window.open("/api/mail/messages/" + m.id + "/raw", "_blank"); } }
-      ], { alignRight: true });
+      );
+      App.showMenu(e.currentTarget, items, { alignRight: true });
     }));
 
     var wrap = App.el("div", { class: "reader" });
@@ -755,6 +757,39 @@
     els.reader.innerHTML = "";
     els.reader.appendChild(wrap);
     els.reader.scrollTop = 0;
+  }
+
+  /**
+   * Printing needs a page of its own: the reader shows the mail in a sandboxed frame, which the browser may not print (no allow-modals),
+   * cannot break into pages and, on phones, does not print at all. The server renders header and body as one document that opens the
+   * print dialog itself; it opens in a new window (the same window when the browser refuses a second one).
+   */
+  function printMessage(m) {
+    var url = "/api/mail/messages/" + m.id + "/print";
+    if (!window.open(url, "_blank")) { window.location.assign(url); }
+  }
+
+  /** The share sheet of phones and tablets (from which a message can be printed, saved or sent on); desktops print directly. */
+  function canShare() {
+    return typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
+  }
+
+  /** Shares the message as an .eml file when the device takes files, as text otherwise. */
+  function shareMessage(m) {
+    var title = m.subject || T("noSubject");
+    var text = T("from") + ": " + addrLabel(m.from) + "\n" + title;
+    var fallback = function () { return navigator.share({ title: title, text: text }); };
+    var name = title.replace(/[\\/:*?"<>|\r\n]+/g, " ").trim().slice(0, 80) || "message";
+    fetch("/api/mail/messages/" + m.id + "/raw", { credentials: "same-origin" }).then(function (response) {
+      if (!response.ok) { throw new Error("HTTP " + response.status); }
+      return response.blob();
+    }).then(function (blob) {
+      var data = { files: [new File([blob], name + ".eml", { type: "message/rfc822" })], title: title, text: text };
+      return navigator.canShare && navigator.canShare(data) ? navigator.share(data) : fallback();
+    }).catch(function (e) {
+      if (e && e.name === "AbortError") { return; }   // the person closed the sheet
+      fallback().catch(function (again) { if (!again || again.name !== "AbortError") { App.toast(again && again.message ? again.message : String(again), { error: true }); } });
+    });
   }
 
   function detailRow(label, value) { return App.el("div", { class: "reader__detail" }, [App.el("span", { class: "reader__detail-label", text: label }), App.el("span", { text: value })]); }

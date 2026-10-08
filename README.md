@@ -59,6 +59,8 @@ branding.
   frame and scaled to the width, quoted history is folded, remote pictures stay blocked until you
   allow them
 - Compose with rich text, pictures (paste or drop), a signature chooser and keyboard shortcuts
+- **Print** a message as a clean page of its own (subject, people, date and attachments above the
+  text), also from a phone; there the share sheet is offered as well (the message as `.eml`)
 - **Light, dark and phone**: a first-class mobile layout, accent colour, text size, density and time
   zone per user
 

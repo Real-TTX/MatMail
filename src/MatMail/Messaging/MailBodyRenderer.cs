@@ -16,6 +16,9 @@ public sealed record AttachmentInfo(int Index, string FileName, string ContentTy
 /// </summary>
 public sealed record RenderedBody(string Html, bool HasRemoteContent, bool WasPlainText, bool HasOwnColours = false);
 
+/// <summary>One line of the header block of a printed message ("From", "Anna &lt;anna@…&gt;").</summary>
+public sealed record PrintRow(string Label, string Value);
+
 /// <summary>
 /// Turns a received message into HTML the browser may show. Everything active is removed (scripts, forms, frames, event handlers,
 /// styles that load things); links open in a new tab; <c>cid:</c> images point at the message's own inline parts; images from the
@@ -75,6 +78,52 @@ public sealed partial class MailBodyRenderer
         return "<!doctype html><html class=\"" + kind + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
             + "<base target=\"_blank\"><style>" + DocumentCss + "</style></head><body><div id=\"mm-body\">" + body.Html + "</div></body></html>";
     }
+
+    /// <summary>
+    /// The message as a page of its own for printing: the header (subject, people, date, attachments) above the body, light whatever the
+    /// theme of the reader is. A small script (the caller's CSP lets exactly that one run, by its nonce) opens the print dialog and
+    /// gives the screen two buttons; the mail itself cannot run anything. Phones print this page like any other, from the browser.
+    /// </summary>
+    public static string BuildPrintDocument(RenderedBody body, string subject, IReadOnlyList<PrintRow> rows, string printText, string closeText, string language, string nonce)
+    {
+        string kind = body.WasPlainText ? "mm-plain" : body.HasOwnColours ? "mm-styled" : "mm-unstyled";
+        var header = new System.Text.StringBuilder();
+        foreach (PrintRow row in rows.Where(r => !string.IsNullOrWhiteSpace(r.Value)))
+        {
+            header.Append("<tr><th>").Append(WebUtility.HtmlEncode(row.Label)).Append("</th><td>").Append(WebUtility.HtmlEncode(row.Value)).Append("</td></tr>");
+        }
+
+        string title = WebUtility.HtmlEncode(subject);
+        return "<!doctype html><html class=\"" + kind + "\" lang=\"" + WebUtility.HtmlEncode(language) + "\"><head><meta charset=\"utf-8\">"
+            + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" + title + "</title>"
+            + "<base target=\"_blank\"><style>" + DocumentCss + PrintCss + "</style></head><body>"
+            + "<div class=\"mm-print-bar\"><button type=\"button\" id=\"mm-print\">" + WebUtility.HtmlEncode(printText) + "</button>"
+            + "<button type=\"button\" id=\"mm-close\">" + WebUtility.HtmlEncode(closeText) + "</button></div>"
+            + "<header class=\"mm-print-head\"><h1>" + title + "</h1><table>" + header + "</table></header>"
+            + "<div id=\"mm-body\">" + body.Html + "</div>"
+            + "<script nonce=\"" + WebUtility.HtmlEncode(nonce) + "\">" + PrintScript + "</script></body></html>";
+    }
+
+    private const string PrintScript =
+        "(function(){"
+        + "function leave(){if(window.opener){window.close();}else if(history.length>1){history.back();}else{window.close();}}"
+        + "document.getElementById('mm-print').addEventListener('click',function(){window.print();});"
+        + "document.getElementById('mm-close').addEventListener('click',leave);"
+        + "window.addEventListener('load',function(){setTimeout(function(){window.print();},300);});"
+        + "})();";
+
+    private const string PrintCss =
+        "body{background:#fff}"
+        + ".mm-print-bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;padding:8px 18px;background:#f1f3f4;border-bottom:1px solid #dadce0}"
+        + ".mm-print-bar button{font:inherit;padding:6px 16px;border:1px solid #c3cadb;border-radius:6px;background:#fff;color:#202124;cursor:pointer}"
+        + ".mm-print-bar button:first-child{background:#1a73e8;border-color:#1a73e8;color:#fff}"
+        + ".mm-print-head{padding:16px 18px 6px;border-bottom:1px solid #dadce0}"
+        + ".mm-print-head h1{margin:0 0 8px;font-size:20px;line-height:1.3;font-weight:600}"
+        + ".mm-print-head table{border-collapse:collapse;font-size:13px;margin-bottom:8px}"
+        + ".mm-print-head th{padding:1px 14px 1px 0;color:#5f6368;font-weight:600;text-align:left;vertical-align:top;white-space:nowrap}"
+        + ".mm-print-head td{padding:1px 0;overflow-wrap:anywhere}"
+        + "@page{margin:14mm}"
+        + "@media print{.mm-print-bar{display:none}.mm-print-head{padding:0 0 6px}#mm-body{padding:10px 0}a{color:inherit}}";
 
     private const string DocumentCss =
         "html{background:transparent}"

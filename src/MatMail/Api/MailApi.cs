@@ -31,6 +31,7 @@ public static class MailApi
         api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
         api.MapGet("/messages/{id:long}/body", GetBody);
+        api.MapGet("/messages/{id:long}/print", GetPrint);
         api.MapGet("/messages/{id:long}/attachment/{index:int}", GetAttachment);
         api.MapGet("/messages/{id:long}/cid/{cid}", GetInlinePart);
         api.MapGet("/messages/{id:long}/raw", GetRaw);
@@ -258,6 +259,54 @@ public static class MailApi
         http.Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
 
         return Results.Content(MailBodyRenderer.BuildDocument(body), "text/html; charset=utf-8");
+    }
+
+    /// <summary>
+    /// The message as a page of its own for printing: header and body in one document, so that the browser can break it into pages
+    /// (a frame inside the page cannot be, and browsers on phones cannot print a frame at all). It carries one script, found by its
+    /// nonce, that opens the print dialog; the body is the same sanitised HTML as in the reader and cannot run anything.
+    /// </summary>
+    private static async Task<IResult> GetPrint(
+        long id, bool? images, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, Fmt fmt, IStringLocalizer<SharedResource> l,
+        HttpContext http, CancellationToken cancel)
+    {
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        if (message is null)
+        {
+            return error!;
+        }
+
+        MimeMessage? mime = await LoadMimeAsync(store, id, cancel);
+        if (mime is null)
+        {
+            return Results.NotFound();
+        }
+
+        bool allowImages = images == true;
+        RenderedBody body = renderer.Render(mime, id, allowImages);
+        static string People(IEnumerable<MailboxAddress> addresses)
+            => string.Join(", ", addresses.Select(a => string.IsNullOrWhiteSpace(a.Name) ? a.Address : $"{a.Name} <{a.Address}>"));
+
+        var rows = new List<PrintRow>
+        {
+            new(l["From"], People(mime.From.Mailboxes)),
+            new(l["To"], People(mime.To.Mailboxes)),
+            new(l["Cc"], People(mime.Cc.Mailboxes)),
+            new(l["Date"], fmt.DateTimeText(message.ReceivedDate)),
+            new(l["Attachments"], string.Join(", ", renderer.GetAttachments(mime).Select(a => $"{a.FileName} ({Fmt.Size(a.Size)})"))),
+        };
+
+        string nonce = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+        string imageSources = allowImages ? "img-src 'self' data: https: http:" : "img-src 'self' data:";
+        http.Response.Headers.ContentSecurityPolicy = $"default-src 'none'; {imageSources}; style-src 'unsafe-inline'; script-src 'nonce-{nonce}'; font-src data:; base-uri 'none'; form-action 'none'";
+        http.Response.Headers.XContentTypeOptions = "nosniff";
+        http.Response.Headers["Referrer-Policy"] = "no-referrer";
+        http.Response.Headers.CacheControl = "private, no-store";
+
+        string subject = string.IsNullOrWhiteSpace(mime.Subject) ? l["(no subject)"].Value : mime.Subject;
+        string document = MailBodyRenderer.BuildPrintDocument(
+            body, subject, rows, l["Print"].Value, l["Close"].Value, System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, nonce);
+        return Results.Content(document, "text/html; charset=utf-8");
     }
 
     private static async Task<IResult> GetAttachment(

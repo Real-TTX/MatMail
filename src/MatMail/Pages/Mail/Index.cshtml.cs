@@ -122,6 +122,7 @@ public class IndexModel(IStringLocalizer<SharedResource> l) : PageModel
             ["date"] = l["Date"],
             ["deliveredFor"] = l["Delivered for"],
             ["print"] = l["Print"],
+            ["share"] = l["Share"],
             ["downloadEml"] = l["Download message (.eml)"],
             ["showOriginal"] = l["Show original"],
             ["imagesBlocked"] = l["Pictures from the internet are blocked to protect your privacy."],

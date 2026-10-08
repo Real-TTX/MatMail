@@ -1,5 +1,6 @@
 using MatMail.Configuration;
 using MatMail.Services;
+using MatMail.Versioning;
 using Microsoft.AspNetCore.DataProtection;
 using Npgsql;
 
@@ -162,7 +163,7 @@ public static class RestoreStartup
         string path = Path.GetFullPath(target);
         if (Directory.Exists(path) || target.EndsWith('/') || target.EndsWith('\\'))
         {
-            path = Path.Combine(path, BackupFiles.Name(DateTime.UtcNow, AppInfo.Version, passphrase is not null));
+            path = Path.Combine(path, BackupFiles.Name(DateTime.UtcNow, AppInfo.Version, passphrase is not null, BackupFiles.ManualLabel, await InstallationOrNullAsync(config.Database.ConnectionString)));
         }
 
         try
@@ -301,7 +302,7 @@ public static class RestoreStartup
     private static async Task<string> SaveCurrentStateAsync(string connectionString, string dataDir, string? passphrase, IProgress<BackupProgress>? progress, CancellationToken cancel)
     {
         string folder = Path.Combine(dataDir, "backups");
-        string name = BackupFiles.Name(DateTime.UtcNow, AppInfo.Version, passphrase is not null, "pre-restore-");
+        string name = BackupFiles.Name(DateTime.UtcNow, AppInfo.Version, passphrase is not null, BackupFiles.PreRestoreLabel, await InstallationOrNullAsync(connectionString));
         await BackupJob.CreateFileAsync(
             new BackupSource(connectionString, dataDir),
             Path.Combine(folder, name),
@@ -312,7 +313,10 @@ public static class RestoreStartup
             cancel);
 
         // the last three are kept
-        foreach (FileInfo old in new DirectoryInfo(folder).EnumerateFiles("matmail-pre-restore-*").OrderByDescending(f => f.Name).Skip(3))
+        foreach (FileInfo old in new DirectoryInfo(folder).EnumerateFiles()
+                     .Where(f => BackupFiles.Parse(f.Name)?.Label == BackupFiles.PreRestoreLabel)
+                     .OrderByDescending(f => BackupFiles.Parse(f.Name)!.CreatedUtc)
+                     .Skip(3))
         {
             TryDelete(old.FullName);
         }
@@ -323,6 +327,19 @@ public static class RestoreStartup
     // ---------------------------------------------------------------------------------------------
     // Small helpers
     // ---------------------------------------------------------------------------------------------
+
+    /// <summary>The id of the installation for the name of a file; none when the database cannot say (the name then carries zeros).</summary>
+    private static async Task<string?> InstallationOrNullAsync(string connectionString)
+    {
+        try
+        {
+            return await SystemSettings.ReadInstallationIdAsync(connectionString);
+        }
+        catch (NpgsqlException)
+        {
+            return null;
+        }
+    }
 
     private static IDataProtector Protector(string dataDir)
         => DataProtectionProvider.Create(new DirectoryInfo(Path.Combine(dataDir, "keys")), builder => builder.SetApplicationName("MatMail")).CreateProtector(PendingRestore.Purpose);

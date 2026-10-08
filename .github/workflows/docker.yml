@@ -19,7 +19,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # The integration tests run against a real PostgreSQL and, for the provider synchronisation, a GreenMail test mail server.
+    # The integration tests run against a real PostgreSQL, for the provider synchronisation a GreenMail test mail server and, for the
+    # backup targets, a Samba server (SMB on port 445, which is where SMBLibrary connects).
     services:
       postgres:
         image: postgres:17
@@ -42,6 +43,16 @@ jobs:
           - 3110:3110
           - 3143:3143
           - 8080:8080
+      samba:
+        image: servercontainers/samba@sha256:de2f1c141e497ea287ba099788cb4526859f0b0336214a7e7dcf89d1f90525b7
+        env:
+          ACCOUNT_backup: backup-secret
+          UID_backup: '1000'
+          SAMBA_VOLUME_CONFIG_backups: '[backups]; path=/shares/backups; valid users = backup; guest ok = no; read only = no; browseable = yes; force user = root; force group = root'
+        ports:
+          - 445:445
+        volumes:
+          - /tmp/matmail-samba:/shares/backups
 
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +92,7 @@ jobs:
         env:
           MATMAIL_TEST_DB: Host=localhost;Port=5432;Database=matmail_test;Username=postgres;Password=matmail
           MATMAIL_TEST_IMAP: localhost:3143;pop3=localhost:3110;smtp=localhost:3025;api=localhost:8080
+          MATMAIL_TEST_SMB: localhost;share=backups;user=backup;password=backup-secret
         # The GitHubActions logger shows every failed test as an annotation of the run (and in the summary of a pull request).
         run: dotnet test MatMail.slnx -c Release --no-build --verbosity normal --logger GitHubActions
 

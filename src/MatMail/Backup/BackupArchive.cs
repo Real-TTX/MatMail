@@ -209,22 +209,55 @@ public sealed class BackupArchive : IDisposable
     }
 }
 
+/// <summary>The parts of the name of a backup file (see <see cref="BackupFiles.Name"/>).</summary>
+public sealed record BackupFileName(string Installation, string Label, DateTime CreatedUtc, string Version, bool Encrypted)
+{
+    /// <summary>Made by a schedule (its label is p followed by the id of the plan).</summary>
+    public bool IsPlan => Label.Length > 1 && Label[0] == 'p' && char.IsAsciiDigit(Label[1]);
+}
+
 /// <summary>Names and conversions of backup files.</summary>
-public static class BackupFiles
+public static partial class BackupFiles
 {
     public const string PlainExtension = ".zip";
     public const string EncryptedExtension = ".mmbak";
 
-    /// <summary>The name of a backup file: <c>matmail-20261008-031500-0.1.42-20261007.zip</c> (<c>.mmbak</c> when encrypted); <paramref name="kind"/> (e.g. "pre-restore-") goes in front of the date.</summary>
-    public static string Name(DateTime createdUtc, string appVersion, bool encrypted, string kind = "")
+    public const string ManualLabel = "manual";
+    public const string PreRestoreLabel = "pre-restore";
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^matmail-(?<inst>[0-9a-f]{6})-(?<label>p[0-9]+|manual|pre-restore)-(?<ts>[0-9]{8}-[0-9]{6})-(?<ver>[A-Za-z0-9.\-]+)\.(?<ext>zip|mmbak)$", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
+    private static partial System.Text.RegularExpressions.Regex NamePattern();
+
+    /// <summary>
+    /// The name of a backup file: <c>matmail-3f9a1c-p2-20261008-031500-0.1.42-20261007.zip</c> = installation (the first six characters of its
+    /// id, so that installations sharing a folder never take each other's files for their own), what made it (<c>p2</c> = plan 2,
+    /// <c>manual</c>, <c>pre-restore</c>), UTC time, version of the program; <c>.mmbak</c> when encrypted.
+    /// </summary>
+    public static string Name(DateTime createdUtc, string appVersion, bool encrypted, string label = ManualLabel, string? installationId = null)
     {
         string version = new(appVersion.Select(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' ? c : '-').ToArray());
-        return $"matmail-{kind}{createdUtc:yyyyMMdd-HHmmss}-{version}{(encrypted ? EncryptedExtension : PlainExtension)}";
+        return $"matmail-{Short(installationId)}-{label}-{createdUtc:yyyyMMdd-HHmmss}-{version}{(encrypted ? EncryptedExtension : PlainExtension)}";
     }
 
-    public static bool IsBackupFileName(string name)
-        => name.StartsWith("matmail-", StringComparison.OrdinalIgnoreCase)
-           && (name.EndsWith(PlainExtension, StringComparison.OrdinalIgnoreCase) || name.EndsWith(EncryptedExtension, StringComparison.OrdinalIgnoreCase));
+    /// <summary>The first six characters of an installation id (lower case, hex), or zeros when there is none yet.</summary>
+    public static string Short(string? installationId)
+    {
+        string digits = new((installationId ?? string.Empty).Where(char.IsAsciiHexDigit).Select(char.ToLowerInvariant).Take(6).ToArray());
+        return digits.PadRight(6, '0');
+    }
+
+    public static BackupFileName? Parse(string name)
+    {
+        System.Text.RegularExpressions.Match match = NamePattern().Match(name);
+        if (!match.Success || !DateTime.TryParseExact(match.Groups["ts"].Value, "yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out DateTime created))
+        {
+            return null;
+        }
+
+        return new BackupFileName(match.Groups["inst"].Value, match.Groups["label"].Value, created, match.Groups["ver"].Value, match.Groups["ext"].Value == "mmbak");
+    }
+
+    public static bool IsBackupFileName(string name) => Parse(name) is not null;
 
     /// <summary>Encrypts a finished archive into a new file.</summary>
     public static async Task EncryptAsync(string plainPath, string encryptedPath, string passphrase, CancellationToken cancel = default)

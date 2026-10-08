@@ -73,6 +73,7 @@ builder.Services.AddImapServer();
 builder.Services.AddSmtpServer();
 builder.Services.AddHostedService<MaintenanceService>();
 builder.Services.AddHostedService<PushNotifier>();
+builder.Services.AddHostedService<BackupScheduler>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))

@@ -23,6 +23,7 @@
     <PackageReference Include="DnsClient" Version="1.*" />
     <!-- Draws the QR code of the authenticator app set-up as SVG (pure managed, no external service) -->
     <PackageReference Include="QRCoder" Version="1.*" />
+    <PackageReference Include="SMBLibrary" Version="1.5.7.1" />
   </ItemGroup>
 
   <ItemGroup>

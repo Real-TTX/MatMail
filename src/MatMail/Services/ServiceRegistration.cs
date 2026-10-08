@@ -1,3 +1,4 @@
+using MatMail.Backup;
 using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Messaging;
@@ -45,6 +46,7 @@ public static class ServiceRegistration
 
         services.AddMessaging();
         services.AddPushNotifications();
+        services.AddBackups();
         return services;
     }
 }

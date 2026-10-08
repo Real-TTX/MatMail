@@ -214,7 +214,7 @@ public class RestoreStartupTests : IAsyncLifetime
         Assert.Equal(AppInfo.Version, report.BackupVersion);
 
         // what was there before is kept, so that a restore of the wrong backup can be undone
-        string safety = Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-pre-restore-*.zip"));
+        string safety = Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-*-pre-restore-*.zip"));
         Assert.Equal(report.SafetyBackup, Path.GetFileName(safety));
         using BackupArchive archive = BackupArchive.Open(safety);
         await archive.VerifyAsync();
@@ -261,7 +261,7 @@ public class RestoreStartupTests : IAsyncLifetime
         Assert.Equal("Home", await ScalarAsync<string>(_host, "SELECT \"Name\" FROM \"Tenant\""));
         Assert.True(File.Exists(encrypted));   // not an upload: it stays
         // the state before is protected like the backup that replaces it
-        Assert.True(BackupFiles.IsEncrypted(Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-pre-restore-*.mmbak"))));
+        Assert.True(BackupFiles.IsEncrypted(Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-*-pre-restore-*.mmbak"))));
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -392,7 +392,7 @@ public class RestoreStartupTests : IAsyncLifetime
         NpgsqlConnection.ClearAllPools();
         Assert.Equal(0, (await RestoreStartup.RunAsync(["--restore", backup], _host.Config, DataDir, NullLogger.Instance)).ExitCode);
         Assert.Equal("Home", await ScalarAsync<string>(_host, "SELECT \"Name\" FROM \"Tenant\""));
-        Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-pre-restore-*"));   // what was there is saved
+        Assert.Single(Directory.GetFiles(Path.Combine(DataDir, "backups"), "matmail-*-pre-restore-*"));   // what was there is saved
 
         Assert.Equal(66, (await RestoreStartup.RunAsync(["--restore", Path.Combine(_root, "missing.zip")], _host.Config, DataDir, NullLogger.Instance)).ExitCode);
         Assert.Equal(64, (await RestoreStartup.RunAsync(["--restore"], _host.Config, DataDir, NullLogger.Instance)).ExitCode);

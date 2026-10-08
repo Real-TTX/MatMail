@@ -1,5 +1,6 @@
 using MatMail.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace MatMail.Versioning;
 
@@ -34,6 +35,23 @@ public static class SystemSettings
         }
 
         await db.SaveChangesAsync(cancel);
+    }
+
+    /// <summary>The id of the installation straight from a database (no application around it: the command line, a restore); null when there is none yet.</summary>
+    public static async Task<string?> ReadInstallationIdAsync(string connectionString, CancellationToken cancel = default)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancel);
+        await using (var exists = new NpgsqlCommand("SELECT to_regclass('public.\"SystemSetting\"') IS NOT NULL", connection))
+        {
+            if (await exists.ExecuteScalarAsync(cancel) is not true)
+            {
+                return null;
+            }
+        }
+
+        await using var command = new NpgsqlCommand($"SELECT \"Value\" FROM \"SystemSetting\" WHERE \"Key\" = '{InstallationId}'", connection);
+        return await command.ExecuteScalarAsync(cancel) as string;
     }
 
     /// <summary>The version of the files as the database knows it; 1 for an installation that has never recorded one (the layout of the first release).</summary>

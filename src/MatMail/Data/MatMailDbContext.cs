@@ -19,6 +19,9 @@ public class MatMailDbContext : DbContext
     public long? CurrentTenantId => _current.TenantId;
 
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<BackupTarget> BackupTargets => Set<BackupTarget>();
+    public DbSet<BackupPlan> BackupPlans => Set<BackupPlan>();
+    public DbSet<BackupRun> BackupRuns => Set<BackupRun>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<TenantBranding> TenantBrandings => Set<TenantBranding>();
     public DbSet<User> Users => Set<User>();
@@ -315,6 +318,44 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.CreateDate);
             e.HasIndex(x => new { x.Category, x.Level });
             e.Property(x => x.Message).HasMaxLength(2000);
+        });
+
+        model.Entity<BackupTarget>(e =>
+        {
+            e.HasIndex(x => x.Name).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.Path).HasMaxLength(1000);
+            e.Property(x => x.Host).HasMaxLength(255);
+            e.Property(x => x.Share).HasMaxLength(255);
+            e.Property(x => x.Domain).HasMaxLength(255);
+            e.Property(x => x.Username).HasMaxLength(255);
+            e.Property(x => x.LastCheckMessage).HasMaxLength(2000);
+        });
+
+        model.Entity<BackupPlan>(e =>
+        {
+            e.HasIndex(x => x.Name).IsUnique();
+            e.HasIndex(x => x.NextRunDate);
+            e.Property(x => x.Name).HasMaxLength(200);
+
+            // Rows that exist when the column comes (none yet) and new ones: on, like the entity says.
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+            e.Property(x => x.Verify).HasDefaultValue(true);
+            e.Property(x => x.NotifyOnFailure).HasDefaultValue(true);
+
+            // A target that plans write to cannot be deleted: the plan would lose its place without anybody noticing.
+            e.HasOne(x => x.Target).WithMany().HasForeignKey(x => x.TargetId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        model.Entity<BackupRun>(e =>
+        {
+            e.HasIndex(x => x.StartedDate);
+            e.Property(x => x.PlanName).HasMaxLength(200);
+            e.Property(x => x.TargetName).HasMaxLength(200);
+            e.Property(x => x.FileName).HasMaxLength(300);
+            e.Property(x => x.Message).HasMaxLength(4000);
+            e.Property(x => x.AppVersion).HasMaxLength(100);
+            e.HasOne(x => x.Plan).WithMany().HasForeignKey(x => x.PlanId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 

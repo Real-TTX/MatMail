@@ -130,7 +130,15 @@
 .folder-item__more { width: 1.9rem; height: 1.9rem; margin: -0.3rem -0.3rem -0.3rem 0; opacity: 0; }
 .folder-item:hover .folder-item__more, .folder-item__more:focus-visible { opacity: 1; }
 .folder-item:hover .folder-item__count { display: none; }
-.folder-item--add { color: var(--color-text-muted); font-size: 0.9rem; }
+.folder-item--add { color: var(--color-text-muted); font-size: 0.9rem; padding-left: 1.5rem; }
+/* The fold arrow sits in the gutter on the left; its offset follows the depth of the folder (set by the script). */
+.folder-item__fold { position: absolute; top: 50%; transform: translateY(-50%); width: 1.4rem; height: 1.4rem; opacity: 0.55; }
+.folder-item__fold .icon { width: 0.9rem; height: 0.9rem; }
+.folder-item:hover .folder-item__fold, .folder-item__fold:focus-visible { opacity: 1; }
+.folder-item.is-drop { background: var(--color-primary-soft); outline: 2px dashed var(--color-primary); outline-offset: -2px; }
+.folder-item[draggable="true"] { cursor: grab; }
+.folder-usage { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; padding: 0.25rem 0.5rem 0.25rem 1.5rem; color: var(--color-text-muted); font-size: 0.8rem; }
+.folder-usage .icon { width: 0.95rem; height: 0.95rem; }
 
 /* ---- Toolbar above list and reader ---- */
 .mail-toolbar { display: flex; align-items: center; gap: 0.15rem; min-height: 3rem; padding: 0.25rem 0.75rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface); flex: none; }

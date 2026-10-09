@@ -4,10 +4,11 @@ namespace MatMail.Api;
 
 public sealed record AddressDto(string Name, string Address);
 
-public sealed record FolderDto(long Id, string Name, string Path, string Kind, int Depth, int Unread, int Total);
+public sealed record FolderDto(long Id, string Name, string Path, string Kind, int Depth, int Unread, int Total, long? ParentId);
 
+/// <summary>A mailbox of the user with its folders (in tree order) and what it occupies: <c>UsedBytes</c> is stored here, <c>RemoteBytes</c> stays at the provider (live access).</summary>
 public sealed record MailboxDto(
-    long Id, string Name, string Type, bool IsOwn, string Access, bool CanEdit, bool CanSend, bool CanManage, List<FolderDto> Folders);
+    long Id, string Name, string Type, bool IsOwn, string Access, bool CanEdit, bool CanSend, bool CanManage, List<FolderDto> Folders, long UsedBytes, long RemoteBytes, long MessageCount);
 
 public sealed record IdentityDto(string Address, string Label, long MailboxId, bool IsPrimary, bool IsOwn);
 
@@ -43,9 +44,15 @@ public sealed record DeleteRequest(long[] Ids, bool Permanent);
 
 public sealed record SpamRequest(long[] Ids, bool NotSpam);
 
-public sealed record CreateFolderRequest(long MailboxId, string Path);
+public sealed record CreateFolderRequest(long MailboxId, string Path, long? ParentId = null);
 
 public sealed record RenameFolderRequest(string Path);
+
+/// <summary>Where a folder goes: below this folder, or to the top level when there is none.</summary>
+public sealed record MoveFolderRequest(long? ParentId);
+
+/// <summary>What "Synchronise now" did for the accounts that feed the user's mailboxes.</summary>
+public sealed record SyncResultDto(int Accounts, int Synced, int Downloaded, int Failed, int AlreadyRunning, int StillRunning, string? FirstProblem);
 
 public sealed record CountsDto(int Unread, int Total);
 

@@ -1,0 +1,83 @@
+@page "/Admin/Transfers"
+@model MatMail.Pages.Admin.Transfers.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Mail transfers";
+    ViewData["Description"] = L["What came into the server, what went out and what moved between mailboxes, with the way it took and how it ended."].Value;
+}
+
+@if (Model.LogIsOff)
+{
+    <div class="notice notice--info"><mm-icon name="info" class="notice__icon" /><span class="notice__text">@L["The mail transfer log is switched off. Set how many days it is kept under Server settings (0 turns it off)."]</span></div>
+}
+else
+{
+    <p class="muted">@string.Format(L["Lines are kept for {0} days."].Value, Model.KeptDays) @if (!Model.ShowsSubjects) { <span>@L["Subjects are not recorded."]</span> }</p>
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search address, subject, server…"]' />
+    <mm-toolbar-select name="Direction" label='@L["Direction"]' value="@Model.Direction">
+        <option value="">@L["All"]</option>
+        @foreach (var direction in Enum.GetValues<TransferDirection>())
+        {
+            <option value="@direction">@Model.Labels.Direction(direction)</option>
+        }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Channel" label='@L["Way"]' value="@Model.Channel">
+        <option value="">@L["All"]</option>
+        @foreach (var channel in Enum.GetValues<TransferChannel>())
+        {
+            <option value="@channel">@Model.Labels.Channel(channel)</option>
+        }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        @foreach (var status in Enum.GetValues<TransferStatus>())
+        {
+            <option value="@status">@Model.Labels.Status(status)</option>
+        }
+    </mm-toolbar-select>
+    <mm-toolbar-field name="From" label='@L["From"]' type="date" value="@Model.From" />
+    <mm-toolbar-field name="To" label='@L["To"]' type="date" value="@Model.To" />
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="newest">@L["Newest first"]</option>
+        <option value="oldest">@L["Oldest first"]</option>
+        <option value="largest">@L["Largest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No transfers match."]' empty-icon="shuffle">
+    <thead>
+        <tr>
+            <th>@L["When"]</th>
+            <th>@L["Direction"]</th>
+            <th>@L["Message"]</th>
+            <th class="hide-sm">@L["Way"]</th>
+            <th class="hide-sm">@L["Size"]</th>
+            <th>@L["Status"]</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var transfer in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Transfers/Details?id=@transfer.Id" tabindex="0">
+                <td class="nowrap cell-sub" title="@Fmt.DateTimeText(transfer.CreateDate)">@Fmt.Ago(transfer.CreateDate)</td>
+                <td class="nowrap"><mm-icon name="@Model.Labels.DirectionIcon(transfer.Direction)" /> @Model.Labels.Direction(transfer.Direction)</td>
+                <td>
+                    <div class="cell-title">@(string.IsNullOrWhiteSpace(transfer.Subject) ? (Model.ShowsSubjects ? L["(no subject)"].Value : "–") : transfer.Subject)</div>
+                    <div class="cell-sub">
+                        @(string.IsNullOrEmpty(transfer.Sender) ? "<>" : transfer.Sender) → @transfer.Recipients@if (transfer.RecipientCount > 1 && transfer.Recipients.Length >= 2000) { <span> …</span> }
+                    </div>
+                </td>
+                <td class="hide-sm">
+                    <div>@Model.Labels.Channel(transfer.Channel)</div>
+                    @if (!string.IsNullOrEmpty(transfer.Peer) || !string.IsNullOrEmpty(transfer.RemoteIp)) { <div class="cell-sub mono">@string.Join(" · ", new[] { transfer.Peer, transfer.RemoteIp }.Where(s => !string.IsNullOrEmpty(s)))</div> }
+                </td>
+                <td class="hide-sm nowrap">@(transfer.SizeBytes == 0 ? "–" : Fmt.Size(transfer.SizeBytes))</td>
+                <td><mm-badge kind="@MatMail.Pages.Admin.Transfers.TransferLabels.StatusKind(transfer.Status)">@Model.Labels.Status(transfer.Status)</mm-badge></td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />

@@ -26,21 +26,26 @@ public sealed class OutboundSignal
     }
 }
 
+/// <summary>Where an outgoing message came from, for the mail transfer log.</summary>
+public sealed record TransferOrigin(TransferChannel Channel, string? Peer, string? RemoteIp);
+
 /// <summary>The outgoing queue: messages waiting for delivery to external recipients.</summary>
 public sealed class OutboundQueue
 {
     private readonly MatMailDbContext _db;
     private readonly OutboundSignal _signal;
+    private readonly TransferLog _transfers;
 
-    public OutboundQueue(MatMailDbContext db, OutboundSignal signal)
+    public OutboundQueue(MatMailDbContext db, OutboundSignal signal, TransferLog transfers)
     {
         _db = db;
         _signal = signal;
+        _transfers = transfers;
     }
 
     public async Task<OutboundMessage> EnqueueAsync(
         long tenantId, long? accountId, string envelopeFrom, IEnumerable<string> recipients, byte[] raw, string subject, long? mailboxId, long? senderUserId,
-        CancellationToken cancel = default)
+        TransferOrigin? origin = null, CancellationToken cancel = default)
     {
         var message = new OutboundMessage
         {
@@ -60,6 +65,10 @@ public sealed class OutboundQueue
         _db.OutboundMessages.Add(message);
         await _db.SaveChangesAsync(cancel);
         _signal.Notify();
+
+        await _transfers.RecordAsync(
+            TransferDirection.Outbound, origin?.Channel ?? TransferChannel.System, TransferStatus.Queued, envelopeFrom, message.Recipients, message.Subject, raw.LongLength,
+            tenantId, RawHeaders.MessageId(raw), origin?.Peer, origin?.RemoteIp, outboundMessageId: message.Id);
         return message;
     }
 
@@ -120,6 +129,12 @@ public sealed record SubmissionRequest
 
     /// <summary>Put the message into its template and add the signature and footers that apply (false: it goes out as it is).</summary>
     public bool ApplyFooters { get; init; } = true;
+
+    /// <summary>Who sent it (the signed-in user, the smart-host rule), for the mail transfer log.</summary>
+    public string? Peer { get; init; }
+
+    /// <summary>The address of the client, for the mail transfer log.</summary>
+    public string? RemoteIp { get; init; }
 }
 
 public sealed record SubmissionResult(bool Accepted, string? Error, int LocalCopies, int Queued, IReadOnlyList<string> Rejected);
@@ -205,6 +220,13 @@ public sealed class MailSubmission
             }
         }
 
+        TransferChannel channel = request.Source switch
+        {
+            SubmissionSource.Web => TransferChannel.WebClient,
+            SubmissionSource.SmartHost => TransferChannel.SmartHost,
+            _ => TransferChannel.SmtpSubmission,
+        };
+
         var rejected = new List<string>();
         int localCopies = 0;
         if (local.Count > 0)
@@ -214,7 +236,14 @@ public sealed class MailSubmission
             using IServiceScope delivery = _scopes.CreateScope();
             delivery.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
             DeliveryResult delivered = await delivery.ServiceProvider.GetRequiredService<MailDelivery>()
-                .DeliverAsync(clean, new DeliverySource { EnvelopeRecipients = local }, cancel);
+                .DeliverAsync(clean, new DeliverySource
+                {
+                    EnvelopeRecipients = local,
+                    Channel = channel,
+                    Peer = request.Peer,
+                    RemoteIp = request.RemoteIp,
+                    EnvelopeSender = request.EnvelopeFrom,
+                }, cancel);
             localCopies = delivered.Delivered;
         }
 
@@ -227,7 +256,9 @@ public sealed class MailSubmission
                 return new SubmissionResult(false, "No sending account is configured for this sender and direct delivery is switched off.", localCopies, 0, external);
             }
 
-            await _queue.EnqueueAsync(request.TenantId, account?.Id, request.EnvelopeFrom, external, clean, message.Subject ?? string.Empty, request.MailboxId, request.SenderUserId, cancel);
+            await _queue.EnqueueAsync(
+                request.TenantId, account?.Id, request.EnvelopeFrom, external, clean, message.Subject ?? string.Empty, request.MailboxId, request.SenderUserId,
+                new TransferOrigin(channel, request.Peer, request.RemoteIp), cancel);
             queued = 1;
         }
 

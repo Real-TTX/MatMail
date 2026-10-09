@@ -5,7 +5,7 @@ services:
     depends_on:
       - db
     ports:
-      - "9933:9933"   # web interface (HTTPS)
+      - "9933:9933"   # web interface (HTTP: put a reverse proxy with TLS in front)
       - "25:25"       # SMTP
       - "587:587"     # SMTP submission
       - "465:465"     # SMTPS

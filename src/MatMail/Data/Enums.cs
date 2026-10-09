@@ -150,3 +150,121 @@ public enum ActivityLevel
     Warning,
     Error,
 }
+
+/// <summary>Whether a mailbox rule needs all of its conditions or one of them.</summary>
+public enum RuleMatch
+{
+    All,
+    Any,
+}
+
+/// <summary>What a rule condition looks at.</summary>
+public enum RuleField
+{
+    /// <summary>Name and address of the sender.</summary>
+    From,
+
+    /// <summary>The recipients: To, Cc and the addresses the message was routed for.</summary>
+    To,
+    Subject,
+
+    /// <summary>The text of the message.</summary>
+    Body,
+
+    /// <summary>A header field of the message; its name is the condition's <c>HeaderName</c>.</summary>
+    Header,
+
+    /// <summary>Whether the message has attachments ("true" or "false").</summary>
+    HasAttachment,
+
+    /// <summary>The size of the message in kilobytes.</summary>
+    Size,
+}
+
+public enum RuleOperator
+{
+    Contains,
+    DoesNotContain,
+    Equals,
+    StartsWith,
+    EndsWith,
+    LargerThan,
+    SmallerThan,
+}
+
+/// <summary>What a rule does with a message that matches.</summary>
+public enum RuleActionType
+{
+    /// <summary>Puts the message into another folder of the mailbox instead of the inbox.</summary>
+    MoveToFolder,
+    MarkAsRead,
+
+    /// <summary>Stars (flags) the message.</summary>
+    Star,
+
+    /// <summary>Gives the message a label (an IMAP keyword).</summary>
+    AddLabel,
+
+    /// <summary>Puts the message into the trash.</summary>
+    MoveToTrash,
+
+    /// <summary>Deletes the message for good, without trash.</summary>
+    Discard,
+
+    /// <summary>Sends a copy to another address; the message itself stays.</summary>
+    ForwardTo,
+}
+
+/// <summary>Which way a message went through the server.</summary>
+public enum TransferDirection
+{
+    /// <summary>Into the server from outside: from another mail server or a connected provider account.</summary>
+    Inbound,
+
+    /// <summary>Out of the server to external recipients.</summary>
+    Outbound,
+
+    /// <summary>Between mailboxes of this server.</summary>
+    Internal,
+}
+
+/// <summary>The door a message came through or left by.</summary>
+public enum TransferChannel
+{
+    /// <summary>Another mail server delivering to us (SMTP, port 25).</summary>
+    SmtpServer,
+
+    /// <summary>A mail program that signed in to the SMTP server.</summary>
+    SmtpSubmission,
+
+    /// <summary>A device or server of a trusted network, without signing in.</summary>
+    SmartHost,
+    WebClient,
+
+    /// <summary>Fetched from a connected provider account.</summary>
+    ProviderAccount,
+
+    /// <summary>Forwarded by a mailbox rule.</summary>
+    Rule,
+
+    /// <summary>The server itself, e.g. a bounce.</summary>
+    System,
+}
+
+public enum TransferStatus
+{
+    Delivered,
+
+    /// <summary>Waiting in the outgoing queue.</summary>
+    Queued,
+
+    /// <summary>The first attempts failed for now; the server tries again.</summary>
+    Deferred,
+    Failed,
+
+    /// <summary>The server refused the message.</summary>
+    Rejected,
+
+    /// <summary>Accepted, but deleted at once by a mailbox rule.</summary>
+    Discarded,
+}

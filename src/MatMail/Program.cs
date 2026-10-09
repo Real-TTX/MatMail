@@ -43,7 +43,7 @@ using ILoggerFactory bootstrapLogging = LoggerFactory.Create(b => b.AddConsole()
 var certificates = new CertificateProvider(config, dataDir, bootstrapLogging.CreateLogger("Certificates"));
 
 // ---------------------------------------------------------------------------------------------
-// Web server (Kestrel): one port for the web interface, HTTPS unless a proxy terminates TLS
+// Web server (Kestrel): one port for the web interface, plain HTTP (a reverse proxy terminates TLS) unless Server.WebHttps is on
 // ---------------------------------------------------------------------------------------------
 builder.WebHost.ConfigureKestrel(kestrel =>
 {
@@ -141,10 +141,12 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Relay", Permissions.RelayManage);
         options.Conventions.AuthorizeFolder("/Admin/Queue", Permissions.QueueManage);
         options.Conventions.AuthorizeFolder("/Admin/Logs", Permissions.LogsView);
+        options.Conventions.AuthorizeFolder("/Admin/Transfers", Permissions.LogsView);
         options.Conventions.AuthorizeFolder("/Admin/Unassigned", Permissions.UnassignedManage);
         options.Conventions.AuthorizeFolder("/Admin/Branding", Permissions.BrandingManage);
         options.Conventions.AuthorizeFolder("/Admin/Security", Permissions.SecurityManage);
         options.Conventions.AuthorizePage("/Mail/Index", Permissions.MailUse);
+        options.Conventions.AuthorizeFolder("/Account/Rules", Permissions.MailUse);
     })
     .AddViewLocalization()
     .AddDataAnnotationsLocalization(options => options.DataAnnotationLocalizerProvider = (_, factory) => factory.Create(typeof(SharedResource)));

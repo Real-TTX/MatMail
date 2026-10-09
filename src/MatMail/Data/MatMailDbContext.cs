@@ -43,6 +43,10 @@ public class MatMailDbContext : DbContext
     public DbSet<MailTemplate> MailTemplates => Set<MailTemplate>();
     public DbSet<RelayRule> RelayRules => Set<RelayRule>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<MailTransfer> MailTransfers => Set<MailTransfer>();
+    public DbSet<MailRule> MailRules => Set<MailRule>();
+    public DbSet<MailRuleCondition> MailRuleConditions => Set<MailRuleCondition>();
+    public DbSet<MailRuleAction> MailRuleActions => Set<MailRuleAction>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
@@ -307,6 +311,46 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.CreateDate);
             e.HasIndex(x => new { x.Category, x.Level });
             e.Property(x => x.Message).HasMaxLength(2000);
+        });
+
+        model.Entity<MailTransfer>(e =>
+        {
+            e.HasIndex(x => x.CreateDate);
+            e.HasIndex(x => new { x.TenantId, x.CreateDate });
+            e.HasIndex(x => new { x.Direction, x.Status });
+            e.HasIndex(x => x.OutboundMessageId);
+            e.Property(x => x.MessageIdHeader).HasMaxLength(500);
+            e.Property(x => x.Subject).HasMaxLength(1000);
+            e.Property(x => x.Sender).HasMaxLength(320);
+            e.Property(x => x.Recipients).HasMaxLength(2000);
+            e.Property(x => x.Peer).HasMaxLength(300);
+            e.Property(x => x.RemoteIp).HasMaxLength(64);
+            e.Property(x => x.Detail).HasMaxLength(4000);
+        });
+
+        model.Entity<MailRule>(e =>
+        {
+            e.HasIndex(x => new { x.MailboxId, x.Position });
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.HasOne(x => x.Mailbox).WithMany().HasForeignKey(x => x.MailboxId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Conditions).WithOne(x => x.Rule).HasForeignKey(x => x.RuleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Actions).WithOne(x => x.Rule).HasForeignKey(x => x.RuleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<MailRuleCondition>(e =>
+        {
+            e.HasIndex(x => x.RuleId);
+            e.Property(x => x.Value).HasMaxLength(500);
+            e.Property(x => x.HeaderName).HasMaxLength(100);
+        });
+
+        model.Entity<MailRuleAction>(e =>
+        {
+            e.HasIndex(x => x.RuleId);
+            e.Property(x => x.Value).HasMaxLength(320);
+
+            // A rule that moves mail into a folder that is deleted does not vanish with it: the action stays and does nothing.
+            e.HasOne<MailFolder>().WithMany().HasForeignKey(x => x.FolderId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 

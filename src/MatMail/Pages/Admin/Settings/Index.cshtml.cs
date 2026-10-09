@@ -54,6 +54,8 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         public int TrashDays { get; set; }
         public int JunkDays { get; set; }
         public int SentQueueDays { get; set; }
+        public int TransferLogDays { get; set; }
+        public bool TransferLogSubjects { get; set; }
 
         public string TimeZone { get; set; } = "Europe/Berlin";
         public string Culture { get; set; } = "en-US";
@@ -154,6 +156,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         QueueEnabled = c.Queue.Enabled, QueueRetryMinutes = string.Join(", ", c.Queue.RetryMinutes), QueueMaxAgeHours = c.Queue.MaxAgeHours, QueueAllowDirectDelivery = c.Queue.AllowDirectDelivery,
         SyncEnabled = c.Sync.Enabled, SyncMaxParallel = c.Sync.MaxParallel, PushEnabled = c.Push.Enabled,
         ActivityLogDays = c.Retention.ActivityLogDays, TrashDays = c.Retention.TrashDays, JunkDays = c.Retention.JunkDays, SentQueueDays = c.Retention.SentQueueDays,
+        TransferLogDays = c.Retention.TransferLogDays, TransferLogSubjects = c.Retention.TransferLogSubjects,
         TimeZone = c.Display.TimeZone, Culture = c.Display.Culture, ThemeMode = c.Display.ThemeMode, ThemeAccent = c.Display.ThemeAccent,
     };
 
@@ -186,6 +189,8 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         c.Retention.TrashDays = Math.Max(0, Input.TrashDays);
         c.Retention.JunkDays = Math.Max(0, Input.JunkDays);
         c.Retention.SentQueueDays = Math.Max(1, Input.SentQueueDays);
+        c.Retention.TransferLogDays = Math.Max(0, Input.TransferLogDays);
+        c.Retention.TransferLogSubjects = Input.TransferLogSubjects;
         c.Display.TimeZone = Input.TimeZone.Trim();
         c.Display.Culture = Input.Culture;
         c.Display.ThemeMode = ThemeService.Modes.Contains(Input.ThemeMode) ? Input.ThemeMode : "system";

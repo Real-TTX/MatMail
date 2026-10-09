@@ -1,0 +1,26 @@
+@model (MatMail.Pages.Account.Rules.RuleLabels Labels, MatMail.Pages.Account.Rules.EditModel.ActionInput Row, string Index, IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Folders)
+@* One action of a rule. The names are Input.Actions[n].…; rules.js adds and removes rows and renumbers them. *@
+@{
+    var a = Model.Row;
+    string prefix = $"Input.Actions[{Model.Index}]";
+    bool showFolder = a.Type == RuleActionType.MoveToFolder;
+    bool showValue = a.Type is RuleActionType.ForwardTo or RuleActionType.AddLabel;
+}
+<div class="rule-row" data-rule-row="action">
+    <select class="form-control rule-row__field" name="@(prefix).Type" data-role="action-type" aria-label="@L["Action"]">
+        @foreach (var item in Model.Labels.ActionItems())
+        {
+            <option value="@item.Value" selected="@(item.Value == a.Type.ToString())">@item.Text</option>
+        }
+    </select>
+    <select class="form-control rule-row__value" name="@(prefix).FolderId" data-role="folder" aria-label="@L["Folder"]" hidden="@(!showFolder)" disabled="@(!showFolder)">
+        @foreach (var item in Model.Folders)
+        {
+            <option value="@item.Value" selected="@(item.Value == a.FolderId?.ToString())">@item.Text</option>
+        }
+    </select>
+    <input class="form-control rule-row__value" type="text" name="@(prefix).Value" value="@a.Value" maxlength="320" data-role="action-value" hidden="@(!showValue)" disabled="@(!showValue)"
+           placeholder="@(a.Type == RuleActionType.ForwardTo ? L["name@example.com"].Value : L["Label"].Value)" aria-label="@L["Value"]"
+           data-placeholder-forward="@L["name@example.com"]" data-placeholder-label="@L["Label"]" />
+    <button type="button" class="icon-btn rule-row__remove" data-rule-remove title="@L["Remove"]" aria-label="@L["Remove"]"><mm-icon name="x" /></button>
+</div>

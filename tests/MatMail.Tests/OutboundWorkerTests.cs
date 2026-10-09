@@ -216,6 +216,66 @@ public class OutboundWorkerTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task The_line_of_an_outgoing_message_in_the_transfer_log_follows_it_through_the_queue()
+    {
+        long id = await EnqueueAsync(await AddAccountAsync(), "alice@example.test", "friend@outside.test");
+        MailTransfer queued = Assert.Single(await TransfersAsync());
+        Assert.Equal((TransferDirection.Outbound, TransferStatus.Queued, id), (queued.Direction, queued.Status, queued.OutboundMessageId));
+        Assert.Equal(("alice@example.test", "friend@outside.test", "Queued"), (queued.Sender, queued.Recipients, queued.Subject));
+        Assert.NotNull(queued.MessageIdHeader);
+
+        await Worker().ProcessDueAsync();
+
+        MailTransfer delivered = Assert.Single(await TransfersAsync());   // the same line, brought up to date
+        Assert.Equal((TransferStatus.Delivered, 1), (delivered.Status, delivered.Attempts));
+        Assert.Contains("Delivered to friend@outside.test via account 'Provider'", delivered.Detail);
+    }
+
+    [DbFact]
+    public async Task A_deferred_delivery_and_a_refusal_show_up_in_the_transfer_log()
+    {
+        _host.Config.Queue.RetryMinutes = new[] { 5 };
+        _sink.RecipientReply = _ => "451 4.3.0 Try again later";
+        long id = await EnqueueAsync(await AddAccountAsync(), "alice@example.test", "friend@outside.test");
+        OutboundWorker worker = Worker();
+
+        await worker.ProcessDueAsync();
+        MailTransfer deferred = Assert.Single(await TransfersAsync());
+        Assert.Equal((TransferStatus.Deferred, 1), (deferred.Status, deferred.Attempts));
+        Assert.Contains("451 4.3.0 Try again later", deferred.Detail);
+
+        _sink.RecipientReply = _ => "550 5.1.1 No such user here";
+        await MakeDueAsync(id);
+        await worker.ProcessDueAsync();
+        MailTransfer failed = Assert.Single(await TransfersAsync(), t => t.Direction == TransferDirection.Outbound);
+        Assert.Equal((TransferStatus.Failed, 2), (failed.Status, failed.Attempts));
+        MailTransfer bounce = Assert.Single(await TransfersAsync(), t => t.Direction == TransferDirection.Internal);   // the notice to the sender is a transfer of its own
+        Assert.Equal((TransferChannel.System, "Undelivered Mail Returned to Sender"), (bounce.Channel, bounce.Subject));
+        Assert.Contains("550 5.1.1 No such user here", failed.Detail);
+        Assert.Contains("A bounce was delivered to the sender", failed.Detail);
+    }
+
+    [DbFact]
+    public async Task Housekeeping_removes_transfer_lines_older_than_the_retention()
+    {
+        _host.Config.Retention.TransferLogDays = 30;
+        long oldId = await EnqueueAsync(null, "alice@example.test", "old@outside.test");
+        long newId = await EnqueueAsync(null, "alice@example.test", "new@outside.test");
+        using (IServiceScope scope = _host.Scope())
+        {
+            await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().MailTransfers.Where(t => t.OutboundMessageId == oldId)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.CreateDate, DateTime.UtcNow.AddDays(-31)));
+        }
+
+        using IServiceScope cleanup = _host.Scope();
+        Assert.Equal(1, await TransferLog.PruneAsync(cleanup.ServiceProvider.GetRequiredService<MatMailDbContext>(), 30, DateTime.UtcNow, default));
+        Assert.Equal(newId, Assert.Single(await TransfersAsync()).OutboundMessageId);
+
+        // A retention of 0 means "no log", not "delete everything".
+        Assert.Equal(0, await TransferLog.PruneAsync(cleanup.ServiceProvider.GetRequiredService<MatMailDbContext>(), 0, DateTime.UtcNow, default));
+    }
+
+    [DbFact]
     public async Task Partial_failures_never_send_twice_to_an_accepted_recipient()
     {
         _sink.RecipientReply = address => address switch
@@ -680,6 +740,12 @@ public class OutboundWorkerTests : IAsyncLifetime
             .Where(m => m.MailboxId == mailboxId && m.Folder!.Kind == FolderKind.Inbox)
             .OrderBy(m => m.Uid)
             .ToListAsync();
+    }
+
+    private async Task<List<MailTransfer>> TransfersAsync()
+    {
+        using IServiceScope scope = _host.Scope();
+        return await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().MailTransfers.AsNoTracking().OrderBy(t => t.Id).ToListAsync();
     }
 
     private async Task<List<ActivityLog>> ActivityAsync()

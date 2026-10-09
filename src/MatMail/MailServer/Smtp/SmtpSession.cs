@@ -779,7 +779,7 @@ internal sealed class SmtpSession
             }
 
             byte[] stamped = SmtpMessageHandler.AddTraceHeaders(raw, transaction.Sender, BuildReceivedHeader(transaction, queueId));
-            string reply = await _handler.HandleAsync(transaction, stamped, mailboxId, queueId, cancel);
+            string reply = await _handler.HandleAsync(transaction, stamped, mailboxId, queueId, _remoteText, cancel);
             if (transaction.Rule is RelayRule rule && reply.StartsWith("250", StringComparison.Ordinal))
             {
                 await _context.Activity.InfoAsync(

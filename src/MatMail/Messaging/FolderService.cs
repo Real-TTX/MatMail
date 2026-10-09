@@ -25,28 +25,87 @@ public sealed class FolderService
         _hub = hub;
     }
 
-    /// <summary>All folders of a mailbox with their paths: special folders first (Inbox, Drafts, Sent, ...), then by path.</summary>
+    /// <summary>The deepest nesting of folders: deeper trees are unusable in every client and a cycle would never end.</summary>
+    public const int MaxDepth = 10;
+
+    /// <summary>
+    /// All folders of a mailbox with their paths as a tree, depth first: the special folders at the top level first (Inbox, Drafts, Sent, ...),
+    /// then the others by name; every folder is directly followed by its subfolders.
+    /// </summary>
     public async Task<IReadOnlyList<FolderInfo>> ListAsync(long mailboxId, CancellationToken cancel = default)
     {
         List<MailFolder> folders = await _db.MailFolders.AsNoTracking().Where(f => f.MailboxId == mailboxId).ToListAsync(cancel);
-        Dictionary<long, MailFolder> byId = folders.ToDictionary(f => f.Id);
+        return Arrange(folders);
+    }
 
-        string PathOf(MailFolder folder)
+    /// <summary>Puts folders into tree order and gives each its path. Folders whose parent is missing are shown at the top level.</summary>
+    public static IReadOnlyList<FolderInfo> Arrange(IReadOnlyCollection<MailFolder> folders)
+    {
+        Dictionary<long, MailFolder> byId = folders.ToDictionary(f => f.Id);
+        ILookup<long, MailFolder> children = folders
+            .Where(f => f.ParentId is long parent && byId.ContainsKey(parent))
+            .ToLookup(f => f.ParentId!.Value);
+        IEnumerable<MailFolder> roots = folders
+            .Where(f => f.ParentId is not long parent || !byId.ContainsKey(parent))
+            .OrderBy(SortRank)
+            .ThenBy(f => f.Name, StringComparer.OrdinalIgnoreCase);
+
+        var result = new List<FolderInfo>(folders.Count);
+        var visited = new HashSet<long>();
+
+        void Walk(MailFolder folder, string parentPath)
         {
-            var parts = new Stack<string>();
-            for (MailFolder? current = folder; current is not null; current = current.ParentId is long parent && byId.TryGetValue(parent, out MailFolder? p) ? p : null)
+            if (!visited.Add(folder.Id))
             {
-                parts.Push(current.Name);
+                return;
             }
 
-            return string.Join(Separator, parts);
+            string path = parentPath.Length == 0 ? folder.Name : parentPath + Separator + folder.Name;
+            result.Add(new FolderInfo(folder, path));
+            foreach (MailFolder child in children[folder.Id].OrderBy(SortRank).ThenBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                Walk(child, path);
+            }
         }
 
-        return folders
-            .Select(f => new FolderInfo(f, PathOf(f)))
-            .OrderBy(i => SortRank(i.Folder))
-            .ThenBy(i => i.Path, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        foreach (MailFolder root in roots)
+        {
+            Walk(root, string.Empty);
+        }
+
+        return result;
+    }
+
+    /// <summary>The folder and everything below it.</summary>
+    public async Task<IReadOnlyList<MailFolder>> GetSubtreeAsync(long folderId, CancellationToken cancel = default)
+    {
+        MailFolder? start = await _db.MailFolders.AsNoTracking().FirstOrDefaultAsync(f => f.Id == folderId, cancel);
+        if (start is null)
+        {
+            return Array.Empty<MailFolder>();
+        }
+
+        List<MailFolder> all = await _db.MailFolders.AsNoTracking().Where(f => f.MailboxId == start.MailboxId).ToListAsync(cancel);
+        ILookup<long, MailFolder> children = all.Where(f => f.ParentId is not null).ToLookup(f => f.ParentId!.Value);
+        var result = new List<MailFolder>();
+        var queue = new Queue<MailFolder>();
+        queue.Enqueue(start);
+        while (queue.Count > 0)
+        {
+            MailFolder current = queue.Dequeue();
+            if (result.Any(r => r.Id == current.Id))
+            {
+                continue;
+            }
+
+            result.Add(current);
+            foreach (MailFolder child in children[current.Id])
+            {
+                queue.Enqueue(child);
+            }
+        }
+
+        return result;
     }
 
     public Task<MailFolder?> FindByKindAsync(long mailboxId, FolderKind kind, CancellationToken cancel = default)
@@ -67,6 +126,11 @@ public sealed class FolderService
         if (parts.Length == 0 || parts.Any(p => p.Length > 200 || p.Contains('\\') || p is "." or ".."))
         {
             return (null, "The folder name is not valid.");
+        }
+
+        if (parts.Length > MaxDepth)
+        {
+            return (null, "The folders are nested too deeply.");
         }
 
         Mailbox? mailbox = await _db.Mailboxes.AsNoTracking().FirstOrDefaultAsync(m => m.Id == mailboxId, cancel);
@@ -117,6 +181,111 @@ public sealed class FolderService
         return (created, null);
     }
 
+    /// <summary>
+    /// Creates a folder below another one ("New subfolder"); <paramref name="parentId"/> null puts it at the top level. The name may itself
+    /// be a path ("2025/Bills"). Returns the folder, or an error text.
+    /// </summary>
+    public async Task<(MailFolder? Folder, string? Error)> CreateUnderAsync(long mailboxId, long? parentId, string name, CancellationToken cancel = default)
+    {
+        if (parentId is not long parent)
+        {
+            return await CreateAsync(mailboxId, name, cancel);
+        }
+
+        FolderInfo? parentInfo = (await ListAsync(mailboxId, cancel)).FirstOrDefault(f => f.Id == parent);
+        return parentInfo is null
+            ? (null, "The folder does not exist.")
+            : await CreateAsync(mailboxId, parentInfo.Path + Separator + name.Trim(Separator, ' '), cancel);
+    }
+
+    /// <summary>
+    /// Moves a custom folder with everything below it below another folder of the same mailbox, or to the top level
+    /// (<paramref name="newParentId"/> null). Returns an error text or null.
+    /// </summary>
+    public async Task<string?> MoveAsync(long folderId, long? newParentId, CancellationToken cancel = default)
+    {
+        MailFolder? folder = await _db.MailFolders.FirstOrDefaultAsync(f => f.Id == folderId, cancel);
+        if (folder is null)
+        {
+            return "The folder does not exist.";
+        }
+
+        if (folder.Kind != FolderKind.Custom)
+        {
+            return "System folders cannot be moved.";
+        }
+
+        if (folder.ParentId == newParentId)
+        {
+            return null;
+        }
+
+        List<MailFolder> all = await _db.MailFolders.AsNoTracking().Where(f => f.MailboxId == folder.MailboxId).ToListAsync(cancel);
+        Dictionary<long, MailFolder> byId = all.ToDictionary(f => f.Id);
+        MailFolder? parent = null;
+        if (newParentId is long parentId && !byId.TryGetValue(parentId, out parent))
+        {
+            return "The folder does not exist.";
+        }
+
+        ILookup<long, MailFolder> children = all.Where(f => f.ParentId is not null).ToLookup(f => f.ParentId!.Value);
+        int height = HeightOf(folderId, children, out HashSet<long> subtree);
+        if (parent is not null && subtree.Contains(parent.Id))
+        {
+            return "A folder cannot be moved into itself or one of its subfolders.";
+        }
+
+        if (DepthOf(parent, byId) + height > MaxDepth)
+        {
+            return "The folders are nested too deeply.";
+        }
+
+        if (parent is null && IsReservedRootName(folder.Name))
+        {
+            return "This name is reserved for a system folder.";
+        }
+
+        if (all.Any(f => f.Id != folderId && f.ParentId == newParentId && f.Name.Equals(folder.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return "A folder with this name already exists.";
+        }
+
+        folder.ParentId = newParentId;
+        await _db.SaveChangesAsync(cancel);
+        _hub.Publish(new MailEvent(MailEventKind.FoldersChanged, folder.TenantId, folder.MailboxId, folderId));
+        return null;
+    }
+
+    /// <summary>How many levels there are from the folder down (itself counts), and the ids of the folder and everything below it.</summary>
+    private static int HeightOf(long folderId, ILookup<long, MailFolder> children, out HashSet<long> subtree)
+    {
+        subtree = new HashSet<long> { folderId };
+        int height = 1;
+        var level = new List<long> { folderId };
+        while (level.Count > 0)
+        {
+            level = level.SelectMany(id => children[id]).Select(c => c.Id).Where(subtree.Add).ToList();
+            if (level.Count > 0)
+            {
+                height++;
+            }
+        }
+
+        return height;
+    }
+
+    /// <summary>The number of folders from the top level down to and including <paramref name="folder"/> (0 for the top level itself).</summary>
+    private static int DepthOf(MailFolder? folder, Dictionary<long, MailFolder> byId)
+    {
+        int depth = 0;
+        for (MailFolder? current = folder; current is not null && depth <= MaxDepth; current = current.ParentId is long p && byId.TryGetValue(p, out MailFolder? up) ? up : null)
+        {
+            depth++;
+        }
+
+        return depth;
+    }
+
     /// <summary>Renames a custom folder and/or moves it below another parent (new path). Returns an error text or null.</summary>
     public async Task<string?> RenameAsync(long folderId, string newPath, CancellationToken cancel = default)
     {
@@ -135,6 +304,13 @@ public sealed class FolderService
         if (parts.Length == 0)
         {
             return "The folder name is not valid.";
+        }
+
+        List<MailFolder> inMailbox = await _db.MailFolders.AsNoTracking().Where(f => f.MailboxId == folder.MailboxId).ToListAsync(cancel);
+        int levelsBelow = HeightOf(folderId, inMailbox.Where(f => f.ParentId is not null).ToLookup(f => f.ParentId!.Value), out _) - 1;
+        if (parts.Length + levelsBelow > MaxDepth)
+        {
+            return "The folders are nested too deeply.";
         }
 
         long? parentId = null;

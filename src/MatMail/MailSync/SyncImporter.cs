@@ -61,13 +61,15 @@ public enum ImportStatus
     GivenUp,
 }
 
-public readonly record struct ImportResult(ImportStatus Status, long? LocalMessageId = null)
+/// <param name="RuleDiscarded">A rule of the mailbox deleted the message on arrival: there is no copy, and that is what the owner wanted.</param>
+/// <param name="RuleChangedFlags">A rule made the copy read or starred, which the provider does not know yet (the flag comparison passes it on).</param>
+public readonly record struct ImportResult(ImportStatus Status, long? LocalMessageId = null, bool RuleDiscarded = false, bool RuleChangedFlags = false)
 {
     /// <summary>Dealt with: the folder position may move past it.</summary>
     public bool IsDone => Status != ImportStatus.Failed;
 
-    /// <summary>A local copy exists, so "delete after download" may remove the original.</summary>
-    public bool HasLocalCopy => LocalMessageId is not null && Status is ImportStatus.Stored or ImportStatus.AlreadyPresent or ImportStatus.Known;
+    /// <summary>A local copy exists (or a rule deleted it on purpose), so "delete after download" may remove the original.</summary>
+    public bool HasLocalCopy => (LocalMessageId is not null || RuleDiscarded) && Status is ImportStatus.Stored or ImportStatus.AlreadyPresent or ImportStatus.Known;
 }
 
 /// <summary>Where the synchronisation of a remote folder stands (the persisted <see cref="MailAccountFolderState"/>).</summary>
@@ -422,6 +424,14 @@ public sealed class SyncImporter
         }
 
         await RecordAsync(run, remote, result.LocalMessageId, cancel);
+        if (result.RuleChangedFlags && result.LocalMessageId is long ruledId)
+        {
+            // The copy was changed after the provider and the copy were last known to agree, so the next flag comparison pushes it to the provider
+            // instead of undoing it.
+            DateTime changed = DateTime.UtcNow;
+            await _db.MailMessages.IgnoreQueryFilters().Where(m => m.Id == ruledId).ExecuteUpdateAsync(s => s.SetProperty(m => m.UpdateDate, changed), cancel);
+        }
+
         if (result.Status == ImportStatus.Stored)
         {
             run.Downloaded++;
@@ -449,6 +459,8 @@ public sealed class SyncImporter
             IsAnswered = remote.IsAnswered,
             Keywords = remote.Keywords,
             Storage = storage,
+            Channel = TransferChannel.ProviderAccount,
+            Peer = run.Account.Name,
         }, cancel);
 
         if (delivery.Copies.Count == 0)
@@ -464,7 +476,10 @@ public sealed class SyncImporter
         await MoveUnclaimedAsync(delivery, cancel);
         DeliveredCopy first = delivery.Copies[0];
         ImportStatus status = delivery.Copies.All(c => c.WasDuplicate) ? ImportStatus.AlreadyPresent : ImportStatus.Stored;
-        return new ImportResult(status, first.Message?.Id);
+        bool discarded = delivery.Copies.All(c => c.Message is null && c.Rules?.Discard == true);
+        bool flagsChanged = delivery.Copies.Count == 1 && first is { WasDuplicate: false, Message: not null, Rules: { } rules }
+                            && ((rules.MarkRead && !remote.IsRead) || (rules.Star && !remote.IsStarred));
+        return new ImportResult(status, first.Message?.Id, discarded, flagsChanged);
     }
 
     /// <summary>The stand-ins of live access get the real size and attachment flag (the stored stub is only the header).</summary>

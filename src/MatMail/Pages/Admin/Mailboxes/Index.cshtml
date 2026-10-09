@@ -21,6 +21,7 @@
         <option value="name_asc">@L["Name (A–Z)"]</option>
         <option value="name_desc">@L["Name (Z–A)"]</option>
         <option value="messages_desc">@L["Most messages"]</option>
+        <option value="size_desc">@L["Most storage used"]</option>
         <option value="created_desc">@L["Newest first"]</option>
     </mm-toolbar-select>
 </mm-toolbar>
@@ -33,6 +34,7 @@
             <th>@L["Addresses"]</th>
             <th class="hide-sm">@L["Delegates"]</th>
             <th class="hide-sm">@L["Messages"]</th>
+            <th class="hide-sm">@L["Storage"]</th>
             <th>@L["Status"]</th>
             <th class="is-actions"></th>
         </tr>
@@ -55,6 +57,7 @@
                 </td>
                 <td class="hide-sm">@mailbox.DelegateCount</td>
                 <td class="hide-sm">@mailbox.MessageCount</td>
+                <td class="hide-sm nowrap">@(mailbox.UsedBytes == 0 ? "–" : Fmt.Size(mailbox.UsedBytes))</td>
                 <td>@if (mailbox.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
                 <td class="is-actions">
                     <span class="icon-actions">

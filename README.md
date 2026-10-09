@@ -45,10 +45,25 @@ branding.
   optionally limited to sender domains
 - **Outgoing queue** with retries and bounce messages; sending goes through the provider account of
   the sender address, or directly (MX lookup) when none is configured
+- **Mail transfer log** (*Administration → Mail transfers*): what came in – from other servers or from
+  connected accounts – what went out and what moved between mailboxes, with the way it took (SMTP,
+  mail program, smart host, web client, account, rule) and how it ended; an outgoing message has one
+  line that follows it through the queue (queued, deferred, delivered, failed). Kept for 30 days by
+  default; subjects can be left out
+- **Synchronise now** for everybody, in the account menu: fetches every connected account that feeds
+  your mailboxes and tells you what came in
 
 **The web client**
-- Folders (also those of the provider), stars, drafts with auto-save, attachments, address
-  suggestions, **live updates** when mail arrives
+- Folders (also those of the provider) with **subfolders** – below the inbox or any other folder,
+  created from the folder menu and moved by menu or drag & drop – stars, drafts with auto-save,
+  attachments, address suggestions, **live updates** when mail arrives
+- **Rules per mailbox** (*Account → Mail rules*): when a message arrives and fits – sender, recipient,
+  subject, text, a header field, attachment, size – it is moved into a folder, marked as read,
+  starred, labelled, sent to the trash, deleted or **forwarded** as a copy. They run before the
+  message is stored, so it arrives where it belongs. Rules of shared mailboxes are for those who
+  have full control of the mailbox
+- **Storage per mailbox** shown below the folders, in the mailbox list of the administration (sortable)
+  and per folder on the page of the mailbox
 - **Search like in Gmail**: `from:anna has:attachment newer_than:7d`, several operators at once,
   `OR`, `-` to leave out, brackets and quoted phrases; the operators work in German too (`von:`,
   `hat:anhang`, `ist:ungelesen`). An **advanced search** panel builds the text for you. When a search
@@ -217,7 +232,7 @@ services:
     depends_on:
       - db
     ports:
-      - "9933:9933"   # web interface (HTTPS)
+      - "9933:9933"   # web interface (HTTP: put a reverse proxy with TLS in front)
       - "25:25"       # SMTP
       - "587:587"     # SMTP submission
       - "465:465"     # SMTPS
@@ -243,14 +258,16 @@ volumes:
 docker compose up -d
 ```
 
-Open **https://localhost:9933** (or `https://<your-server>:9933`; the certificate is self-signed
-until you bring your own, so the browser asks once). The first visit asks for the name of the first
-tenant and the administrator account. The `matmail-data` volume keeps the configuration, the keys
-and the certificates, `matmail-db` the mail – an update is just `docker compose pull && docker
-compose up -d`. The same file lives in the repository as `docker-compose.yml`.
+Open **http://localhost:9933**. The web interface speaks plain HTTP on purpose: MatMail is made to
+run behind a reverse proxy (Caddy, nginx, Traefik …) that brings the HTTPS certificate – see
+*Behind a reverse proxy* below. The first visit asks for the name of the first tenant and the
+administrator account. The `matmail-data` volume keeps the configuration, the keys and the
+certificates, `matmail-db` the mail – an update is just `docker compose pull && docker compose up
+-d`. The same file lives in the repository as `docker-compose.yml`.
 
 Set the real host name under **Administration → Server settings** (*Public host name*); after a
-restart of the container the self-signed certificate carries it. Everything else is optional.
+restart of the container the self-signed certificate of the mail servers carries it. Everything
+else is optional.
 
 At this point MatMail has no mail yet – which brings us to the interesting part.
 
@@ -273,12 +290,19 @@ Worth knowing:
   on the provider, deleting it after the download and *live access*, where nothing is stored.
 - **Mail that fits nowhere is not lost.** It waits in **Unassigned** until an administrator assigns
   it to a mailbox.
-- **Encrypted by default.** Without a certificate the app creates a self-signed one on the first
-  start. Put your own into the data volume (`certs/fullchain.pem` + `certs/privkey.pem`, or
-  `certs/server.pfx`) and it is picked up right away; **Server settings → TLS certificate** shows
-  what is in use.
-- **Behind a reverse proxy** that terminates TLS, set `MATMAIL__Server__WebHttps: "false"` and
-  `MATMAIL__Server__TrustProxyHeaders: "true"` on the `matmail` service.
+- **Mail is encrypted by default.** SMTP and IMAP offer STARTTLS and implicit TLS right away: without
+  a certificate the app creates a self-signed one on the first start. Put your own into the data
+  volume (`certs/fullchain.pem` + `certs/privkey.pem`, or `certs/server.pfx`) and it is picked up
+  right away; **Server settings → TLS certificate** shows what is in use.
+- **Behind a reverse proxy.** The web interface listens on plain HTTP (port 9933) and expects a
+  proxy in front that terminates TLS. Add `MATMAIL__Server__TrustProxyHeaders: "true"` on the
+  `matmail` service so that the real client address (sign-in throttling, smart-host rules) and
+  `https` (secure cookies) come through `X-Forwarded-*`. Only do that when the port is reachable
+  through the proxy alone. A proxy that sends the same headers can be as small as
+  `reverse_proxy matmail:9933` in Caddy.
+- **Without a proxy.** To let MatMail serve HTTPS itself (the certificate above, self-signed until
+  you bring your own) set `MATMAIL__Server__WebHttps: "true"` and open `https://<your-server>:9933`.
+  Notifications and the installed app need HTTPS in the browser, wherever it comes from.
 - **The database is not exposed.** PostgreSQL has no published port, so its password stays inside
   the compose network. To choose your own, set `POSTGRES_PASSWORD` and `MATMAIL__Database__Password`
   to the same value.
@@ -302,7 +326,7 @@ service:
 | Variable | Default | Meaning |
 |---|---|---|
 | `MATMAIL__Server__Hostname` | `localhost` | name of the server (certificate, greeting) |
-| `MATMAIL__Server__WebHttps` | `true` | HTTPS for the web interface |
+| `MATMAIL__Server__WebHttps` | `false` | HTTPS for the web interface itself (off: plain HTTP behind a reverse proxy) |
 | `MATMAIL__Server__TrustProxyHeaders` | `false` | trust `X-Forwarded-*` of a reverse proxy |
 | `MATMAIL__Database__Host` / `Port` / `Database` / `Username` / `Password` | `db` / `5432` / `matmail` / `postgres` / `matmail` | PostgreSQL |
 | `MATMAIL__Smtp__Port` / `SubmissionPort` / `ImplicitTlsPort` | `25` / `587` / `465` | SMTP ports |

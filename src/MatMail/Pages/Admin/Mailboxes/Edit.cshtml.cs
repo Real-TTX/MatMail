@@ -1,4 +1,5 @@
 using MatMail.Data;
+using MatMail.Messaging;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Admin.Mailboxes;
 
-public class EditModel(MatMailDbContext db, MailboxService mailboxes, IStringLocalizer<SharedResource> l) : PageModel
+public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsageService usageService, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public long Id { get; set; }
@@ -17,6 +18,10 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, IStringLoc
     public InputModel Input { get; set; } = new();
 
     public bool IsEdit => Id != 0;
+
+    /// <summary>What the mailbox holds (existing mailboxes only) and where.</summary>
+    public MailboxUsage Usage { get; private set; } = MailboxUsage.Empty;
+    public IReadOnlyList<FolderUsage> FolderUsages { get; private set; } = Array.Empty<FolderUsage>();
     public string TypeText { get; private set; } = string.Empty;
     public IReadOnlyList<SelectListItem> UserItems { get; private set; } = Array.Empty<SelectListItem>();
 
@@ -141,5 +146,11 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, IStringLoc
         UserItems = await db.Users.AsNoTracking().Where(u => u.IsActive).OrderBy(u => u.DisplayName)
             .Select(u => new SelectListItem(u.DisplayName + " (" + u.LoginName + ")", u.Id.ToString()))
             .ToListAsync();
+
+        if (IsEdit)
+        {
+            Usage = await usageService.GetAsync(Id);
+            FolderUsages = await usageService.GetFoldersAsync(Id);
+        }
     }
 }

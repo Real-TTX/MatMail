@@ -306,6 +306,63 @@
     }
   }
 
+  // ---- "Synchronise now": fetches the connected accounts that feed the user's mailboxes -------------
+  // <button data-sync-now data-t-…="texts">: asks the server, tells what came in and lets the mail client refresh itself.
+  function toast(message, error) {
+    var host = doc.getElementById("mail-toasts");
+    if (!host) {
+      host = doc.createElement("div");
+      host.id = "mail-toasts";
+      host.className = "mail-toasts";
+      host.setAttribute("role", "status");
+      doc.body.appendChild(host);
+    }
+    var node = doc.createElement("div");
+    node.className = "toast" + (error ? " toast--error" : "");
+    var text = doc.createElement("span");
+    text.className = "toast__text";
+    text.textContent = message;
+    node.appendChild(text);
+    host.appendChild(node);
+    setTimeout(function () { node.classList.add("is-leaving"); setTimeout(function () { node.remove(); }, 200); }, error ? 9000 : 6000);
+  }
+
+  function initSyncNow() {
+    doc.addEventListener("click", function (e) {
+      var button = e.target.closest("[data-sync-now]");
+      if (!button || button.disabled) { return; }
+      var t = function (key) { return button.getAttribute("data-t-" + key) || ""; };
+      var label = $(".sync-now__label", button);
+      var original = label ? label.textContent : "";
+      button.disabled = true;
+      button.classList.add("is-busy");
+      if (label) { label.textContent = t("busy") || original; }
+
+      fetch("/api/mail/csrf", { credentials: "same-origin", headers: { "Accept": "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (csrf) {
+          return fetch("/api/mail/sync", { method: "POST", credentials: "same-origin", headers: { "Accept": "application/json", "X-CSRF-TOKEN": csrf.token } });
+        })
+        .then(function (response) { return response.json().then(function (data) { return { ok: response.ok, data: data }; }); })
+        .then(function (result) {
+          if (!result.ok) { toast((result.data && result.data.error) || t("error"), true); return; }
+          var r = result.data, parts = [];
+          if (r.accounts === 0) { toast(t("none")); return; }
+          if (r.synced > 0 || (r.failed === 0 && r.stillRunning === 0)) { parts.push(r.downloaded > 0 ? t("done").replace("{0}", r.downloaded) : t("nonew")); }
+          if (r.stillRunning > 0) { parts.push(t("running").replace("{0}", r.stillRunning)); }
+          if (r.failed > 0) { parts.push(t("failed").replace("{0}", r.failed) + (r.firstProblem ? " " + r.firstProblem : "")); }
+          toast(parts.join(" "), r.failed > 0);
+          window.dispatchEvent(new CustomEvent("matmail:synced", { detail: r }));
+        })
+        .catch(function () { toast(t("error"), true); })
+        .then(function () {
+          button.disabled = false;
+          button.classList.remove("is-busy");
+          if (label) { label.textContent = original; }
+        });
+    });
+  }
+
   // ---- Auto-dismiss of success notices -------------------------------------------------------
   function initNotices() {
     $$(".notice--ok").forEach(function (n) { setTimeout(function () { n.style.transition = "opacity .4s"; n.style.opacity = "0"; setTimeout(function () { n.remove(); }, 450); }, 7000); });
@@ -324,6 +381,7 @@
     initCopy();
     initBusy();
     initTheme();
+    initSyncNow();
     initNotices();
   });
 })();

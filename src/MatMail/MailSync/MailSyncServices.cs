@@ -65,6 +65,7 @@ public static class MailSyncServices
         services.AddSingleton<RemoteContentFetcher>();
         services.AddSingleton<IRemoteContentProvider>(provider => provider.GetRequiredService<RemoteContentFetcher>());
 
+        services.AddScoped<UserSyncService>();
         services.AddScoped<SyncImporter>();
         services.AddScoped<ImapAccountSync>();
         services.AddScoped<Pop3AccountSync>();

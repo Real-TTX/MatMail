@@ -39,8 +39,11 @@ public class ServerConfig
     /// <summary>Port of the web interface inside the container.</summary>
     public int WebPort { get; set; } = 9933;
 
-    /// <summary>Serve the web interface over HTTPS (self-signed unless a certificate is configured). Turn off behind a TLS-terminating proxy.</summary>
-    public bool WebHttps { get; set; } = true;
+    /// <summary>
+    /// Serve the web interface over HTTPS itself (self-signed unless a certificate is configured). Off by default: MatMail is made to run
+    /// behind a reverse proxy that terminates TLS. The mail servers use the certificate in either case.
+    /// </summary>
+    public bool WebHttps { get; set; }
 
     /// <summary>Trust X-Forwarded-For / X-Forwarded-Proto of a reverse proxy.</summary>
     public bool TrustProxyHeaders { get; set; }
@@ -143,6 +146,12 @@ public class RetentionConfig
     public int TrashDays { get; set; } = 30;
     public int JunkDays { get; set; } = 30;
     public int SentQueueDays { get; set; } = 14;
+
+    /// <summary>How long the mail transfer log keeps its lines. 0 = no transfer log at all.</summary>
+    public int TransferLogDays { get; set; } = 30;
+
+    /// <summary>Whether the transfer log shows the subject of a message. Off: administrators see who wrote to whom and when, not what about.</summary>
+    public bool TransferLogSubjects { get; set; } = true;
 }
 
 /// <summary>

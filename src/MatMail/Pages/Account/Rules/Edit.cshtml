@@ -1,0 +1,59 @@
+@page "/Account/Rules/Edit"
+@model MatMail.Pages.Account.Rules.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Account / Mail rules / Edit rule" : "Account / Mail rules / New rule";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New rule"].Value;
+    var blankCondition = new MatMail.Pages.Account.Rules.EditModel.ConditionInput();
+    var blankAction = new MatMail.Pages.Account.Rules.EditModel.ActionInput { FolderId = Model.FolderItems.Select(f => (long?)long.Parse(f.Value!)).FirstOrDefault() };
+}
+
+<mm-form class="rule-form" data-rules>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="MailboxId" />
+    <script type="application/json" id="rule-operators">@Html.Raw(Model.OperatorConfigJson)</script>
+
+    <mm-form-section title='@L["Rule"]' icon="filter" description='@string.Format(L["For the mailbox “{0}”."].Value, Model.MailboxName)'>
+        <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Newsletters"]' autofocus="autofocus" />
+        <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["The rule is on"]' />
+    </mm-form-section>
+
+    <mm-form-section title='@L["When a message arrives"]' icon="mail" description='@L["The rule applies to a message when its conditions fit."]'>
+        <mm-field asp-for="Input.Match" kind="select" asp-items="Model.Labels.MatchItems()" label='@L["The rule applies when"]' />
+        <div class="rule-rows" data-rule-list="condition">
+            @for (int i = 0; i < Model.Input.Conditions.Count; i++)
+            {
+                <partial name="_ConditionRow" model="(Model.Labels, Model.Input.Conditions[i], i.ToString())" />
+            }
+        </div>
+        <div><button type="button" class="btn btn--secondary" data-rule-add="condition"><mm-icon name="plus" />@L["Add condition"]</button></div>
+    </mm-form-section>
+
+    <mm-form-section title='@L["Then"]' icon="shuffle" description='@L["What happens to a message that fits. The message is dealt with before it is stored, so it arrives where it belongs."]'>
+        <div class="rule-rows" data-rule-list="action">
+            @for (int i = 0; i < Model.Input.Actions.Count; i++)
+            {
+                <partial name="_ActionRow" model="(Model.Labels, Model.Input.Actions[i], i.ToString(), Model.FolderItems)" />
+            }
+        </div>
+        <div><button type="button" class="btn btn--secondary" data-rule-add="action"><mm-icon name="plus" />@L["Add action"]</button></div>
+        <mm-field asp-for="Input.StopProcessing" kind="checkbox" label='@L["Do not apply the rules below this one to a message that fits"]' />
+        <p class="form-help">@L["“Forward a copy” sends the message on as it is, from an address of this mailbox, and keeps it here. A message that has been forwarded by five rules in a row is not forwarded again, so loops end."]</p>
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="@($"/Account/Rules?mailboxId={Model.MailboxId}")" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this rule?"]'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>
+
+<template id="rule-template-condition"><partial name="_ConditionRow" model='(Model.Labels, blankCondition, "__index__")' /></template>
+<template id="rule-template-action"><partial name="_ActionRow" model='(Model.Labels, blankAction, "__index__", Model.FolderItems)' /></template>
+
+@section Scripts {
+    <script src="~/js/rules.js" asp-append-version="true"></script>
+}

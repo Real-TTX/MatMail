@@ -37,6 +37,39 @@
     {
         <p class="muted">@L["After saving you can add addresses and delegate access."]</p>
     }
+    else
+    {
+        <mm-form-section title='@L["Storage"]' icon="hard-drive"
+                         description='@L["What the mailbox takes up on this server: the complete messages with their attachments."]'>
+            <dl class="usage-summary">
+                <div><dt>@L["In use"]</dt><dd>@Fmt.Size(Model.Usage.LocalBytes)</dd></div>
+                <div><dt>@L["Messages"]</dt><dd>@Model.Usage.Messages.ToString("N0")</dd></div>
+                @if (Model.Usage.RemoteBytes > 0)
+                {
+                    <div><dt>@L["Stays at the provider"]</dt><dd>@Fmt.Size(Model.Usage.RemoteBytes)</dd></div>
+                }
+            </dl>
+            <mm-table item-count="Model.FolderUsages.Count" empty-text='@L["No folders."]' empty-icon="folder">
+                <thead>
+                    <tr>
+                        <th>@L["Folder"]</th>
+                        <th class="num">@L["Messages"]</th>
+                        <th class="num">@L["Storage"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var folder in Model.FolderUsages)
+                    {
+                        <tr>
+                            <td>@folder.Path</td>
+                            <td class="num">@folder.Messages.ToString("N0")</td>
+                            <td class="num nowrap">@(folder.Bytes == 0 ? "–" : Fmt.Size(folder.Bytes))</td>
+                        </tr>
+                    }
+                </tbody>
+            </mm-table>
+        </mm-form-section>
+    }
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>

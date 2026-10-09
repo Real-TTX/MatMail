@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.Channels;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.MailSync;
 using MatMail.Messaging;
 using MatMail.Push;
 using MatMail.Services;
@@ -28,6 +29,7 @@ public static class MailApi
 
         api.MapGet("/bootstrap", Bootstrap);
         api.MapGet("/counts", Counts);
+        api.MapPost("/sync", SyncNow);
         api.MapGet("/messages", ListMessages);
         api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
@@ -43,6 +45,7 @@ public static class MailApi
 
         api.MapPost("/folders", CreateFolder);
         api.MapPatch("/folders/{id:long}", RenameFolder);
+        api.MapPost("/folders/{id:long}/move", MoveFolder);
         api.MapDelete("/folders/{id:long}", DeleteFolder);
         api.MapPost("/folders/{id:long}/markread", MarkFolderRead);
         api.MapPost("/folders/{id:long}/empty", EmptyFolder);
@@ -144,7 +147,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> Bootstrap(
-        MailAccessService access, MailStore store, FolderService folders, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, BrandingService branding, CancellationToken cancel)
+        MailAccessService access, MailStore store, FolderService folders, MailboxUsageService usage, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, BrandingService branding, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -153,11 +156,13 @@ public static class MailApi
         }
 
         IReadOnlyList<AccessibleMailbox> boxes = await access.GetMailboxesAsync(user, cancel);
+        Dictionary<long, MailboxUsage> usageByMailbox = await usage.GetAsync(boxes.Select(b => b.Mailbox.Id), cancel);
         var mailboxes = new List<MailboxDto>();
         foreach (AccessibleMailbox box in boxes)
         {
             IReadOnlyList<FolderInfo> infos = await folders.ListAsync(box.Mailbox.Id, cancel);
             Dictionary<long, (int Total, int Unread)> counts = await store.GetCountsAsync(infos.Select(i => i.Id), cancel);
+            MailboxUsage used = usageByMailbox[box.Mailbox.Id];
             mailboxes.Add(new MailboxDto(
                 box.Mailbox.Id,
                 box.Mailbox.Type == MailboxType.Unassigned ? l["Unassigned"].Value : box.Mailbox.Name,
@@ -167,7 +172,10 @@ public static class MailApi
                 box.Access >= MailboxAccess.Edit,
                 box.Access >= MailboxAccess.Send,
                 box.Access >= MailboxAccess.Manage,
-                infos.Select(i => new FolderDto(i.Id, i.Folder.Name, i.Path, i.Kind.ToString(), i.Path.Count(c => c == FolderService.Separator), counts[i.Id].Unread, counts[i.Id].Total)).ToList()));
+                infos.Select(i => new FolderDto(i.Id, i.Folder.Name, i.Path, i.Kind.ToString(), i.Path.Count(c => c == FolderService.Separator), counts[i.Id].Unread, counts[i.Id].Total, i.Folder.ParentId)).ToList(),
+                used.LocalBytes,
+                used.RemoteBytes,
+                used.Messages));
         }
 
         IReadOnlyList<SendIdentity> identities = await access.GetSendIdentitiesAsync(user, cancel);
@@ -504,8 +512,53 @@ public static class MailApi
             return error!;
         }
 
-        (MailFolder? folder, string? failure) = await folders.CreateAsync(request.MailboxId, request.Path, cancel);
+        (MailFolder? folder, string? failure) = await folders.CreateUnderAsync(request.MailboxId, request.ParentId, request.Path, cancel);
         return folder is null ? new Failure(failure) : Results.Ok(new { id = folder.Id });
+    }
+
+    /// <summary>Moves a folder below another folder of the same mailbox, or to the top level.</summary>
+    private static async Task<IResult> MoveFolder(long id, MoveFolderRequest request, MailAccessService access, FolderService folders, CancellationToken cancel)
+    {
+        MailUser? user = access.GetCurrentUser();
+        MailFolder? folder = user is null ? null : await access.GetFolderAsync(user, id, MailboxAccess.Manage, cancel);
+        if (folder is null)
+        {
+            return Results.NotFound();
+        }
+
+        // The target must be a folder of the same mailbox; a foreign id gets no more than "not found".
+        if (request.ParentId is long parentId)
+        {
+            MailFolder? parent = await access.GetFolderAsync(user!, parentId, MailboxAccess.Manage, cancel);
+            if (parent is null || parent.MailboxId != folder.MailboxId)
+            {
+                return Results.NotFound();
+            }
+        }
+
+        string? failure = await folders.MoveAsync(id, request.ParentId, cancel);
+        return failure is null ? Results.Ok() : new Failure(failure);
+    }
+
+    /// <summary>
+    /// "Synchronise now" for everybody: fetches the connected accounts that feed the mailboxes of the user and reports what came in.
+    /// Waits a good while for the result; what takes longer goes on in the background.
+    /// </summary>
+    private static async Task<IResult> SyncNow(MailAccessService access, UserSyncService sync, CurrentUser current, CancellationToken cancel)
+    {
+        MailUser? user = access.GetCurrentUser();
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        if (!sync.IsEnabled)
+        {
+            return new Failure("The synchronisation is switched off on this server.");
+        }
+
+        UserSyncResult result = await sync.SyncAsync(user, TimeSpan.FromSeconds(25), current.Can(Permissions.AccountsManage), cancel);
+        return Results.Ok(new SyncResultDto(result.Accounts, result.Synced, result.Downloaded, result.Failed, result.AlreadyRunning, result.StillRunning, result.Problems.FirstOrDefault()));
     }
 
     private static async Task<IResult> RenameFolder(long id, RenameFolderRequest request, MailAccessService access, FolderService folders, CancellationToken cancel)

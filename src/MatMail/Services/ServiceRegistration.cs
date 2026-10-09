@@ -28,6 +28,7 @@ public static class ServiceRegistration
         services.AddSingleton<SessionCache>();
         services.AddSingleton<SetupState>();
         services.AddSingleton<ActivityLogger>();
+        services.AddSingleton<TransferLog>();
         services.AddSingleton<Fmt>();
         services.AddSingleton<BrandingService>();
 

@@ -35,7 +35,11 @@ public sealed record SyncReport
     /// <summary>Readable summary, e.g. "12 new messages", or the reason of the failure.</summary>
     public string Message { get; init; } = string.Empty;
 
-    public static SyncReport NotStarted(long accountId, string message) => new() { AccountId = accountId, Message = message };
+    /// <summary>The run did not start because another one of the same account was going (that one brings the mail in).</summary>
+    public bool AlreadyRunning { get; init; }
+
+    public static SyncReport NotStarted(long accountId, string message, bool alreadyRunning = false)
+        => new() { AccountId = accountId, Message = message, AlreadyRunning = alreadyRunning };
 }
 
 /// <summary>A setting prevents the synchronisation (no target mailbox, a server without UIDL, ...); the message is shown as it is.</summary>

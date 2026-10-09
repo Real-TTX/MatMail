@@ -55,12 +55,13 @@ public sealed class MaintenanceService : BackgroundService
         int trash = await DeleteAgedAsync(db, FolderKind.Trash, _config.Retention.TrashDays, now, cancel);
         int junk = await DeleteAgedAsync(db, FolderKind.Junk, _config.Retention.JunkDays, now, cancel);
         int uploads = _staging.CleanUp();
+        int transfers = await TransferLog.PruneAsync(db, _config.Retention.TransferLogDays, now, cancel);
 
-        if (sessions + logs + trash + junk + uploads > 0)
+        if (sessions + logs + trash + junk + uploads + transfers > 0)
         {
             _logger.LogInformation(
-                "Housekeeping: {Sessions} sessions, {Logs} log entries, {Trash} trash and {Junk} spam messages, {Uploads} uploads removed.",
-                sessions, logs, trash, junk, uploads);
+                "Housekeeping: {Sessions} sessions, {Logs} log entries, {Transfers} transfer log lines, {Trash} trash and {Junk} spam messages, {Uploads} uploads removed.",
+                sessions, logs, transfers, trash, junk, uploads);
         }
     }
 

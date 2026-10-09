@@ -1,4 +1,5 @@
 using System.Text;
+using MatMail.Data;
 using MatMail.Messaging;
 using MatMail.Services;
 
@@ -19,7 +20,7 @@ internal sealed class SmtpMessageHandler
     public SmtpMessageHandler(IServiceScopeFactory scopes) => _scopes = scopes;
 
     /// <summary>Delivers or submits the (already stamped) message and returns the reply for the client.</summary>
-    public async Task<string> HandleAsync(SmtpTransaction transaction, byte[] raw, long? mailboxId, string queueId, CancellationToken cancel)
+    public async Task<string> HandleAsync(SmtpTransaction transaction, byte[] raw, long? mailboxId, string queueId, string? remoteIp, CancellationToken cancel)
     {
         await using AsyncServiceScope scope = _scopes.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
@@ -27,7 +28,13 @@ internal sealed class SmtpMessageHandler
         if (transaction.Kind == SmtpClientKind.Anonymous)
         {
             DeliveryResult delivered = await scope.ServiceProvider.GetRequiredService<MailDelivery>()
-                .DeliverAsync(raw, new DeliverySource { EnvelopeRecipients = transaction.Recipients }, cancel);
+                .DeliverAsync(raw, new DeliverySource
+                {
+                    EnvelopeRecipients = transaction.Recipients,
+                    Channel = TransferChannel.SmtpServer,
+                    RemoteIp = remoteIp,
+                    EnvelopeSender = transaction.Sender,
+                }, cancel);
             return delivered.Copies.Count > 0
                 ? Queued(queueId)
                 : "451 4.3.0 The recipients cannot be resolved right now, please try again later";
@@ -43,6 +50,8 @@ internal sealed class SmtpMessageHandler
             SenderUserId = transaction.User?.UserId,
             Rule = transaction.Rule,
             Source = transaction.User is null ? SubmissionSource.SmartHost : SubmissionSource.MailProgram,
+            Peer = transaction.User?.LoginName ?? transaction.Rule?.Name,
+            RemoteIp = remoteIp,
 
             // Mail clients keep their own copy in "Sent".
             SaveToSent = false,

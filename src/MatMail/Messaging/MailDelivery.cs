@@ -28,10 +28,25 @@ public sealed record DeliverySource
 
     /// <summary>Remote: the raw bytes are only a header stub, the message stays at the provider (live access).</summary>
     public MessageStorage Storage { get; init; } = MessageStorage.Local;
+
+    /// <summary>The door the message came through. When set, the delivery is written to the mail transfer log.</summary>
+    public TransferChannel? Channel { get; init; }
+
+    /// <summary>Who or what was on the other end (the connected account, the user, the rule), for the transfer log.</summary>
+    public string? Peer { get; init; }
+
+    /// <summary>The address of the sending server or client, for the transfer log.</summary>
+    public string? RemoteIp { get; init; }
+
+    /// <summary>The envelope sender (MAIL FROM), for the transfer log; without it the From: header is shown.</summary>
+    public string? EnvelopeSender { get; init; }
 }
 
-/// <summary>One mailbox that received (or already had) the message.</summary>
-public sealed record DeliveredCopy(Mailbox Mailbox, MailMessage? Message, bool WasDuplicate, bool WentToUnassigned);
+/// <summary>
+/// One mailbox that received (or already had) the message. <see cref="Message"/> is null when a rule of the mailbox deleted it;
+/// <see cref="Rules"/> says what the rules of the mailbox decided.
+/// </summary>
+public sealed record DeliveredCopy(Mailbox Mailbox, MailMessage? Message, bool WasDuplicate, bool WentToUnassigned, RuleOutcome? Rules = null);
 
 public sealed record DeliveryResult(IReadOnlyList<DeliveredCopy> Copies, IReadOnlyList<string> UnknownRecipients)
 {
@@ -48,13 +63,19 @@ public sealed class MailDelivery
     private readonly MailStore _store;
     private readonly FolderService _folders;
     private readonly MailboxService _mailboxes;
+    private readonly MailRuleEngine _rules;
+    private readonly TransferLog _transfers;
+    private readonly ActivityLogger _log;
 
-    public MailDelivery(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes)
+    public MailDelivery(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes, MailRuleEngine rules, TransferLog transfers, ActivityLogger log)
     {
         _db = db;
         _store = store;
         _folders = folders;
         _mailboxes = mailboxes;
+        _rules = rules;
+        _transfers = transfers;
+        _log = log;
     }
 
     /// <summary>
@@ -93,6 +114,11 @@ public sealed class MailDelivery
             long? tenantId = source.TenantId ?? source.Account?.TenantId;
             if (tenantId is null)
             {
+                if (source.Channel is TransferChannel unclaimedChannel)
+                {
+                    await RecordTransferAsync(unclaimedChannel, raw, parsed, source, candidates, new List<DeliveredCopy>(), unknown);
+                }
+
                 return new DeliveryResult(Array.Empty<DeliveredCopy>(), unknown);
             }
 
@@ -104,6 +130,11 @@ public sealed class MailDelivery
         foreach ((Mailbox mailbox, List<string> addresses, bool wentToUnassigned) in targets.Values)
         {
             copies.Add(await StoreAsync(mailbox, raw, parsed, source, addresses, wentToUnassigned, cancel));
+        }
+
+        if (source.Channel is TransferChannel channel)
+        {
+            await RecordTransferAsync(channel, raw, parsed, source, candidates, copies, unknown);
         }
 
         return new DeliveryResult(copies, unknown);
@@ -172,28 +203,41 @@ public sealed class MailDelivery
         CancellationToken cancel, FolderKind folderKind = FolderKind.Inbox)
     {
         await _mailboxes.EnsureDefaultFoldersAsync(mailbox);
-        MailFolder folder = await _folders.FindByKindAsync(mailbox.Id, folderKind, cancel)
+        MailFolder inbox = await _folders.FindByKindAsync(mailbox.Id, folderKind, cancel)
             ?? throw new InvalidOperationException($"Mailbox {mailbox.Id} has no {folderKind} folder.");
+
+        // The rules of the mailbox decide before the message is stored: it arrives where it belongs, already read, starred or labelled.
+        RuleOutcome rules = UsesRules(source, folderKind, wentToUnassigned) ? await EvaluateRulesAsync(mailbox, raw, parsed, source, addresses, cancel) : RuleOutcome.None;
+        MailFolder folder = rules.TargetFolderId is long targetId
+            ? await _db.MailFolders.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(f => f.Id == targetId && f.MailboxId == mailbox.Id, cancel) ?? inbox
+            : inbox;
 
         // The same message (same Message-ID) is not stored twice in one mailbox' folder, e.g. when it was addressed to two aliases
         // of the mailbox or fetched from two provider accounts.
         if (parsed.MessageId is not null && source.Account?.Role != MailAccountRole.Backup && source.Account?.Role != MailAccountRole.Migration)
         {
+            long[] folderIds = { inbox.Id, folder.Id };
             MailMessage? existing = await _db.MailMessages.IgnoreQueryFilters().AsNoTracking()
-                .FirstOrDefaultAsync(m => m.MailboxId == mailbox.Id && m.FolderId == folder.Id && m.MessageIdHeader == parsed.MessageId, cancel);
+                .FirstOrDefaultAsync(m => m.MailboxId == mailbox.Id && folderIds.Contains(m.FolderId) && m.MessageIdHeader == parsed.MessageId, cancel);
             if (existing is not null)
             {
                 return new DeliveredCopy(mailbox, existing, true, wentToUnassigned);
             }
         }
 
+        if (rules.Discard)
+        {
+            await ForwardAsync(mailbox, raw, parsed, source, rules, cancel);
+            return new DeliveredCopy(mailbox, null, false, wentToUnassigned, rules);
+        }
+
         MailMessage message = await _store.AddAsync(folder.Id, new NewMessage(raw)
         {
             ReceivedDate = source.ReceivedDate,
-            IsRead = source.IsRead,
-            IsStarred = source.IsStarred,
+            IsRead = source.IsRead || rules.MarkRead,
+            IsStarred = source.IsStarred || rules.Star,
             IsAnswered = source.IsAnswered,
-            Keywords = source.Keywords,
+            Keywords = rules.Labels.Count == 0 ? source.Keywords : (source.Keywords ?? Array.Empty<string>()).Union(rules.Labels, StringComparer.OrdinalIgnoreCase).ToArray(),
             SourceAccountId = source.Account?.Id,
             RemoteFolder = source.RemoteFolder,
             RemoteUid = source.RemoteUid,
@@ -201,7 +245,99 @@ public sealed class MailDelivery
             Storage = source.Storage,
         }, cancel);
 
-        return new DeliveredCopy(mailbox, message, false, wentToUnassigned);
+        // Passed on only once it is stored here: a message that comes back round through a loop of forwarding rules then finds its copy
+        // and is not stored and forwarded again.
+        await ForwardAsync(mailbox, raw, parsed, source, rules, cancel);
+        return new DeliveredCopy(mailbox, message, false, wentToUnassigned, rules);
+    }
+
+    /// <summary>Mail that arrives in an inbox through the routing is run through the rules of the mailbox; copies for backups, migrations and the "Unassigned" bucket are not.</summary>
+    private static bool UsesRules(DeliverySource source, FolderKind folderKind, bool wentToUnassigned)
+        => folderKind == FolderKind.Inbox && !wentToUnassigned && source.Account?.Role is null or MailAccountRole.Mail;
+
+    /// <summary>A problem of a rule never costs the message: it is stored as if the mailbox had no rules.</summary>
+    private async Task<RuleOutcome> EvaluateRulesAsync(Mailbox mailbox, byte[] raw, ParsedMessage parsed, DeliverySource source, List<string> addresses, CancellationToken cancel)
+    {
+        try
+        {
+            return await _rules.EvaluateAsync(mailbox, raw, parsed, addresses, source.Storage == MessageStorage.Remote, cancel);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            await _log.ErrorAsync(ActivityCategory.System, $"The rules of mailbox {mailbox.Name} could not be applied; the message was stored without them.", ex.Message, mailbox.TenantId);
+            return RuleOutcome.None;
+        }
+    }
+
+    /// <summary>Forwarding is done for the messages the rules say so about; the stand-ins of live access have no text to forward.</summary>
+    private async Task ForwardAsync(Mailbox mailbox, byte[] raw, ParsedMessage parsed, DeliverySource source, RuleOutcome rules, CancellationToken cancel)
+    {
+        if (rules.Forwards.Count == 0 || source.Storage == MessageStorage.Remote)
+        {
+            return;
+        }
+
+        try
+        {
+            await _rules.ForwardAsync(mailbox, raw, parsed.Subject, rules.Forwards, cancel);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            await _log.ErrorAsync(ActivityCategory.System, $"A rule of mailbox {mailbox.Name} could not forward a message.", ex.Message, mailbox.TenantId);
+        }
+    }
+
+    /// <summary>One line in the mail transfer log for a delivery: who sent it, who got it, and what the rules did.</summary>
+    private async Task RecordTransferAsync(
+        TransferChannel channel, byte[] raw, ParsedMessage parsed, DeliverySource source, List<string> addressed, List<DeliveredCopy> copies, List<string> unknown)
+    {
+        var where = new List<string>();
+        foreach (DeliveredCopy copy in copies)
+        {
+            string name = copy.Mailbox.Name;
+            if (copy.Message is null && copy.Rules?.Discard == true)
+            {
+                where.Add($"{name} (deleted by a rule)");
+            }
+            else if (copy.WasDuplicate)
+            {
+                where.Add($"{name} (already there)");
+            }
+            else if (copy.WentToUnassigned)
+            {
+                where.Add($"{name} (unassigned)");
+            }
+            else if (copy.Rules is { Matched: true })
+            {
+                where.Add($"{name} ({copy.Rules.MatchedRuleIds.Count} rule(s) applied)");
+            }
+            else
+            {
+                where.Add(name);
+            }
+        }
+
+        string detail = copies.Count == 0 ? "Not delivered: no mailbox." : "Delivered to " + string.Join(", ", where) + ".";
+        if (unknown.Count > 0)
+        {
+            detail += " Unknown recipients: " + string.Join(", ", unknown) + ".";
+        }
+
+        bool inbound = channel is TransferChannel.SmtpServer or TransferChannel.ProviderAccount;
+        bool allDiscarded = copies.Count > 0 && copies.All(c => c.Message is null && c.Rules?.Discard == true);
+        await _transfers.RecordAsync(
+            inbound ? TransferDirection.Inbound : TransferDirection.Internal,
+            channel,
+            copies.Count == 0 ? TransferStatus.Failed : allDiscarded ? TransferStatus.Discarded : TransferStatus.Delivered,
+            string.IsNullOrWhiteSpace(source.EnvelopeSender) ? parsed.FromAddress : source.EnvelopeSender,
+            addressed,
+            parsed.Subject,
+            source.Storage == MessageStorage.Remote ? 0 : raw.LongLength,
+            copies.FirstOrDefault()?.Mailbox.TenantId ?? source.TenantId ?? source.Account?.TenantId,
+            parsed.MessageId,
+            source.Peer ?? source.Account?.Name,
+            source.RemoteIp,
+            detail);
     }
 
     /// <summary>

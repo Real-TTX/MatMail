@@ -13,7 +13,8 @@
             <mm-form-section title='@L["Address and web interface"]'>
                 <mm-field asp-for="Input.Hostname" label='@L["Public host name"]' placeholder="mail.example.com"
                           help='@L["The name of this server: used in the SMTP/IMAP greeting and for the generated certificate."]' />
-                <mm-field asp-for="Input.WebHttps" kind="checkbox" label='@L["Serve the web interface over HTTPS"]' />
+                <mm-field asp-for="Input.WebHttps" kind="checkbox" label='@L["Serve the web interface over HTTPS"]'
+                          help='@L["Off by default: MatMail is made to run behind a reverse proxy that handles HTTPS. The mail servers use the certificate either way."]' />
                 <mm-field asp-for="Input.TrustProxyHeaders" kind="checkbox" label='@L["A reverse proxy is in front (trust X-Forwarded-For / X-Forwarded-Proto)"]' />
                 <mm-field asp-for="Input.MaxUploadMb" kind="number" label='@L["Largest message / attachment upload"]' suffix="MB" />
                 <p class="form-help">@string.Format(L["The web interface listens on port {0} (set by the container)."].Value, Model.WebPort)</p>
@@ -68,7 +69,10 @@
                     <mm-field asp-for="Input.TrashDays" kind="number" label='@L["Trash"]' suffix='@L["days"]' help='@L["Older messages in the trash are deleted. 0 = keep."]' />
                     <mm-field asp-for="Input.JunkDays" kind="number" label='@L["Spam"]' suffix='@L["days"]' help='@L["0 = keep."]' />
                     <mm-field asp-for="Input.SentQueueDays" kind="number" label='@L["Delivered entries of the queue"]' suffix='@L["days"]' />
+                    <mm-field asp-for="Input.TransferLogDays" kind="number" label='@L["Mail transfer log"]' suffix='@L["days"]' help='@L["What came in and went out, one line per message. 0 = no transfer log."]' />
                 </div>
+                <mm-field asp-for="Input.TransferLogSubjects" kind="checkbox" label='@L["Show the subject of a message in the mail transfer log"]'
+                          help='@L["Switch this off if administrators are to see who wrote to whom, but not what about."]' />
             </mm-form-section>
         </mm-tab-panel>
 

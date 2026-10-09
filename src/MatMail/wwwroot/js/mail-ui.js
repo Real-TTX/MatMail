@@ -35,6 +35,12 @@
     App.handlers.renderFolders = renderFolders;
     App.handlers.reloadList = function () { return loadList(true); };
 
+    // "Synchronise now" of the account menu (app.js): the fetched mail is shown, the counts and the storage follow.
+    window.addEventListener("matmail:synced", function () {
+      if (!App.boot) { return; }
+      refreshBootstrap().then(function () { if (!S.messageId) { loadList(true); } });
+    });
+
     doc.getElementById("mail-compose-button").addEventListener("click", function () { App.compose.open({}); });
     doc.getElementById("mail-compose-fab").addEventListener("click", function () { App.compose.open({}); });
     els.search.addEventListener("submit", function (e) { e.preventDefault(); search(els.searchInput.value.trim()); });
@@ -186,12 +192,26 @@
       }
 
       if (!collapsed) {
-        box.folders.forEach(function (folder) { group.appendChild(folderItem(box, folder)); });
+        // The folders come in tree order (every folder is followed by its subfolders): a folded folder hides what follows it
+        // that is deeper. The folder that is open is never hidden: its parents unfold.
+        var hideBelow = null;
+        box.folders.forEach(function (folder, index) {
+          if (hideBelow !== null && folder.depth > hideBelow) { return; }
+          hideBelow = null;
+          var below = subtreeOf(box, index);
+          var folded = below.length > 0 && isFolded(folder) && !below.some(function (f) { return box.id === S.mailboxId && f.id === S.folderId; });
+          group.appendChild(folderItem(box, folder, { hasChildren: below.length > 0, folded: folded, hiddenUnread: folded ? below.reduce(function (sum, f) { return sum + f.unread; }, 0) : 0 }));
+          if (folded) { hideBelow = folder.depth; }
+        });
         if (box.canManage && box.type !== "Unassigned") {
           var add = App.el("button", { type: "button", class: "folder-item folder-item--add" }, [App.icon("plus"), App.el("span", { text: T("newFolder") })]);
-          add.addEventListener("click", function () { createFolder(box); });
+          add.addEventListener("click", function () { createFolder(box, null); });
           group.appendChild(add);
         }
+
+        // What the mailbox takes up on the server (what stays at the provider with live access is not counted).
+        var usage = usageText(box);
+        if (usage) { group.appendChild(App.el("div", { class: "folder-usage", title: usage.title }, [App.icon("hard-drive"), App.el("span", { text: usage.text })])); }
       }
 
       els.folders.appendChild(group);
@@ -199,23 +219,93 @@
     doc.title = pageTitle();
   }
 
-  function folderItem(box, folder) {
+  /** The folders below the one at <index> (they follow it in the list and are deeper). */
+  function subtreeOf(box, index) {
+    var depth = box.folders[index].depth, below = [];
+    for (var i = index + 1; i < box.folders.length && box.folders[i].depth > depth; i++) { below.push(box.folders[i]); }
+    return below;
+  }
+
+  function isFolded(folder) { return localStorage.getItem("matmail-fold-" + folder.id) === "1"; }
+  function setFolded(folder, folded) {
+    if (folded) { localStorage.setItem("matmail-fold-" + folder.id, "1"); } else { localStorage.removeItem("matmail-fold-" + folder.id); }
+    renderFolders();
+  }
+
+  function usageText(box) {
+    if (!box.messageCount && !box.usedBytes) { return null; }
+    var title = T("storageMessages").replace("{0}", Number(box.messageCount).toLocaleString());
+    if (box.remoteBytes) { title += " · " + T("storageRemote").replace("{0}", App.formatSize(box.remoteBytes)); }
+    return { text: T("storageUsed").replace("{0}", App.formatSize(box.usedBytes)), title: title };
+  }
+
+  function folderItem(box, folder, tree) {
+    tree = tree || {};
     var active = box.id === S.mailboxId && folder.id === S.folderId && !S.query;
-    var count = folder.kind === "Drafts" ? folder.total : folder.unread;
+    var own = folder.kind === "Drafts" ? folder.total : folder.unread;
+    var count = own + (tree.hiddenUnread || 0);
     var labelText = App.folderLabel(folder);
     var node = App.el("a", {
       class: "folder-item" + (active ? " is-active" : "") + (count && folder.kind !== "Drafts" ? " has-unread" : ""),
       href: "#mailbox=" + box.id + "&folder=" + folder.id,
-      title: labelText
+      title: labelText,
+      style: "padding-left:" + (1.5 + folder.depth * 0.9) + "rem"   // the gutter on the left holds the fold arrow of folders with subfolders
     }, [
       App.icon(KIND_ICONS[folder.kind] || "folder"),
-      App.el("span", { class: "folder-item__name", text: labelText, style: folder.depth ? "padding-left:" + (folder.depth * 12) + "px" : null }),
+      App.el("span", { class: "folder-item__name", text: labelText }),
       count ? App.el("span", { class: "folder-item__count", text: String(count) }) : null
     ]);
+
+    if (tree.hasChildren) {
+      var fold = App.iconButton(tree.folded ? "chevron-right" : "chevron-down", tree.folded ? T("expand") : T("collapse"), function (e) { e.preventDefault(); e.stopPropagation(); setFolded(folder, !tree.folded); }, "folder-item__fold");
+      fold.style.left = (0.15 + folder.depth * 0.9) + "rem";
+      node.appendChild(fold);
+    }
+
     var more = App.iconButton("more-vertical", T("more"), function (e) { e.preventDefault(); e.stopPropagation(); folderMenu(more, box, folder); }, "folder-item__more");
     node.appendChild(more);
     node.addEventListener("contextmenu", function (e) { e.preventDefault(); folderMenu(node, box, folder); });
+
+    // Folders are moved by dragging them onto another folder (the menu does the same, also on touch screens).
+    if (box.canManage) {
+      if (folder.kind === "Custom") {
+        node.draggable = true;
+        node.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-matmail-folder", String(folder.id)); e.dataTransfer.effectAllowed = "move"; dragged = { box: box, folder: folder }; });
+        node.addEventListener("dragend", function () { dragged = null; clearDropMarks(); });
+      }
+      node.addEventListener("dragover", function (e) {
+        if (!dragged || !canDrop(dragged, box, folder)) { return; }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        node.classList.add("is-drop");
+      });
+      node.addEventListener("dragleave", function () { node.classList.remove("is-drop"); });
+      node.addEventListener("drop", function (e) {
+        if (!dragged || !canDrop(dragged, box, folder)) { return; }
+        e.preventDefault();
+        var moving = dragged.folder;
+        dragged = null;
+        clearDropMarks();
+        moveFolder(moving, folder.id);
+      });
+    }
     return node;
+  }
+
+  var dragged = null;
+  function clearDropMarks() { Array.prototype.forEach.call(doc.querySelectorAll(".folder-item.is-drop"), function (n) { n.classList.remove("is-drop"); }); }
+
+  /** A folder may go below any folder of its own mailbox except itself, what is below it, and where it already is. */
+  function canDrop(source, box, target) {
+    if (source.box.id !== box.id || source.folder.id === target.id || source.folder.parentId === target.id) { return false; }
+    return !isInside(box, source.folder, target);
+  }
+
+  /** True when <candidate> is the folder or one of the folders below it. */
+  function isInside(box, folder, candidate) {
+    var index = box.folders.indexOf(folder);
+    if (index < 0) { return false; }
+    return candidate.id === folder.id || subtreeOf(box, index).some(function (f) { return f.id === candidate.id; });
   }
 
   function folderMenu(anchor, box, folder) {
@@ -224,25 +314,56 @@
     if (box.canEdit && (folder.kind === "Trash" || folder.kind === "Junk")) {
       items.push({ label: folder.kind === "Trash" ? T("emptyTrash") : T("emptySpam"), icon: "trash", danger: true, onClick: function () { emptyFolder(folder); } });
     }
+    if (box.canManage && box.type !== "Unassigned") {
+      if (items.length) { items.push({ divider: true }); }
+      items.push({ label: T("newSubfolder"), icon: "folder-plus", onClick: function () { createFolder(box, folder); } });
+    }
     if (box.canManage && folder.kind === "Custom") {
-      items.push({ divider: true });
       items.push({ label: T("renameFolder"), icon: "edit", onClick: function () { renameFolder(folder); } });
+      items.push({ label: T("moveFolder"), icon: "folder-input", onClick: function () { moveFolderMenu(anchor, box, folder); } });
+      items.push({ divider: true });
       items.push({ label: T("deleteFolder"), icon: "trash", danger: true, onClick: function () { deleteFolder(folder); } });
     }
     if (items.length) { App.showMenu(anchor, items, { title: App.folderLabel(folder) }); }
   }
 
-  function createFolder(box) {
-    App.promptDialog(T("newFolder"), "", T("folderName")).then(function (name) {
+  /** Where could this folder go? The top level and every folder of the mailbox that is not the folder itself or inside it. */
+  function moveFolderMenu(anchor, box, folder) {
+    var atTop = !folder.parentId;
+    var items = [{ label: T("topLevel"), icon: "inbox", checked: atTop, disabled: atTop, onClick: function () { moveFolder(folder, null); } }];
+    box.folders.forEach(function (target) {
+      if (isInside(box, folder, target)) { return; }
+      var here = folder.parentId === target.id;
+      items.push({ label: App.folderLabel(target), icon: KIND_ICONS[target.kind] || "folder", indent: target.depth, checked: here, disabled: here, onClick: function () { moveFolder(folder, target.id); } });
+    });
+    App.showMenu(anchor, items, { title: T("moveFolder") });
+  }
+
+  function moveFolder(folder, parentId) {
+    App.post("/api/mail/folders/" + folder.id + "/move", { parentId: parentId }).then(function () {
+      if (parentId !== null) { localStorage.removeItem("matmail-fold-" + parentId); }   // the folder that was moved is to be seen
+      return refreshBootstrap();
+    }).catch(function (e) { App.toast(e.message, { error: true }); });
+  }
+
+  function createFolder(box, parent) {
+    var title = parent ? T("newSubfolder") + " – " + App.folderLabel(parent) : T("newFolder");
+    App.promptDialog(title, "", T("folderName")).then(function (name) {
       if (!name) { return; }
-      App.post("/api/mail/folders", { mailboxId: box.id, path: name }).then(refreshBootstrap).catch(function (e) { App.toast(e.message, { error: true }); });
+      App.post("/api/mail/folders", { mailboxId: box.id, path: name, parentId: parent ? parent.id : null }).then(function () {
+        if (parent) { localStorage.removeItem("matmail-fold-" + parent.id); }
+        return refreshBootstrap();
+      }).catch(function (e) { App.toast(e.message, { error: true }); });
     });
   }
 
+  /** Renames the folder where it is; a name with a slash is a path from the top level (which also moves it). */
   function renameFolder(folder) {
-    App.promptDialog(T("renameFolder"), folder.path, T("folderName")).then(function (name) {
-      if (!name || name === folder.path) { return; }
-      App.api("PATCH", "/api/mail/folders/" + folder.id, { path: name }).then(refreshBootstrap).catch(function (e) { App.toast(e.message, { error: true }); });
+    App.promptDialog(T("renameFolder"), folder.name, T("folderName")).then(function (name) {
+      if (!name || name === folder.name) { return; }
+      var parentPath = folder.path.length > folder.name.length ? folder.path.slice(0, folder.path.length - folder.name.length) : "";
+      var path = name.indexOf("/") >= 0 ? name : parentPath + name;
+      App.api("PATCH", "/api/mail/folders/" + folder.id, { path: path }).then(refreshBootstrap).catch(function (e) { App.toast(e.message, { error: true }); });
     });
   }
 

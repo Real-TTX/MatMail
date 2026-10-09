@@ -1,0 +1,34 @@
+@model (MatMail.Pages.Account.Rules.RuleLabels Labels, MatMail.Pages.Account.Rules.EditModel.ConditionInput Row, string Index)
+@* One condition of a rule. The names are Input.Conditions[n].…; rules.js adds and removes rows and renumbers them. *@
+@{
+    var c = Model.Row;
+    string prefix = $"Input.Conditions[{Model.Index}]";
+    bool isBool = c.Field == RuleField.HasAttachment;
+    bool isHeader = c.Field == RuleField.Header;
+}
+<div class="rule-row" data-rule-row="condition">
+    <select class="form-control rule-row__field" name="@(prefix).Field" data-role="field" aria-label="@L["Field"]">
+        @foreach (var item in Model.Labels.FieldItems())
+        {
+            <option value="@item.Value" selected="@(item.Value == c.Field.ToString())">@item.Text</option>
+        }
+    </select>
+    <input class="form-control rule-row__header" type="text" name="@(prefix).HeaderName" value="@c.HeaderName" maxlength="100" data-role="header"
+           placeholder="@L["Header field, e.g. List-Id"]" aria-label="@L["Header field"]" hidden="@(!isHeader)" disabled="@(!isHeader)" />
+    <select class="form-control rule-row__operator" name="@(prefix).Operator" data-role="operator" aria-label="@L["Condition"]" disabled="@isBool" hidden="@isBool">
+        @foreach (var item in Model.Labels.OperatorItems(c.Field))
+        {
+            <option value="@item.Value" selected="@(item.Value == c.Operator.ToString())">@item.Text</option>
+        }
+    </select>
+    <input class="form-control rule-row__value" type="@(c.Field == RuleField.Size ? "number" : "text")" name="@(prefix).Value" value="@(isBool ? string.Empty : c.Value)" maxlength="500" data-role="value-text"
+           placeholder="@L["Text to look for"]" aria-label="@L["Value"]" hidden="@isBool" disabled="@isBool" step="any" min="0" />
+    <select class="form-control rule-row__value" name="@(prefix).Value" data-role="value-bool" aria-label="@L["Value"]" hidden="@(!isBool)" disabled="@(!isBool)">
+        @foreach (var item in Model.Labels.YesNoItems())
+        {
+            <option value="@item.Value" selected="@(item.Value == (c.Value ?? "true"))">@item.Text</option>
+        }
+    </select>
+    <span class="rule-row__unit" data-role="unit" hidden="@(c.Field != RuleField.Size)">KB</span>
+    <button type="button" class="icon-btn rule-row__remove" data-rule-remove title="@L["Remove"]" aria-label="@L["Remove"]"><mm-icon name="x" /></button>
+</div>

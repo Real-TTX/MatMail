@@ -94,6 +94,7 @@ internal sealed class OutboundDelivery
     private readonly MatMailDbContext _db;
     private readonly MailDelivery _delivery;
     private readonly ActivityLogger _log;
+    private readonly TransferLog _transfers;
     private readonly AppConfig _config;
     private readonly OutboundTransport _transport;
     private readonly OutboundWorkerOptions _options;
@@ -104,6 +105,7 @@ internal sealed class OutboundDelivery
         _db = services.GetRequiredService<MatMailDbContext>();
         _delivery = services.GetRequiredService<MailDelivery>();
         _log = services.GetRequiredService<ActivityLogger>();
+        _transfers = services.GetRequiredService<TransferLog>();
         _config = services.GetRequiredService<AppConfig>();
         _transport = new OutboundTransport(services.GetRequiredService<ProviderConnector>(), _config, mx, options);
         _options = options;
@@ -146,6 +148,36 @@ internal sealed class OutboundDelivery
 
         bool bounceDelivered = attempt.Bounced.Count > 0 && await DeliverBounceAsync(message, attempt);
         await LogAsync(message, attempt, bounceDelivered);
+        await RecordTransferAsync(message, attempt, bounceDelivered);
+    }
+
+    /// <summary>Brings the line of this message in the mail transfer log up to date: delivered, deferred (tried again later) or failed.</summary>
+    private async Task RecordTransferAsync(OutboundMessage message, OutboundAttempt attempt, bool bounceDelivered)
+    {
+        string route = OutboundTransport.DescribeRoute(message);
+        var parts = new List<string>();
+        if (attempt.Delivered.Count > 0)
+        {
+            parts.Add($"Delivered to {string.Join(", ", attempt.Delivered.Select(o => o.Address))} via {route}.");
+        }
+
+        if (attempt.Deferred.Count > 0)
+        {
+            parts.Add($"Deferred, next attempt {message.NextAttemptDate:yyyy-MM-dd HH:mm} UTC: {OutboundSchedule.Summarize(attempt.Deferred)}");
+        }
+
+        if (attempt.Bounced.Count > 0)
+        {
+            parts.Add($"Failed: {OutboundSchedule.Summarize(attempt.Bounced)}{(bounceDelivered ? " A bounce was delivered to the sender." : string.Empty)}");
+        }
+
+        TransferStatus status = message.Status switch
+        {
+            OutboundStatus.Sent => TransferStatus.Delivered,
+            OutboundStatus.Failed => TransferStatus.Failed,
+            _ => TransferStatus.Deferred,
+        };
+        await _transfers.UpdateOutboundAsync(message.Id, status, message.AttemptCount, string.Join(" ", parts));
     }
 
     /// <summary>
@@ -238,7 +270,7 @@ internal sealed class OutboundDelivery
             }
 
             byte[] bounce = BounceMessage.Build(_config.Server.Hostname, message, attempt.Bounced, attempt.Expired, _config.Queue.MaxAgeHours);
-            DeliveryResult result = await _delivery.DeliverAsync(bounce, new DeliverySource { EnvelopeRecipients = new[] { sender }, TenantId = message.TenantId });
+            DeliveryResult result = await _delivery.DeliverAsync(bounce, new DeliverySource { EnvelopeRecipients = new[] { sender }, TenantId = message.TenantId, Channel = TransferChannel.System, Peer = "bounce" });
             return result.Copies.Count > 0;
         }
         catch (Exception ex)

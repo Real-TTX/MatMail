@@ -18,6 +18,7 @@ namespace MatMail.MailSync;
 public sealed class MailSyncRunner
 {
     private const int MaxMessageLength = 2000;
+    private const string AlreadyRunningText = "A synchronisation of this account is already running.";
 
     private readonly IServiceScopeFactory _scopes;
     private readonly ActivityLogger _activity;
@@ -70,7 +71,7 @@ public sealed class MailSyncRunner
 
         if (!_running.TryAdd(accountId, 0))
         {
-            return SyncReport.NotStarted(accountId, "A synchronisation of this account is already running.");
+            return SyncReport.NotStarted(accountId, "A synchronisation of this account is already running.", alreadyRunning: true);
         }
 
         try
@@ -138,7 +139,7 @@ public sealed class MailSyncRunner
         (MailAccount? account, string? refusal) = await ClaimAsync(accountId, cancel);
         if (account is null)
         {
-            return SyncReport.NotStarted(accountId, refusal ?? "The account cannot be synchronised.");
+            return SyncReport.NotStarted(accountId, refusal ?? "The account cannot be synchronised.", refusal == AlreadyRunningText);
         }
 
         var run = new SyncRun(account, _options);
@@ -199,7 +200,7 @@ public sealed class MailSyncRunner
             .ExecuteUpdateAsync(s => s
                 .SetProperty(a => a.LastSyncState, SyncState.Running)
                 .SetProperty(a => a.UpdateDate, now), cancel);
-        return claimed == 1 ? (account, null) : (null, "A synchronisation of this account is already running.");
+        return claimed == 1 ? (account, null) : (null, AlreadyRunningText);
     }
 
     private async Task<SyncReport> FinishAsync(MailAccount account, SyncRun run, Exception? failure, TimeSpan duration)

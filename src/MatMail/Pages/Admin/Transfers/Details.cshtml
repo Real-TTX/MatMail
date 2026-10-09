@@ -1,0 +1,36 @@
+@page "/Admin/Transfers/Details"
+@model MatMail.Pages.Admin.Transfers.DetailsModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Mail transfers / Details";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Item?.Subject) ? L["Mail transfer"].Value : Model.Item!.Subject;
+}
+
+@if (Model.Item is { } item)
+{
+    <section class="card">
+        <dl class="kv">
+            <dt>@L["Status"]</dt>
+            <dd><mm-badge kind="@MatMail.Pages.Admin.Transfers.TransferLabels.StatusKind(item.Status)">@Model.Labels.Status(item.Status)</mm-badge></dd>
+            <dt>@L["Direction"]</dt><dd><mm-icon name="@Model.Labels.DirectionIcon(item.Direction)" /> @Model.Labels.Direction(item.Direction)</dd>
+            <dt>@L["Way"]</dt><dd>@Model.Labels.Channel(item.Channel)</dd>
+            @if (!string.IsNullOrEmpty(item.Peer)) { <dt>@L["Peer"]</dt><dd>@item.Peer</dd> }
+            @if (!string.IsNullOrEmpty(item.RemoteIp)) { <dt>@L["Address"]</dt><dd class="mono">@item.RemoteIp</dd> }
+            <dt>@L["When"]</dt><dd>@Fmt.DateTimeText(item.CreateDate)</dd>
+            @if (item.Direction == TransferDirection.Outbound && item.UpdateDate > item.CreateDate.AddSeconds(1)) { <dt>@L["Last change"]</dt><dd>@Fmt.DateTimeText(item.UpdateDate)</dd> }
+            <dt>@L["Sender"]</dt><dd>@(string.IsNullOrEmpty(item.Sender) ? "<>" : item.Sender)</dd>
+            <dt>@L["Recipients"]</dt><dd>@item.Recipients @if (item.RecipientCount > 1) { <span class="muted">(@item.RecipientCount)</span> }</dd>
+            @if (!string.IsNullOrWhiteSpace(item.Subject)) { <dt>@L["Subject"]</dt><dd>@item.Subject</dd> }
+            <dt>@L["Size"]</dt><dd>@(item.SizeBytes == 0 ? "–" : Fmt.Size(item.SizeBytes))</dd>
+            @if (!string.IsNullOrEmpty(item.MessageIdHeader)) { <dt>@L["Message ID"]</dt><dd class="mono">@item.MessageIdHeader</dd> }
+            @if (item.Direction == TransferDirection.Outbound) { <dt>@L["Attempts"]</dt><dd>@item.Attempts</dd> }
+            @if (!string.IsNullOrEmpty(item.Detail)) { <dt>@L["What happened"]</dt><dd class="log-details">@item.Detail</dd> }
+        </dl>
+    </section>
+    <mm-button-row>
+        <mm-button variant="secondary" href="/Admin/Transfers" icon="arrow-left">@L["Back"]</mm-button>
+        @if (Model.QueueEntryExists)
+        {
+            <mm-button variant="secondary" href="@($"/Admin/Queue/Details?id={item.OutboundMessageId}")" icon="send">@L["Open in the queue"]</mm-button>
+        }
+    </mm-button-row>
+}

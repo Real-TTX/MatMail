@@ -127,6 +127,7 @@ public sealed partial class ComposeService
             SenderUserId = user.UserId,
             SaveToSent = true,
             Source = SubmissionSource.Web,
+            Peer = user.LoginName,
         }, cancel);
 
         if (!result.Accepted)

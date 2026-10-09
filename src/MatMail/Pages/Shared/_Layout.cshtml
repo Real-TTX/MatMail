@@ -63,6 +63,7 @@
         {
             new NavEntry("/Admin/Relay", "network", L["SMTP relay"].Value, Permissions.RelayManage),
             new NavEntry("/Admin/Queue", "send", L["Outgoing queue"].Value, Permissions.QueueManage),
+            new NavEntry("/Admin/Transfers", "shuffle", L["Mail transfers"].Value, Permissions.LogsView),
         }),
         (L["System"].Value, new[]
         {
@@ -181,6 +182,18 @@
                         <a class="dropdown__item" href="/Account" role="menuitem"><mm-icon name="user" /><span>@L["My account"]</span></a>
                         <a class="dropdown__item" href="/Account/Appearance" role="menuitem"><mm-icon name="sliders" /><span>@L["Appearance and language"]</span></a>
                         <a class="dropdown__item" href="/Account/MailPrograms" role="menuitem"><mm-icon name="server" /><span>@L["IMAP / SMTP settings"]</span></a>
+                        @if (CurrentUser.Can(Permissions.MailUse))
+                        {
+                            <a class="dropdown__item" href="/Account/Rules" role="menuitem"><mm-icon name="filter" /><span>@L["Mail rules"]</span></a>
+                            @* Fetches every connected account that feeds the mailboxes of this user (app.js). *@
+                            <button type="button" class="dropdown__item" role="menuitem" data-sync-now data-dropdown-pick
+                                    data-t-busy='@L["Synchronising…"]' data-t-none='@L["No connected account delivers into your mailboxes."]'
+                                    data-t-done='@L["Synchronised: {0} new message(s)."]' data-t-nonew='@L["Synchronised: no new messages."]'
+                                    data-t-running='@L["{0} account(s) are still being fetched; the mail appears as soon as they are done."]'
+                                    data-t-failed='@L["{0} account(s) could not be synchronised."]' data-t-error='@L["The synchronisation could not be started."]'>
+                                <mm-icon name="refresh" /><span class="sync-now__label">@L["Synchronise now"]</span>
+                            </button>
+                        }
                         @if (switchableTenants.Count > 1)
                         {
                             @* System administrators work in one tenant at a time; the list sits here, not in the crowded header of a phone. *@

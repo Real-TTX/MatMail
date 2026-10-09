@@ -28,7 +28,7 @@ services:
       - "2143:143"
       - "2993:993"
     environment:
-      # Plain HTTP for development (the release stack serves HTTPS).
+      # Plain HTTP is the default now; it is spelled out so that a data volume from before the change (its app.json still says HTTPS) stays on HTTP.
       MATMAIL__Server__WebHttps: "false"
       MATMAIL__Server__Hostname: localhost
     sysctls:

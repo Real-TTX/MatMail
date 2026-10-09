@@ -21,7 +21,24 @@ public sealed record BootstrapDto(UserDto User, List<MailboxDto> Mailboxes, List
 
 public sealed record MessageListItemDto(
     long Id, long FolderId, long Uid, string Subject, string FromName, string FromAddress, string ToSummary, string Snippet, DateTime Date,
-    bool IsRead, bool IsStarred, bool HasAttachments, bool IsDraft, bool IsAnswered, bool IsForwarded, string FolderKind);
+    bool IsRead, bool IsStarred, bool HasAttachments, bool IsDraft, bool IsAnswered, bool IsForwarded, string FolderKind)
+{
+    /// <summary>
+    /// Only in a list of conversations: the row stands for these messages (oldest first), the newest of them being the one of <see cref="MessageListItemDto.Id"/>.
+    /// </summary>
+    public long[]? Ids { get; init; }
+
+    /// <summary>Only in a list of conversations: how many of them are unread.</summary>
+    public int UnreadCount { get; init; }
+
+    /// <summary>Only in a list of conversations: who wrote, in the order of their first message.</summary>
+    public string[]? Participants { get; init; }
+}
+
+/// <summary>A message of a conversation, as much as the reader needs to show it closed.</summary>
+public sealed record ThreadMessageDto(
+    long Id, long FolderId, string FolderKind, string Subject, string FromName, string FromAddress, string ToSummary, string Snippet, DateTime Date,
+    bool IsRead, bool IsStarred, bool HasAttachments);
 
 public sealed record MessageListDto(int Total, int Page, int PageSize, List<MessageListItemDto> Items);
 

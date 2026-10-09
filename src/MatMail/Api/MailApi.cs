@@ -31,6 +31,7 @@ public static class MailApi
         api.MapGet("/messages", ListMessages);
         api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
+        api.MapGet("/messages/{id:long}/thread", GetThread);
         api.MapGet("/messages/{id:long}/body", GetBody);
         api.MapGet("/messages/{id:long}/print", GetPrint);
         api.MapGet("/messages/{id:long}/attachment/{index:int}", GetAttachment);
@@ -217,7 +218,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> ListMessages(
-        long mailboxId, long? folderId, string? q, int? page, int? pageSize, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+        long mailboxId, long? folderId, string? q, int? page, int? pageSize, bool? conversations, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
     {
         (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
         if (user is null)
@@ -229,6 +230,22 @@ public static class MailApi
         await query.ResolveFoldersAsync(db, cancel);
         int size = Math.Clamp(pageSize ?? 50, 10, 100);
         IQueryable<MailMessage> filtered = query.Apply(db.MailMessages.AsNoTracking(), db);
+
+        // Conversations are for the lists of a folder; a search and the drafts (which open for writing, not for reading) stay lists of single messages.
+        if (conversations == true && folderId is long conversationFolder && string.IsNullOrWhiteSpace(q)
+            && await db.MailFolders.AsNoTracking().AnyAsync(f => f.Id == conversationFolder && f.MailboxId == mailboxId && f.Kind != FolderKind.Drafts, cancel))
+        {
+            ConversationPage conversationPage = await MailConversations.ListAsync(filtered, page, size, cancel);
+            return Results.Ok(new MessageListDto(conversationPage.Total, conversationPage.Page, size, conversationPage.Rows.Select(r => new MessageListItemDto(
+                r.Id, r.FolderId, r.Uid, r.Subject, r.FromName, r.FromAddress, r.ToSummary, r.Preview, r.ReceivedDate,
+                r.IsRead, r.IsStarred, r.HasAttachments, false, r.IsAnswered, r.IsForwarded, r.FolderKind.ToString())
+            {
+                Ids = r.Ids,
+                UnreadCount = r.UnreadCount,
+                Participants = r.Participants,
+            }).ToList()));
+        }
+
         int total = await filtered.CountAsync(cancel);
         int pageNumber = Math.Clamp(page ?? 1, 1, Math.Max(1, (int)Math.Ceiling(total / (double)size)));
 
@@ -281,21 +298,43 @@ public static class MailApi
             return Results.NotFound();
         }
 
-        RenderedBody body = renderer.Render(mime, id, allowRemoteImages: false);
         string folderKind = await db.MailFolders.AsNoTracking().Where(f => f.Id == message.FolderId).Select(f => f.Kind.ToString()).FirstAsync(cancel);
-        string? unsubscribe = mime.Headers[HeaderId.ListUnsubscribe];
+        return Results.Ok(DetailOf(
+            mime, renderer, $"/api/mail/messages/{id}", id, message.FolderId, message.MailboxId, folderKind, message.ReceivedDate, message.IsRead, message.IsStarred, message.IsDraft,
+            accessLevel >= MailboxAccess.Edit, accessLevel >= MailboxAccess.Send, message.EnvelopeRecipients, message.SizeBytes));
+    }
 
+    /// <summary>A message as the reader shows it; <paramref name="urlBase"/> is where its text, attachments and pictures are served from.</summary>
+    private static MessageDetailDto DetailOf(
+        MimeMessage mime, MailBodyRenderer renderer, string urlBase, long id, long folderId, long mailboxId, string folderKind, DateTime date, bool isRead, bool isStarred, bool isDraft,
+        bool canEdit, bool canSend, string? envelopeRecipients, long size)
+    {
+        RenderedBody body = renderer.Render(mime, urlBase, allowRemoteImages: false);
         List<AttachmentDto> attachments = renderer.GetAttachments(mime)
-            .Select(a => new AttachmentDto(a.Index, a.FileName, a.ContentType, a.Size, $"/api/mail/messages/{id}/attachment/{a.Index}"))
+            .Select(a => new AttachmentDto(a.Index, a.FileName, a.ContentType, a.Size, $"{urlBase}/attachment/{a.Index}"))
             .ToList();
 
-        return Results.Ok(new MessageDetailDto(
-            id, message.FolderId, message.MailboxId, folderKind, mime.Subject ?? string.Empty,
+        return new MessageDetailDto(
+            id, folderId, mailboxId, folderKind, mime.Subject ?? string.Empty,
             ToDto(mime.From.Mailboxes).FirstOrDefault(),
             ToDto(mime.To.Mailboxes), ToDto(mime.Cc.Mailboxes), ToDto(mime.Bcc.Mailboxes), ToDto(mime.ReplyTo.Mailboxes),
-            message.ReceivedDate, message.IsRead, message.IsStarred, message.IsDraft,
-            accessLevel >= MailboxAccess.Edit, accessLevel >= MailboxAccess.Send, body.HasRemoteContent,
-            $"/api/mail/messages/{id}/body", attachments, message.EnvelopeRecipients, unsubscribe, message.SizeBytes));
+            date, isRead, isStarred, isDraft, canEdit, canSend, body.HasRemoteContent,
+            $"{urlBase}/body", attachments, envelopeRecipients, mime.Headers[HeaderId.ListUnsubscribe], size);
+    }
+
+    /// <summary>The messages of the conversation that a message belongs to, oldest first (see <see cref="MailConversations.ThreadAsync"/>).</summary>
+    private static async Task<IResult> GetThread(long id, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+    {
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        if (message is null)
+        {
+            return error!;
+        }
+
+        FolderKind folderKind = await db.MailFolders.AsNoTracking().Where(f => f.Id == message.FolderId).Select(f => f.Kind).FirstAsync(cancel);
+        IReadOnlyList<ThreadMessage> thread = await MailConversations.ThreadAsync(db, message, folderKind, cancel);
+        return Results.Ok(thread.Select(t => new ThreadMessageDto(
+            t.Id, t.FolderId, t.FolderKind.ToString(), t.Subject, t.FromName, t.FromAddress, t.ToSummary, t.Preview, t.ReceivedDate, t.IsRead, t.IsStarred, t.HasAttachments)).ToList());
     }
 
     /// <summary>The message text as a self-contained HTML document for a sandboxed iframe (no scripts, restricted resources).</summary>

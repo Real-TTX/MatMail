@@ -52,6 +52,10 @@ public sealed partial class MailBodyRenderer
 
     /// <summary>The message's visible text as safe HTML.</summary>
     public RenderedBody Render(MimeMessage message, long messageId, bool allowRemoteImages)
+        => Render(message, $"/api/mail/messages/{messageId}", allowRemoteImages);
+
+    /// <param name="urlBase">The address the parts of the message are served below (inline pictures at <c>{urlBase}/cid/…</c>).</param>
+    public RenderedBody Render(MimeMessage message, string urlBase, bool allowRemoteImages)
     {
         string? html = message.HtmlBody;
         bool plain = false;
@@ -63,7 +67,7 @@ public sealed partial class MailBodyRenderer
         }
 
         bool remoteFound = false;
-        HtmlSanitizer sanitizer = BuildSanitizer(messageId, allowRemoteImages, () => remoteFound = true);
+        HtmlSanitizer sanitizer = BuildSanitizer(urlBase, allowRemoteImages, () => remoteFound = true);
         string clean = sanitizer.Sanitize(plain ? html : MoveBodyLookIntoContent(html));
         return new RenderedBody(clean, remoteFound, plain, !plain && ColourChoice().IsMatch(clean));
     }
@@ -268,7 +272,7 @@ public sealed partial class MailBodyRenderer
         return stream.Length;
     }
 
-    private static HtmlSanitizer BuildSanitizer(long messageId, bool allowRemoteImages, Action remoteFound)
+    private static HtmlSanitizer BuildSanitizer(string urlBase, bool allowRemoteImages, Action remoteFound)
     {
         var sanitizer = new HtmlSanitizer();
         Array.ForEach(ExtraTags, tag => sanitizer.AllowedTags.Add(tag));
@@ -292,7 +296,7 @@ public sealed partial class MailBodyRenderer
             // cid: images point at the message's own inline parts.
             if (e.OriginalUrl.StartsWith("cid:", StringComparison.OrdinalIgnoreCase))
             {
-                e.SanitizedUrl = $"/api/mail/messages/{messageId}/cid/{WebUtility.UrlEncode(e.OriginalUrl[4..])}";
+                e.SanitizedUrl = $"{urlBase}/cid/{WebUtility.UrlEncode(e.OriginalUrl[4..])}";
             }
             else if (!allowRemoteImages && e.Tag?.TagName == "STYLE" && RemoteUrl().IsMatch(e.OriginalUrl))
             {

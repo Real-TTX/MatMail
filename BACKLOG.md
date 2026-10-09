@@ -24,7 +24,7 @@ Status: ✅ done · 🔧 in progress · ⏳ planned · ❓ open question · 💤
 
 | Item | Status |
 |---|---|
-| A reading pane and a conversation view for the web client (list options of the appearance settings) | ⏳ |
+| A reading pane and a conversation view for the web client (list options of the appearance settings) | ✅ per user in *Appearance*: the reader to the right of the list or below it (wide screens, a bar to drag), threads (`ThreadKey`) as one row of the folder lists and as a stack in the reader; a search and the drafts stay lists of single messages |
 | Recognise a signature that is already in an HTML message of a mail program (not only the marker of the web client) before the server adds its own | ✅ `SignatureDetector`: the markers of Thunderbird, Gmail, Outlook (on the web too), Roundcube and Evolution, the `-- ` separator in HTML and plain text; the quoted original of a reply (block quotes, Gmail's quote, Outlook's header) and the tagline of a phone do not count; one signed version of the text is enough for both |
 | "Member of several tenants" for ordinary users (consultants, shared services): the tenant switcher of the web client needs it, cross-tenant delegation has to respect the tenant guard | ❓ |
 

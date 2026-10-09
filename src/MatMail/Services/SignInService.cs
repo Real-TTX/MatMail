@@ -402,7 +402,9 @@ public sealed class SignInService
             user.ShowPreviews,
             session.ExpiresDate,
             twoFactorEnabled,
-            twoFactorRequired);
+            twoFactorRequired,
+            user.ReadingPane,
+            user.ConversationView);
     }
 
     public static ClaimsPrincipal BuildPrincipal(SessionSnapshot snapshot, Guid token)
@@ -430,6 +432,8 @@ public sealed class SignInService
         AddIfSet(claims, AppClaims.Density, snapshot.Density);
         AddIfSet(claims, AppClaims.TimeZone, snapshot.TimeZone);
         claims.Add(new Claim(AppClaims.ShowPreviews, snapshot.ShowPreviews ? "1" : "0"));
+        AddIfSet(claims, AppClaims.ReadingPane, snapshot.ReadingPane);
+        claims.Add(new Claim(AppClaims.ConversationView, snapshot.ConversationView ? "1" : "0"));
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }

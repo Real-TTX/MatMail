@@ -76,7 +76,7 @@
     };
 }
 <!DOCTYPE html>
-<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
+<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-reading-pane="@theme.ReadingPane" data-conversations="@(theme.ConversationView ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
 <head>
     <meta charset="utf-8" />
     @* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@

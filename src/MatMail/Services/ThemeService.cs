@@ -17,6 +17,12 @@ public sealed record ThemeChoice(string Mode, string Accent, bool UserHasMode, b
 
     /// <summary>The time zone the user chose for dates and times; null: the server's (pages) and the browser's (mail client).</summary>
     public string? UserTimeZone { get; init; }
+
+    /// <summary>Where the reader sits in the mail client: "off" (in place of the list), "right" or "below".</summary>
+    public string ReadingPane { get; init; } = "off";
+
+    /// <summary>The list of the mail client shows conversations.</summary>
+    public bool ConversationView { get; init; }
 }
 
 /// <summary>Decides mode (system / light / dark), accent colour and the rest of the look: the signed-in user's choice, else the installation default.</summary>
@@ -26,6 +32,7 @@ public sealed class ThemeService
     public static readonly string[] Accents = { "blue", "green", "violet", "teal", "amber", "rose", "graphite" };
     public static readonly string[] TextSizes = { "small", "normal", "large" };
     public static readonly string[] Densities = { "comfortable", "compact" };
+    public static readonly string[] ReadingPanes = { "off", "right", "below" };
 
     private readonly IHttpContextAccessor _http;
     private readonly AppConfig _config;
@@ -52,6 +59,8 @@ public sealed class ThemeService
             TextSize = Normalize(principal?.FindFirstValue(AppClaims.TextSize), TextSizes, "normal"),
             Density = Normalize(principal?.FindFirstValue(AppClaims.Density), Densities, "comfortable"),
             ShowPreviews = principal?.FindFirstValue(AppClaims.ShowPreviews) != "0",
+            ReadingPane = Normalize(principal?.FindFirstValue(AppClaims.ReadingPane), ReadingPanes, "off"),
+            ConversationView = principal?.FindFirstValue(AppClaims.ConversationView) == "1",
             UserTimeZone = Fmt.IsKnownZone(userZone) ? userZone : null,
         };
     }

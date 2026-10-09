@@ -22,6 +22,8 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         public string Density { get; set; } = "comfortable";
         public string? TimeZone { get; set; }
         public bool ShowPreviews { get; set; } = true;
+        public string ReadingPane { get; set; } = "off";
+        public bool ConversationView { get; set; }
     }
 
     /// <summary>The time zones of this server, west to east, with their offset right now.</summary>
@@ -53,6 +55,8 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
             Density = theme.Density,
             TimeZone = theme.UserTimeZone,
             ShowPreviews = theme.ShowPreviews,
+            ReadingPane = theme.ReadingPane,
+            ConversationView = theme.ConversationView,
         };
     }
 
@@ -71,6 +75,8 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         user.Density = ThemeService.Densities.Contains(Input.Density) ? Input.Density : "comfortable";
         user.TimeZone = TimeZones.Any(z => z.Value == Input.TimeZone) && Fmt.IsKnownZone(Input.TimeZone) ? Input.TimeZone : null;
         user.ShowPreviews = Input.ShowPreviews;
+        user.ReadingPane = Input.ReadingPane is "right" or "below" ? Input.ReadingPane : null;
+        user.ConversationView = Input.ConversationView;
         await db.SaveChangesAsync();
         cache.InvalidateUser(user.Id);
 

@@ -58,6 +58,11 @@ branding.
 - **A reader that copes with what the world sends**: foreign HTML is sanitised, shown in a sandboxed
   frame and scaled to the width, quoted history is folded, remote pictures stay blocked until you
   allow them
+- **A reading pane and conversations**, if you like them (*My account → Appearance*): the message opens
+  to the right of the list or below it, with a bar between them that you can drag – on wide screens;
+  and the messages of a thread become one row, with the people who wrote and how many there are.
+  Opened, the conversation is a stack: the newest and the unread messages open, the older ones a
+  line each
 - Compose with rich text, pictures (paste or drop), a signature chooser and keyboard shortcuts
 - **An app on your phone or computer** (PWA): put it on the home screen or install it; it opens in a
   window of its own with the colour of your theme in the status bar, cannot be zoomed by accident and
@@ -139,6 +144,19 @@ beside it. The operators work in English and German (`von:`, `hat:anhang`, `ist:
 combine with `OR`, `-` and brackets. When a search (or a folder) has more hits than fit on a page,
 *select all* offers to take **all of them** – then mark them as read, move, archive or delete them in
 one go.
+
+### Reading pane and conversations
+
+| A reading pane with a conversation | The settings |
+|---|---|
+| ![The list on the left, the conversation Projektplan Q4 on the right](docs/images/mail-reading-pane.png) | ![The appearance settings: reading pane and conversations](docs/images/account-appearance-mail.png) |
+
+Both are a choice per user. The reading pane shows the message beside the list or below it (the bar
+between them can be dragged, and the size is remembered); on a small screen a message always opens
+in place of the list. With conversations the list has one row per thread – who wrote, how many
+messages – and opening it stacks all of them: the newest and the unread ones open, the older ones
+closed to a line each. Archiving, deleting or moving a row does that to the whole conversation. A
+search still lists single messages.
 
 ### Compose with the right signature
 
@@ -479,7 +497,7 @@ The mail itself lives in the PostgreSQL volume. A backup contains both.
 | Two-factor authentication | Authenticator app, recovery codes, app passwords, enforced per tenant or role | ✅ |
 | Look and language | Theme, accent, text size, density, time zone per user; English and German | ✅ |
 | Backups | Complete backups of database and files, schedules with retention, folder and SMB (NAS) targets, encryption, restore (also of earlier versions) | ✅ |
-| Reading pane, conversation view | More list options for the web client | planned |
+| Reading pane, conversation view | The reader beside or below the list, threads as one row (per user) | ✅ |
 | Tenant switcher for ordinary users | Needs "member of several tenants" first | open question |
 | `.eml` / `.msg` files | Drag a file in to view it, drag a message out | later |
 | AD / LDAP | Directory sign-in with attribute mapping and a selection of who may sign in | later |

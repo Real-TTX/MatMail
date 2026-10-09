@@ -80,6 +80,7 @@
   <data name="{0} message(s) are tried again." xml:space="preserve"><value>{0} Nachricht(en) werden erneut versucht.</value></data>
   <data name="{0} message(s) sent or saved." xml:space="preserve"><value>{0} Nachricht(en) gesendet oder gespeichert.</value></data>
   <data name="{0} message(s) were handed over to “{1}”." xml:space="preserve"><value>{0} Nachricht(en) an „{1}“ übergeben.</value></data>
+  <data name="{0} messages" xml:space="preserve"><value>{0} Nachrichten</value></data>
   <data name="{0} new messages" xml:space="preserve"><value>{0} neue Nachrichten</value></data>
   <data name="{0} selected" xml:space="preserve"><value>{0} ausgewählt</value></data>
   <data name="{0} so far" xml:space="preserve"><value>bisher {0}</value></data>
@@ -214,6 +215,7 @@
   <data name="Backups in" xml:space="preserve"><value>Backups in</value></data>
   <data name="Bcc" xml:space="preserve"><value>Bcc</value></data>
   <data name="Before a restore" xml:space="preserve"><value>Vor einer Wiederherstellung</value></data>
+  <data name="Below the list" xml:space="preserve"><value>Unter der Liste</value></data>
   <data name="Between 0 and 1000." xml:space="preserve"><value>Zwischen 0 und 1000.</value></data>
   <data name="Between 1 and 1000." xml:space="preserve"><value>Zwischen 1 und 1000.</value></data>
   <data name="Between 1 and 12 hours." xml:space="preserve"><value>Zwischen 1 und 12 Stunden.</value></data>
@@ -262,6 +264,7 @@
   <data name="Code" xml:space="preserve"><value>Code</value></data>
   <data name="Code of the app" xml:space="preserve"><value>Code der App</value></data>
   <data name="Code of the app or a recovery code" xml:space="preserve"><value>Code der App oder ein Wiederherstellungscode</value></data>
+  <data name="Collapse" xml:space="preserve"><value>Einklappen</value></data>
   <data name="Colour" xml:space="preserve"><value>Farbe</value></data>
   <data name="Comfortable" xml:space="preserve"><value>Komfortabel</value></data>
   <data name="Comma separated: after the first failure, the second, …; the last value repeats." xml:space="preserve"><value>Durch Komma getrennt: nach dem ersten Fehlschlag, nach dem zweiten, …; der letzte Wert wiederholt sich.</value></data>
@@ -452,6 +455,7 @@
   <data name="Give up after" xml:space="preserve"><value>Aufgeben nach</value></data>
   <data name="Gives this tenant an own sign-in page with its logo and colour: /t/name. Lower-case letters, digits and hyphens." xml:space="preserve"><value>Gibt diesem Mandanten eine eigene Anmeldeseite mit Logo und Farbe: /t/name. Kleinbuchstaben, Ziffern und Bindestriche.</value></data>
   <data name="Go to “Unassigned”" xml:space="preserve"><value>Zu „Unverteilt“ wechseln</value></data>
+  <data name="Group messages into conversations" xml:space="preserve"><value>Nachrichten zu Unterhaltungen zusammenfassen</value></data>
   <data name="Hand over" xml:space="preserve"><value>Übergeben</value></data>
   <data name="Hand over all other waiting messages for these addresses as well" xml:space="preserve"><value>Alle weiteren wartenden Nachrichten für diese Adressen ebenfalls übergeben</value></data>
   <data name="Hand over to a mailbox" xml:space="preserve"><value>An ein Postfach übergeben</value></data>
@@ -708,6 +712,7 @@
   <data name="Numbered list" xml:space="preserve"><value>Nummerierte Liste</value></data>
   <data name="Of several templates that fit, the lowest number is used." xml:space="preserve"><value>Passen mehrere Vorlagen, wird die mit der niedrigsten Zahl verwendet.</value></data>
   <data name="Off" xml:space="preserve"><value>Aus</value></data>
+  <data name="Off: a message opens in place of the list. On small screens it always does." xml:space="preserve"><value>Aus: Eine Nachricht öffnet sich anstelle der Liste. Auf kleinen Bildschirmen ist das immer so.</value></data>
   <data name="Offline: not saved on the server yet" xml:space="preserve"><value>Offline: noch nicht auf dem Server gespeichert</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
   <data name="Older" xml:space="preserve"><value>Älter</value></data>
@@ -810,6 +815,7 @@
   <data name="Read the message" xml:space="preserve"><value>Nachricht lesen</value></data>
   <data name="Read the whole backup first and check it against its checksums" xml:space="preserve"><value>Das ganze Backup zuerst lesen und gegen seine Prüfsummen prüfen</value></data>
   <data name="Read, edit and send" xml:space="preserve"><value>Lesen, bearbeiten und senden</value></data>
+  <data name="Reading pane" xml:space="preserve"><value>Lesebereich</value></data>
   <data name="Received" xml:space="preserve"><value>Empfangen</value></data>
   <data name="Received after" xml:space="preserve"><value>Empfangen nach</value></data>
   <data name="Received before" xml:space="preserve"><value>Empfangen vor</value></data>
@@ -852,6 +858,7 @@
   <data name="Reset filters" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="Reset two-factor authentication" xml:space="preserve"><value>Zwei-Faktor-Authentifizierung zurücksetzen</value></data>
   <data name="Reset two-factor authentication of this user? They have to set it up again, and they are signed out everywhere." xml:space="preserve"><value>Zwei-Faktor-Authentifizierung dieses Benutzers zurücksetzen? Der Benutzer muss sie neu einrichten und wird überall abgemeldet.</value></data>
+  <data name="Resize the reading pane" xml:space="preserve"><value>Größe des Lesebereichs ändern</value></data>
   <data name="Restore" xml:space="preserve"><value>Wiederherstellen</value></data>
   <data name="Restore a backup" xml:space="preserve"><value>Backup wiederherstellen</value></data>
   <data name="Restore from a file" xml:space="preserve"><value>Aus einer Datei wiederherstellen</value></data>
@@ -859,6 +866,7 @@
   <data name="Result" xml:space="preserve"><value>Ergebnis</value></data>
   <data name="Revoke" xml:space="preserve"><value>Widerrufen</value></data>
   <data name="Revoke the app password “{0}”? Mail programs that use it stop working." xml:space="preserve"><value>App-Passwort „{0}“ widerrufen? Mailprogramme, die es verwenden, funktionieren dann nicht mehr.</value></data>
+  <data name="Right of the list" xml:space="preserve"><value>Rechts neben der Liste</value></data>
   <data name="Role" xml:space="preserve"><value>Rolle</value></data>
   <data name="Roles" xml:space="preserve"><value>Rollen</value></data>
   <data name="Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox." xml:space="preserve"><value>Rollen legen fest, was der Benutzer verwalten darf. Der Zugriff auf fremde Postfächer wird pro Postfach als Vertretung vergeben.</value></data>
@@ -900,6 +908,7 @@
   <data name="Select" xml:space="preserve"><value>Auswählen</value></data>
   <data name="Select a mailbox." xml:space="preserve"><value>Wählen Sie ein Postfach aus.</value></data>
   <data name="Select a mailbox…" xml:space="preserve"><value>Postfach auswählen …</value></data>
+  <data name="Select a message to read." xml:space="preserve"><value>Wählen Sie eine Nachricht zum Lesen aus.</value></data>
   <data name="Select a user." xml:space="preserve"><value>Wählen Sie einen Benutzer aus.</value></data>
   <data name="Select a user…" xml:space="preserve"><value>Benutzer auswählen …</value></data>
   <data name="Select all" xml:space="preserve"><value>Alle auswählen</value></data>
@@ -1071,6 +1080,7 @@
   <data name="The last backup failed" xml:space="preserve"><value>Das letzte Backup ist fehlgeschlagen</value></data>
   <data name="The last backup of “{0}” failed: {1}" xml:space="preserve"><value>Das letzte Backup von „{0}“ ist fehlgeschlagen: {1}</value></data>
   <data name="The last successful backup is from {0}." xml:space="preserve"><value>Das letzte erfolgreiche Backup ist vom {0}.</value></data>
+  <data name="The list shows one row per conversation; opening it shows all its messages." xml:space="preserve"><value>Die Liste zeigt eine Zeile pro Unterhaltung; beim Öffnen sehen Sie alle ihre Nachrichten.</value></data>
   <data name="The login name must not contain spaces." xml:space="preserve"><value>Der Anmeldename darf keine Leerzeichen enthalten.</value></data>
   <data name="The login name or the password is wrong." xml:space="preserve"><value>Der Anmeldename oder das Passwort ist falsch.</value></data>
   <data name="The logo is larger than 512 KB." xml:space="preserve"><value>Das Logo ist größer als 512 KB.</value></data>

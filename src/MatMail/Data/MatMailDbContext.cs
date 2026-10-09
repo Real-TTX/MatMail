@@ -111,6 +111,7 @@ public class MatMailDbContext : DbContext
             e.Property(x => x.TextSize).HasMaxLength(20);
             e.Property(x => x.Density).HasMaxLength(20);
             e.Property(x => x.TimeZone).HasMaxLength(100);
+            e.Property(x => x.ReadingPane).HasMaxLength(20);
 
             // Existing users keep seeing the previews they have always seen.
             e.Property(x => x.ShowPreviews).HasDefaultValue(true);

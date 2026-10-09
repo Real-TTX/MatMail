@@ -88,6 +88,12 @@ public class User : AuditedEntity, ITenantEntity
     /// <summary>Show the first words of a message next to its subject in the list.</summary>
     public bool ShowPreviews { get; set; } = true;
 
+    /// <summary>Where the reader sits in the mail client: "right" of the list, "below" it; null = a message opens in place of the list.</summary>
+    public string? ReadingPane { get; set; }
+
+    /// <summary>The list shows conversations (all messages of a thread as one row) instead of single messages.</summary>
+    public bool ConversationView { get; set; }
+
     public DateTime? LastLoginDate { get; set; }
     public int FailedLoginCount { get; set; }
     public DateTime? LockedUntilDate { get; set; }

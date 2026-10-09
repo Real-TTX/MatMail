@@ -22,7 +22,9 @@ public sealed record SessionSnapshot(
     bool ShowPreviews,
     DateTime ExpiresDate,
     bool TwoFactorEnabled,
-    bool TwoFactorRequired);
+    bool TwoFactorRequired,
+    string? ReadingPane = null,
+    bool ConversationView = false);
 
 /// <summary>
 /// Short-lived cache in front of the session table, so the mail client's frequent background requests do not each cost a

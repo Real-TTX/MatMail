@@ -131,7 +131,7 @@
                         @foreach (var person in check.Sample)
                         {
                             <tr>
-                                <td class="cell-title">@person.DisplayName @if (person.Disabled) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</td>
+                                <td class="cell-title">@person.DisplayName</td>
                                 <td>@person.Login</td>
                                 <td class="hide-sm">@person.Email</td>
                             </tr>

@@ -218,13 +218,20 @@ public sealed class DirectoryService
                 notes.Add(group is null ? $"The group “{dir.AllowedGroupDn}” was not found." : $"The group “{dir.AllowedGroupDn}” exists.");
             }
 
-            if (people.Count == 0)
+            // Active Directory is full of accounts that are switched off (Guest, krbtgt, people who left): they are no help to count.
+            List<DirectoryUser> enabled = people.Where(p => !p.Disabled).ToList();
+            if (people.Count > enabled.Count)
+            {
+                notes.Add($"{people.Count - enabled.Count} accounts are disabled in the directory and cannot sign in.");
+            }
+
+            if (enabled.Count == 0)
             {
                 notes.Add("No person was found: check the base, the filter and the login attribute" + (string.IsNullOrWhiteSpace(dir.AllowedGroupDn) ? "." : " and the group."));
             }
 
-            string message = $"Connected to {dir.Host}:{dir.Port}" + (string.IsNullOrWhiteSpace(dir.BindDn) ? " (anonymously)" : $" as {dir.BindDn}") + $": {people.Count} people can sign in.";
-            return new DirectoryCheck(people.Count > 0, message, people.Count, people.OrderBy(p => p.DisplayName, StringComparer.CurrentCultureIgnoreCase).Take(5).ToList(), notes);
+            string message = $"Connected to {dir.Host}:{dir.Port}" + (string.IsNullOrWhiteSpace(dir.BindDn) ? " (anonymously)" : $" as {dir.BindDn}") + $": {enabled.Count} people can sign in.";
+            return new DirectoryCheck(enabled.Count > 0, message, enabled.Count, enabled.OrderBy(p => p.DisplayName, StringComparer.CurrentCultureIgnoreCase).Take(5).ToList(), notes);
         }
         catch (DirectoryException ex)
         {

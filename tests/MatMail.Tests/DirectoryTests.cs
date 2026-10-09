@@ -96,6 +96,50 @@ public class DirectoryMappingTests
     }
 
     [Fact]
+    public async Task The_test_counts_only_the_people_who_can_sign_in_and_says_how_many_accounts_are_switched_off()
+    {
+        var directory = new FakeDirectory();
+        directory.AddPerson("fry", "Philip Fry", "fry@example.test");
+        directory.AddPerson("leela", "Turanga Leela", "leela@example.test");
+        directory.AddPerson("bender", "Bender Rodriguez", "bender@example.test", control: 514);
+        directory.AddPerson("guest", "Guest", control: 66082);
+        var service = new DirectoryService(directory, new SecretProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
+        DirectoryConnection dir = Active();
+        dir.Host = "ldap.example.test";
+        dir.BaseDn = FakeDirectory.People;
+        dir.UserFilter = "(objectClass=inetOrgPerson)";
+        dir.LoginAttribute = "uid";
+        dir.DisplayNameAttribute = "cn";
+
+        DirectoryCheck check = await service.TestAsync(dir);
+
+        Assert.True(check.Ok, check.Message);
+        Assert.Equal(2, check.Users);
+        Assert.Contains("2 people can sign in", check.Message);
+        Assert.Equal(new[] { "fry", "leela" }, check.Sample.Select(p => p.Login).Order().ToArray());
+        Assert.Contains("2 accounts are disabled in the directory", string.Join(' ', check.Notes));
+    }
+
+    [Fact]
+    public async Task A_directory_with_nobody_who_can_sign_in_is_no_success()
+    {
+        var directory = new FakeDirectory();
+        directory.AddPerson("bender", "Bender Rodriguez", control: 514);
+        var service = new DirectoryService(directory, new SecretProtector(new Microsoft.AspNetCore.DataProtection.EphemeralDataProtectionProvider()));
+        DirectoryConnection dir = Active();
+        dir.Host = "ldap.example.test";
+        dir.BaseDn = FakeDirectory.People;
+        dir.UserFilter = "(objectClass=inetOrgPerson)";
+        dir.LoginAttribute = "uid";
+
+        DirectoryCheck check = await service.TestAsync(dir);
+
+        Assert.False(check.Ok);
+        Assert.Equal(0, check.Users);
+        Assert.Contains(check.Notes, n => n.StartsWith("No person was found"));
+    }
+
+    [Fact]
     public void Without_a_login_an_entry_is_no_person_and_without_a_name_the_login_is_the_name()
     {
         Assert.Null(DirectoryService.MapUser(Active(), DirectoryEntry.Of("CN=No Login", ("displayName", ["No Login"]))));

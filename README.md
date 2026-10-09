@@ -596,7 +596,8 @@ Most tests need a PostgreSQL server (`MATMAIL_TEST_DB`, e.g. the database of the
 skipped without it; the synchronisation tests also need a GreenMail test server
 (`MATMAIL_TEST_IMAP`, see `tests/MatMail.Tests/Support/TestProvider.cs`), the tests of the SMB targets a Samba
 server (`MATMAIL_TEST_SMB`, see `tests/MatMail.Tests/Support/TestSmb.cs`), the tests of the directories an OpenLDAP
-(`MATMAIL_TEST_LDAP`, see `tests/MatMail.Tests/Support/TestLdap.cs`). The CI starts all four.
+(`MATMAIL_TEST_LDAP`, see `tests/MatMail.Tests/Support/TestLdap.cs`). The CI starts all four. Against a real Active Directory
+(a Samba domain controller, `MATMAIL_TEST_AD`, see `tests/MatMail.Tests/Support/TestAd.cs`) the same tests can be run locally.
 
 UI text is English in the source; German lives in `src/MatMail/Resources/SharedResource.de.resx`
 (`node tools/i18n.mjs check` lists what is missing). [`CLAUDE.md`](CLAUDE.md) describes the

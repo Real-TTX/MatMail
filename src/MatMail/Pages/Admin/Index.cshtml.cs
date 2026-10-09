@@ -75,7 +75,7 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
         if (Can(Permissions.DirectoriesManage))
         {
             DirectoryProblems = await db.DirectoryConnections.AsNoTracking()
-                .Where(d => d.IsActive && (d.LastSyncOk == false || d.LastCheckOk == false))
+                .Where(d => d.IsActive && (d.LastSyncOk == false || (d.LastSyncDate == null && d.LastCheckOk == false)))   // once compared, the comparison tells
                 .OrderBy(d => d.Name).Take(5).ToListAsync();
         }
 

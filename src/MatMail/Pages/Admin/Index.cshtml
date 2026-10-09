@@ -64,7 +64,7 @@
                     {
                         <tr data-row-href="/Admin/Directories/Edit?id=@directory.Id">
                             <td class="cell-title">@directory.Name</td>
-                            <td class="cell-sub">@(directory.LastSyncOk == false ? directory.LastSyncMessage : directory.LastCheckMessage)</td>
+                            <td class="cell-sub">@(directory.LastSyncDate is not null ? directory.LastSyncMessage : directory.LastCheckMessage)</td>
                         </tr>
                     }
                 </tbody>

@@ -77,7 +77,9 @@ branding.
   and placeholders such as `{{FullName}}`, `{{JobTitle}}`, `{{Phone}}` – a line whose placeholders
   are all empty is left out; scope: the whole tenant, one mailbox or one user
 - Offered in the web client and – if you want – **appended by the server** to messages of mail
-  programs and smart hosts that carry none
+  programs and smart hosts that carry none: the server recognises the signature of Thunderbird,
+  Gmail, Outlook and others (and the usual `-- ` separator) and does not add a second one; a quoted
+  original or the "Sent from my iPhone" of a phone does not count as a signature
 - **Footers** (legal notice) on every outgoing message, not removable by the sender
 - **Templates by rule**: the plain text of a printer becomes an HTML mail in the look of the
   company; chosen by sender, by where the message comes from and by smart-host rule. Signed and
@@ -174,7 +176,8 @@ rule) and by whether it has an HTML part at all. Signed and encrypted messages a
 
 A rich text editor with pictures and placeholders; the preview shows the signature of the signed-in
 user. A signature is offered in the web client and, if you want, appended by the server to messages
-of mail programs and smart hosts that carry none.
+of mail programs and smart hosts that carry none – one that Thunderbird, Gmail or Outlook has put there
+is recognised, so no message gets two.
 
 ### Providers and printers
 

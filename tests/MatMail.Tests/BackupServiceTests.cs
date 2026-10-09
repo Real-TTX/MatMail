@@ -290,6 +290,29 @@ public class BackupServiceTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task Runs_that_follow_each_other_within_a_second_never_lose_the_newest_backup()
+    {
+        // Names have a resolution of a second. The second run is named a second ahead of the real time (the first one has the real one),
+        // the third finds the first one removed and could take the real time again: older than the one that stays, and the first to go.
+        BackupTarget target = await AddLocalTargetAsync("Disk");
+        BackupPlan plan = await AddPlanAsync(target, keepLast: 1);
+        string folder = Path.Combine(Targets, "Disk");
+
+        var names = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            BackupRun run = (await Service.RunAsync(plan.Id, BackupRunKind.Manual, CancellationToken.None))!;
+            Assert.Equal(BackupRunStatus.Succeeded, run.Status);
+            names.Add(run.FileName!);
+
+            Assert.Equal(new[] { run.FileName }, Directory.GetFiles(folder).Select(Path.GetFileName).ToArray());   // the one just made is what is left
+        }
+
+        Assert.Equal(names.Order(StringComparer.Ordinal).ToArray(), names.ToArray());                      // every name is newer than the one before
+        Assert.Equal(names.Count, names.Distinct().Count());
+    }
+
+    [DbFact]
     public async Task A_failed_run_is_recorded_tried_again_soon_and_the_plan_goes_back_to_its_time_after_a_few()
     {
         string blocked = Path.Combine(Targets, "blocked");

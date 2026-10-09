@@ -249,18 +249,21 @@ public class SmbBackupPlanTests : IAsyncLifetime
 
         var service = _host.Services.GetRequiredService<BackupService>();
         BackupRun last = null!;
+        var history = new List<string>();
         for (int i = 0; i < 4; i++)
         {
             last = (await service.RunAsync(planId, BackupRunKind.Manual, CancellationToken.None))!;
             Assert.True(last.Status == BackupRunStatus.Succeeded, last.Message);
+            history.Add($"{last.FileName} (pruned {last.Pruned})");
         }
 
         // two are left, the newest of the four among them
         var storage = new SmbBackupStorage(options);
         IReadOnlyList<RemoteBackupFile> files = await storage.ListAsync(CancellationToken.None);
-        Assert.Equal(2, files.Count);
-        Assert.Contains(files, f => f.Name == last.FileName);
-        Assert.Equal(1, last.Pruned);
+        string story = "runs: " + string.Join("; ", history) + " | share: " + string.Join(", ", files.Select(f => f.Name));
+        Assert.True(files.Count == 2, story);
+        Assert.True(files.Any(f => f.Name == last.FileName), story);
+        Assert.True(last.Pruned == 1, story);
         Assert.Empty(Directory.GetFiles(Path.Combine(DataDir, "tmp"), "*", SearchOption.AllDirectories));   // no scratch file is left behind
 
         // and what is on the share is a backup that can be restored: fetched and verified

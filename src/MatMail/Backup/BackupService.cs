@@ -272,7 +272,7 @@ public sealed class BackupService
 
         try
         {
-            run.Pruned = await PruneAsync(plan, storage, installation, lease.Token);
+            run.Pruned = await PruneAsync(plan, storage, installation, lease.Token, keep: name);
         }
         catch (Exception ex) when (ex is BackupStorageException or IOException)
         {
@@ -282,11 +282,25 @@ public sealed class BackupService
         }
     }
 
-    /// <summary>A name that is not taken in the target (names have a resolution of a second: a run right after another would meet its file).</summary>
+    /// <summary>
+    /// A name that is not taken in the target and newer than the backups of this plan that are there. Names have a resolution of a second, and the
+    /// retention goes by the time in them: a run right after another meets its file, and one that took the real time while the one before had to
+    /// be bumped ahead of it would be older than the backups that stay – and the first to go.
+    /// </summary>
     private static async Task<string> UniqueNameAsync(IBackupStorage storage, bool encrypted, string label, string installation, CancellationToken cancel)
     {
-        HashSet<string> taken = (await storage.ListAsync(cancel)).Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        IReadOnlyList<RemoteBackupFile> existing = await storage.ListAsync(cancel);
+        HashSet<string> taken = existing.Select(f => f.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
         DateTime stamp = DateTime.UtcNow;
+        string shortId = BackupFiles.Short(installation);
+        foreach (RemoteBackupFile file in existing)
+        {
+            if (BackupFiles.Parse(file.Name) is { } parsed && parsed.Installation == shortId && parsed.Label == label && parsed.CreatedUtc >= stamp.AddTicks(-(stamp.Ticks % TimeSpan.TicksPerSecond)))
+            {
+                stamp = parsed.CreatedUtc.AddSeconds(1);
+            }
+        }
+
         string name;
         do
         {
@@ -298,8 +312,11 @@ public sealed class BackupService
         return name;
     }
 
-    /// <summary>Removes the backups of this plan (and only of this plan and installation) that the retention rules no longer want.</summary>
-    public async Task<int> PruneAsync(BackupPlan plan, IBackupStorage storage, string installationId, CancellationToken cancel)
+    /// <summary>
+    /// Removes the backups of this plan (and only of this plan and installation) that the retention rules no longer want.
+    /// <paramref name="keep"/>: a file that is never removed, whatever its name says (the backup that was just made).
+    /// </summary>
+    public async Task<int> PruneAsync(BackupPlan plan, IBackupStorage storage, string installationId, CancellationToken cancel, string? keep = null)
     {
         string installation = BackupFiles.Short(installationId);
         string label = "p" + plan.Id;
@@ -313,7 +330,8 @@ public sealed class BackupService
             }
         }
 
-        IReadOnlyList<string> expired = BackupRetention.Expired(mine, RetentionPolicy.Of(plan), DateTime.UtcNow, Zone);
+        IReadOnlyList<string> expired = BackupRetention.Expired(mine, RetentionPolicy.Of(plan), DateTime.UtcNow, Zone)
+            .Where(name => !string.Equals(name, keep, StringComparison.OrdinalIgnoreCase)).ToList();
         foreach (string name in expired)
         {
             await storage.DeleteAsync(name, cancel);

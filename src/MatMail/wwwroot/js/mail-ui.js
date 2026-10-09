@@ -16,6 +16,8 @@
   function init() {
     els.app = doc.getElementById("mail-app");
     els.panes = doc.getElementById("mail-panes");
+    els.drop = doc.getElementById("mail-drop");
+    els.file = doc.getElementById("mail-file");
     els.splitter = doc.getElementById("mail-splitter");
     els.folders = doc.getElementById("mail-folders");
     els.listPane = doc.getElementById("mail-list-pane");
@@ -46,6 +48,7 @@
     window.addEventListener("hashchange", route);
     doc.addEventListener("keydown", onKey);
     setupSplitter();
+    setupFileDrops();
     applyLayout();
     // A window that grows or shrinks past the width of the reading pane changes the layout; the screen is drawn again for it.
     var onWidth = function () { applyLayout(); if (App.boot) { route(); renderList(); } };
@@ -91,12 +94,13 @@
       folder: parseInt(params.get("folder"), 10) || 0,
       page: parseInt(params.get("page"), 10) || 1,
       q: params.get("q") || "",
-      m: parseInt(params.get("m"), 10) || 0
+      m: parseInt(params.get("m"), 10) || 0,
+      p: params.get("p") || ""   // a message file that is open (nothing of it is in the mailbox)
     };
   }
 
   function navigate(changes) {
-    var current = { mailbox: S.mailboxId, folder: S.folderId, page: S.page, q: S.query, m: S.messageId };
+    var current = { mailbox: S.mailboxId, folder: S.folderId, page: S.page, q: S.query, m: S.messageId, p: "" };   // an open file is only kept when it is asked for
     Object.keys(changes).forEach(function (key) { current[key] = changes[key]; });
     var params = new URLSearchParams();
     if (current.mailbox) { params.set("mailbox", current.mailbox); }
@@ -104,6 +108,7 @@
     if (current.page > 1) { params.set("page", current.page); }
     if (current.q) { params.set("q", current.q); }
     if (current.m) { params.set("m", current.m); }
+    if (current.p) { params.set("p", current.p); }
     var hash = "#" + params.toString();
     if (location.hash === hash) { route(); } else { location.hash = hash; }
   }
@@ -137,20 +142,22 @@
     S.page = h.page;
     S.query = h.q;
     var previousMessage = S.messageId;
+    var previousPreview = S.previewId;
     S.messageId = h.m;
+    S.previewId = h.p;
     els.searchInput.value = h.q;
     els.searchClear.hidden = !h.q;
     renderFolders();
     if (window.MatMail && window.MatMail.setSidebarOpen) { window.MatMail.setSidebarOpen(false); }
 
-    if (h.m) {
+    if (h.p || h.m) {
       showReader();
-      if (previousMessage !== h.m) { loadMessage(h.m); }
+      if (h.p ? previousPreview !== h.p : previousMessage !== h.m) { if (h.p) { loadPreview(h.p); } else { loadMessage(h.m); } }
       // With a reading pane the list stays on the screen next to the message, so it has to be the right one.
       if (isSplit() ? (!sameList || !S.items.length) : (!sameList && !S.items.length)) { loadList(true); }
     } else {
       showList();
-      if (!sameList || (previousMessage && !isSplit())) { loadList(false); }
+      if (!sameList || ((previousMessage || previousPreview) && !isSplit())) { loadList(false); }
     }
     markOpenRow();
   }
@@ -464,6 +471,8 @@
       }
       row.appendChild(actions);
 
+      row.draggable = true;
+      row.addEventListener("dragstart", function (e) { dragOut(e, item); });
       row.addEventListener("click", function () { S.cursor = index; openItem(item); });
       row.addEventListener("keydown", function (e) { if (e.key === "Enter") { openItem(item); } });
       els.list.appendChild(row);
@@ -533,6 +542,7 @@
 
     if (count === 0) {
       bar.appendChild(App.iconButton("refresh", T("refresh"), function () { loadList(false); refreshCounts(); }));
+      bar.appendChild(App.iconButton("upload", T("openMessageFile"), function () { els.file.click(); }));
       if (box && box.canEdit && folder) {
         var more = App.iconButton("more-vertical", T("more"), function (e) { folderMenu(e.currentTarget, box, folder); });
         bar.appendChild(more);
@@ -765,6 +775,130 @@
   }
 
   // ---------------------------------------------------------------------------------------------
+  // Message files: dropped into the client (or chosen with the button) to be read; dragged out of the list to be kept
+  // ---------------------------------------------------------------------------------------------
+  /** A file dropped anywhere on the client is opened (not in the compose window: there it is an attachment). */
+  function setupFileDrops() {
+    var depth = 0;
+    var hasFiles = function (e) { return !!e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0; };
+    var foreign = function (e) { return !!(e.target && e.target.closest && e.target.closest(".compose, dialog[open]")); };
+    doc.addEventListener("dragenter", function (e) { if (hasFiles(e) && !foreign(e)) { depth++; els.drop.hidden = false; } });
+    doc.addEventListener("dragover", function (e) { if (hasFiles(e) && !foreign(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    doc.addEventListener("dragleave", function (e) { if (hasFiles(e)) { depth = Math.max(0, depth - 1); if (!depth) { els.drop.hidden = true; } } });
+    doc.addEventListener("drop", function (e) {
+      depth = 0;
+      els.drop.hidden = true;
+      if (!hasFiles(e) || foreign(e)) { return; }
+      e.preventDefault();
+      if (e.dataTransfer.files.length) { openFile(e.dataTransfer.files[0]); }
+    });
+    els.file.addEventListener("change", function () {
+      if (els.file.files.length) { openFile(els.file.files[0]); }
+      els.file.value = "";
+    });
+  }
+
+  /** The file goes to the server, which reads it (an .eml as it is, an Outlook .msg turned into a message) and keeps it for a day. */
+  function openFile(file) {
+    if (!/\.(eml|msg)$/i.test(file.name)) { App.toast(T("onlyMessageFiles"), { error: true }); return; }
+    showLoading(true);
+    App.api("POST", "/api/mail/preview", file, { headers: { "X-File-Name": encodeURIComponent(file.name) } }).then(function (preview) {
+      showLoading(false);
+      S.preview = preview;
+      navigate({ p: preview.id, m: 0 });
+    }).catch(function (error) {
+      showLoading(false);
+      App.toast(error.message, { error: true });
+    });
+  }
+
+  function loadPreview(id) {
+    var request = ++messageRequest;
+    els.reader.innerHTML = "";
+    els.readerToolbar.innerHTML = "";
+    var cached = S.preview && S.preview.id === id ? Promise.resolve(S.preview) : (showLoading(true), App.get("/api/mail/preview/" + id));
+    cached.then(function (preview) {
+      if (request !== messageRequest) { return; }
+      showLoading(false);
+      S.preview = preview;
+      renderPreview(preview);
+    }).catch(function (error) {
+      if (request !== messageRequest) { return; }
+      showLoading(false);
+      els.reader.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("fileGone") : error.message }));
+      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    });
+  }
+
+  /** A message from a file: shown like one of the mailbox, without what belongs to a mailbox (stars, answers), with a way to keep it. */
+  function renderPreview(preview) {
+    var m = preview.message;
+    var bar = els.readerToolbar;
+    bar.innerHTML = "";
+    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    var canSave = App.boot.mailboxes.some(function (box) { return box.canEdit; });
+    var saveButton = null;
+    if (canSave) {
+      saveButton = App.el("button", { type: "button", class: "btn btn--secondary btn--sm mail-toolbar__button" }, [App.icon("folder-input"), App.el("span", { text: T("saveToFolder") })]);
+      saveButton.addEventListener("click", function (e) { saveMenu(e.currentTarget, preview); });
+      bar.appendChild(saveButton);
+    }
+    bar.appendChild(App.iconButton("download", T("downloadEml"), function () { window.location.href = "/api/mail/preview/" + preview.id + "/raw"; }));
+    bar.appendChild(App.el("span", { class: "mail-toolbar__spacer" }));
+
+    var wrap = App.el("div", { class: "reader" });
+    var head = readerHead(m.subject, 0, 0);
+    head.appendChild(App.el("span", { class: "chip", text: preview.fileName }));
+    wrap.appendChild(head);
+    wrap.appendChild(App.el("div", { class: "reader__banner" }, [App.icon("file-text"), App.el("span", { text: T("fileNotice") })]));
+    wrap.appendChild(messageView(m, null, { preview: true }));
+    els.reader.innerHTML = "";
+    els.reader.appendChild(wrap);
+    els.reader.scrollTop = 0;
+  }
+
+  /** The folders (of every mailbox one may change) to keep a message file in. */
+  function saveMenu(anchor, preview) {
+    var items = [];
+    var several = App.boot.mailboxes.filter(function (box) { return box.canEdit; }).length > 1;
+    App.boot.mailboxes.forEach(function (box) {
+      if (!box.canEdit) { return; }
+      box.folders.forEach(function (folder) {
+        if (folder.kind === "Drafts") { return; }
+        items.push({ label: (several ? box.name + " – " : "") + App.folderLabel(folder), icon: KIND_ICONS[folder.kind] || "folder", indent: folder.depth, onClick: function () { keepFile(preview, box, folder); } });
+      });
+    });
+    App.showMenu(anchor, items, { title: T("saveToFolder") });
+  }
+
+  function keepFile(preview, box, folder) {
+    showLoading(true);
+    App.post("/api/mail/preview/" + preview.id + "/import", { folderId: folder.id }).then(function (result) {
+      showLoading(false);
+      App.applyCounts(result.counts);
+      if (S.folderId === folder.id) { loadList(true); }
+      App.toast(T("savedTo").replace("{0}", App.folderLabel(folder)), {
+        action: { label: T("open"), run: function () { navigate({ mailbox: box.id, folder: folder.id, page: 1, q: "", m: result.id }); } }
+      });
+    }).catch(function (error) {
+      showLoading(false);
+      App.toast(error.message, { error: true });
+    });
+  }
+
+  /**
+   * A row dragged out of the client becomes a file of its own (Chrome and Edge: the DownloadURL of the drag makes the browser fetch the
+   * .eml with the session of the page, to the desktop or into a folder of the file manager).
+   */
+  function dragOut(e, item) {
+    var name = (item.subject || "message").replace(/[\\/:*?"<>|\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "message";
+    var url = location.origin + "/api/mail/messages/" + item.id + "/raw";
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("DownloadURL", "message/rfc822:" + name + ".eml:" + url);
+    e.dataTransfer.setData("text/uri-list", url);
+  }
+
+  // ---------------------------------------------------------------------------------------------
   // Reader
   // ---------------------------------------------------------------------------------------------
   var messageRequest = 0;
@@ -928,7 +1062,7 @@
   }
 
   /** One message: sender, details, the text in its frame, attachments, the buttons to answer. onCollapse: a button that closes it again (in a conversation). */
-  function messageView(m, onCollapse) {
+  function messageView(m, onCollapse, options) {
     var wrap = App.el("div", { class: "reader__message" });
 
     // Sender line
@@ -959,7 +1093,7 @@
         App.el("div", { class: "reader__from" }, [App.el("b", { text: App.displayName(from.name, from.address) }), App.el("span", { class: "muted", text: " <" + from.address + ">" })]),
         toggle
       ]),
-      App.el("div", { class: "reader__meta" }, [App.el("span", { class: "reader__date", text: App.formatFullDate(m.date), title: m.date }), star])
+      App.el("div", { class: "reader__meta" }, [App.el("span", { class: "reader__date", text: App.formatFullDate(m.date), title: m.date }), options && options.preview ? null : star])
     ]);
     var meta = sender.querySelector(".reader__meta");
     if (m.canSend || m.canEdit) {
@@ -1079,7 +1213,7 @@
     else if (key === "j" && !inReader) { moveCursor(1); }
     else if (key === "k" && !inReader) { moveCursor(-1); }
     else if ((key === "Enter" || key === "o") && !inReader && cursorItem) { openItem(cursorItem); }
-    else if (key === "u" && open) { navigate({ m: 0 }); }
+    else if (key === "u" && (open || S.previewId)) { navigate({ m: 0 }); }
     else if (key === "x" && !inReader && cursorItem) { toggleSelect(cursorItem.id, !S.selected.has(cursorItem.id)); renderList(); }
     else if (key === "s" && !inReader && cursorItem) { act(cursorItem.isStarred ? "unstar" : "star", [cursorItem.id]); }
     else if (key === "e") { shortcutAct("archive"); }

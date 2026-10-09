@@ -372,6 +372,7 @@
   <data name="Draft saved." xml:space="preserve"><value>Entwurf gespeichert.</value></data>
   <data name="Draft, not saved on the server yet" xml:space="preserve"><value>Entwurf, noch nicht auf dem Server gespeichert</value></data>
   <data name="Drafts" xml:space="preserve"><value>Entwürfe</value></data>
+  <data name="Drop a message file here to read it (.eml, .msg)" xml:space="preserve"><value>Legen Sie hier eine Nachrichtendatei ab, um sie zu lesen (.eml, .msg)</value></data>
   <data name="Duration" xml:space="preserve"><value>Dauer</value></data>
   <data name="E-mail address" xml:space="preserve"><value>E-Mail-Adresse</value></data>
   <data name="e.g. Every night to the NAS" xml:space="preserve"><value>z. B. Jede Nacht auf das NAS</value></data>
@@ -735,6 +736,7 @@
   <data name="One per week for" xml:space="preserve"><value>Eines pro Woche für</value></data>
   <data name="one per week for {0} weeks" xml:space="preserve"><value>eines pro Woche für {0} Wochen</value></data>
   <data name="One user" xml:space="preserve"><value>Ein Benutzer</value></data>
+  <data name="Only .eml and .msg files can be opened." xml:space="preserve"><value>Nur .eml- und .msg-Dateien können geöffnet werden.</value></data>
   <data name="Only for this smart host rule" xml:space="preserve"><value>Nur für diese Smarthost-Regel</value></data>
   <data name="Only messages without an HTML version (devices, scripts, simple programs)" xml:space="preserve"><value>Nur Nachrichten ohne HTML-Fassung (Geräte, Skripte, einfache Programme)</value></data>
   <data name="Only my own mailbox" xml:space="preserve"><value>Nur mein eigenes Postfach</value></data>
@@ -745,6 +747,8 @@
   <data name="Only the newest {0} messages were included." xml:space="preserve"><value>Berücksichtigt wurden nur die neuesten {0} Nachrichten.</value></data>
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
+  <data name="Open" xml:space="preserve"><value>Öffnen</value></data>
+  <data name="Open a message file (.eml, .msg)" xml:space="preserve"><value>Nachrichtendatei öffnen (.eml, .msg)</value></data>
   <data name="Open in the app on this device" xml:space="preserve"><value>In der App auf diesem Gerät öffnen</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
   <data name="Open the menu of your browser and choose “Install app” or “Add to home screen”." xml:space="preserve"><value>Öffnen Sie das Menü Ihres Browsers und wählen Sie „App installieren“ oder „Zum Startbildschirm hinzufügen“.</value></data>
@@ -876,6 +880,8 @@
   <data name="Save" xml:space="preserve"><value>Speichern</value></data>
   <data name="Save and close" xml:space="preserve"><value>Speichern und schließen</value></data>
   <data name="Save the current state first (recommended)" xml:space="preserve"><value>Zuerst den aktuellen Stand sichern (empfohlen)</value></data>
+  <data name="Save to a folder" xml:space="preserve"><value>In einem Ordner speichern</value></data>
+  <data name="Saved to {0}." xml:space="preserve"><value>In {0} gespeichert.</value></data>
   <data name="Saving the database" xml:space="preserve"><value>Datenbank wird gesichert</value></data>
   <data name="Saving the files" xml:space="preserve"><value>Dateien werden gesichert</value></data>
   <data name="Saving…" xml:space="preserve"><value>Wird gespeichert …</value></data>
@@ -1065,6 +1071,11 @@
   <data name="The e-mail address is not valid." xml:space="preserve"><value>Die E-Mail-Adresse ist ungültig.</value></data>
   <data name="The entry was removed." xml:space="preserve"><value>Der Eintrag wurde entfernt.</value></data>
   <data name="The file contains no private key." xml:space="preserve"><value>Die Datei enthält keinen privaten Schlüssel.</value></data>
+  <data name="The file is an Outlook item, but not a message." xml:space="preserve"><value>Die Datei ist ein Outlook-Element, aber keine Nachricht.</value></data>
+  <data name="The file is empty." xml:space="preserve"><value>Die Datei ist leer.</value></data>
+  <data name="The file is not a message." xml:space="preserve"><value>Die Datei ist keine Nachricht.</value></data>
+  <data name="The file is not a readable Outlook message." xml:space="preserve"><value>Die Datei ist keine lesbare Outlook-Nachricht.</value></data>
+  <data name="The file is too large." xml:space="preserve"><value>Die Datei ist zu groß.</value></data>
   <data name="The file stays on the server for an hour." xml:space="preserve"><value>Die Datei bleibt eine Stunde auf dem Server.</value></data>
   <data name="The folder does not exist." xml:space="preserve"><value>Der Ordner existiert nicht.</value></data>
   <data name="The folder is missing." xml:space="preserve"><value>Der Ordner fehlt.</value></data>
@@ -1197,11 +1208,13 @@
   <data name="This address is already in use." xml:space="preserve"><value>Diese Adresse wird bereits verwendet.</value></data>
   <data name="This device is not registered for notifications." xml:space="preserve"><value>Dieses Gerät ist nicht für Benachrichtigungen angemeldet.</value></data>
   <data name="This domain is already registered." xml:space="preserve"><value>Diese Domäne ist bereits registriert.</value></data>
+  <data name="This file is no longer available. Open it again." xml:space="preserve"><value>Diese Datei ist nicht mehr verfügbar. Öffnen Sie sie erneut.</value></data>
   <data name="This is not a valid address or network." xml:space="preserve"><value>Das ist keine gültige Adresse und kein gültiges Netzwerk.</value></data>
   <data name="This is not a valid domain name." xml:space="preserve"><value>Das ist kein gültiger Domänenname.</value></data>
   <data name="This login name is already in use." xml:space="preserve"><value>Dieser Anmeldename wird bereits verwendet.</value></data>
   <data name="This mailbox has no address yet." xml:space="preserve"><value>Dieses Postfach hat noch keine Adresse.</value></data>
   <data name="This mailbox may send as this address" xml:space="preserve"><value>Dieses Postfach darf mit dieser Adresse senden</value></data>
+  <data name="This message comes from a file. It is not in your mailbox." xml:space="preserve"><value>Diese Nachricht stammt aus einer Datei. Sie liegt nicht in Ihrem Postfach.</value></data>
   <data name="This message no longer exists." xml:space="preserve"><value>Diese Nachricht gibt es nicht mehr.</value></data>
   <data name="This name is reserved for a system folder." xml:space="preserve"><value>Dieser Name ist für einen Systemordner reserviert.</value></data>
   <data name="This page does not exist." xml:space="preserve"><value>Diese Seite gibt es nicht.</value></data>

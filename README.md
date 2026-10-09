@@ -63,6 +63,9 @@ branding.
   and the messages of a thread become one row, with the people who wrote and how many there are.
   Opened, the conversation is a stack: the newest and the unread messages open, the older ones a
   line each
+- **Message files**: drop an `.eml` or an Outlook `.msg` on the client (or use the button over the
+  list) to read it – pictures and attachments included, nothing of it lands in a mailbox – and keep it
+  in a folder with one click; drag a message out of the list to get it as an `.eml` (Chrome, Edge)
 - Compose with rich text, pictures (paste or drop), a signature chooser and keyboard shortcuts
 - **An app on your phone or computer** (PWA): put it on the home screen or install it; it opens in a
   window of its own with the colour of your theme in the status bar, cannot be zoomed by accident and
@@ -144,6 +147,18 @@ beside it. The operators work in English and German (`von:`, `hat:anhang`, `ist:
 combine with `OR`, `-` and brackets. When a search (or a folder) has more hits than fit on a page,
 *select all* offers to take **all of them** – then mark them as read, move, archive or delete them in
 one go.
+
+### Message files
+
+![A message from an Outlook file, opened for reading](docs/images/mail-file.png)
+
+An `.eml` or an Outlook `.msg` – dropped anywhere on the web client, or chosen with the button over
+the list – opens in the reader with its pictures and attachments, marked as a file: it is in no
+mailbox. *Save to a folder* puts it in one (it keeps the date it was written and arrives read);
+*Download* gives it back as an `.eml`. The other way round, a row can be dragged out of the list onto
+the desktop or into a folder of the file manager, where it becomes an `.eml` (browsers based on Chromium).
+Outlook files are turned into ordinary messages on the server (sender, recipients, text, pictures,
+attachments, the ids that tie a reply to its conversation); the file is kept for a day.
 
 ### Reading pane and conversations
 
@@ -499,7 +514,7 @@ The mail itself lives in the PostgreSQL volume. A backup contains both.
 | Backups | Complete backups of database and files, schedules with retention, folder and SMB (NAS) targets, encryption, restore (also of earlier versions) | ✅ |
 | Reading pane, conversation view | The reader beside or below the list, threads as one row (per user) | ✅ |
 | Tenant switcher for ordinary users | Needs "member of several tenants" first | open question |
-| `.eml` / `.msg` files | Drag a file in to view it, drag a message out | later |
+| `.eml` / `.msg` files | Drop a file in to read it and keep it, drag a message out | ✅ |
 | AD / LDAP | Directory sign-in with attribute mapping and a selection of who may sign in | later |
 
 The wishes in the order they are worked on, and the reasoning behind them, live in

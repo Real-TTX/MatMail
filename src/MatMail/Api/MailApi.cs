@@ -32,6 +32,13 @@ public static class MailApi
         api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
         api.MapGet("/messages/{id:long}/thread", GetThread);
+        api.MapPost("/preview", UploadPreview);
+        api.MapGet("/preview/{id}", GetPreview);
+        api.MapGet("/preview/{id}/body", GetPreviewBody);
+        api.MapGet("/preview/{id}/attachment/{index:int}", GetPreviewAttachment);
+        api.MapGet("/preview/{id}/cid/{cid}", GetPreviewInlinePart);
+        api.MapGet("/preview/{id}/raw", GetPreviewRaw);
+        api.MapPost("/preview/{id}/import", ImportPreview);
         api.MapGet("/messages/{id:long}/body", GetBody);
         api.MapGet("/messages/{id:long}/print", GetPrint);
         api.MapGet("/messages/{id:long}/attachment/{index:int}", GetAttachment);
@@ -322,6 +329,167 @@ public static class MailApi
             $"{urlBase}/body", attachments, envelopeRecipients, mime.Headers[HeaderId.ListUnsubscribe], size);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    // A message file that is opened for reading: an .eml or an Outlook .msg that was dropped into the client. It is kept for a day with
+    // the other uploads of the user (AttachmentStaging) and is in no mailbox until the user saves it into a folder.
+    // ---------------------------------------------------------------------------------------------------------------
+
+    private static async Task<IResult> UploadPreview(
+        HttpContext http, MailAccessService access, AttachmentStaging staging, MailBodyRenderer renderer, AppConfig config, CancellationToken cancel)
+    {
+        MailUser? user = access.GetCurrentUser();
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        long max = (long)config.Server.MaxUploadMb * 1024 * 1024;
+        if (http.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+        {
+            limit.MaxRequestBodySize = max;
+        }
+
+        byte[] content;
+        try
+        {
+            using var buffer = new MemoryStream();
+            await http.Request.Body.CopyToAsync(buffer, cancel);
+            content = buffer.ToArray();
+        }
+        catch (Microsoft.AspNetCore.Http.BadHttpRequestException)
+        {
+            return new Failure("The file is too large.");
+        }
+
+        if (content.LongLength > max)
+        {
+            return new Failure("The file is too large.");
+        }
+
+        MessageFile file;
+        try
+        {
+            file = MessageFiles.Read(content);
+        }
+        catch (InvalidDataException ex)
+        {
+            return new Failure(ex.Message);
+        }
+
+        string given = Uri.UnescapeDataString(http.Request.Headers["X-File-Name"].ToString());
+        string name = Path.GetFileNameWithoutExtension(Path.GetFileName(given)) is { Length: > 0 } stem ? stem + ".eml" : "message.eml";
+        StagedAttachment staged = await staging.SaveAsync(user.UserId, name, "message/rfc822", new MemoryStream(file.Raw), max, cancel);
+        return Results.Ok(new PreviewDto(staged.Id, name, PreviewDetail(file.Mime, renderer, staged.Id, file.Raw.LongLength)));
+    }
+
+    private static MessageDetailDto PreviewDetail(MimeMessage mime, MailBodyRenderer renderer, string id, long size)
+        => DetailOf(
+            mime, renderer, $"/api/mail/preview/{id}", 0, 0, 0, "Preview", mime.Date == DateTimeOffset.MinValue ? DateTime.UtcNow : mime.Date.UtcDateTime,
+            isRead: true, isStarred: false, isDraft: false, canEdit: false, canSend: false, envelopeRecipients: null, size);
+
+    /// <summary>The message of a preview, parsed again from the file that was kept; null when the file is gone or is not the user's.</summary>
+    private static async Task<(MimeMessage? Mime, byte[]? Raw)> LoadPreviewAsync(MailAccessService access, AttachmentStaging staging, string id, CancellationToken cancel)
+    {
+        MailUser? user = access.GetCurrentUser();
+        if (user is null)
+        {
+            return (null, null);
+        }
+
+        await using Stream? stream = staging.OpenRead(user.UserId, id);
+        if (stream is null)
+        {
+            return (null, null);
+        }
+
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancel);
+        byte[] raw = buffer.ToArray();
+        return (MimeMessage.Load(new MemoryStream(raw)), raw);
+    }
+
+    private static async Task<IResult> GetPreview(string id, MailAccessService access, AttachmentStaging staging, MailBodyRenderer renderer, CancellationToken cancel)
+    {
+        (MimeMessage? mime, byte[]? raw) = await LoadPreviewAsync(access, staging, id, cancel);
+        return mime is null ? Results.NotFound() : Results.Ok(new PreviewDto(id, staging.Find(access.GetCurrentUser()!.UserId, id)?.FileName ?? "message.eml", PreviewDetail(mime, renderer, id, raw!.LongLength)));
+    }
+
+    private static async Task<IResult> GetPreviewBody(string id, bool? images, MailAccessService access, AttachmentStaging staging, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
+    {
+        (MimeMessage? mime, _) = await LoadPreviewAsync(access, staging, id, cancel);
+        if (mime is null)
+        {
+            return Results.NotFound();
+        }
+
+        bool allowImages = images == true;
+        RenderedBody body = renderer.Render(mime, $"/api/mail/preview/{id}", allowImages);
+        string imageSources = allowImages ? "img-src 'self' data: https: http:" : "img-src 'self' data:";
+        http.Response.Headers.ContentSecurityPolicy = $"default-src 'none'; {imageSources}; style-src 'unsafe-inline'; font-src {(allowImages ? "data: https:" : "data:")}; base-uri 'none'; form-action 'none'";
+        http.Response.Headers.XContentTypeOptions = "nosniff";
+        http.Response.Headers["Referrer-Policy"] = "no-referrer";
+        http.Response.Headers.CacheControl = "private, max-age=0, must-revalidate";
+        return Results.Content(MailBodyRenderer.BuildDocument(body), "text/html; charset=utf-8");
+    }
+
+    private static async Task<IResult> GetPreviewAttachment(
+        string id, int index, bool? inline, MailAccessService access, AttachmentStaging staging, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
+    {
+        (MimeMessage? mime, _) = await LoadPreviewAsync(access, staging, id, cancel);
+        MimeEntity? entity = mime is null ? null : renderer.FindAttachment(mime, index);
+        return entity is null ? Results.NotFound() : await SendEntityAsync(http, entity, MailBodyRenderer.FileNameOf(entity, index + 1), inline == true, cancel);
+    }
+
+    private static async Task<IResult> GetPreviewInlinePart(
+        string id, string cid, MailAccessService access, AttachmentStaging staging, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
+    {
+        (MimeMessage? mime, _) = await LoadPreviewAsync(access, staging, id, cancel);
+        MimePart? part = mime is null ? null : renderer.FindByContentId(mime, cid);
+        return part is null ? Results.NotFound() : await SendEntityAsync(http, part, MailBodyRenderer.FileNameOf(part, 1), inline: true, cancel);
+    }
+
+    private static async Task<IResult> GetPreviewRaw(string id, MailAccessService access, AttachmentStaging staging, CancellationToken cancel)
+    {
+        (MimeMessage? mime, byte[]? raw) = await LoadPreviewAsync(access, staging, id, cancel);
+        return mime is null ? Results.NotFound() : Results.File(raw!, "message/rfc822", EmlName(mime.Subject, id));
+    }
+
+    /// <summary>Puts the message of a file into a folder (needs the right to change it): from then on it is a message like any other.</summary>
+    private static async Task<IResult> ImportPreview(
+        string id, ImportPreviewRequest request, MailAccessService access, AttachmentStaging staging, MailStore store, CancellationToken cancel)
+    {
+        MailUser? user = access.GetCurrentUser();
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        MailFolder? folder = await access.GetFolderAsync(user, request.FolderId, MailboxAccess.Edit, cancel);
+        if (folder is null)
+        {
+            return Results.NotFound();
+        }
+
+        (MimeMessage? mime, byte[]? raw) = await LoadPreviewAsync(access, staging, id, cancel);
+        if (mime is null)
+        {
+            return Results.NotFound();
+        }
+
+        // It keeps the date it was written (so that it sorts where it belongs) and arrives read: whoever saves it has read it.
+        DateTime? written = mime.Date == DateTimeOffset.MinValue ? null : mime.Date.UtcDateTime;
+        MailMessage added = await store.AddAsync(folder.Id, new NewMessage(raw!) { ReceivedDate = written, IsRead = true }, cancel);
+        return Results.Ok(new ImportResult(added.Id, folder.Id, await CountsOfAsync(store, [folder.Id], cancel)));
+    }
+
+    /// <summary>A name for the .eml of a message: its subject, without what a file name cannot have.</summary>
+    private static string EmlName(string? subject, string fallback)
+    {
+        string name = string.Concat((subject ?? string.Empty).Trim().Select(c => Path.GetInvalidFileNameChars().Contains(c) || char.IsControl(c) ? ' ' : c)).Trim();
+        name = System.Text.RegularExpressions.Regex.Replace(name, @"\s+", " ");
+        return (name.Length == 0 ? "message-" + fallback : name.Length > 80 ? name[..80].TrimEnd() : name) + ".eml";
+    }
+
     /// <summary>The messages of the conversation that a message belongs to, oldest first (see <see cref="MailConversations.ThreadAsync"/>).</summary>
     private static async Task<IResult> GetThread(long id, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
     {
@@ -454,7 +622,7 @@ public static class MailApi
         }
 
         byte[]? raw = await store.GetRawAsync(id, cancel);
-        return raw is null ? Results.NotFound() : Results.File(raw, "message/rfc822", $"message-{id}.eml");
+        return raw is null ? Results.NotFound() : Results.File(raw, "message/rfc822", EmlName(message.Subject, id.ToString()));
     }
 
     // ---------------------------------------------------------------------------------------------------------------

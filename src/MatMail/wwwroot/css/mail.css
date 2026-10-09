@@ -243,6 +243,11 @@ html[data-previews="off"] .mail-row__snippet { display: none; }
 .mail-notice { margin: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius); background: var(--color-info-soft); color: var(--color-text); }
 .mail-notice.is-error { background: var(--color-danger-soft); color: var(--color-danger); }
 .mail-notice[hidden] { display: none; }
+.mail-drop { position: absolute; inset: 0.5rem; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; border: 3px dashed var(--color-primary); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--color-surface) 88%, var(--color-primary)); color: var(--color-primary); font-size: 1.1rem; font-weight: 600; pointer-events: none; }
+.mail-drop[hidden] { display: none; }
+.mail-drop .icon { width: 3rem; height: 3rem; }
+.mail-toolbar__button { margin-left: 0.35rem; }
+.mail-row[draggable="true"] { -webkit-user-drag: element; }
 .mail-loading { position: absolute; inset: 3rem 0 0 0; display: flex; justify-content: center; padding-top: 3rem; pointer-events: none; z-index: 5; }
 .mail-loading[hidden] { display: none; }
 .spinner { width: 1.8rem; height: 1.8rem; border: 3px solid var(--color-border-strong); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.7s linear infinite; }

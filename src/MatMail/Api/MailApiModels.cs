@@ -54,6 +54,13 @@ public sealed record MessageDetailDto(
 
 public sealed record FlagsRequest(long[] Ids, bool? IsRead, bool? IsStarred);
 
+/// <summary>A message file that was opened for reading (nothing of it is in the mailbox): the id it is served by and the message as the reader shows it.</summary>
+public sealed record PreviewDto(string Id, string FileName, MessageDetailDto Message);
+
+public sealed record ImportPreviewRequest(long FolderId);
+
+public sealed record ImportResult(long Id, long FolderId, Dictionary<long, CountsDto> Counts);
+
 public sealed record MoveRequest(long[] Ids, long FolderId);
 
 public sealed record DeleteRequest(long[] Ids, bool Permanent);

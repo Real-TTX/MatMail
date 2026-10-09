@@ -56,6 +56,10 @@
 
     <div class="mail-loading" id="mail-loading" hidden><span class="spinner"></span></div>
 
+    @* A message file (.eml, .msg) is opened by dropping it anywhere on the client, or with the button over the list. *@
+    <div class="mail-drop" id="mail-drop" hidden aria-hidden="true"><mm-icon name="upload" /><p>@L["Drop a message file here to read it (.eml, .msg)"]</p></div>
+    <input type="file" id="mail-file" accept=".eml,.msg,message/rfc822,application/vnd.ms-outlook" hidden />
+
     @* Where the folders are a drawer (up to 960 px): the round button over the list, bottom right; above that the one in the folder column does the job. *@
     <button type="button" class="fab-compose" id="mail-compose-fab" title="@L["Compose"]" aria-label="@L["Compose"]"><mm-icon name="edit" /></button>
 </div>

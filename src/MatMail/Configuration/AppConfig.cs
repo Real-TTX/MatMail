@@ -146,6 +146,12 @@ public class BackupConfig
     public string? TempDirectory { get; set; }
 }
 
+public class DirectoriesConfig
+{
+    /// <summary>How often the users of a directory (Active Directory, LDAP) are compared with it, in minutes: somebody who left or was disabled loses open sessions then. 0 = never (sign-ins still ask the directory).</summary>
+    public int SyncMinutes { get; set; } = 60;
+}
+
 public class RetentionConfig
 {
     public int ActivityLogDays { get; set; } = 60;
@@ -180,6 +186,7 @@ public class AppConfig
     public QueueConfig Queue { get; set; } = new();
     public PushConfig Push { get; set; } = new();
     public BackupConfig Backup { get; set; } = new();
+    public DirectoriesConfig Directories { get; set; } = new();
     public RetentionConfig Retention { get; set; } = new();
 }
 

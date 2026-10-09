@@ -19,6 +19,7 @@ public class MatMailDbContext : DbContext
     public long? CurrentTenantId => _current.TenantId;
 
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<DirectoryConnection> DirectoryConnections => Set<DirectoryConnection>();
     public DbSet<BackupTarget> BackupTargets => Set<BackupTarget>();
     public DbSet<BackupPlan> BackupPlans => Set<BackupPlan>();
     public DbSet<BackupRun> BackupRuns => Set<BackupRun>();
@@ -112,10 +113,43 @@ public class MatMailDbContext : DbContext
             e.Property(x => x.Density).HasMaxLength(20);
             e.Property(x => x.TimeZone).HasMaxLength(100);
             e.Property(x => x.ReadingPane).HasMaxLength(20);
+            e.Property(x => x.DirectoryDn).HasMaxLength(1000);
+            e.Property(x => x.DirectoryUid).HasMaxLength(100);
+            e.HasIndex(x => new { x.DirectoryId, x.DirectoryUid });
+
+            // A directory that is deleted leaves its people as local users (an administrator gives them a password).
+            e.HasOne(x => x.DirectoryConnection).WithMany().HasForeignKey(x => x.DirectoryId).OnDelete(DeleteBehavior.SetNull);
 
             // Existing users keep seeing the previews they have always seen.
             e.Property(x => x.ShowPreviews).HasDefaultValue(true);
             e.HasMany(x => x.UserRoles).WithOne(x => x.User).HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<DirectoryConnection>(e =>
+        {
+            e.HasIndex(x => new { x.TenantId, x.Name }).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(150);
+            e.Property(x => x.Host).HasMaxLength(255);
+            e.Property(x => x.BindDn).HasMaxLength(1000);
+            e.Property(x => x.BindPasswordProtected).HasMaxLength(2000);
+            e.Property(x => x.BaseDn).HasMaxLength(1000);
+            e.Property(x => x.UserFilter).HasMaxLength(1000);
+            e.Property(x => x.LoginAttribute).HasMaxLength(100);
+            e.Property(x => x.DisplayNameAttribute).HasMaxLength(100);
+            e.Property(x => x.EmailAttribute).HasMaxLength(100);
+            e.Property(x => x.FirstNameAttribute).HasMaxLength(100);
+            e.Property(x => x.LastNameAttribute).HasMaxLength(100);
+            e.Property(x => x.JobTitleAttribute).HasMaxLength(100);
+            e.Property(x => x.PhoneAttribute).HasMaxLength(100);
+            e.Property(x => x.MobileAttribute).HasMaxLength(100);
+            e.Property(x => x.DepartmentAttribute).HasMaxLength(100);
+            e.Property(x => x.AllowedGroupDn).HasMaxLength(1000);
+            e.Property(x => x.LastCheckMessage).HasMaxLength(2000);
+            e.Property(x => x.LastSyncMessage).HasMaxLength(2000);
+            e.Property(x => x.Security).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.GroupLookup).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.CreateUsersOnSignIn).HasDefaultValue(true);
+            e.Property(x => x.CreateMailbox).HasDefaultValue(true);
         });
 
         model.Entity<UserSession>(e =>

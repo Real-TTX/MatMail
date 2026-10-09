@@ -172,6 +172,18 @@ function usedKeys() {
   return keys;
 }
 
+// Resource names are compared without regard to case by the resource compiler ("Duplicate resource name ... is not allowed, ignored"):
+// two keys that differ only in case cannot both be translated, so the code has to use one spelling.
+function caseClashes(keys) {
+  const byLower = new Map();
+  for (const k of keys) {
+    const lower = k.toLowerCase();
+    if (!byLower.has(lower)) byLower.set(lower, []);
+    byLower.get(lower).push(k);
+  }
+  return [...byLower.values()].filter((group) => group.length > 1);
+}
+
 const [command = 'check', ...args] = process.argv.slice(2);
 const existing = readResx(resxPath);
 
@@ -179,6 +191,12 @@ if (command === 'add') {
   const patch = JSON.parse(fs.readFileSync(path.resolve(args[0]), 'utf8'));
   let changed = 0;
   for (const [k, v] of Object.entries(patch)) if (existing.get(k) !== v) { existing.set(k, v); changed++; }
+  const clashes = caseClashes(existing.keys());
+  if (clashes.length) {
+    for (const group of clashes) console.error(`  CASE CLASH  ${group.map((k) => JSON.stringify(k)).join(' / ')}`);
+    console.error('Not written: use one spelling (the resource compiler ignores the second one).');
+    process.exit(1);
+  }
   writeResx(existing);
   console.log(`Merged ${changed} entries; ${existing.size} in total.`);
 } else if (command === 'seed') {
@@ -205,5 +223,7 @@ if (command === 'add') {
   if (args.includes('--unused')) {
     for (const k of existing.keys()) if (!used.has(k)) console.log(`  UNUSED   ${JSON.stringify(k)}`);
   }
-  process.exit(missing.length ? 1 : 0);
+  const clashes = caseClashes(new Set([...used.keys(), ...existing.keys()]));
+  for (const group of clashes) console.log(`  CASE CLASH  ${group.map((k) => JSON.stringify(k)).join(' / ')}   (one spelling only: the resource compiler ignores the second)`);
+  process.exit(missing.length || clashes.length ? 1 : 0);
 }

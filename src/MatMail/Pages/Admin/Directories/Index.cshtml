@@ -1,0 +1,77 @@
+@page "/Admin/Directories"
+@model MatMail.Pages.Admin.Directories.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Directories";
+    ViewData["Description"] = L["Active Directory or another LDAP server: people sign in to the web client, IMAP and SMTP with the password they already have there."].Value;
+}
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, server or base…"]' />
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Enabled"]</option>
+        <option value="inactive">@L["Disabled"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="sync_desc">@L["Last comparison"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No directories yet."]' empty-icon="server">
+    <thead>
+        <tr>
+            <th>@L["Directory"]</th>
+            <th class="hide-sm">@L["Server"]</th>
+            <th>@L["People"]</th>
+            <th class="hide-sm">@L["Last comparison"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var row in Model.Paged.Rows)
+        {
+            DirectoryConnection dir = row.Directory;
+            <tr data-row-href="/Admin/Directories/Edit?id=@dir.Id" tabindex="0">
+                <td>
+                    <div class="cell-title">@dir.Name @if (!dir.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</div>
+                    <div class="cell-sub">@dir.BaseDn</div>
+                </td>
+                <td class="hide-sm">
+                    <span>@dir.Host:@dir.Port</span>
+                    <mm-badge kind="@(dir.Security == DirectorySecurity.None ? "warn" : "muted")">@Model.SecurityLabel(dir.Security)</mm-badge>
+                </td>
+                <td>
+                    @row.Users
+                    @if (row.Blocked > 0) { <mm-badge kind="warn" icon="lock">@string.Format(L["{0} blocked"].Value, row.Blocked)</mm-badge> }
+                </td>
+                <td class="hide-sm">
+                    @if (dir.LastSyncDate is null) { <mm-badge kind="muted">@L["Never"]</mm-badge> }
+                    else if (dir.LastSyncOk == false) { <mm-badge kind="danger" icon="alert">@Fmt.Ago(dir.LastSyncDate)</mm-badge> }
+                    else { <mm-badge kind="ok" icon="check">@Fmt.Ago(dir.LastSyncDate)</mm-badge> }
+                    @if (!string.IsNullOrEmpty(dir.LastSyncMessage)) { <div class="cell-sub" title="@dir.LastSyncMessage">@dir.LastSyncMessage</div> }
+                </td>
+                <td class="is-actions">
+                    <span class="icon-actions">
+                        @if (dir.IsActive)
+                        {
+                            <form method="post" asp-page-handler="Compare" data-no-busy>
+                                <input type="hidden" name="id" value="@dir.Id" />
+                                <button type="submit" class="icon-btn" title="@L["Compare now"]" aria-label="@L["Compare now"]"><mm-icon name="refresh" /></button>
+                            </form>
+                        }
+                        <a class="icon-btn" href="/Admin/Directories/Edit?id=@dir.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                    </span>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Directories/Edit" icon="plus">@L["New directory"]</mm-button>
+</mm-list-actions>

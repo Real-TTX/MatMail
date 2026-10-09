@@ -22,6 +22,9 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
     public bool IsSystemAdmin => currentUser.IsSystemAdmin;
     public CertificateInfo? Certificate => certificates.Describe();
     public IReadOnlyList<MailAccount> AccountProblems { get; private set; } = Array.Empty<MailAccount>();
+
+    /// <summary>Directories that could not be asked at the last comparison: their people cannot sign in until it works again.</summary>
+    public IReadOnlyList<DirectoryConnection> DirectoryProblems { get; private set; } = Array.Empty<DirectoryConnection>();
     public IReadOnlyList<ActivityLog> RecentLogs { get; private set; } = Array.Empty<ActivityLog>();
 
     /// <summary>The newest backup that worked (system administrators only), and whether any schedule exists or the last run of one failed.</summary>
@@ -67,6 +70,13 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
             AccountProblems = await db.MailAccounts.AsNoTracking()
                 .Where(a => a.IsEnabled && a.LastSyncState == SyncState.Error)
                 .OrderBy(a => a.Name).Take(5).ToListAsync();
+        }
+
+        if (Can(Permissions.DirectoriesManage))
+        {
+            DirectoryProblems = await db.DirectoryConnections.AsNoTracking()
+                .Where(d => d.IsActive && (d.LastSyncOk == false || d.LastCheckOk == false))
+                .OrderBy(d => d.Name).Take(5).ToListAsync();
         }
 
         if (Can(Permissions.QueueManage))

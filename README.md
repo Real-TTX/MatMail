@@ -98,6 +98,11 @@ branding.
   logo, accent colour, an own sign-in page at `/t/<name>`)
 - **Roles** with fine-grained permissions; access to somebody else's mailbox is **delegated**
   separately, so administrators do not read mail by default
+- **Active Directory and other LDAP servers**: people sign in with the password they already have –
+  in the web client, in mail programs and for SMTP. The password is checked at the directory and
+  never stored. A mapper fills name, address, title and phone from the directory, a filter and a
+  group say who may sign in, and whoever leaves the company or drops out of the group is blocked at
+  the next comparison and loses their open sessions
 - **Two-factor authentication** with an authenticator app (TOTP) and recovery codes: optional, or
   mandatory for administrators, for a tenant or for the members of a role. Mail programs sign in
   with **app passwords**
@@ -231,6 +236,25 @@ relay* may send without signing in: printers, scanners, internal servers.
 Name, logo and accent colour per tenant, shown in the app, on the tenant's own sign-in page
 (`/t/<name>`) and as `{{Website}}` in signatures.
 
+### Sign in with the company directory
+
+| The connection | Who is a person, and the mapper | Who may sign in |
+|---|---|---|
+| ![A directory: server, encryption, the account that searches](docs/images/admin-directory.png) | ![Base, filter, login attribute and the attributes that fill the user](docs/images/admin-directory-people.png) | ![A group decides who may sign in; what a first-time user gets](docs/images/admin-directory-access.png) |
+
+| Import people | In the list of users |
+|---|---|
+| ![People of the directory, some of them users already](docs/images/admin-directory-import.png) | ![Users that a directory signs in carry a badge](docs/images/admin-users-directory.png) |
+
+Active Directory, OpenLDAP, FreeIPA and the like – plain LDAP, STARTTLS or LDAPS. The connection
+page tests what is in the form (the server, the account, how many people the filter finds) before
+anything is saved. People can be imported with a mailbox and roles, or are made when they sign in
+for the first time; somebody who is a local user already can be switched over. The password is
+always the directory's: it is checked by signing in as the person, so changing it there changes it
+here, and nothing about it is stored. Two-factor authentication stays MatMail's (the directory's
+password, then the code); once it is on, mail programs sign in with app passwords like everybody
+else's.
+
 ### Two-factor authentication
 
 | Set up | Recovery codes | Second step |
@@ -358,7 +382,10 @@ At this point MatMail has no mail yet – which brings us to the interesting par
    *My account → Mail programs* (server, ports, user name).
 5. **Smart host** – let printers and scripts send without signing in (*Delivery → SMTP relay*).
 6. **Signatures, footers, templates** – the look of everything that leaves the building.
-7. **Backups** – a target and a schedule (*System → Backups*), so that the data is saved regularly
+7. **A directory** (optional) – if your people have accounts in Active Directory or another LDAP
+   server, connect it (*People → Directories*, see *Directories in detail* below) and they sign in
+   with the password they have.
+8. **Backups** – a target and a schedule (*System → Backups*), so that the data is saved regularly
    (see *Backup and restore in detail* below).
 
 Worth knowing:
@@ -403,6 +430,7 @@ service:
 | `MATMAIL__Imap__Port` / `ImplicitTlsPort` / `MaxConnections` | `143` / `993` / `500` | IMAP ports, overall connection limit |
 | `MATMAIL__Queue__AllowDirectDelivery` | `true` | deliver directly (MX) when no provider account fits |
 | `MATMAIL__Display__TimeZone` / `Culture` | `Europe/Berlin` / `en-US` | defaults for dates and language (the time zone of the backup schedules) |
+| `MATMAIL__Directories__SyncMinutes` | `60` | how often the users of a directory are compared with it (somebody who left or was disabled loses open sessions then); `0` = never, sign-ins still ask the directory |
 | `MATMAIL__Backup__Enabled` | `true` | scheduled backups on or off (the schedules stay) |
 | `MATMAIL__Backup__TempDirectory` | `/data/tmp` | where a backup is written before it goes to its target (needs room for the backup, twice when it is encrypted) |
 | `MATMAIL_RESTORE_FROM`, `MATMAIL_RESTORE_PASSPHRASE` | – | restore this backup file when the installation is still empty (see below) |
@@ -413,7 +441,7 @@ service:
 
 *Administration*, at the bottom of the sidebar right above your account, opens the admin area –
 dashboard, mailboxes, domains, connected accounts, signatures, templates, unassigned mail, users,
-roles, SMTP relay, queue, activity log, branding, security, server settings and tenants; everybody
+roles, directories, SMTP relay, queue, activity log, branding, security, server settings and tenants; everybody
 sees what their role allows. For production, look at **Administration → Security** first: it
 decides whether two-factor authentication is optional, mandatory for the administrators or
 mandatory for everybody in the tenant. Whoever administers several tenants switches between them
@@ -429,6 +457,41 @@ in the account menu.
 - **A lost second factor:** an administrator resets it on the user's page (*People → Users*). If the
   only administrator lost the phone and the recovery codes:
   `DELETE FROM "UserTotp" WHERE "UserId" = (SELECT "Id" FROM "User" WHERE "LoginName" = '…');`
+
+### Directories in detail
+
+**Connecting.** *People → Directories → New directory.* Start from the usual values for Active
+Directory, OpenLDAP or FreeIPA, then fill in the server, the encryption (STARTTLS on 389 or LDAPS
+on 636; plain LDAP only inside a network nobody can listen to), the account that searches (a
+read-only service account is enough) and the base. *Test connection* says how many people the
+filter finds before anything is saved. For Active Directory that is, for example: server
+`dc1.example.com`, LDAPS on 636, account `svc-matmail@example.com`, base `dc=example,dc=com`, filter
+`(&(objectCategory=person)(objectClass=user))`, login attribute `sAMAccountName` (or
+`userPrincipalName`), and as group `cn=Mail,ou=Groups,dc=example,dc=com` with *nested groups* on
+when people sit in groups inside it. A server that presents its own certificate needs the
+checkbox for it (or its certificate in the trust store of the container).
+
+**Signing in.** A login that is no user here yet is looked up in the directories that let people
+create themselves; when the password is right – checked by signing in at the directory as that
+person – the user is made, with the roles and the mailbox the directory names. For a user of a
+directory the password is always checked at the directory and never stored here; IMAP and SMTP
+remember a success for two minutes, because mail programs sign in again for every folder. A login
+name that exists on this server already always belongs to that user, so a local user is never taken
+over by accident (*Import people* can switch one over on purpose).
+
+**Who may sign in.** The filter, and the group when there is one. The comparison – every hour, and
+with *Compare now* – blocks whoever is gone from the directory, disabled in it (Active Directory:
+`userAccountControl`) or outside the group: they cannot sign in any more and their sessions end at
+once; the next comparison lets them in again when the directory does. A directory that cannot be
+reached changes nothing.
+
+**Good to know.** MatMail only reads the directory; it never changes a password or an entry. After
+five wrong passwords for somebody who has no user here yet it stops asking the directory about that
+login for a quarter of an hour (the same five as the lockout of its own users), so that nobody can
+lock your people out of their company accounts through the web client: keep the lockout threshold
+of the directory above five. Deleting a directory leaves the users it made, but nobody can sign in
+as them until an administrator gives them a password. Name, address, title and phone are taken
+from the directory at every sign-in; a field the directory has no attribute for stays as it is.
 
 ### Backup and restore in detail
 
@@ -515,7 +578,7 @@ The mail itself lives in the PostgreSQL volume. A backup contains both.
 | Reading pane, conversation view | The reader beside or below the list, threads as one row (per user) | ✅ |
 | Tenant switcher for ordinary users | Needs "member of several tenants" first | open question |
 | `.eml` / `.msg` files | Drop a file in to read it and keep it, drag a message out | ✅ |
-| AD / LDAP | Directory sign-in with attribute mapping and a selection of who may sign in | later |
+| AD / LDAP | Directories per tenant: sign-in with the password of Active Directory or another LDAP server, a mapper, a group that says who may sign in, import, a comparison that blocks whoever left | ✅ |
 
 The wishes in the order they are worked on, and the reasoning behind them, live in
 [BACKLOG.md](BACKLOG.md).
@@ -532,7 +595,8 @@ dotnet test MatMail.slnx
 Most tests need a PostgreSQL server (`MATMAIL_TEST_DB`, e.g. the database of the dev stack) and are
 skipped without it; the synchronisation tests also need a GreenMail test server
 (`MATMAIL_TEST_IMAP`, see `tests/MatMail.Tests/Support/TestProvider.cs`), the tests of the SMB targets a Samba
-server (`MATMAIL_TEST_SMB`, see `tests/MatMail.Tests/Support/TestSmb.cs`). The CI starts all three.
+server (`MATMAIL_TEST_SMB`, see `tests/MatMail.Tests/Support/TestSmb.cs`), the tests of the directories an OpenLDAP
+(`MATMAIL_TEST_LDAP`, see `tests/MatMail.Tests/Support/TestLdap.cs`). The CI starts all four.
 
 UI text is English in the source; German lives in `src/MatMail/Resources/SharedResource.de.resx`
 (`node tools/i18n.mjs check` lists what is missing). [`CLAUDE.md`](CLAUDE.md) describes the
@@ -547,7 +611,8 @@ architecture and the project rules.
   written for MatMail
 - Foreign HTML goes through **HtmlSanitizer** and a sandboxed frame; MX lookups use **DnsClient**;
   the QR code of the authenticator app is drawn on the server with **QRCoder**; backups reach a NAS
-  through **SMBLibrary**, no mount needed
+  through **SMBLibrary**, no mount needed; directories are asked with **Novell.Directory.Ldap**
+  (pure .NET, no native LDAP library in the image)
 - Provider passwords and the secrets of the authenticator apps are encrypted with ASP.NET
   **Data Protection**
 - Runs entirely in **Docker**

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MatMail.Data;
+using MatMail.Directories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -71,6 +72,7 @@ public sealed class SignInService
     private readonly ActivityLogger _log;
     private readonly TwoFactorPolicy _twoFactor;
     private readonly AppPasswordService _appPasswords;
+    private readonly DirectoryProvisioner _directories;
 
     // Verified against when the login name is unknown, so "no such user" costs as much time as "wrong password".
     private static readonly User TimingUser = new() { LoginName = "timing" };
@@ -83,7 +85,8 @@ public sealed class SignInService
         SessionCache cache,
         ActivityLogger log,
         TwoFactorPolicy twoFactor,
-        AppPasswordService appPasswords)
+        AppPasswordService appPasswords,
+        DirectoryProvisioner directories)
     {
         _db = db;
         _http = http;
@@ -92,6 +95,7 @@ public sealed class SignInService
         _log = log;
         _twoFactor = twoFactor;
         _appPasswords = appPasswords;
+        _directories = directories;
     }
 
     public static string NormalizeLoginName(string? value) => (value ?? string.Empty).Trim().ToLowerInvariant();
@@ -141,6 +145,15 @@ public sealed class SignInService
         DateTime now = DateTime.UtcNow;
 
         User? user = name.Length == 0 ? null : await FindUserAsync(name);
+
+        // Nobody of this name here: a directory may know them (and then lets them in with their password, which is checked right there).
+        bool verifiedByDirectory = false;
+        if (user is null && name.Length > 0 && await _directories.AnyOpenDirectoryAsync())
+        {
+            user = await _directories.SignInNewAsync(name, password, remoteIp);
+            verifiedByDirectory = user is not null;
+        }
+
         if (user is null)
         {
             _timingHash ??= _hasher.HashPassword(TimingUser, "timing-only-password");
@@ -156,9 +169,11 @@ public sealed class SignInService
         }
 
         TwoFactorStatus twoFactor = await _twoFactor.GetStatusAsync(user);
-        CredentialCheck check = purpose == SignInPurpose.Protocol
-            ? await CheckProtocolCredentialsAsync(user, password, twoFactor)
-            : new CredentialCheck(_hasher.VerifyHashedPassword(user, user.PasswordHash, password));
+        CredentialCheck check = verifiedByDirectory
+            ? new CredentialCheck(PasswordVerificationResult.Success)
+            : purpose == SignInPurpose.Protocol
+                ? await CheckProtocolCredentialsAsync(user, password, twoFactor)
+                : new CredentialCheck(await VerifyPasswordAsync(user, password, mayRemember: false));
         if (!check.Accepted)
         {
             // A right password that the protocol does not take any more (two-factor authentication came) is no guess: counting it would
@@ -203,6 +218,20 @@ public sealed class SignInService
     }
 
     /// <summary>
+    /// The password of the person: checked against the hash here, or – for somebody a directory signs in – by the directory.
+    /// <paramref name="mayRemember"/>: a success of the last minutes counts (IMAP and SMTP clients sign in all the time).
+    /// </summary>
+    private async Task<PasswordVerificationResult> VerifyPasswordAsync(User user, string password, bool mayRemember)
+    {
+        if (user.DirectoryId is null)
+        {
+            return _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        }
+
+        return await _directories.VerifyAsync(user, password, mayRemember) ? PasswordVerificationResult.Success : PasswordVerificationResult.Failed;
+    }
+
+    /// <summary>
     /// IMAP and SMTP: an app password is always good. The account password only counts while two-factor authentication is neither on nor
     /// required, because these protocols cannot ask for a code. The same work is done whatever the user has, so the time taken says
     /// nothing about it (and the answer to the client is the same too).
@@ -215,7 +244,7 @@ public sealed class SignInService
             return new CredentialCheck(PasswordVerificationResult.Success, SignInMethod.AppPassword, appPassword);
         }
 
-        PasswordVerificationResult verification = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        PasswordVerificationResult verification = await VerifyPasswordAsync(user, password, mayRemember: true);
         return verification != PasswordVerificationResult.Failed && twoFactor.ProtocolsNeedAppPassword
             ? new CredentialCheck(PasswordVerificationResult.Failed, PasswordRefused: true)
             : new CredentialCheck(verification);
@@ -240,7 +269,7 @@ public sealed class SignInService
     public async Task<bool> CanSignInAsync(User user)
     {
         bool tenantActive = await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && t.IsActive);
-        return user.IsActive && (tenantActive || user.IsSystemAdmin);
+        return user.IsActive && user.DirectoryDisabledDate is null && (tenantActive || user.IsSystemAdmin);
     }
 
     /// <summary>
@@ -277,7 +306,7 @@ public sealed class SignInService
             return LockedMessage;
         }
 
-        if (_hasher.VerifyHashedPassword(user, user.PasswordHash, password ?? string.Empty) != PasswordVerificationResult.Failed)
+        if (await VerifyPasswordAsync(user, password ?? string.Empty, mayRemember: false) != PasswordVerificationResult.Failed)
         {
             return null;
         }
@@ -352,7 +381,7 @@ public sealed class SignInService
         }
 
         User? user = await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == session.UserId);
-        if (user is null || !user.IsActive)
+        if (user is null || !user.IsActive || user.DirectoryDisabledDate is not null)
         {
             return null;
         }

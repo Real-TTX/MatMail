@@ -53,6 +53,25 @@
         </section>
     }
 
+    @if (Model.DirectoryProblems.Count > 0)
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="alert" />@L["Directories with problems"]</h2>
+            <mm-table item-count="Model.DirectoryProblems.Count">
+                <thead><tr><th>@L["Directory"]</th><th>@L["Problem"]</th></tr></thead>
+                <tbody>
+                    @foreach (var directory in Model.DirectoryProblems)
+                    {
+                        <tr data-row-href="/Admin/Directories/Edit?id=@directory.Id">
+                            <td class="cell-title">@directory.Name</td>
+                            <td class="cell-sub">@(directory.LastSyncOk == false ? directory.LastSyncMessage : directory.LastCheckMessage)</td>
+                        </tr>
+                    }
+                </tbody>
+            </mm-table>
+        </section>
+    }
+
     @if (Model.Can(Permissions.LogsView))
     {
         <section class="card">

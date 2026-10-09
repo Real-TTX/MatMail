@@ -25,12 +25,30 @@
         </mm-tab-panel>
 
         <mm-tab-panel title='@L["Access"]' icon="shield">
-            <mm-form-section title='@L["Password"]' icon="key">
-                <mm-field asp-for="Input.Password" kind="password" label='@(Model.IsEdit ? L["New password"].Value : L["Password"].Value)'
-                          autocomplete="new-password" reveal="true"
-                          help='@(Model.IsEdit ? L["Leave empty to keep the current password."].Value : L["At least 10 characters."].Value)' />
-                <mm-field asp-for="Input.MustChangePassword" kind="checkbox" label='@L["The user must choose a new password at the next sign-in"]' />
-            </mm-form-section>
+            @if (Model.DirectoryUser is { } directory)
+            {
+                <mm-form-section title='@L["Password"]' icon="key">
+                    <div class="notice notice--@(directory.BlockedSince is null ? "info" : "warn")">
+                        <mm-icon name="@(directory.BlockedSince is null ? "server" : "lock")" class="notice__icon" />
+                        <span class="notice__text">
+                            @string.Format(L["Signs in through the directory “{0}”: the password is the one of the directory and is changed there. Name and contact data are taken over from the directory."].Value, directory.Name)
+                            @if (directory.BlockedSince is not null)
+                            {
+                                <b> @string.Format(L["Blocked since {0}: the directory no longer has the person, has disabled them or no longer lets them in."].Value, Fmt.DateTimeText(directory.BlockedSince))</b>
+                            }
+                        </span>
+                    </div>
+                </mm-form-section>
+            }
+            else
+            {
+                <mm-form-section title='@L["Password"]' icon="key">
+                    <mm-field asp-for="Input.Password" kind="password" label='@(Model.IsEdit ? L["New password"].Value : L["Password"].Value)'
+                              autocomplete="new-password" reveal="true"
+                              help='@(Model.IsEdit ? L["Leave empty to keep the current password."].Value : L["At least 10 characters."].Value)' />
+                    <mm-field asp-for="Input.MustChangePassword" kind="checkbox" label='@L["The user must choose a new password at the next sign-in"]' />
+                </mm-form-section>
+            }
 
             <mm-form-section title='@L["Permissions"]' icon="shield">
                 <mm-picker asp-for="Input.RoleIds" asp-items="Model.RoleItems" multiple="true" label='@L["Roles"]'

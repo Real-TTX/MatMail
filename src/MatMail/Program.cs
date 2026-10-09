@@ -4,6 +4,7 @@ using MatMail.Api;
 using MatMail.Backup;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.Directories;
 using MatMail.MailServer.Imap;
 using MatMail.MailServer.Smtp;
 using MatMail.MailSync;
@@ -74,6 +75,7 @@ builder.Services.AddSmtpServer();
 builder.Services.AddHostedService<MaintenanceService>();
 builder.Services.AddHostedService<PushNotifier>();
 builder.Services.AddHostedService<BackupScheduler>();
+builder.Services.AddHostedService<DirectorySyncService>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
@@ -151,6 +153,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Unassigned", Permissions.UnassignedManage);
         options.Conventions.AuthorizeFolder("/Admin/Branding", Permissions.BrandingManage);
         options.Conventions.AuthorizeFolder("/Admin/Security", Permissions.SecurityManage);
+        options.Conventions.AuthorizeFolder("/Admin/Directories", Permissions.DirectoriesManage);
         options.Conventions.AuthorizePage("/Mail/Index", Permissions.MailUse);
     })
     .AddViewLocalization()

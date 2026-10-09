@@ -1,0 +1,89 @@
+@page "/Admin/Directories/Import"
+@model MatMail.Pages.Admin.Directories.ImportModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Directories / Import people";
+    ViewData["Title"] = Model.Connection?.Name ?? L["Import people"].Value;
+    ViewData["Description"] = L["People of the directory who have no user yet can be made users now, with a mailbox and rights, before they sign in the first time."].Value;
+}
+
+<mm-toolbar count="Model.People.Count">
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, login or e-mail…"]' />
+</mm-toolbar>
+
+<mm-form>
+    <mm-table item-count="Model.People.Count" empty-text='@L["Nobody found."]' empty-icon="users">
+        <thead>
+            <tr>
+                <th class="is-check"><input type="checkbox" data-select-all aria-label='@L["Select all"]' /></th>
+                <th>@L["Person"]</th>
+                <th class="hide-sm">@L["Login name"]</th>
+                <th>@L["Status"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Model.People)
+            {
+                <tr>
+                    <td class="is-check">
+                        <input type="checkbox" name="Input.Selected" value="@row.Person.Login" data-select-row
+                               disabled="@(row.State is MatMail.Pages.Admin.Directories.ImportModel.PersonState.Imported or MatMail.Pages.Admin.Directories.ImportModel.PersonState.Taken)"
+                               aria-label="@row.Person.DisplayName" />
+                    </td>
+                    <td>
+                        <div class="cell-title">@row.Person.DisplayName @if (row.Person.Disabled) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</div>
+                        <div class="cell-sub">@row.Person.Email</div>
+                    </td>
+                    <td class="hide-sm">@row.Person.Login</td>
+                    <td>
+                        @switch (row.State)
+                        {
+                            case MatMail.Pages.Admin.Directories.ImportModel.PersonState.Imported:
+                                <mm-badge kind="ok" icon="check">@L["Is a user"]</mm-badge>
+                                break;
+                            case MatMail.Pages.Admin.Directories.ImportModel.PersonState.Local:
+                                <mm-badge kind="info">@L["Local user"]</mm-badge>
+                                break;
+                            case MatMail.Pages.Admin.Directories.ImportModel.PersonState.Taken:
+                                <mm-badge kind="warn">@L["Login name in use"]</mm-badge>
+                                break;
+                            default:
+                                <mm-badge kind="muted">@L["New"]</mm-badge>
+                                break;
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </mm-table>
+    @if (Model.Truncated)
+    {
+        <p class="form-help">@string.Format(L["The first {0} people are shown. Narrow the search to find the others."].Value, MatMail.Pages.Admin.Directories.ImportModel.Limit)</p>
+    }
+
+    <mm-form-section title='@L["What they get"]' icon="user-plus">
+        <mm-picker asp-for="Input.RoleIds" asp-items="Model.RoleItems" multiple="true" label='@L["Roles"]'
+                   placeholder='@L["Add role…"]' help='@L["Empty: the role “User”."]' />
+        <mm-field asp-for="Input.CreateMailbox" kind="checkbox"
+                  label='@L["A personal mailbox, with the address of the directory when it is one of the domains of the tenant"]' />
+        <mm-field asp-for="Input.SwitchExisting" kind="checkbox"
+                  label='@L["People who are local users already (same login name) sign in through the directory from now on: their old password stops working"]' />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="user-plus">@L["Import selected"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Directories/Edit?id=@Model.Id" icon="arrow-left">@L["Back"]</mm-button>
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        (function () {
+          var all = document.querySelector("[data-select-all]");
+          if (!all) { return; }
+          all.addEventListener("change", function () {
+            document.querySelectorAll("[data-select-row]:not(:disabled)").forEach(function (box) { box.checked = all.checked; });
+          });
+        })();
+    </script>
+}

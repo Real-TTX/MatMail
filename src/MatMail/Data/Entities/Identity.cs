@@ -94,6 +94,20 @@ public class User : AuditedEntity, ITenantEntity
     /// <summary>The list shows conversations (all messages of a thread as one row) instead of single messages.</summary>
     public bool ConversationView { get; set; }
 
+    /// <summary>The directory (Active Directory, LDAP) that signs this person in; null: a local user with a password of their own.</summary>
+    public long? DirectoryId { get; set; }
+    public DirectoryConnection? DirectoryConnection { get; set; }
+
+    /// <summary>The distinguished name of the entry in the directory as last seen (it changes when the person is moved there) and its stable id.</summary>
+    public string? DirectoryDn { get; set; }
+    public string? DirectoryUid { get; set; }
+
+    /// <summary>
+    /// Set when a comparison with the directory found the person gone, disabled or no longer allowed: they cannot sign in until the directory
+    /// lets them in again (the next comparison clears it).
+    /// </summary>
+    public DateTime? DirectoryDisabledDate { get; set; }
+
     public DateTime? LastLoginDate { get; set; }
     public int FailedLoginCount { get; set; }
     public DateTime? LockedUntilDate { get; set; }

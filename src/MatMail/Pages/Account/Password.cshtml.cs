@@ -1,15 +1,20 @@
 using System.Security.Claims;
+using MatMail.Data;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Account;
 
-public class PasswordModel(SignInService signIn, UserService users, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
+public class PasswordModel(MatMailDbContext db, SignInService signIn, UserService users, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    /// <summary>The directory (Active Directory, LDAP) that signs this user in: then the password is changed there, not here.</summary>
+    public string? DirectoryName { get; private set; }
 
     public class InputModel
     {
@@ -18,12 +23,16 @@ public class PasswordModel(SignInService signIn, UserService users, CurrentUser 
         public string Repeat { get; set; } = string.Empty;
     }
 
-    public void OnGet()
-    {
-    }
+    public async Task OnGetAsync() => await LoadAsync();
 
     public async Task<IActionResult> OnPostAsync()
     {
+        await LoadAsync();
+        if (DirectoryName is not null)
+        {
+            return Page();
+        }
+
         string? loginName = currentUser.Username;
         SignInOutcome check = await signIn.ValidateCredentialsAsync(loginName, Input.Current, HttpContext.ClientAddress());
         if (!check.Succeeded)
@@ -57,4 +66,7 @@ public class PasswordModel(SignInService signIn, UserService users, CurrentUser 
         this.Notify(l["Your password was changed."].Value);
         return Redirect("/Account/Password");
     }
+
+    private async Task LoadAsync()
+        => DirectoryName = await db.Users.AsNoTracking().Where(u => u.Id == currentUser.UserId && u.DirectoryId != null).Select(u => u.DirectoryConnection!.Name).FirstOrDefaultAsync();
 }

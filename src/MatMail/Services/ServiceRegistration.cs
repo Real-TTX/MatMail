@@ -1,6 +1,7 @@
 using MatMail.Backup;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.Directories;
 using MatMail.Messaging;
 using MatMail.Push;
 using Microsoft.AspNetCore.Identity;
@@ -36,6 +37,11 @@ public static class ServiceRegistration
         services.AddScoped<ThemeService>();
         services.AddScoped<TwoFactorPolicy>();
         services.AddScoped<AppPasswordService>();
+        services.AddSingleton<DirectoryPasswordCache>();
+        services.AddSingleton<DirectoryAttemptLimiter>();
+        services.AddSingleton<IDirectoryClientFactory, LdapDirectoryClientFactory>();
+        services.AddScoped<DirectoryService>();
+        services.AddScoped<DirectoryProvisioner>();
         services.AddScoped<SignInService>();
         services.AddScoped<TwoFactorService>();
         services.AddScoped<SessionCookieEvents>();

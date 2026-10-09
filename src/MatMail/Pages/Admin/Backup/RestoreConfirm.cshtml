@@ -70,7 +70,7 @@ else if (Model.Error is not null)
 }
 else if (Model.Problem is null)
 {
-    <mm-form>
+    <mm-form class="card--spaced">
         <input type="hidden" name="target" value="@Model.Target" />
         <input type="hidden" name="file" value="@Model.FileName" />
         <input type="hidden" name="upload" value="@Model.Upload" />

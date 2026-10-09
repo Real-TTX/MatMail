@@ -7,7 +7,7 @@
 **A mail gateway with its own web client – for the mailboxes you already have.**
 
 Connected provider accounts, web client, IMAP and SMTP for Outlook and Thunderbird, smart host,
-signatures, templates, tenants and two-factor sign-in.
+signatures, templates, tenants, two-factor sign-in and complete backups to a NAS.
 Docker and PostgreSQL, no cloud, no third-party services.
 
 </div>
@@ -94,6 +94,23 @@ branding.
 - Sessions live in the database and survive restarts, failed sign-ins are throttled, an **activity
   log** covers sign-ins, SMTP, IMAP, synchronisation and the queue
 - English and German, English by default
+
+**Backups and restore**
+- **A complete backup of everything**: every table of the database and every file of the data volume
+  (configuration, keys, certificates), taken from one consistent snapshot while MatMail keeps running.
+  Nothing is listed by hand, so what future versions add is in it too
+- **Schedules**: every few hours, daily, weekly or monthly; the newest *N* are kept, plus one per day,
+  week and month if you want; a failed run is tried again and the administrators get a message in
+  their mailbox
+- **Targets**: a folder of the server (a mounted disk or share) or a **network share (NAS) over SMB**.
+  The SMB client is built in – nothing has to be mounted, and the password is stored encrypted
+- **Encrypted** with a passphrase if you like (AES-256); every part carries a checksum that is checked
+  when it is written and again when it is read
+- **Restore** from the web interface, from a file you upload, on the **setup page of a new
+  installation**, with an environment variable when a new server comes up, or from the command line.
+  Backups of **earlier versions** restore too (the database is migrated up to the current version);
+  one from a newer version is refused. The current state is saved first, and a restore that fails
+  changes nothing
 
 ## Screenshots
 
@@ -198,6 +215,22 @@ Every user finds server, ports and user name one click away. Mail programs canno
 while two-factor authentication is on they sign in with an **app password** – one per device, shown
 once, revocable, valid for IMAP and SMTP only.
 
+### Backups to a NAS
+
+| The history | A schedule | A NAS as target |
+|---|---|---|
+| ![Backups with their history](docs/images/admin-backups.png) | ![A schedule: when, how many are kept, encrypted](docs/images/admin-backup-schedule.png) | ![A network share as target, with a connection test](docs/images/admin-backup-target.png) |
+
+| Restore from the NAS | Before anything is replaced |
+|---|---|
+| ![The backups on the share, newest first](docs/images/admin-backup-restore.png) | ![What is restored, and the options of the restore](docs/images/admin-backup-confirm.png) |
+
+A schedule says when a backup is made, where it goes and how long it is kept. A target is a folder of
+the server or a share on the NAS, which MatMail reaches itself (SMB 2 or 3). Backups are written in
+scratch space, checked, sent to the target under a temporary name and renamed when complete. A restore
+shows what a backup holds before it replaces anything, saves the current state first, and when the
+backup is damaged or does not fit it stops and leaves everything as it was.
+
 ### Administration in one place
 
 | Dashboard | Mailboxes | Activity log |
@@ -289,6 +322,8 @@ At this point MatMail has no mail yet – which brings us to the interesting par
    *My account → Mail programs* (server, ports, user name).
 5. **Smart host** – let printers and scripts send without signing in (*Delivery → SMTP relay*).
 6. **Signatures, footers, templates** – the look of everything that leaves the building.
+7. **Backups** – a target and a schedule (*System → Backups*), so that the data is saved regularly
+   (see *Backup and restore in detail* below).
 
 Worth knowing:
 
@@ -331,7 +366,10 @@ service:
 | `MATMAIL__Smtp__Port` / `SubmissionPort` / `ImplicitTlsPort` | `25` / `587` / `465` | SMTP ports |
 | `MATMAIL__Imap__Port` / `ImplicitTlsPort` / `MaxConnections` | `143` / `993` / `500` | IMAP ports, overall connection limit |
 | `MATMAIL__Queue__AllowDirectDelivery` | `true` | deliver directly (MX) when no provider account fits |
-| `MATMAIL__Display__TimeZone` / `Culture` | `Europe/Berlin` / `en-US` | defaults for dates and language |
+| `MATMAIL__Display__TimeZone` / `Culture` | `Europe/Berlin` / `en-US` | defaults for dates and language (the time zone of the backup schedules) |
+| `MATMAIL__Backup__Enabled` | `true` | scheduled backups on or off (the schedules stay) |
+| `MATMAIL__Backup__TempDirectory` | `/data/tmp` | where a backup is written before it goes to its target (needs room for the backup, twice when it is encrypted) |
+| `MATMAIL_RESTORE_FROM`, `MATMAIL_RESTORE_PASSPHRASE` | – | restore this backup file when the installation is still empty (see below) |
 | `MATMAIL_ADMIN_USER`, `MATMAIL_ADMIN_PASSWORD` | – | create the first tenant and administrator unattended |
 | `MATMAIL_DATA` | `/data` | data directory |
 
@@ -348,11 +386,69 @@ in the account menu.
 ### Updates, backups and a lost second factor
 
 - **Updates:** `docker compose pull && docker compose up -d`. The database is migrated on start.
-- **Backups:** the database volume (the mail) and the data volume (`/data`, see below). Keep
-  `/data/keys`: it protects the stored provider passwords and the secrets of the authenticator apps.
+- **Backups:** *System → Backups* (see below). A backup holds the database and the data volume as a
+  whole, including `/data/keys`, which protects the stored provider passwords and the secrets of the
+  authenticator apps: treat backup files like the secrets they contain, and encrypt them when they leave
+  the server.
 - **A lost second factor:** an administrator resets it on the user's page (*People → Users*). If the
   only administrator lost the phone and the recovery codes:
   `DELETE FROM "UserTotp" WHERE "UserId" = (SELECT "Id" FROM "User" WHERE "LoginName" = '…');`
+
+### Backup and restore in detail
+
+**What is in a backup.** One zip file: every table of the database as a PostgreSQL binary export (read in
+a single consistent snapshot), every file of the data volume except `tmp/`, `backups/` and `restore/`,
+and a manifest with the size and SHA-256 of every part, the version of the database and the version of
+the program that made it. Nothing is listed by hand: a new table or a new file is part of the next
+backup without anybody remembering to add it. What is *not* in it: mail that only exists at a provider
+(accounts with *live access* store nothing here), and anything outside PostgreSQL and `/data` – the one
+rule of the project is that there is nothing else, apart from places you point the configuration to
+yourself (a certificate folder on another volume, say).
+
+**Versions.** The schema of the database (EF Core migrations), the layout of the files (numbered steps
+in the program) and the format of the backup each have a version. A backup of an older version is
+restored by building the schema it had, loading the data, and then migrating it forward exactly like an
+update would; a program never touches data of a newer version. The restore is **one database
+transaction**: a damaged or incompatible backup, a failing step or a full disk changes nothing.
+
+**Schedules and targets.** *System → Backups* has the overview (what runs, the history, warnings), the
+schedules (hourly, daily, weekly or monthly in the time zone of the server; keep the newest *N*, one per
+day, per week, per month), the targets and the restore. A target is a folder (outside `/data`, or inside
+`/data/backups`) or a folder on an SMB share: server, share, folder, user and password; *Test
+connection* writes and removes a small file. The SMB client speaks SMB 2.0.2 to 3.0.2 on port 445 and signs
+and encrypts when the server or the share requires it (a server that only offers SMB 1 or only SMB 3.1.1
+cannot be used). Old backups are removed by a schedule only from its own files – several MatMail
+installations may share one folder on the NAS.
+
+**Restoring.** A running MatMail does not replace its own data: the web interface checks the backup (and
+reads all of it, if you ask), leaves a request and stops the program; Docker starts it again
+(`restart: unless-stopped`, as in the compose file above), the start-up restores while a progress page
+answers on the same port, and MatMail comes back. Before anything is replaced the current state is saved
+in `backups/` (the last three are kept). Outgoing mail that was queued when the backup was made is put
+on *failed* with a note (it may have been sent since), IMAP clients load their folders again, and how
+the server is deployed – the database connection and the `Server` settings (ports, HTTPS) – is kept,
+so a restore can never make it unreachable.
+
+- **A new installation** shows *Or restore a backup* on its setup page: upload the file (and give the
+  passphrase), and the users, mailboxes, settings and keys come back.
+- **A new server, unattended:** mount the backup and set `MATMAIL_RESTORE_FROM` (and
+  `MATMAIL_RESTORE_PASSPHRASE` for an encrypted one); the file is restored when the installation is still
+  empty and ignored afterwards:
+
+  ```yaml
+  matmail:
+    environment:
+      MATMAIL_RESTORE_FROM: /restore/matmail-backup.zip
+    volumes:
+      - ./matmail-backup.zip:/restore/matmail-backup.zip:ro
+  ```
+
+- **From the command line**, for a stopped installation or a cron job:
+  `docker compose exec matmail dotnet MatMail.dll --backup /data/backups/` makes a backup of a running one;
+  `docker compose run --rm matmail dotnet MatMail.dll --restore /data/backups/<file>` restores one
+  (`--passphrase-env NAME` reads the passphrase from an environment variable, `--force` ignores other
+  connections to the database, `--no-safety-backup` and `--keep-queue` leave out the safety copy and the
+  hold on queued mail).
 
 ### The `/data` volume
 
@@ -361,10 +457,12 @@ in the account menu.
 ├─ config/         app.json – what Server settings edits
 ├─ keys/           DataProtection keys (sessions, stored passwords, authenticator secrets)
 ├─ certs/          the TLS certificate: self-signed on the first start, or your own
-└─ tmp/            attachments of messages that are being written
+├─ backups/        the default folder for backups, and the copies made before a restore
+├─ restore/        a request for a restore, uploaded backups, how the last restore ended
+└─ tmp/            scratch space: attachments being written, backups being made
 ```
 
-The mail itself lives in the PostgreSQL volume.
+The mail itself lives in the PostgreSQL volume. A backup contains both.
 
 ## Status
 
@@ -377,6 +475,7 @@ The mail itself lives in the PostgreSQL volume.
 | Tenants and rights | Tenants, roles, delegation, branding per tenant | ✅ |
 | Two-factor authentication | Authenticator app, recovery codes, app passwords, enforced per tenant or role | ✅ |
 | Look and language | Theme, accent, text size, density, time zone per user; English and German | ✅ |
+| Backups | Complete backups of database and files, schedules with retention, folder and SMB (NAS) targets, encryption, restore (also of earlier versions) | ✅ |
 | Reading pane, conversation view | More list options for the web client | planned |
 | Tenant switcher for ordinary users | Needs "member of several tenants" first | open question |
 | `.eml` / `.msg` files | Drag a file in to view it, drag a message out | later |
@@ -396,7 +495,8 @@ dotnet test MatMail.slnx
 
 Most tests need a PostgreSQL server (`MATMAIL_TEST_DB`, e.g. the database of the dev stack) and are
 skipped without it; the synchronisation tests also need a GreenMail test server
-(`MATMAIL_TEST_IMAP`, see `tests/MatMail.Tests/Support/TestProvider.cs`). The CI starts both.
+(`MATMAIL_TEST_IMAP`, see `tests/MatMail.Tests/Support/TestProvider.cs`), the tests of the SMB targets a Samba
+server (`MATMAIL_TEST_SMB`, see `tests/MatMail.Tests/Support/TestSmb.cs`). The CI starts all three.
 
 UI text is English in the source; German lives in `src/MatMail/Resources/SharedResource.de.resx`
 (`node tools/i18n.mjs check` lists what is missing). [`CLAUDE.md`](CLAUDE.md) describes the
@@ -410,7 +510,8 @@ architecture and the project rules.
 - **MailKit / MimeKit** towards the providers; the **IMAP and SMTP servers** of the gateway are
   written for MatMail
 - Foreign HTML goes through **HtmlSanitizer** and a sandboxed frame; MX lookups use **DnsClient**;
-  the QR code of the authenticator app is drawn on the server with **QRCoder**
+  the QR code of the authenticator app is drawn on the server with **QRCoder**; backups reach a NAS
+  through **SMBLibrary**, no mount needed
 - Provider passwords and the secrets of the authenticator apps are encrypted with ASP.NET
   **Data Protection**
 - Runs entirely in **Docker**

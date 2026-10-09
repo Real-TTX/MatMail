@@ -335,7 +335,9 @@ code { background: var(--color-surface-alt); border-radius: 4px; padding: 0.1em 
 .auth-brand__mark { border-radius: 10px; }
 .auth-brand__text { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
 .auth-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-md); }
+.auth-card--spaced { margin-top: 1rem; }
 .auth-card h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+.auth-card h2 { font-size: 1.1rem; margin-bottom: 0.25rem; }
 .auth-card__lead { color: var(--color-text-muted); margin-bottom: 1.25rem; }
 .auth-version { margin-top: 0.75rem; text-align: center; font-size: 0.78rem; color: var(--color-text-faint); }
 .lang-switch { display: flex; justify-content: center; gap: 0.25rem; margin-top: 1.25rem; }

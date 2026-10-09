@@ -29,7 +29,7 @@
     </mm-form-section>
 
     <mm-form-section title='@L["Network share (SMB)"]' icon="network" show-when-field="Input.Kind" show-when-value="Smb"
-                     description='@L["MatMail connects to the share itself (SMB 2 or 3, port 445): nothing has to be mounted. The server must not demand encrypted connections (SMB 3 encryption)."]'>
+                     description='@L["MatMail connects to the share itself (SMB 2.0.2 to 3.0.2, port 445, signed and encrypted when the server asks for it): nothing has to be mounted."]'>
         <div class="form-grid">
             <mm-field asp-for="Input.Host" label='@L["Server"]' placeholder="nas.local" autocomplete="off" />
             <mm-field asp-for="Input.Share" label='@L["Share"]' placeholder="backups" autocomplete="off" />

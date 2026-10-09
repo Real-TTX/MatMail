@@ -272,6 +272,58 @@ public class SmbBackupPlanTests : IAsyncLifetime
     }
 
     [SmbDbFact]
+    public async Task A_backup_on_a_share_is_fetched_before_a_restore_is_prepared()
+    {
+        SmbTargetOptions options = TestSmb.Options();
+        long targetId;
+        long planId;
+        using (IServiceScope scope = _host.Scope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            var plan = new BackupPlan
+            {
+                Name = "To the NAS",
+                NextRunDate = DateTime.UtcNow.AddDays(1),
+                Target = new BackupTarget
+                {
+                    Name = "NAS",
+                    Kind = BackupTargetKind.Smb,
+                    Host = options.Host,
+                    Share = options.Share,
+                    Path = options.Folder,
+                    Domain = options.Domain,
+                    Username = options.Username,
+                    PasswordProtected = scope.ServiceProvider.GetRequiredService<MatMail.Services.SecretProtector>().Protect(options.Password!),
+                },
+            };
+            db.BackupPlans.Add(plan);
+            await db.SaveChangesAsync();
+            planId = plan.Id;
+            targetId = plan.TargetId;
+        }
+
+        BackupRun run = (await _host.Services.GetRequiredService<BackupService>().RunAsync(planId, BackupRunKind.Manual, CancellationToken.None))!;
+        Assert.True(run.Status == BackupRunStatus.Succeeded, run.Message);
+
+        var preparation = _host.Services.GetRequiredService<RestorePreparation>();
+        Assert.True(preparation.Start(new RestoreRequest(targetId, run.FileName, null, null, true, true, true, "alice")));
+        PreparationStatus status;
+        DateTime giveUp = DateTime.UtcNow.AddSeconds(60);
+        while ((status = preparation.Status).State == PreparationState.Running && DateTime.UtcNow < giveUp)
+        {
+            await Task.Delay(50);
+        }
+
+        Assert.Equal(PreparationState.Restarting, status.State);
+        PendingRestore request = PendingRestore.Read(DataDir)!;
+        Assert.StartsWith(PendingRestore.IncomingFolder(DataDir), request.BackupPath);   // fetched into the volume
+        Assert.True(request.DeleteBackupAfterwards);
+        Assert.Equal(run.Bytes, new FileInfo(request.BackupPath).Length);
+        using BackupArchive archive = BackupArchive.Open(request.BackupPath);
+        await archive.VerifyAsync();
+    }
+
+    [SmbDbFact]
     public async Task A_share_that_cannot_be_reached_fails_the_run_with_the_reason()
     {
         SmbTargetOptions options = TestSmb.Options(password: "not-the-password");

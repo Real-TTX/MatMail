@@ -16,6 +16,7 @@ public sealed record SmbTargetOptions(string Host, string Share, string Folder, 
 /// </summary>
 public sealed class SmbBackupStorage(SmbTargetOptions options) : IBackupStorage
 {
+    private const int SmbPort = 445;
     private const int ResponseTimeoutMilliseconds = 60_000;
     private const int MaxChunkBytes = 1024 * 1024;
 
@@ -499,7 +500,9 @@ public sealed class SmbBackupStorage(SmbTargetOptions options) : IBackupStorage
 
         if (!connected)
         {
-            throw new BackupStorageException($"No connection to {target.Host} (SMB, port 445): is the server on, and does it offer SMB 2 or 3?");
+            throw new BackupStorageException(PortIsOpen(address)
+                ? $"{target.Host} answers on port 445, but no SMB version was agreed on: MatMail speaks SMB 2.0.2 to 3.0.2, a server that only offers SMB 1 or only SMB 3.1.1 cannot be used."
+                : $"No connection to {target.Host} (SMB, port 445): is the server on and the port open?");
         }
 
         NTStatus login = client.Login(target.Domain ?? string.Empty, target.Username ?? string.Empty, target.Password ?? string.Empty);
@@ -510,6 +513,20 @@ public sealed class SmbBackupStorage(SmbTargetOptions options) : IBackupStorage
         }
 
         return client;
+    }
+
+    /// <summary>Tells a server that is not there from one that is but does not speak a version the client knows.</summary>
+    private static bool PortIsOpen(IPAddress address)
+    {
+        try
+        {
+            using var probe = new TcpClient(address.AddressFamily);
+            return probe.ConnectAsync(address, SmbPort).Wait(TimeSpan.FromSeconds(3)) && probe.Connected;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     private static void Close(SMB2Client client)

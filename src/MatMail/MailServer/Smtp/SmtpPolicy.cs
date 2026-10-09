@@ -91,7 +91,7 @@ internal sealed class SmtpPolicy
     /// signed in with, and the start of two-factor authentication for a user who signed in with the account password.
     /// </summary>
     public async Task<bool> IsStillActiveAsync(MailUser user, CancellationToken cancel)
-        => await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == user.UserId && u.IsActive, cancel)
+        => await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == user.UserId && u.IsActive && u.DirectoryDisabledDate == null, cancel)
            && (user.IsSystemAdmin || await _db.Tenants.AnyAsync(t => t.Id == user.TenantId && t.IsActive, cancel))
            && await _access.SignInStillCountsAsync(user, cancel);
 

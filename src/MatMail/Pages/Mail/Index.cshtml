@@ -32,6 +32,8 @@
 <script type="application/json" id="mail-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
 <div class="mail-app" id="mail-app">
     <div class="mail-offline" id="mail-offline" role="status" hidden></div>
+    @* The two panes: one at a time, or – with the reading pane of the appearance settings, on wide screens – side by side or one above the other. *@
+    <div class="mail-panes" id="mail-panes">
     <section class="mail-pane mail-pane--list" id="mail-list-pane">
         <div class="mail-toolbar" id="mail-list-toolbar"></div>
         @* "All 50 on this page are selected. Select all 1,234 that match": offered when the selection fills the page and there are more hits. *@
@@ -44,12 +46,19 @@
         </div>
     </section>
 
+    <div class="mail-splitter" id="mail-splitter" role="separator" aria-orientation="vertical" aria-label="@L["Resize the reading pane"]" tabindex="0" hidden></div>
+
     <section class="mail-pane mail-pane--reader" id="mail-reader-pane" hidden>
         <div class="mail-toolbar" id="mail-reader-toolbar"></div>
         <div class="mail-reader" id="mail-reader"></div>
     </section>
+    </div>
 
     <div class="mail-loading" id="mail-loading" hidden><span class="spinner"></span></div>
+
+    @* A message file (.eml, .msg) is opened by dropping it anywhere on the client, or with the button over the list. *@
+    <div class="mail-drop" id="mail-drop" hidden aria-hidden="true"><mm-icon name="upload" /><p>@L["Drop a message file here to read it (.eml, .msg)"]</p></div>
+    <input type="file" id="mail-file" accept=".eml,.msg,message/rfc822,application/vnd.ms-outlook" hidden />
 
     @* Where the folders are a drawer (up to 960 px): the round button over the list, bottom right; above that the one in the folder column does the job. *@
     <button type="button" class="fab-compose" id="mail-compose-fab" title="@L["Compose"]" aria-label="@L["Compose"]"><mm-icon name="edit" /></button>

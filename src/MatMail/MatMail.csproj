@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MsgReader" Version="6.1.4" />
+    <PackageReference Include="Novell.Directory.Ldap.NETStandard" Version="4.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.*" />
     <!-- Pinned to the same version as the design-time package, so the tests resolve one consistent EF Core -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.*" />
@@ -23,6 +25,7 @@
     <PackageReference Include="DnsClient" Version="1.*" />
     <!-- Draws the QR code of the authenticator app set-up as SVG (pure managed, no external service) -->
     <PackageReference Include="QRCoder" Version="1.*" />
+    <PackageReference Include="SMBLibrary" Version="1.5.7.1" />
   </ItemGroup>
 
   <ItemGroup>

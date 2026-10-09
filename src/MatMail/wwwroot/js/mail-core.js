@@ -8,7 +8,7 @@
   var App = (window.MailApp = {
     boot: null,                 // /api/mail/bootstrap
     state: {
-      mailboxId: 0, folderId: 0, query: "", page: 1, messageId: 0,
+      mailboxId: 0, folderId: 0, query: "", page: 1, messageId: 0, previewId: "", preview: null,
       items: [], total: 0, pageSize: 50, selected: new Set(), allMatching: false, cursor: -1, loading: false
     },
     handlers: {}                // filled by mail-ui.js / mail-compose.js
@@ -32,6 +32,11 @@
     var init = { method: method, headers: headers, credentials: "same-origin" };
     if (body instanceof FormData) {
       init.body = body;
+    } else if (body instanceof Blob) {
+      // A file as it is (the raw body of the request): its name travels in a header.
+      init.body = body;
+      headers["Content-Type"] = "application/octet-stream";
+      Object.keys(options.headers || {}).forEach(function (name) { headers[name] = options.headers[name]; });
     } else if (body !== undefined && body !== null) {
       headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);

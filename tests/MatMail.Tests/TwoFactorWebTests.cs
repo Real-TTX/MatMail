@@ -276,7 +276,10 @@ public class TwoFactorMigrationTests : IAsyncLifetime
                     join tenant in db.Tenants on role.TenantId equals tenant.Id
                     where tenant.Name == "Old"
                     select new { role.Name, role.Permissions }).ToListAsync()).ToDictionary(r => r.Name, r => r.Permissions));
-        Assert.Equal(new[] { "mail.use", "users.manage", "security.manage" }, roles["Administrator"]);
+        string[] administrator = roles["Administrator"];
+        Assert.Equal(new[] { "mail.use", "users.manage", "security.manage" }, administrator.Take(3));   // what this migration appended comes first ...
+        Assert.All(administrator.Skip(3), permission => Assert.True(Permissions.IsKnown(permission)));  // ... what later migrations appended after it
+        Assert.Contains("directories.manage", administrator);
         Assert.Equal(new[] { "mail.use" }, roles["Helpers"]);
 
         // The new columns start out harmless.

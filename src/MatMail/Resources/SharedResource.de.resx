@@ -67,15 +67,22 @@
   <data name="---------- Forwarded message ----------" xml:space="preserve"><value>---------- Weitergeleitete Nachricht ----------</value></data>
   <data name="— Nobody —" xml:space="preserve"><value>— Niemand —</value></data>
   <data name="— None —" xml:space="preserve"><value>— Keine —</value></data>
+  <data name="… and {0} more." xml:space="preserve"><value>… und {0} weitere.</value></data>
+  <data name="“{0}” is a user with a password of their own already." xml:space="preserve"><value>„{0}“ ist schon ein Benutzer mit eigenem Passwort.</value></data>
   <data name="“{0}” is larger than {1} MB." xml:space="preserve"><value>„{0}“ ist größer als {1} MB.</value></data>
   <data name="“{0}” is not a valid e-mail address." xml:space="preserve"><value>„{0}“ ist keine gültige E-Mail-Adresse.</value></data>
+  <data name="“{0}” is not in the directory (any more) or not in the group that may sign in." xml:space="preserve"><value>„{0}“ ist nicht (mehr) im Verzeichnis oder nicht in der Gruppe, die sich anmelden darf.</value></data>
+  <data name="“{0}” is not in the target “{1}” (any more)." xml:space="preserve"><value>„{0}“ liegt nicht (mehr) im Ziel „{1}“.</value></data>
+  <data name="“{0}” signs in through another directory." xml:space="preserve"><value>„{0}“ meldet sich über ein anderes Verzeichnis an.</value></data>
   <data name="“Forward a copy” sends the message on as it is, from an address of this mailbox, and keeps it here. A message that has been forwarded by five rules in a row is not forwarded again, so loops end." xml:space="preserve"><value>„Kopie weiterleiten“ schickt die Nachricht unverändert von einer Adresse dieses Postfachs weiter und behält sie hier. Eine Nachricht, die schon von fünf Regeln hintereinander weitergeleitet wurde, wird nicht noch einmal weitergeleitet, so enden Schleifen.</value></data>
   <data name="(no recipient)" xml:space="preserve"><value>(kein Empfänger)</value></data>
   <data name="(no subject)" xml:space="preserve"><value>(kein Betreff)</value></data>
   <data name="{0} account(s) are still being fetched; the mail appears as soon as they are done." xml:space="preserve"><value>{0} Konto/Konten werden noch abgerufen; die Nachrichten erscheinen, sobald sie fertig sind.</value></data>
   <data name="{0} account(s) could not be synchronised." xml:space="preserve"><value>{0} Konto/Konten konnten nicht synchronisiert werden.</value></data>
   <data name="{0} attachment(s)" xml:space="preserve"><value>{0} Anhang/Anhänge</value></data>
+  <data name="{0} blocked" xml:space="preserve"><value>{0} gesperrt</value></data>
   <data name="{0} entries were removed." xml:space="preserve"><value>{0} Einträge wurden entfernt.</value></data>
+  <data name="{0} free." xml:space="preserve"><value>{0} frei.</value></data>
   <data name="{0} match" xml:space="preserve"><value>{0} Treffer</value></data>
   <data name="{0} matches" xml:space="preserve"><value>{0} Treffer</value></data>
   <data name="{0} message(s) are tried again." xml:space="preserve"><value>{0} Nachricht(en) werden erneut versucht.</value></data>
@@ -84,9 +91,12 @@
   <data name="{0} messages" xml:space="preserve"><value>{0} Nachrichten</value></data>
   <data name="{0} new messages" xml:space="preserve"><value>{0} neue Nachrichten</value></data>
   <data name="{0} selected" xml:space="preserve"><value>{0} ausgewählt</value></data>
+  <data name="{0} so far" xml:space="preserve"><value>bisher {0}</value></data>
   <data name="{0} stay at the provider" xml:space="preserve"><value>{0} bleiben beim Anbieter</value></data>
+  <data name="{0} tables with {1} rows, {2} files ({3})" xml:space="preserve"><value>{0} Tabellen mit {1} Zeilen, {2} Dateien ({3})</value></data>
   <data name="{0} time(s)" xml:space="preserve"><value>{0}-mal</value></data>
   <data name="{0} used" xml:space="preserve"><value>{0} belegt</value></data>
+  <data name="{0} users made, {1} switched to the directory, {2} left out." xml:space="preserve"><value>{0} Benutzer angelegt, {1} auf das Verzeichnis umgestellt, {2} ausgelassen.</value></data>
   <data name="{0}–{1} of {2}" xml:space="preserve"><value>{0}–{1} von {2}</value></data>
   <data name="{0}: cannot connect ({1})." xml:space="preserve"><value>{0}: Verbindung nicht möglich ({1}).</value></data>
   <data name="{0}: the connection was closed." xml:space="preserve"><value>{0}: Die Verbindung wurde geschlossen.</value></data>
@@ -104,17 +114,28 @@
   <data name="2. Enter the code" xml:space="preserve"><value>2. Code eingeben</value></data>
   <data name="3 days" xml:space="preserve"><value>3 Tage</value></data>
   <data name="6 months" xml:space="preserve"><value>6 Monate</value></data>
+  <data name="A backup holds everything: all mail, all passwords of the connected accounts, the keys. Encrypt it when it leaves this server." xml:space="preserve"><value>Ein Backup enthält alles: alle E-Mails, alle Passwörter der angebundenen Konten, die Schlüssel. Verschlüsseln Sie es, wenn es diesen Server verlässt.</value></data>
+  <data name="A backup is running" xml:space="preserve"><value>Ein Backup läuft</value></data>
   <data name="A backup never deletes mail at the provider." xml:space="preserve"><value>Ein Backup löscht niemals E-Mails beim Anbieter.</value></data>
+  <data name="A backup of what is here now is made before it is replaced, and kept in the folder “backups” of the data volume (the last three). If the wrong backup was chosen, restore that one." xml:space="preserve"><value>Vor dem Ersetzen wird ein Backup dessen gemacht, was jetzt hier ist, und im Ordner „backups“ des Datenvolumens aufbewahrt (die letzten drei). Wurde das falsche Backup gewählt, stellen Sie dieses wieder her.</value></data>
+  <data name="A backup stays as long as any of these rules keeps it. Only the backups of this schedule are ever removed." xml:space="preserve"><value>Ein Backup bleibt, solange eine dieser Regeln es behält. Entfernt werden nur Backups dieses Zeitplans.</value></data>
+  <data name="A backup was restored." xml:space="preserve"><value>Ein Backup wurde wiederhergestellt.</value></data>
+  <data name="A backup you have on your computer, from this or another MatMail. The file is sent to the server first; then you see what it holds before anything is replaced." xml:space="preserve"><value>Ein Backup auf Ihrem Computer, von diesem oder einem anderen MatMail. Die Datei wird zuerst zum Server gesendet; dann sehen Sie, was sie enthält, bevor etwas ersetzt wird.</value></data>
   <data name="A code from an authenticator app after the password. The rules are set under Security and in the roles." xml:space="preserve"><value>Ein Code aus einer Authenticator-App nach dem Passwort. Die Regeln werden unter „Sicherheit“ und in den Rollen festgelegt.</value></data>
+  <data name="A distinguished name; Active Directory also takes name@example.com." xml:space="preserve"><value>Ein Distinguished Name; Active Directory akzeptiert auch name@example.com.</value></data>
   <data name="A folder cannot be moved into itself or one of its subfolders." xml:space="preserve"><value>Ein Ordner kann nicht in sich selbst oder in einen seiner Unterordner verschoben werden.</value></data>
   <data name="A folder cannot be moved into itself." xml:space="preserve"><value>Ein Ordner kann nicht in sich selbst verschoben werden.</value></data>
+  <data name="A folder that the program can write to: a mounted disk or network share, or a folder of the data volume." xml:space="preserve"><value>Ein Ordner, in den das Programm schreiben kann: ein eingebundener Datenträger oder eine Netzwerkfreigabe, oder ein Ordner des Datenvolumens.</value></data>
   <data name="A folder with this name already exists." xml:space="preserve"><value>Ein Ordner mit diesem Namen existiert bereits.</value></data>
+  <data name="A full path inside the container. Inside the data volume only {0} may be used." xml:space="preserve"><value>Ein vollständiger Pfad im Container. Im Datenvolumen darf nur {0} verwendet werden.</value></data>
   <data name="A line of the mail transfer log could not be written." xml:space="preserve"><value>Eine Zeile des Mail-Transferprotokolls konnte nicht geschrieben werden.</value></data>
   <data name="A mailbox can have {0} rules at most." xml:space="preserve"><value>Ein Postfach kann höchstens {0} Regeln haben.</value></data>
   <data name="A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant." xml:space="preserve"><value>Ein neuer Mandant startet mit den Rollen Administrator und Benutzer sowie einem Postfach „Unverteilt“. Legen Sie den ersten Administrator unter Benutzer an, nachdem Sie in den Mandanten gewechselt haben.</value></data>
   <data name="A password of its own for each mail program, which you can revoke one by one. Once two-factor authentication is on, mail programs need one, because they cannot ask for a code." xml:space="preserve"><value>Ein eigenes Passwort für jedes Mailprogramm, das Sie einzeln widerrufen können. Sobald die Zwei-Faktor-Authentifizierung eingeschaltet ist, brauchen Mailprogramme eines, weil sie nicht nach einem Code fragen können.</value></data>
   <data name="A PEM certificate needs its private key file." xml:space="preserve"><value>Ein PEM-Zertifikat braucht die Datei mit seinem privaten Schlüssel.</value></data>
   <data name="A personal mailbox needs an owner." xml:space="preserve"><value>Ein persönliches Postfach braucht einen Besitzer.</value></data>
+  <data name="A personal mailbox, with the address of the directory when it is one of the domains of the tenant" xml:space="preserve"><value>Ein persönliches Postfach, mit der Adresse aus dem Verzeichnis, wenn sie zu den Domains des Mandanten gehört</value></data>
+  <data name="A restore replaces the current data completely. Mail that arrived after the backup was made is not in it. Before anything is replaced the current state is saved, so that a restore can be undone." xml:space="preserve"><value>Eine Wiederherstellung ersetzt die aktuellen Daten vollständig. E-Mails, die nach dem Backup eingegangen sind, sind nicht darin. Bevor etwas ersetzt wird, wird der aktuelle Stand gesichert, damit sich eine Wiederherstellung rückgängig machen lässt.</value></data>
   <data name="A reverse proxy is in front (trust X-Forwarded-For / X-Forwarded-Proto)" xml:space="preserve"><value>Ein Reverse-Proxy ist vorgeschaltet (X-Forwarded-For / X-Forwarded-Proto vertrauen)</value></data>
   <data name="A role is a set of permissions. Users can hold several roles." xml:space="preserve"><value>Eine Rolle ist ein Bündel von Berechtigungen. Benutzer können mehrere Rollen haben.</value></data>
   <data name="A role with that name already exists." xml:space="preserve"><value>Eine Rolle mit diesem Namen existiert bereits.</value></data>
@@ -122,10 +143,13 @@
   <data name="A rule can have {0} conditions at most." xml:space="preserve"><value>Eine Regel kann höchstens {0} Bedingungen haben.</value></data>
   <data name="A rule needs at least one action." xml:space="preserve"><value>Eine Regel braucht mindestens eine Aktion.</value></data>
   <data name="A rule needs at least one condition." xml:space="preserve"><value>Eine Regel braucht mindestens eine Bedingung.</value></data>
+  <data name="A schedule says when a backup is made, where it goes, and how many are kept." xml:space="preserve"><value>Ein Zeitplan legt fest, wann ein Backup erstellt wird, wohin es geht und wie viele aufbewahrt werden.</value></data>
+  <data name="A schedule that is gone" xml:space="preserve"><value>Ein Zeitplan, den es nicht mehr gibt</value></data>
   <data name="A second step after the password: a 6-digit code from an app on your phone. Someone who knows your password cannot sign in without it." xml:space="preserve"><value>Ein zweiter Schritt nach dem Passwort: ein 6-stelliger Code aus einer App auf Ihrem Smartphone. Wer Ihr Passwort kennt, kann sich ohne ihn nicht anmelden.</value></data>
   <data name="A self-signed certificate is used again." xml:space="preserve"><value>Es wird wieder ein selbstsigniertes Zertifikat verwendet.</value></data>
   <data name="A signature is offered in the mail client. A footer is appended by the server to every outgoing message in its scope and cannot be removed by the sender." xml:space="preserve"><value>Eine Signatur wird im Mailclient zur Auswahl angeboten. Eine Fußzeile hängt der Server an jede ausgehende Nachricht in ihrem Geltungsbereich an; der Absender kann sie nicht entfernen.</value></data>
   <data name="A single address (192.168.1.20) or a range in CIDR notation (192.168.1.0/24, fd00::/8). The address the server sees is checked: behind Docker’s network address translation use the client’s real address." xml:space="preserve"><value>Eine einzelne Adresse (192.168.1.20) oder ein Bereich in CIDR-Schreibweise (192.168.1.0/24, fd00::/8). Geprüft wird die Adresse, die der Server sieht: Hinter der Netzwerkadressübersetzung von Docker ist die echte Adresse des Clients zu verwenden.</value></data>
+  <data name="A target is a place for backups: a folder of this server (a mounted disk or share) or a folder on a network share (NAS) that MatMail reaches itself." xml:space="preserve"><value>Ein Ziel ist ein Ort für Backups: ein Ordner dieses Servers (ein eingebundener Datenträger oder eine Freigabe) oder ein Ordner auf einer Netzwerkfreigabe (NAS), die MatMail selbst erreicht.</value></data>
   <data name="A template puts an outgoing message into an HTML frame, chosen by who sends it and where it comes from – for example to turn the plain text of a device into a proper mail." xml:space="preserve"><value>Eine Vorlage setzt eine ausgehende Nachricht in einen HTML-Rahmen – je nachdem, wer sie sendet und woher sie kommt, zum Beispiel um den reinen Text eines Geräts in eine ordentliche Mail zu verwandeln.</value></data>
   <data name="A tenant keeps users, mailboxes and settings apart, e.g. “Home” for your family or the name of a company." xml:space="preserve"><value>Ein Mandant hält Benutzer, Postfächer und Einstellungen getrennt, z. B. „Zuhause“ für Ihre Familie oder der Name einer Firma.</value></data>
   <data name="A tenant with that name already exists." xml:space="preserve"><value>Ein Mandant mit diesem Namen existiert bereits.</value></data>
@@ -135,15 +159,18 @@
   <data name="Access" xml:space="preserve"><value>Zugriff</value></data>
   <data name="Access to this mailbox" xml:space="preserve"><value>Zugriff auf dieses Postfach</value></data>
   <data name="Account" xml:space="preserve"><value>Konto</value></data>
+  <data name="Account that searches" xml:space="preserve"><value>Konto für die Suche</value></data>
   <data name="Accounts synchronised at the same time" xml:space="preserve"><value>Gleichzeitig synchronisierte Konten</value></data>
   <data name="Action" xml:space="preserve"><value>Aktion</value></data>
   <data name="Action {0}: {1}" xml:space="preserve"><value>Aktion {0}: {1}</value></data>
   <data name="Active" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Active certificate" xml:space="preserve"><value>Aktives Zertifikat</value></data>
+  <data name="Active Directory or another LDAP server: people sign in to the web client, IMAP and SMTP with the password they already have there." xml:space="preserve"><value>Active Directory oder ein anderer LDAP-Server: Personen melden sich am Webclient, an IMAP und SMTP mit dem Passwort an, das sie dort schon haben.</value></data>
   <data name="Active users" xml:space="preserve"><value>Aktive Benutzer</value></data>
   <data name="Activity log" xml:space="preserve"><value>Aktivitätsprotokoll</value></data>
   <data name="Add {0} to this mailbox, so future mail arrives there directly" xml:space="preserve"><value>{0} diesem Postfach hinzufügen, damit künftige Nachrichten direkt dort ankommen</value></data>
   <data name="Add a label" xml:space="preserve"><value>Markierung hinzufügen</value></data>
+  <data name="Add a target" xml:space="preserve"><value>Ziel anlegen</value></data>
   <data name="Add action" xml:space="preserve"><value>Aktion hinzufügen</value></data>
   <data name="Add address" xml:space="preserve"><value>Adresse hinzufügen</value></data>
   <data name="Add at least one recipient." xml:space="preserve"><value>Fügen Sie mindestens einen Empfänger hinzu.</value></data>
@@ -172,6 +199,7 @@
   <data name="All of these conditions" xml:space="preserve"><value>Alle diese Bedingungen</value></data>
   <data name="All other sessions were ended." xml:space="preserve"><value>Alle anderen Sitzungen wurden beendet.</value></data>
   <data name="All roles" xml:space="preserve"><value>Alle Rollen</value></data>
+  <data name="All schedules are switched off: nothing is backed up." xml:space="preserve"><value>Alle Zeitpläne sind ausgeschaltet: Es wird nichts gesichert.</value></data>
   <data name="Also add it on the server to messages that were written without one" xml:space="preserve"><value>Auch auf dem Server an Nachrichten anhängen, die ohne Signatur geschrieben wurden</value></data>
   <data name="Also manage folders and the other users of this mailbox." xml:space="preserve"><value>Außerdem Ordner und die anderen Benutzer dieses Postfachs verwalten.</value></data>
   <data name="Also mark, move and delete messages and write drafts." xml:space="preserve"><value>Außerdem Nachrichten markieren, verschieben und löschen sowie Entwürfe schreiben.</value></data>
@@ -183,7 +211,9 @@
   <data name="An app password" xml:space="preserve"><value>Ein App-Passwort</value></data>
   <data name="An attachment is no longer available. Please add it again." xml:space="preserve"><value>Ein Anhang ist nicht mehr verfügbar. Bitte fügen Sie ihn erneut hinzu.</value></data>
   <data name="An inactive tenant cannot sign in or receive mail." xml:space="preserve"><value>Ein inaktiver Mandant kann sich nicht anmelden und keine E-Mails empfangen.</value></data>
+  <data name="An LDAP filter that matches the people, e.g. (objectClass=person)." xml:space="preserve"><value>Ein LDAP-Filter, der auf die Personen passt, z. B. (objectClass=person).</value></data>
   <data name="and" xml:space="preserve"><value>und</value></data>
+  <data name="Another backup is running. Wait until it is done." xml:space="preserve"><value>Es läuft bereits ein Backup. Warten Sie, bis es fertig ist.</value></data>
   <data name="Any time" xml:space="preserve"><value>Beliebig</value></data>
   <data name="App" xml:space="preserve"><value>App</value></data>
   <data name="App password “{0}”" xml:space="preserve"><value>App-Passwort „{0}“</value></data>
@@ -197,20 +227,36 @@
   <data name="Area" xml:space="preserve"><value>Bereich</value></data>
   <data name="Asked again because an app password signs in without a code." xml:space="preserve"><value>Wird erneut abgefragt, weil sich ein App-Passwort ohne Code anmelden kann.</value></data>
   <data name="Asked once more, so that nobody who only holds your open session can set up a second factor of their own." xml:space="preserve"><value>Wird noch einmal abgefragt, damit niemand, der nur Ihre offene Sitzung in der Hand hat, einen zweiten Faktor einrichten kann.</value></data>
+  <data name="At" xml:space="preserve"><value>Um</value></data>
+  <data name="At least {0} characters. It is stored encrypted on this server, so that scheduled backups can be encrypted." xml:space="preserve"><value>Mindestens {0} Zeichen. Sie wird verschlüsselt auf diesem Server gespeichert, damit geplante Backups verschlüsselt werden können.</value></data>
   <data name="At least 10 characters." xml:space="preserve"><value>Mindestens 10 Zeichen.</value></data>
   <data name="At least one of these conditions" xml:space="preserve"><value>Mindestens eine dieser Bedingungen</value></data>
   <data name="Attach files" xml:space="preserve"><value>Dateien anhängen</value></data>
   <data name="Attachment" xml:space="preserve"><value>Anhang</value></data>
   <data name="Attachments" xml:space="preserve"><value>Anhänge</value></data>
   <data name="Attempts" xml:space="preserve"><value>Versuche</value></data>
+  <data name="Attributes" xml:space="preserve"><value>Attribute</value></data>
   <data name="Authenticator app" xml:space="preserve"><value>Authenticator-App</value></data>
   <data name="Available in signatures as {{Website}}." xml:space="preserve"><value>In Signaturen als {{Website}} verfügbar.</value></data>
   <data name="Back" xml:space="preserve"><value>Zurück</value></data>
   <data name="Back to start" xml:space="preserve"><value>Zurück zur Startseite</value></data>
+  <data name="Back up now" xml:space="preserve"><value>Jetzt sichern</value></data>
   <data name="Backup" xml:space="preserve"><value>Backup</value></data>
   <data name="Backup – keep a copy" xml:space="preserve"><value>Backup – Kopie aufbewahren</value></data>
+  <data name="Backup file" xml:space="preserve"><value>Backup-Datei</value></data>
   <data name="Backup: a copy of everything is kept in a backup mailbox. Nothing is distributed and nothing is ever deleted at the provider." xml:space="preserve"><value>Backup: Eine Kopie von allem wird in einem Backup-Postfach aufbewahrt. Nichts wird verteilt und beim Anbieter wird nie etwas gelöscht.</value></data>
+  <data name="Backups" xml:space="preserve"><value>Backups</value></data>
+  <data name="Backups in" xml:space="preserve"><value>Backups in</value></data>
+  <data name="Base" xml:space="preserve"><value>Basis</value></data>
   <data name="Bcc" xml:space="preserve"><value>Bcc</value></data>
+  <data name="Before a restore" xml:space="preserve"><value>Vor einer Wiederherstellung</value></data>
+  <data name="Below the list" xml:space="preserve"><value>Unter der Liste</value></data>
+  <data name="Between 0 and 1000." xml:space="preserve"><value>Zwischen 0 und 1000.</value></data>
+  <data name="Between 1 and 1000." xml:space="preserve"><value>Zwischen 1 und 1000.</value></data>
+  <data name="Between 1 and 12 hours." xml:space="preserve"><value>Zwischen 1 und 12 Stunden.</value></data>
+  <data name="Between 1 and 28 (so that every month has the day)." xml:space="preserve"><value>Zwischen 1 und 28 (damit jeder Monat den Tag hat).</value></data>
+  <data name="Blocked by the directory" xml:space="preserve"><value>Vom Verzeichnis gesperrt</value></data>
+  <data name="Blocked since {0}: the directory no longer has the person, has disabled them or no longer lets them in." xml:space="preserve"><value>Gesperrt seit {0}: Das Verzeichnis hat die Person nicht mehr, hat sie deaktiviert oder lässt sie nicht mehr herein.</value></data>
   <data name="Bold" xml:space="preserve"><value>Fett</value></data>
   <data name="Bound to it, not set up yet" xml:space="preserve"><value>Daran gebunden, noch nicht eingerichtet</value></data>
   <data name="Branding" xml:space="preserve"><value>Branding</value></data>
@@ -219,7 +265,9 @@
   <data name="Built-in" xml:space="preserve"><value>Vordefiniert</value></data>
   <data name="Built-in roles cannot be deleted." xml:space="preserve"><value>Vordefinierte Rollen können nicht gelöscht werden.</value></data>
   <data name="Bulleted list" xml:space="preserve"><value>Aufzählung</value></data>
+  <data name="By" xml:space="preserve"><value>Von</value></data>
   <data name="By address" xml:space="preserve"><value>Nach Adresse</value></data>
+  <data name="By hand" xml:space="preserve"><value>Von Hand</value></data>
   <data name="Cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="Cancel sending" xml:space="preserve"><value>Versand abbrechen</value></data>
   <data name="Cancelled" xml:space="preserve"><value>Abgebrochen</value></data>
@@ -233,10 +281,17 @@
   <data name="Changing a port or switching a server on or off takes effect after the container is restarted." xml:space="preserve"><value>Das Ändern eines Ports oder das Ein- und Ausschalten eines Servers wird erst nach einem Neustart des Containers wirksam.</value></data>
   <data name="Changing this needs the permission to manage security." xml:space="preserve"><value>Zum Ändern ist die Berechtigung zum Verwalten der Sicherheit nötig.</value></data>
   <data name="Check every" xml:space="preserve"><value>Prüfen alle</value></data>
+  <data name="Check the backup" xml:space="preserve"><value>Backup prüfen</value></data>
+  <data name="Checking the backup" xml:space="preserve"><value>Backup wird geprüft</value></data>
   <data name="Choose a certificate file." xml:space="preserve"><value>Wählen Sie eine Zertifikatsdatei aus.</value></data>
+  <data name="Choose a day of the week." xml:space="preserve"><value>Wählen Sie einen Wochentag.</value></data>
   <data name="Choose a folder." xml:space="preserve"><value>Wählen Sie einen Ordner.</value></data>
+  <data name="Choose a target" xml:space="preserve"><value>Ziel wählen</value></data>
+  <data name="Choose a target …" xml:space="preserve"><value>Ziel wählen …</value></data>
+  <data name="Choose how often." xml:space="preserve"><value>Wählen Sie, wie oft.</value></data>
   <data name="Choose one of the options." xml:space="preserve"><value>Wählen Sie eine der Optionen.</value></data>
   <data name="Choose the mailbox that receives the copies." xml:space="preserve"><value>Wählen Sie das Postfach, das die Kopien erhält.</value></data>
+  <data name="Choose where the backups go." xml:space="preserve"><value>Wählen Sie, wohin die Backups gehen.</value></data>
   <data name="Choose where the messages come from." xml:space="preserve"><value>Wählen Sie, woher die Nachrichten kommen.</value></data>
   <data name="Choose yes or no." xml:space="preserve"><value>Wählen Sie Ja oder Nein.</value></data>
   <data name="Clear finished" xml:space="preserve"><value>Abgeschlossene entfernen</value></data>
@@ -248,22 +303,28 @@
   <data name="Code" xml:space="preserve"><value>Code</value></data>
   <data name="Code of the app" xml:space="preserve"><value>Code der App</value></data>
   <data name="Code of the app or a recovery code" xml:space="preserve"><value>Code der App oder ein Wiederherstellungscode</value></data>
+  <data name="Collapse" xml:space="preserve"><value>Einklappen</value></data>
   <data name="Colour" xml:space="preserve"><value>Farbe</value></data>
   <data name="Comfortable" xml:space="preserve"><value>Komfortabel</value></data>
   <data name="Comma separated: after the first failure, the second, …; the last value repeats." xml:space="preserve"><value>Durch Komma getrennt: nach dem ersten Fehlschlag, nach dem zweiten, …; der letzte Wert wiederholt sich.</value></data>
   <data name="Compact" xml:space="preserve"><value>Kompakt</value></data>
   <data name="Compact fits more rows on the screen." xml:space="preserve"><value>Kompakt zeigt mehr Zeilen auf dem Bildschirm.</value></data>
+  <data name="Compare now" xml:space="preserve"><value>Jetzt abgleichen</value></data>
   <data name="Compose" xml:space="preserve"><value>Verfassen</value></data>
   <data name="Computers and devices in these networks may send mail through this server without signing in (smart host), e.g. printers, scanners and internal servers." xml:space="preserve"><value>Computer und Geräte in diesen Netzwerken dürfen ohne Anmeldung E-Mails über diesen Server senden (Smarthost), z. B. Drucker, Scanner und interne Server.</value></data>
   <data name="Condition" xml:space="preserve"><value>Bedingung</value></data>
   <data name="Condition {0}: {1}" xml:space="preserve"><value>Bedingung {0}: {1}</value></data>
   <data name="Confirm" xml:space="preserve"><value>Bestätigen</value></data>
+  <data name="Confirm that the current data is replaced." xml:space="preserve"><value>Bestätigen Sie, dass die aktuellen Daten ersetzt werden.</value></data>
   <data name="Connected account" xml:space="preserve"><value>Verbundenes Konto</value></data>
   <data name="Connected accounts" xml:space="preserve"><value>Verbundene Konten</value></data>
   <data name="Connected accounts with problems" xml:space="preserve"><value>Verbundene Konten mit Problemen</value></data>
+  <data name="Connection" xml:space="preserve"><value>Verbindung</value></data>
   <data name="Contact address for notifications; not used to sign in." xml:space="preserve"><value>Kontaktadresse für Benachrichtigungen; wird nicht zum Anmelden verwendet.</value></data>
   <data name="contains" xml:space="preserve"><value>enthält</value></data>
   <data name="Content" xml:space="preserve"><value>Inhalt</value></data>
+  <data name="Contents" xml:space="preserve"><value>Inhalt</value></data>
+  <data name="copies" xml:space="preserve"><value>Kopien</value></data>
   <data name="Copy" xml:space="preserve"><value>Kopieren</value></data>
   <data name="Copy the key" xml:space="preserve"><value>Schlüssel kopieren</value></data>
   <data name="Create a personal mailbox" xml:space="preserve"><value>Persönliches Postfach anlegen</value></data>
@@ -307,6 +368,7 @@
   <data name="Delete from the server after download" xml:space="preserve"><value>Nach dem Download vom Server löschen</value></data>
   <data name="Delete these messages for good? This cannot be undone." xml:space="preserve"><value>Diese Nachrichten endgültig löschen? Das lässt sich nicht rückgängig machen.</value></data>
   <data name="Delete this connected account? Messages that were already fetched stay in the mailboxes." xml:space="preserve"><value>Dieses verbundene Konto löschen? Bereits abgeholte Nachrichten bleiben in den Postfächern.</value></data>
+  <data name="Delete this directory? The {0} users that sign in through it stay, but they cannot sign in until an administrator gives each of them a password." xml:space="preserve"><value>Dieses Verzeichnis löschen? Die {0} Benutzer, die sich darüber anmelden, bleiben bestehen, können sich aber erst wieder anmelden, wenn ein Administrator jedem ein Passwort gibt.</value></data>
   <data name="Delete this domain?" xml:space="preserve"><value>Diese Domäne löschen?</value></data>
   <data name="Delete this folder with its subfolders and all their messages?" xml:space="preserve"><value>Diesen Ordner mit seinen Unterordnern und allen darin enthaltenen Nachrichten löschen?</value></data>
   <data name="Delete this mailbox with all its folders and messages? This cannot be undone." xml:space="preserve"><value>Dieses Postfach mit allen Ordnern und Nachrichten löschen? Das lässt sich nicht rückgängig machen.</value></data>
@@ -314,7 +376,9 @@
   <data name="Delete this relay rule?" xml:space="preserve"><value>Diese Relay-Regel löschen?</value></data>
   <data name="Delete this role?" xml:space="preserve"><value>Diese Rolle löschen?</value></data>
   <data name="Delete this rule?" xml:space="preserve"><value>Diese Regel löschen?</value></data>
+  <data name="Delete this schedule? The backups it made are not deleted." xml:space="preserve"><value>Diesen Zeitplan löschen? Die Backups, die er erstellt hat, bleiben erhalten.</value></data>
   <data name="Delete this signature?" xml:space="preserve"><value>Diese Signatur löschen?</value></data>
+  <data name="Delete this target? The backups in it are not deleted." xml:space="preserve"><value>Dieses Ziel löschen? Die Backups darin bleiben erhalten.</value></data>
   <data name="Delete this template?" xml:space="preserve"><value>Diese Vorlage löschen?</value></data>
   <data name="Delete this tenant with all its users, mailboxes and messages? This cannot be undone." xml:space="preserve"><value>Diesen Mandanten mit allen Benutzern, Postfächern und Nachrichten löschen? Das lässt sich nicht rückgängig machen.</value></data>
   <data name="Delete this user and their mailbox with all messages? This cannot be undone." xml:space="preserve"><value>Diesen Benutzer samt Postfach und allen Nachrichten löschen? Das lässt sich nicht rückgängig machen.</value></data>
@@ -338,28 +402,39 @@
   <data name="Devices that get notifications" xml:space="preserve"><value>Geräte mit Benachrichtigungen</value></data>
   <data name="Direct delivery" xml:space="preserve"><value>Direkte Zustellung</value></data>
   <data name="Direction" xml:space="preserve"><value>Richtung</value></data>
+  <data name="Directories" xml:space="preserve"><value>Verzeichnisse</value></data>
+  <data name="Directories with problems" xml:space="preserve"><value>Verzeichnisse mit Problemen</value></data>
+  <data name="Directory" xml:space="preserve"><value>Verzeichnis</value></data>
   <data name="Disabled" xml:space="preserve"><value>Deaktiviert</value></data>
   <data name="Discard draft" xml:space="preserve"><value>Entwurf verwerfen</value></data>
   <data name="Discard this message?" xml:space="preserve"><value>Diese Nachricht verwerfen?</value></data>
+  <data name="Dismiss" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="Display" xml:space="preserve"><value>Anzeige</value></data>
   <data name="DNS" xml:space="preserve"><value>DNS</value></data>
   <data name="Do not apply the rules below this one to a message that fits" xml:space="preserve"><value>Die Regeln unterhalb dieser nicht mehr auf eine passende Nachricht anwenden</value></data>
   <data name="does not contain" xml:space="preserve"><value>enthält nicht</value></data>
   <data name="Doesn't have" xml:space="preserve"><value>Enthält nicht</value></data>
   <data name="Domain" xml:space="preserve"><value>Domäne</value></data>
+  <data name="Domain (optional)" xml:space="preserve"><value>Domäne (optional)</value></data>
   <data name="Domain name" xml:space="preserve"><value>Domänenname</value></data>
   <data name="Domains" xml:space="preserve"><value>Domänen</value></data>
   <data name="Domains of the tenant" xml:space="preserve"><value>Domänen des Mandanten</value></data>
   <data name="Domains the devices may send as (one per line or comma separated). Empty: every domain of this tenant." xml:space="preserve"><value>Domänen, mit denen die Geräte senden dürfen (eine pro Zeile oder durch Komma getrennt). Leer: jede Domäne dieses Mandanten.</value></data>
   <data name="Done" xml:space="preserve"><value>Fertig</value></data>
   <data name="Download" xml:space="preserve"><value>Herunterladen</value></data>
+  <data name="Download a backup" xml:space="preserve"><value>Backup herunterladen</value></data>
   <data name="Download message (.eml)" xml:space="preserve"><value>Nachricht herunterladen (.eml)</value></data>
   <data name="Draft kept on this device. It is saved on the server as soon as you are back online." xml:space="preserve"><value>Entwurf auf diesem Gerät aufbewahrt. Er wird auf dem Server gespeichert, sobald Sie wieder online sind.</value></data>
   <data name="Draft saved." xml:space="preserve"><value>Entwurf gespeichert.</value></data>
   <data name="Draft, not saved on the server yet" xml:space="preserve"><value>Entwurf, noch nicht auf dem Server gespeichert</value></data>
   <data name="Drafts" xml:space="preserve"><value>Entwürfe</value></data>
+  <data name="Drop a message file here to read it (.eml, .msg)" xml:space="preserve"><value>Legen Sie hier eine Nachrichtendatei ab, um sie zu lesen (.eml, .msg)</value></data>
+  <data name="Duration" xml:space="preserve"><value>Dauer</value></data>
   <data name="E-mail address" xml:space="preserve"><value>E-Mail-Adresse</value></data>
+  <data name="e.g. Company Active Directory" xml:space="preserve"><value>z. B. Active Directory der Firma</value></data>
+  <data name="e.g. Every night to the NAS" xml:space="preserve"><value>z. B. Jede Nacht auf das NAS</value></data>
   <data name="e.g. Home or Example GmbH" xml:space="preserve"><value>z. B. Zuhause oder Beispiel GmbH</value></data>
+  <data name="e.g. NAS in the basement" xml:space="preserve"><value>z. B. NAS im Keller</value></data>
   <data name="e.g. Newsletters" xml:space="preserve"><value>z. B. Newsletter</value></data>
   <data name="e.g. Office printers" xml:space="preserve"><value>z. B. Büro-Drucker</value></data>
   <data name="e.g. Strato – info@example.com" xml:space="preserve"><value>z. B. Strato – info@example.com</value></data>
@@ -367,34 +442,55 @@
   <data name="Edit access" xml:space="preserve"><value>Zugriff bearbeiten</value></data>
   <data name="Edit account" xml:space="preserve"><value>Konto bearbeiten</value></data>
   <data name="Edit address" xml:space="preserve"><value>Adresse bearbeiten</value></data>
+  <data name="Edit directory" xml:space="preserve"><value>Verzeichnis bearbeiten</value></data>
   <data name="Edit domain" xml:space="preserve"><value>Domäne bearbeiten</value></data>
   <data name="Edit mailbox" xml:space="preserve"><value>Postfach bearbeiten</value></data>
   <data name="Edit role" xml:space="preserve"><value>Rolle bearbeiten</value></data>
   <data name="Edit rule" xml:space="preserve"><value>Regel bearbeiten</value></data>
+  <data name="Edit schedule" xml:space="preserve"><value>Zeitplan bearbeiten</value></data>
   <data name="Edit signature" xml:space="preserve"><value>Signatur bearbeiten</value></data>
+  <data name="Edit target" xml:space="preserve"><value>Ziel bearbeiten</value></data>
   <data name="Edit template" xml:space="preserve"><value>Vorlage bearbeiten</value></data>
   <data name="Edit tenant" xml:space="preserve"><value>Mandant bearbeiten</value></data>
   <data name="Edit user" xml:space="preserve"><value>Benutzer bearbeiten</value></data>
   <data name="Empty trash now" xml:space="preserve"><value>Papierkorb jetzt leeren</value></data>
+  <data name="Empty: the role “User”." xml:space="preserve"><value>Leer: die Rolle „Benutzer“.</value></data>
   <data name="Enabled" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Enabled (people of this directory can sign in)" xml:space="preserve"><value>Aktiv (die Personen dieses Verzeichnisses können sich anmelden)</value></data>
+  <data name="Encrypt the backups with a passphrase" xml:space="preserve"><value>Backups mit einer Passphrase verschlüsseln</value></data>
+  <data name="Encrypted" xml:space="preserve"><value>Verschlüsselt</value></data>
   <data name="Encryption" xml:space="preserve"><value>Verschlüsselung</value></data>
+  <data name="Encrypts the backup. At least {0} characters. Without it the backup cannot be opened – keep it somewhere safe." xml:space="preserve"><value>Verschlüsselt das Backup. Mindestens {0} Zeichen. Ohne sie lässt sich das Backup nicht öffnen – bewahren Sie sie sicher auf.</value></data>
   <data name="ends with" xml:space="preserve"><value>endet mit</value></data>
   <data name="Enter a label (letters and digits)." xml:space="preserve"><value>Geben Sie eine Markierung an (Buchstaben und Ziffern).</value></data>
   <data name="Enter a name for the app password." xml:space="preserve"><value>Geben Sie einen Namen für das App-Passwort ein.</value></data>
   <data name="Enter a number between 0 and 10000." xml:space="preserve"><value>Geben Sie eine Zahl zwischen 0 und 10000 ein.</value></data>
+  <data name="Enter a time like 03:00." xml:space="preserve"><value>Geben Sie eine Uhrzeit wie 03:00 ein.</value></data>
   <data name="Enter a valid e-mail address to forward to." xml:space="preserve"><value>Geben Sie eine gültige E-Mail-Adresse zum Weiterleiten an.</value></data>
   <data name="Enter the 6-digit code of your authenticator app. If you lost your phone, enter one of your recovery codes instead." xml:space="preserve"><value>Geben Sie den 6-stelligen Code Ihrer Authenticator-App ein. Wenn Sie Ihr Smartphone verloren haben, geben Sie stattdessen einen Ihrer Wiederherstellungscodes ein.</value></data>
   <data name="Enter the name of the header field, for example List-Id." xml:space="preserve"><value>Geben Sie den Namen des Header-Felds an, zum Beispiel List-Id.</value></data>
+  <data name="Enter the name of the share, e.g. backups." xml:space="preserve"><value>Geben Sie den Namen der Freigabe ein, z. B. backups.</value></data>
+  <data name="Enter the name or the address of the server, e.g. nas.local." xml:space="preserve"><value>Geben Sie den Namen oder die Adresse des Servers ein, z. B. nas.local.</value></data>
   <data name="Enter the size in kilobytes (a number)." xml:space="preserve"><value>Geben Sie die Größe in Kilobyte an (eine Zahl).</value></data>
   <data name="Enter the text to look for." xml:space="preserve"><value>Geben Sie den Text an, nach dem gesucht werden soll.</value></data>
   <data name="Enter this instead of your password in the mail program (IMAP and SMTP). It is shown only now. If you lose it, revoke it and create a new one." xml:space="preserve"><value>Geben Sie dieses im Mailprogramm (IMAP und SMTP) statt Ihres Passworts ein. Es wird nur jetzt angezeigt. Wenn Sie es verlieren, widerrufen Sie es und erstellen ein neues.</value></data>
   <data name="Enter whole minutes, separated by commas." xml:space="preserve"><value>Geben Sie ganze Minuten ein, durch Kommas getrennt.</value></data>
   <data name="Errors" xml:space="preserve"><value>Fehler</value></data>
   <data name="Event" xml:space="preserve"><value>Ereignis</value></data>
+  <data name="Every" xml:space="preserve"><value>Alle</value></data>
+  <data name="Every {0} at {1}" xml:space="preserve"><value>Jeden {0} um {1}</value></data>
+  <data name="Every {0} hours (at minute {1})" xml:space="preserve"><value>Alle {0} Stunden (zur Minute {1})</value></data>
+  <data name="Every day" xml:space="preserve"><value>Jeden Tag</value></data>
+  <data name="Every day at {0}" xml:space="preserve"><value>Jeden Tag um {0}</value></data>
+  <data name="Every few hours" xml:space="preserve"><value>Alle paar Stunden</value></data>
+  <data name="Every hour at minute {0}" xml:space="preserve"><value>Jede Stunde zur Minute {0}</value></data>
   <data name="Every message" xml:space="preserve"><value>Jede Nachricht</value></data>
+  <data name="Every month" xml:space="preserve"><value>Jeden Monat</value></data>
   <data name="Every rule" xml:space="preserve"><value>Jede Regel</value></data>
+  <data name="Every week" xml:space="preserve"><value>Jede Woche</value></data>
   <data name="Everybody who holds this role signs in with a code from an authenticator app, whatever the policy of the tenant says. Mail programs then need app passwords." xml:space="preserve"><value>Jeder, der diese Rolle hat, meldet sich mit einem Code aus einer Authenticator-App an, unabhängig von der Richtlinie des Mandanten. Mailprogramme brauchen dann App-Passwörter.</value></data>
   <data name="Everything" xml:space="preserve"><value>Alles</value></data>
+  <data name="Everything of this installation – the database and the files of the data volume – is backed up as a whole, so that it can be restored on any server. Backups are made on a schedule to a folder or to a network share (NAS)." xml:space="preserve"><value>Alles dieser Installation – die Datenbank und die Dateien des Datenvolumens – wird als Ganzes gesichert und lässt sich auf jedem Server wiederherstellen. Backups entstehen nach Zeitplan in einem Ordner oder auf einer Netzwerkfreigabe (NAS).</value></data>
   <data name="Everywhere except spam and trash" xml:space="preserve"><value>Überall außer Spam und Papierkorb</value></data>
   <data name="Everywhere you are signed in. Sessions stay valid after a restart of the server; end the ones you do not recognise." xml:space="preserve"><value>Überall, wo Sie angemeldet sind. Sitzungen bleiben nach einem Neustart des Servers gültig; beenden Sie diejenigen, die Sie nicht kennen.</value></data>
   <data name="Everywhere, including spam and trash" xml:space="preserve"><value>Überall, auch Spam und Papierkorb</value></data>
@@ -404,13 +500,18 @@
   <data name="Failed" xml:space="preserve"><value>Fehlgeschlagen</value></data>
   <data name="Fax" xml:space="preserve"><value>Fax</value></data>
   <data name="Fetch mail from connected accounts" xml:space="preserve"><value>E-Mails von verbundenen Konten abholen</value></data>
+  <data name="Fetching the backup from the target" xml:space="preserve"><value>Backup wird vom Ziel geholt</value></data>
   <data name="Field" xml:space="preserve"><value>Feld</value></data>
+  <data name="Fill in the usual values for …" xml:space="preserve"><value>Übliche Werte eintragen für …</value></data>
+  <data name="Fills in the filter, the login attribute and the attributes below; you can change them afterwards." xml:space="preserve"><value>Trägt Filter, Anmeldeattribut und die Attribute weiter unten ein; Sie können sie danach ändern.</value></data>
   <data name="Filter" xml:space="preserve"><value>Filtern</value></data>
   <data name="Fingerprint" xml:space="preserve"><value>Fingerabdruck</value></data>
   <data name="First name" xml:space="preserve"><value>Vorname</value></data>
   <data name="Fit to width" xml:space="preserve"><value>An Breite anpassen</value></data>
   <data name="Folder" xml:space="preserve"><value>Ordner</value></data>
+  <data name="Folder in the share" xml:space="preserve"><value>Ordner in der Freigabe</value></data>
   <data name="Folder name" xml:space="preserve"><value>Ordnername</value></data>
+  <data name="Folder of this server" xml:space="preserve"><value>Ordner dieses Servers</value></data>
   <data name="Folders" xml:space="preserve"><value>Ordner</value></data>
   <data name="Folders to fetch" xml:space="preserve"><value>Abzuholende Ordner</value></data>
   <data name="Footer" xml:space="preserve"><value>Fußzeile</value></data>
@@ -420,12 +521,17 @@
   <data name="Forward" xml:space="preserve"><value>Weiterleiten</value></data>
   <data name="Forward a copy to" xml:space="preserve"><value>Kopie weiterleiten an</value></data>
   <data name="From" xml:space="preserve"><value>Von</value></data>
+  <data name="From the group (its member list: OpenLDAP without memberOf)" xml:space="preserve"><value>Von der Gruppe (ihre Mitgliederliste: OpenLDAP ohne memberOf)</value></data>
+  <data name="From the person (memberOf: Active Directory, FreeIPA, OpenLDAP with the memberOf overlay)" xml:space="preserve"><value>Von der Person (memberOf: Active Directory, FreeIPA, OpenLDAP mit memberOf-Overlay)</value></data>
   <data name="Full control" xml:space="preserve"><value>Vollzugriff</value></data>
   <data name="Full screen" xml:space="preserve"><value>Vollbild</value></data>
   <data name="General" xml:space="preserve"><value>Allgemein</value></data>
+  <data name="Getting ready …" xml:space="preserve"><value>Wird vorbereitet …</value></data>
   <data name="Give up after" xml:space="preserve"><value>Aufgeben nach</value></data>
   <data name="Gives this tenant an own sign-in page with its logo and colour: /t/name. Lower-case letters, digits and hyphens." xml:space="preserve"><value>Gibt diesem Mandanten eine eigene Anmeldeseite mit Logo und Farbe: /t/name. Kleinbuchstaben, Ziffern und Bindestriche.</value></data>
   <data name="Go to “Unassigned”" xml:space="preserve"><value>Zu „Unverteilt“ wechseln</value></data>
+  <data name="Group" xml:space="preserve"><value>Gruppe</value></data>
+  <data name="Group messages into conversations" xml:space="preserve"><value>Nachrichten zu Unterhaltungen zusammenfassen</value></data>
   <data name="Hand over" xml:space="preserve"><value>Übergeben</value></data>
   <data name="Hand over all other waiting messages for these addresses as well" xml:space="preserve"><value>Alle weiteren wartenden Nachrichten für diese Adressen ebenfalls übergeben</value></data>
   <data name="Hand over to a mailbox" xml:space="preserve"><value>An ein Postfach übergeben</value></data>
@@ -434,20 +540,26 @@
   <data name="Header field" xml:space="preserve"><value>Header-Feld</value></data>
   <data name="Header field, e.g. List-Id" xml:space="preserve"><value>Header-Feld, z. B. List-Id</value></data>
   <data name="Hide subfolders" xml:space="preserve"><value>Unterordner ausblenden</value></data>
+  <data name="Hold the outgoing mail that was waiting when the backup was made" xml:space="preserve"><value>Ausgehende E-Mails anhalten, die beim Erstellen des Backups warteten</value></data>
   <data name="Horizontal line" xml:space="preserve"><value>Horizontale Linie</value></data>
   <data name="Host name" xml:space="preserve"><value>Hostname</value></data>
   <data name="hours" xml:space="preserve"><value>Stunden</value></data>
   <data name="Housekeeping" xml:space="preserve"><value>Aufräumen</value></data>
+  <data name="How often" xml:space="preserve"><value>Wie oft</value></data>
   <data name="How the people of this tenant sign in." xml:space="preserve"><value>Wie sich die Personen dieses Mandanten anmelden.</value></data>
   <data name="How this server fetches the mail from the provider." xml:space="preserve"><value>Wie dieser Server die E-Mails beim Anbieter abholt.</value></data>
   <data name="How this tenant presents itself: its name and logo in the header and on its own sign-in page, its colour, its web address." xml:space="preserve"><value>Wie sich dieser Mandant präsentiert: Name und Logo in der Kopfzeile und auf der eigenen Anmeldeseite, seine Farbe und seine Webadresse.</value></data>
   <data name="HTML source" xml:space="preserve"><value>HTML-Quelltext</value></data>
+  <data name="I know that the current data is replaced and that MatMail restarts" xml:space="preserve"><value>Mir ist klar, dass die aktuellen Daten ersetzt werden und MatMail neu startet</value></data>
   <data name="If" xml:space="preserve"><value>Wenn</value></data>
   <data name="If one of" xml:space="preserve"><value>Wenn eines davon zutrifft:</value></data>
   <data name="If you lose your phone, a recovery code takes the place of the code of the app. Creating new codes makes the old ones worthless." xml:space="preserve"><value>Wenn Sie Ihr Smartphone verlieren, ersetzt ein Wiederherstellungscode den Code der App. Neue Codes machen die alten wertlos.</value></data>
   <data name="IMAP / SMTP settings" xml:space="preserve"><value>IMAP-/SMTP-Einstellungen</value></data>
   <data name="IMAP server enabled" xml:space="preserve"><value>IMAP-Server aktiv</value></data>
   <data name="IMAP: signed in at {0}; {1} folders; the inbox holds {2} messages ({3} unread)." xml:space="preserve"><value>IMAP: Anmeldung bei {0} erfolgreich; {1} Ordner; der Posteingang enthält {2} Nachrichten ({3} ungelesen).</value></data>
+  <data name="Import people" xml:space="preserve"><value>Personen importieren</value></data>
+  <data name="Import selected" xml:space="preserve"><value>Auswahl importieren</value></data>
+  <data name="In the time zone of this server. For a plan that runs every few hours only the minute counts." xml:space="preserve"><value>In der Zeitzone dieses Servers. Bei einem Zeitplan, der alle paar Stunden läuft, zählt nur die Minute.</value></data>
   <data name="In use" xml:space="preserve"><value>Belegt</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inaktiv</value></data>
   <data name="Inbox" xml:space="preserve"><value>Posteingang</value></data>
@@ -456,6 +568,7 @@
   <data name="Information" xml:space="preserve"><value>Information</value></data>
   <data name="Insert picture" xml:space="preserve"><value>Bild einfügen</value></data>
   <data name="Insert placeholder" xml:space="preserve"><value>Platzhalter einfügen</value></data>
+  <data name="Inside the data volume only {0} may be used (anywhere else the backups would end up in the next backup)." xml:space="preserve"><value>Im Datenvolumen darf nur {0} verwendet werden (an jeder anderen Stelle landeten die Backups im nächsten Backup).</value></data>
   <data name="Install" xml:space="preserve"><value>Installieren</value></data>
   <data name="Install a certificate" xml:space="preserve"><value>Zertifikat installieren</value></data>
   <data name="Install app" xml:space="preserve"><value>App installieren</value></data>
@@ -463,17 +576,22 @@
   <data name="Internal" xml:space="preserve"><value>Intern</value></data>
   <data name="IP address" xml:space="preserve"><value>IP-Adresse</value></data>
   <data name="is" xml:space="preserve"><value>ist</value></data>
+  <data name="Is a user" xml:space="preserve"><value>Ist Benutzer</value></data>
   <data name="is larger than" xml:space="preserve"><value>ist größer als</value></data>
   <data name="is smaller than" xml:space="preserve"><value>ist kleiner als</value></data>
   <data name="Is uploaded as soon as you are back online" xml:space="preserve"><value>Wird hochgeladen, sobald Sie wieder online sind</value></data>
   <data name="Issuer" xml:space="preserve"><value>Aussteller</value></data>
+  <data name="It may have been sent in the meantime. Held mail is shown as failed in the outgoing queue; retry what is really missing." xml:space="preserve"><value>Sie könnten inzwischen gesendet worden sein. Angehaltene Mails erscheinen in der Warteschlange als fehlgeschlagen; versuchen Sie erneut, was wirklich fehlt.</value></data>
+  <data name="It was made on {0}" xml:space="preserve"><value>Es wurde am {0} erstellt</value></data>
   <data name="Italic" xml:space="preserve"><value>Kursiv</value></data>
   <data name="Job title" xml:space="preserve"><value>Funktion</value></data>
   <data name="Keep a copy" xml:space="preserve"><value>Kopie behalten</value></data>
   <data name="Keep a copy on the server" xml:space="preserve"><value>Kopie auf dem Server behalten</value></data>
   <data name="Keep a copy: the originals stay. Delete after download: the provider’s mailbox is emptied once the mail is safely stored here. Live access: nothing is stored, the mail is read from the provider when needed (IMAP only)." xml:space="preserve"><value>Kopie behalten: Die Originale bleiben erhalten. Nach Download löschen: Das Postfach beim Anbieter wird geleert, sobald die Nachrichten sicher hier gespeichert sind. Live-Zugriff: Es wird nichts gespeichert, die Nachrichten werden bei Bedarf vom Anbieter gelesen (nur IMAP).</value></data>
   <data name="Keep for …" xml:space="preserve"><value>Aufbewahren für …</value></data>
+  <data name="Keep the passphrase somewhere else, too. An encrypted backup cannot be opened without it, and a new server does not have it: it is only inside the backups." xml:space="preserve"><value>Bewahren Sie die Passphrase auch an anderer Stelle auf. Ohne sie lässt sich ein verschlüsseltes Backup nicht öffnen, und ein neuer Server kennt sie nicht: Sie steckt nur in den Backups.</value></data>
   <data name="Keep these codes in a safe place, for example in a password manager. Each code works once, in place of the code of the app. They are shown only now." xml:space="preserve"><value>Bewahren Sie diese Codes sicher auf, zum Beispiel in einem Passwort-Manager. Jeder Code funktioniert einmal, anstelle des Codes der App. Sie werden nur jetzt angezeigt.</value></data>
+  <data name="Keeps" xml:space="preserve"><value>Behält</value></data>
   <data name="Kept on this device. It is sent as soon as you are back online." xml:space="preserve"><value>Auf diesem Gerät aufbewahrt. Sie wird gesendet, sobald Sie wieder online sind.</value></data>
   <data name="Label" xml:space="preserve"><value>Markierung</value></data>
   <data name="Language" xml:space="preserve"><value>Sprache</value></data>
@@ -483,17 +601,24 @@
   <data name="Largest message" xml:space="preserve"><value>Größte Nachricht</value></data>
   <data name="Largest message / attachment upload" xml:space="preserve"><value>Größte Nachricht / größter Anhang beim Hochladen</value></data>
   <data name="Last active" xml:space="preserve"><value>Zuletzt aktiv</value></data>
+  <data name="Last backup failed" xml:space="preserve"><value>Letztes Backup fehlgeschlagen</value></data>
   <data name="Last change" xml:space="preserve"><value>Letzte Änderung</value></data>
+  <data name="Last check" xml:space="preserve"><value>Letzte Prüfung</value></data>
+  <data name="Last comparison" xml:space="preserve"><value>Letzter Abgleich</value></data>
   <data name="Last error" xml:space="preserve"><value>Letzter Fehler</value></data>
   <data name="Last name" xml:space="preserve"><value>Nachname</value></data>
   <data name="Last notified" xml:space="preserve"><value>Zuletzt benachrichtigt</value></data>
   <data name="Last rule for a match" xml:space="preserve"><value>Letzte Regel bei Treffer</value></data>
+  <data name="Last run" xml:space="preserve"><value>Letzter Lauf</value></data>
   <data name="Last sign-in" xml:space="preserve"><value>Letzte Anmeldung</value></data>
   <data name="Last synchronisation" xml:space="preserve"><value>Letzte Synchronisierung</value></data>
   <data name="Last synchronised" xml:space="preserve"><value>Zuletzt synchronisiert</value></data>
   <data name="Last used" xml:space="preserve"><value>Zuletzt verwendet</value></data>
+  <data name="Last: {0}" xml:space="preserve"><value>Zuletzt: {0}</value></data>
+  <data name="LDAPS (port 636, encrypted from the start)" xml:space="preserve"><value>LDAPS (Port 636, von Anfang an verschlüsselt)</value></data>
   <data name="Leave empty to keep the current password." xml:space="preserve"><value>Leer lassen, um das aktuelle Passwort zu behalten.</value></data>
   <data name="Leave empty to keep the name MatMail. With a logo the name is not shown next to it; put it into the logo." xml:space="preserve"><value>Leer lassen, um den Namen MatMail beizubehalten. Mit Logo wird der Name nicht daneben angezeigt; setzen Sie ihn in das Logo.</value></data>
+  <data name="Leave empty to keep the passphrase. It is stored encrypted on this server." xml:space="preserve"><value>Leer lassen, um die Passphrase zu behalten. Sie wird verschlüsselt auf diesem Server gespeichert.</value></data>
   <data name="Leave empty to keep the stored password." xml:space="preserve"><value>Leer lassen, um das gespeicherte Passwort zu behalten.</value></data>
   <data name="Leave empty to keep the stored password. It is stored encrypted." xml:space="preserve"><value>Leer lassen, um das gespeicherte Passwort zu behalten. Es wird verschlüsselt gespeichert.</value></data>
   <data name="Lets Outlook, Thunderbird and phones read and organise mail." xml:space="preserve"><value>Lässt Outlook, Thunderbird und Smartphones E-Mails lesen und organisieren.</value></data>
@@ -504,12 +629,18 @@
   <data name="Live access" xml:space="preserve"><value>Live-Zugriff</value></data>
   <data name="Live access (do not store)" xml:space="preserve"><value>Live-Zugriff (nicht speichern)</value></data>
   <data name="Live access works with IMAP and the role Mail only." xml:space="preserve"><value>Live-Zugriff funktioniert nur mit IMAP und der Rolle E-Mail.</value></data>
+  <data name="Local user" xml:space="preserve"><value>Lokaler Benutzer</value></data>
   <data name="Locked" xml:space="preserve"><value>Gesperrt</value></data>
+  <data name="Login attribute" xml:space="preserve"><value>Anmeldeattribut</value></data>
   <data name="Login name" xml:space="preserve"><value>Anmeldename</value></data>
+  <data name="Login name in use" xml:space="preserve"><value>Anmeldename vergeben</value></data>
   <data name="Login name is required." xml:space="preserve"><value>Der Anmeldename ist erforderlich.</value></data>
   <data name="Logo" xml:space="preserve"><value>Logo</value></data>
+  <data name="Looks up the people and the groups (read access is enough). Empty: the directory is asked anonymously. The passwords of the people are never read: they are checked by signing in as the person." xml:space="preserve"><value>Sucht die Personen und die Gruppen (Lesezugriff genügt). Leer: Das Verzeichnis wird anonym gefragt. Die Passwörter der Personen werden nie gelesen: Sie werden geprüft, indem man sich als die Person anmeldet.</value></data>
   <data name="Lost phone? “Reset two-factor authentication” (at the bottom) removes the authenticator app and the recovery codes and signs the user out everywhere. App passwords stay." xml:space="preserve"><value>Smartphone verloren? „Zwei-Faktor-Authentifizierung zurücksetzen“ (unten) entfernt die Authenticator-App und die Wiederherstellungscodes und meldet den Benutzer überall ab. App-Passwörter bleiben bestehen.</value></data>
   <data name="Lower case. Customers can use their e-mail address." xml:space="preserve"><value>Kleingeschrieben. Kunden können ihre E-Mail-Adresse verwenden.</value></data>
+  <data name="Made" xml:space="preserve"><value>Erstellt</value></data>
+  <data name="Made when it is not there. Empty: the root of the share." xml:space="preserve"><value>Wird angelegt, wenn es ihn nicht gibt. Leer: das Stammverzeichnis der Freigabe.</value></data>
   <data name="Mail" xml:space="preserve"><value>E-Mail</value></data>
   <data name="Mail – fetch and distribute" xml:space="preserve"><value>E-Mail – abholen und verteilen</value></data>
   <data name="Mail accounts at your providers (Strato, Netcup, …). Their mail is fetched and distributed to the mailboxes; outgoing mail can leave through them." xml:space="preserve"><value>E-Mail-Konten bei Ihren Anbietern (Strato, Netcup, …). Ihre Nachrichten werden abgeholt und auf die Postfächer verteilt; ausgehende Nachrichten können über sie versendet werden.</value></data>
@@ -535,6 +666,8 @@
   <data name="Mailboxes" xml:space="preserve"><value>Postfächer</value></data>
   <data name="Main navigation" xml:space="preserve"><value>Hauptnavigation</value></data>
   <data name="Make primary" xml:space="preserve"><value>Als primär festlegen</value></data>
+  <data name="Make the backup" xml:space="preserve"><value>Backup erstellen</value></data>
+  <data name="Makes a complete backup now – database and files – and offers it for download. Use it to keep a copy somewhere else, or to move to another server." xml:space="preserve"><value>Erstellt jetzt ein vollständiges Backup – Datenbank und Dateien – und bietet es zum Download an. So behalten Sie eine Kopie an anderer Stelle oder ziehen auf einen anderen Server um.</value></data>
   <data name="Manage connected provider accounts" xml:space="preserve"><value>Verbundene Anbieter-Konten verwalten</value></data>
   <data name="Manage domains" xml:space="preserve"><value>Domänen verwalten</value></data>
   <data name="Manage mailboxes, addresses and delegation" xml:space="preserve"><value>Postfächer, Adressen und Vertretungen verwalten</value></data>
@@ -542,19 +675,25 @@
   <data name="Manage signatures, footers and mail templates" xml:space="preserve"><value>Signaturen, Fußzeilen und Mail-Vorlagen verwalten</value></data>
   <data name="Manage SMTP relay rules" xml:space="preserve"><value>SMTP-Relay-Regeln verwalten</value></data>
   <data name="Manage the branding of the tenant: name, logo and colour" xml:space="preserve"><value>Das Branding des Mandanten verwalten: Name, Logo und Farbe</value></data>
+  <data name="Manage the directories that people sign in with, such as Active Directory or LDAP" xml:space="preserve"><value>Die Verzeichnisse verwalten, mit denen sich Personen anmelden, etwa Active Directory oder LDAP</value></data>
   <data name="Manage the outgoing queue" xml:space="preserve"><value>Die Warteschlange für ausgehende Nachrichten verwalten</value></data>
   <data name="Manage the security settings of the tenant, such as two-factor authentication" xml:space="preserve"><value>Die Sicherheitseinstellungen des Mandanten verwalten, etwa die Zwei-Faktor-Authentifizierung</value></data>
   <data name="Manage users" xml:space="preserve"><value>Benutzer verwalten</value></data>
   <data name="Management" xml:space="preserve"><value>Geschäftsleitung</value></data>
   <data name="Manages everything inside this tenant." xml:space="preserve"><value>Verwaltet alles in diesem Mandanten.</value></data>
   <data name="Managing director" xml:space="preserve"><value>Geschäftsführer</value></data>
+  <data name="manual run" xml:space="preserve"><value>manueller Lauf</value></data>
   <data name="Mark all as read" xml:space="preserve"><value>Alle als gelesen markieren</value></data>
   <data name="Mark as read" xml:space="preserve"><value>Als gelesen markieren</value></data>
   <data name="Mark as unread" xml:space="preserve"><value>Als ungelesen markieren</value></data>
   <data name="MatMail can run like an app on your phone or computer: it opens in a window of its own, it still opens without a connection (what you write is kept and sent as soon as you are back online) and it can tell you when mail arrives." xml:space="preserve"><value>MatMail läuft auf Telefon oder Computer wie eine App: in einem eigenen Fenster, es öffnet sich auch ohne Verbindung (was Sie schreiben, wird aufbewahrt und gesendet, sobald Sie wieder online sind) und es kann Ihnen Bescheid geben, wenn Mail ankommt.</value></data>
+  <data name="MatMail connects to the share itself (SMB 2.0.2 to 3.0.2, port 445, signed and encrypted when the server asks for it): nothing has to be mounted." xml:space="preserve"><value>MatMail verbindet sich selbst mit der Freigabe (SMB 2.0.2 bis 3.0.2, Port 445, signiert und verschlüsselt, wenn der Server es verlangt): Es muss nichts eingebunden werden.</value></data>
+  <data name="MatMail restarts now and restores the backup. This page leaves for the progress page by itself. If nothing happens for a minute, start MatMail again (a container needs a restart policy such as “unless-stopped”)." xml:space="preserve"><value>MatMail startet jetzt neu und stellt das Backup wieder her. Diese Seite wechselt von selbst zur Fortschrittsseite. Passiert eine Minute lang nichts, starten Sie MatMail erneut (ein Container braucht eine Neustart-Richtlinie wie „unless-stopped“).</value></data>
+  <data name="MatMail stops, restores the backup and starts again; this takes from seconds to many minutes, depending on the size. Everybody is disconnected meanwhile. How this server is deployed (database connection, ports, HTTPS) stays as it is." xml:space="preserve"><value>MatMail hält an, stellt das Backup wieder her und startet neu; das dauert je nach Größe Sekunden bis viele Minuten. Alle sind währenddessen getrennt. Wie dieser Server betrieben wird (Datenbankverbindung, Ports, HTTPS), bleibt unverändert.</value></data>
   <data name="May send" xml:space="preserve"><value>Darf senden</value></data>
   <data name="me" xml:space="preserve"><value>ich</value></data>
   <data name="Members must use two-factor authentication" xml:space="preserve"><value>Mitglieder müssen die Zwei-Faktor-Authentifizierung verwenden</value></data>
+  <data name="Members of groups inside the group count too (Active Directory)" xml:space="preserve"><value>Mitglieder von Gruppen innerhalb der Gruppe zählen mit (Active Directory)</value></data>
   <data name="Members of this role do not have to use two-factor authentication." xml:space="preserve"><value>Mitglieder dieser Rolle müssen die Zwei-Faktor-Authentifizierung nicht verwenden.</value></data>
   <data name="Members of this role must use two-factor authentication." xml:space="preserve"><value>Mitglieder dieser Rolle müssen die Zwei-Faktor-Authentifizierung verwenden.</value></data>
   <data name="Message" xml:space="preserve"><value>Nachricht</value></data>
@@ -574,6 +713,8 @@
   <data name="Minimise" xml:space="preserve"><value>Minimieren</value></data>
   <data name="minutes" xml:space="preserve"><value>Minuten</value></data>
   <data name="Mobile" xml:space="preserve"><value>Mobil</value></data>
+  <data name="Monthly on day {0} at {1}" xml:space="preserve"><value>Monatlich am {0}. um {1}</value></data>
+  <data name="months" xml:space="preserve"><value>Monate</value></data>
   <data name="More" xml:space="preserve"><value>Mehr</value></data>
   <data name="Most addresses" xml:space="preserve"><value>Meiste Adressen</value></data>
   <data name="Most messages" xml:space="preserve"><value>Meiste Nachrichten</value></data>
@@ -602,12 +743,15 @@
   <data name="name@example.com" xml:space="preserve"><value>name@beispiel.de</value></data>
   <data name="Network" xml:space="preserve"><value>Netzwerk</value></data>
   <data name="Network or address" xml:space="preserve"><value>Netzwerk oder Adresse</value></data>
+  <data name="Network share (SMB)" xml:space="preserve"><value>Netzwerkfreigabe (SMB)</value></data>
   <data name="Never" xml:space="preserve"><value>Nie</value></data>
+  <data name="New" xml:space="preserve"><value>Neu</value></data>
   <data name="New access" xml:space="preserve"><value>Neuer Zugriff</value></data>
   <data name="New account" xml:space="preserve"><value>Neues Konto</value></data>
   <data name="New address" xml:space="preserve"><value>Neue Adresse</value></data>
   <data name="New app password" xml:space="preserve"><value>Neues App-Passwort</value></data>
   <data name="New connected account" xml:space="preserve"><value>Neues verbundenes Konto</value></data>
+  <data name="New directory" xml:space="preserve"><value>Neues Verzeichnis</value></data>
   <data name="New domain" xml:space="preserve"><value>Neue Domäne</value></data>
   <data name="New folder" xml:space="preserve"><value>Neuer Ordner</value></data>
   <data name="New mail will show up here." xml:space="preserve"><value>Neue Mails erscheinen hier.</value></data>
@@ -617,24 +761,33 @@
   <data name="New relay rule" xml:space="preserve"><value>Neue Relay-Regel</value></data>
   <data name="New role" xml:space="preserve"><value>Neue Rolle</value></data>
   <data name="New rule" xml:space="preserve"><value>Neue Regel</value></data>
+  <data name="New schedule" xml:space="preserve"><value>Neuer Zeitplan</value></data>
   <data name="New signature" xml:space="preserve"><value>Neue Signatur</value></data>
   <data name="New subfolder" xml:space="preserve"><value>Neuer Unterordner</value></data>
+  <data name="New target" xml:space="preserve"><value>Neues Ziel</value></data>
   <data name="New template" xml:space="preserve"><value>Neue Vorlage</value></data>
   <data name="New tenant" xml:space="preserve"><value>Neuer Mandant</value></data>
   <data name="New user" xml:space="preserve"><value>Neuer Benutzer</value></data>
+  <data name="New users" xml:space="preserve"><value>Neue Benutzer</value></data>
   <data name="Newer" xml:space="preserve"><value>Neuer</value></data>
   <data name="Newest first" xml:space="preserve"><value>Neueste zuerst</value></data>
   <data name="next" xml:space="preserve"><value>nächste</value></data>
   <data name="Next attempt" xml:space="preserve"><value>Nächster Versuch</value></data>
   <data name="Next page" xml:space="preserve"><value>Nächste Seite</value></data>
+  <data name="Next run" xml:space="preserve"><value>Nächster Lauf</value></data>
   <data name="No" xml:space="preserve"><value>Nein</value></data>
   <data name="No access" xml:space="preserve"><value>Kein Zugriff</value></data>
   <data name="No active HttpContext." xml:space="preserve"><value>Kein aktiver HttpContext.</value></data>
   <data name="No app passwords yet." xml:space="preserve"><value>Noch keine App-Passwörter.</value></data>
+  <data name="No backup is scheduled. Add a target and a schedule so that the data is saved regularly." xml:space="preserve"><value>Es ist kein Backup geplant. Legen Sie ein Ziel und einen Zeitplan an, damit die Daten regelmäßig gesichert werden.</value></data>
+  <data name="No backup was chosen." xml:space="preserve"><value>Es wurde kein Backup gewählt.</value></data>
+  <data name="No backup was made yet." xml:space="preserve"><value>Es wurde noch kein Backup erstellt.</value></data>
+  <data name="No backup yet" xml:space="preserve"><value>Noch kein Backup</value></data>
   <data name="No certificate" xml:space="preserve"><value>Kein Zertifikat</value></data>
   <data name="No connected account delivers into your mailboxes." xml:space="preserve"><value>Kein verbundenes Konto liefert in Ihre Postfächer.</value></data>
   <data name="No connected accounts yet." xml:space="preserve"><value>Noch keine verbundenen Konten.</value></data>
   <data name="No device yet." xml:space="preserve"><value>Noch kein Gerät.</value></data>
+  <data name="No directories yet." xml:space="preserve"><value>Noch keine Verzeichnisse.</value></data>
   <data name="No domains yet." xml:space="preserve"><value>Noch keine Domänen.</value></data>
   <data name="No entries." xml:space="preserve"><value>Keine Einträge.</value></data>
   <data name="No file." xml:space="preserve"><value>Keine Datei.</value></data>
@@ -645,6 +798,7 @@
   <data name="No records found." xml:space="preserve"><value>Keine Einträge gefunden.</value></data>
   <data name="No relay rules. Without a rule, only signed-in users can send." xml:space="preserve"><value>Keine Relay-Regeln. Ohne Regel können nur angemeldete Benutzer senden.</value></data>
   <data name="No roles match." xml:space="preserve"><value>Keine passenden Rollen.</value></data>
+  <data name="No schedule yet. Without one, nothing is backed up." xml:space="preserve"><value>Noch kein Zeitplan. Ohne einen wird nichts gesichert.</value></data>
   <data name="No sending account is configured for this sender and direct delivery is switched off." xml:space="preserve"><value>Für diesen Absender ist kein Versandkonto eingerichtet und die direkte Zustellung ist abgeschaltet.</value></data>
   <data name="No sending server is configured." xml:space="preserve"><value>Es ist kein Sendeserver konfiguriert.</value></data>
   <data name="No sent messages." xml:space="preserve"><value>Keine gesendeten Nachrichten.</value></data>
@@ -652,6 +806,7 @@
   <data name="No signature" xml:space="preserve"><value>Keine Signatur</value></data>
   <data name="No signatures yet." xml:space="preserve"><value>Noch keine Signaturen.</value></data>
   <data name="No spam." xml:space="preserve"><value>Kein Spam.</value></data>
+  <data name="No target yet. Add the folder or the share the backups should go to." xml:space="preserve"><value>Noch kein Ziel. Legen Sie den Ordner oder die Freigabe an, in die die Backups gehen sollen.</value></data>
   <data name="No templates yet." xml:space="preserve"><value>Noch keine Vorlagen.</value></data>
   <data name="No tenant to create the mailbox in." xml:space="preserve"><value>Es gibt keinen Mandanten, in dem das Postfach angelegt werden könnte.</value></data>
   <data name="No tenant to create the user in." xml:space="preserve"><value>Es gibt keinen Mandanten, in dem der Benutzer angelegt werden könnte.</value></data>
@@ -659,12 +814,17 @@
   <data name="No transfers match." xml:space="preserve"><value>Keine passenden Transfers.</value></data>
   <data name="No users match." xml:space="preserve"><value>Keine passenden Benutzer.</value></data>
   <data name="Nobody else has access to this mailbox." xml:space="preserve"><value>Sonst hat niemand Zugriff auf dieses Postfach.</value></data>
+  <data name="Nobody found." xml:space="preserve"><value>Niemand gefunden.</value></data>
+  <data name="Nobody was chosen." xml:space="preserve"><value>Es wurde niemand ausgewählt.</value></data>
   <data name="None" xml:space="preserve"><value>Keine</value></data>
+  <data name="None (not encrypted: passwords travel in the clear)" xml:space="preserve"><value>Keine (unverschlüsselt: Passwörter werden im Klartext übertragen)</value></data>
   <data name="None (not encrypted)" xml:space="preserve"><value>Keine (unverschlüsselt)</value></data>
   <data name="none (the device’s network address is checked)" xml:space="preserve"><value>keine (die Netzwerkadresse des Geräts wird geprüft)</value></data>
   <data name="Normal" xml:space="preserve"><value>Normal</value></data>
   <data name="Not delivered: no mailbox." xml:space="preserve"><value>Nicht zugestellt: kein Postfach.</value></data>
+  <data name="Not encrypted" xml:space="preserve"><value>Nicht verschlüsselt</value></data>
   <data name="Not needed when the mail of this domain stays at your provider and is only fetched by a connected account." xml:space="preserve"><value>Nicht nötig, wenn die E-Mails dieser Domäne bei Ihrem Anbieter bleiben und nur über ein verbundenes Konto abgeholt werden.</value></data>
+  <data name="Not scheduled" xml:space="preserve"><value>Nicht geplant</value></data>
   <data name="Not spam" xml:space="preserve"><value>Kein Spam</value></data>
   <data name="Not starred" xml:space="preserve"><value>Ohne Stern</value></data>
   <data name="Notes" xml:space="preserve"><value>Notizen</value></data>
@@ -684,6 +844,7 @@
   <data name="Of several templates that fit, the lowest number is used." xml:space="preserve"><value>Passen mehrere Vorlagen, wird die mit der niedrigsten Zahl verwendet.</value></data>
   <data name="Off" xml:space="preserve"><value>Aus</value></data>
   <data name="Off by default: MatMail is made to run behind a reverse proxy that handles HTTPS. The mail servers use the certificate either way." xml:space="preserve"><value>Standardmäßig aus: MatMail ist dafür gedacht, hinter einem Reverse Proxy zu laufen, der HTTPS übernimmt. Die Mailserver verwenden das Zertifikat in jedem Fall.</value></data>
+  <data name="Off: a message opens in place of the list. On small screens it always does." xml:space="preserve"><value>Aus: Eine Nachricht öffnet sich anstelle der Liste. Auf kleinen Bildschirmen ist das immer so.</value></data>
   <data name="Offline: not saved on the server yet" xml:space="preserve"><value>Offline: noch nicht auf dem Server gespeichert</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
   <data name="Older" xml:space="preserve"><value>Älter</value></data>
@@ -692,13 +853,21 @@
   <data name="On" xml:space="preserve"><value>Ein</value></data>
   <data name="On {0}, {1} wrote:" xml:space="preserve"><value>Am {0} schrieb {1}:</value></data>
   <data name="On an iPhone or iPad, first put MatMail on the home screen (share button, “Add to Home Screen”), open it from there and turn notifications on." xml:space="preserve"><value>Legen Sie MatMail auf einem iPhone oder iPad zuerst auf den Home-Bildschirm (Teilen-Taste, „Zum Home-Bildschirm“), öffnen Sie es von dort und schalten Sie die Benachrichtigungen ein.</value></data>
+  <data name="On day" xml:space="preserve"><value>Am Tag</value></data>
   <data name="On since" xml:space="preserve"><value>Eingeschaltet seit</value></data>
   <data name="On the server" xml:space="preserve"><value>Auf dem Server</value></data>
   <data name="One folder per line, as the provider names it. Empty: only the inbox." xml:space="preserve"><value>Ein Ordner pro Zeile, so wie ihn der Anbieter nennt. Leer: nur der Posteingang.</value></data>
   <data name="One mailbox" xml:space="preserve"><value>Ein Postfach</value></data>
   <data name="One moment …" xml:space="preserve"><value>Einen Moment …</value></data>
   <data name="One of the domains is not valid." xml:space="preserve"><value>Eine der Domänen ist ungültig.</value></data>
+  <data name="One per day for" xml:space="preserve"><value>Eines pro Tag für</value></data>
+  <data name="one per day for {0} days" xml:space="preserve"><value>eines pro Tag für {0} Tage</value></data>
+  <data name="One per month for" xml:space="preserve"><value>Eines pro Monat für</value></data>
+  <data name="one per month for {0} months" xml:space="preserve"><value>eines pro Monat für {0} Monate</value></data>
+  <data name="One per week for" xml:space="preserve"><value>Eines pro Woche für</value></data>
+  <data name="one per week for {0} weeks" xml:space="preserve"><value>eines pro Woche für {0} Wochen</value></data>
   <data name="One user" xml:space="preserve"><value>Ein Benutzer</value></data>
+  <data name="Only .eml and .msg files can be opened." xml:space="preserve"><value>Nur .eml- und .msg-Dateien können geöffnet werden.</value></data>
   <data name="Only for this smart host rule" xml:space="preserve"><value>Nur für diese Smarthost-Regel</value></data>
   <data name="Only messages without an HTML version (devices, scripts, simple programs)" xml:space="preserve"><value>Nur Nachrichten ohne HTML-Fassung (Geräte, Skripte, einfache Programme)</value></data>
   <data name="Only my own mailbox" xml:space="preserve"><value>Nur mein eigenes Postfach</value></data>
@@ -706,31 +875,43 @@
   <data name="Only system administrators can change a system administrator." xml:space="preserve"><value>Nur Systemadministratoren können einen Systemadministrator ändern.</value></data>
   <data name="Only system administrators can change this setting." xml:space="preserve"><value>Nur Systemadministratoren können diese Einstellung ändern.</value></data>
   <data name="Only system administrators can create system administrators." xml:space="preserve"><value>Nur Systemadministratoren können Systemadministratoren anlegen.</value></data>
+  <data name="Only the members of this group may sign in. Empty: everybody the filter finds." xml:space="preserve"><value>Nur die Mitglieder dieser Gruppe dürfen sich anmelden. Leer: alle, die der Filter findet.</value></data>
+  <data name="Only the name of an attribute, e.g. mail." xml:space="preserve"><value>Nur der Name eines Attributs, z. B. mail.</value></data>
   <data name="Only the newest {0} messages were included." xml:space="preserve"><value>Berücksichtigt wurden nur die neuesten {0} Nachrichten.</value></data>
   <data name="Only the part after the @, e.g. example.com." xml:space="preserve"><value>Nur der Teil nach dem @, z. B. example.com.</value></data>
   <data name="Only the trash and the spam folder can be emptied." xml:space="preserve"><value>Nur der Papierkorb und der Spam-Ordner können geleert werden.</value></data>
+  <data name="Open" xml:space="preserve"><value>Öffnen</value></data>
+  <data name="Open a message file (.eml, .msg)" xml:space="preserve"><value>Nachrichtendatei öffnen (.eml, .msg)</value></data>
   <data name="Open in the app on this device" xml:space="preserve"><value>In der App auf diesem Gerät öffnen</value></data>
   <data name="Open in the queue" xml:space="preserve"><value>In der Warteschlange öffnen</value></data>
   <data name="Open the activity log" xml:space="preserve"><value>Aktivitätsprotokoll öffnen</value></data>
   <data name="Open the menu of your browser and choose “Install app” or “Add to home screen”." xml:space="preserve"><value>Öffnen Sie das Menü Ihres Browsers und wählen Sie „App installieren“ oder „Zum Startbildschirm hinzufügen“.</value></data>
   <data name="Optional: every user decides for themselves" xml:space="preserve"><value>Optional: Jeder Benutzer entscheidet selbst</value></data>
   <data name="or" xml:space="preserve"><value>oder</value></data>
+  <data name="Or restore a backup" xml:space="preserve"><value>Oder ein Backup wiederherstellen</value></data>
   <data name="Order of use" xml:space="preserve"><value>Reihenfolge</value></data>
   <data name="Original size" xml:space="preserve"><value>Originalgröße</value></data>
   <data name="Outbox" xml:space="preserve"><value>Postausgang</value></data>
   <data name="Outgoing" xml:space="preserve"><value>Ausgehend</value></data>
   <data name="Outgoing mail (SMTP)" xml:space="preserve"><value>Postausgangsserver (SMTP)</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
+  <data name="Overview" xml:space="preserve"><value>Übersicht</value></data>
   <data name="Overview of tenant “{0}”." xml:space="preserve"><value>Übersicht des Mandanten „{0}“.</value></data>
   <data name="Owner" xml:space="preserve"><value>Besitzer</value></data>
   <data name="Page not found" xml:space="preserve"><value>Seite nicht gefunden</value></data>
   <data name="Pagination" xml:space="preserve"><value>Seitennavigation</value></data>
+  <data name="Passphrase" xml:space="preserve"><value>Passphrase</value></data>
+  <data name="Passphrase (optional)" xml:space="preserve"><value>Passphrase (optional)</value></data>
+  <data name="Passphrase of the backup" xml:space="preserve"><value>Passphrase des Backups</value></data>
+  <data name="Passphrase once more" xml:space="preserve"><value>Passphrase noch einmal</value></data>
   <data name="Password" xml:space="preserve"><value>Passwort</value></data>
   <data name="Password of the PKCS#12 file (if any)" xml:space="preserve"><value>Passwort der PKCS#12-Datei (falls vorhanden)</value></data>
   <data name="Peer" xml:space="preserve"><value>Gegenstelle</value></data>
   <data name="PEM files" xml:space="preserve"><value>PEM-Dateien</value></data>
   <data name="People" xml:space="preserve"><value>Personen</value></data>
+  <data name="People of the directory who have no user yet can be made users now, with a mailbox and rights, before they sign in the first time." xml:space="preserve"><value>Personen des Verzeichnisses, die noch keinen Benutzer haben, können jetzt zu Benutzern gemacht werden – mit Postfach und Rechten, bevor sie sich zum ersten Mal anmelden.</value></data>
   <data name="People turn this on per device in their account (App). The push service of the browser carries the message; it needs https." xml:space="preserve"><value>Jeder schaltet das pro Gerät in seinem Konto ein (App). Der Push-Dienst des Browsers überträgt die Nachricht; das braucht https.</value></data>
+  <data name="People who are local users already (same login name) sign in through the directory from now on: their old password stops working" xml:space="preserve"><value>Personen, die schon lokale Benutzer sind (gleicher Anmeldename), melden sich ab jetzt über das Verzeichnis an: Ihr altes Passwort gilt dann nicht mehr</value></data>
   <data name="People who can sign in to the web client, IMAP and SMTP of this tenant." xml:space="preserve"><value>Personen, die sich im Webclient, per IMAP und per SMTP bei diesem Mandanten anmelden können.</value></data>
   <data name="Permissions" xml:space="preserve"><value>Berechtigungen</value></data>
   <data name="Person" xml:space="preserve"><value>Person</value></data>
@@ -763,16 +944,21 @@
   <data name="Private key (PEM)" xml:space="preserve"><value>Privater Schlüssel (PEM)</value></data>
   <data name="Problem" xml:space="preserve"><value>Problem</value></data>
   <data name="Profile" xml:space="preserve"><value>Profil</value></data>
+  <data name="Protection" xml:space="preserve"><value>Schutz</value></data>
   <data name="Protocol" xml:space="preserve"><value>Protokoll</value></data>
   <data name="Provider synchronisation" xml:space="preserve"><value>Synchronisierung mit Anbietern</value></data>
   <data name="Public folder" xml:space="preserve"><value>Öffentlicher Ordner</value></data>
   <data name="Public host name" xml:space="preserve"><value>Öffentlicher Hostname</value></data>
+  <data name="Put a backup in place of what is here: the database and the files of the data volume. Backups of earlier versions can be restored too; they are brought up to this version." xml:space="preserve"><value>Setzen Sie ein Backup an die Stelle dessen, was hier ist: die Datenbank und die Dateien des Datenvolumens. Auch Backups früherer Versionen lassen sich wiederherstellen; sie werden auf diese Version gebracht.</value></data>
   <data name="QR code for your authenticator app" xml:space="preserve"><value>QR-Code für Ihre Authenticator-App</value></data>
   <data name="Queued" xml:space="preserve"><value>Eingereiht</value></data>
   <data name="Read" xml:space="preserve"><value>Lesen</value></data>
   <data name="Read and edit" xml:space="preserve"><value>Lesen und bearbeiten</value></data>
+  <data name="Read every backup back and compare it with its checksums before it counts" xml:space="preserve"><value>Jedes Backup zurücklesen und mit seinen Prüfsummen vergleichen, bevor es zählt</value></data>
   <data name="Read the message" xml:space="preserve"><value>Nachricht lesen</value></data>
+  <data name="Read the whole backup first and check it against its checksums" xml:space="preserve"><value>Das ganze Backup zuerst lesen und gegen seine Prüfsummen prüfen</value></data>
   <data name="Read, edit and send" xml:space="preserve"><value>Lesen, bearbeiten und senden</value></data>
+  <data name="Reading pane" xml:space="preserve"><value>Lesebereich</value></data>
   <data name="Received" xml:space="preserve"><value>Empfangen</value></data>
   <data name="Received after" xml:space="preserve"><value>Empfangen nach</value></data>
   <data name="Received before" xml:space="preserve"><value>Empfangen vor</value></data>
@@ -816,8 +1002,15 @@
   <data name="Reset filters" xml:space="preserve"><value>Zurücksetzen</value></data>
   <data name="Reset two-factor authentication" xml:space="preserve"><value>Zwei-Faktor-Authentifizierung zurücksetzen</value></data>
   <data name="Reset two-factor authentication of this user? They have to set it up again, and they are signed out everywhere." xml:space="preserve"><value>Zwei-Faktor-Authentifizierung dieses Benutzers zurücksetzen? Der Benutzer muss sie neu einrichten und wird überall abgemeldet.</value></data>
+  <data name="Resize the reading pane" xml:space="preserve"><value>Größe des Lesebereichs ändern</value></data>
+  <data name="Restore" xml:space="preserve"><value>Wiederherstellen</value></data>
+  <data name="Restore a backup" xml:space="preserve"><value>Backup wiederherstellen</value></data>
+  <data name="Restore from a file" xml:space="preserve"><value>Aus einer Datei wiederherstellen</value></data>
+  <data name="Restore this backup" xml:space="preserve"><value>Dieses Backup wiederherstellen</value></data>
+  <data name="Result" xml:space="preserve"><value>Ergebnis</value></data>
   <data name="Revoke" xml:space="preserve"><value>Widerrufen</value></data>
   <data name="Revoke the app password “{0}”? Mail programs that use it stop working." xml:space="preserve"><value>App-Passwort „{0}“ widerrufen? Mailprogramme, die es verwenden, funktionieren dann nicht mehr.</value></data>
+  <data name="Right of the list" xml:space="preserve"><value>Rechts neben der Liste</value></data>
   <data name="Role" xml:space="preserve"><value>Rolle</value></data>
   <data name="Roles" xml:space="preserve"><value>Rollen</value></data>
   <data name="Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox." xml:space="preserve"><value>Rollen legen fest, was der Benutzer verwalten darf. Der Zugriff auf fremde Postfächer wird pro Postfach als Vertretung vergeben.</value></data>
@@ -827,22 +1020,34 @@
   <data name="Salutation" xml:space="preserve"><value>Anrede</value></data>
   <data name="Save" xml:space="preserve"><value>Speichern</value></data>
   <data name="Save and close" xml:space="preserve"><value>Speichern und schließen</value></data>
+  <data name="Save the current state first (recommended)" xml:space="preserve"><value>Zuerst den aktuellen Stand sichern (empfohlen)</value></data>
+  <data name="Save to a folder" xml:space="preserve"><value>In einem Ordner speichern</value></data>
+  <data name="Saved to {0}." xml:space="preserve"><value>In {0} gespeichert.</value></data>
+  <data name="Saving the database" xml:space="preserve"><value>Datenbank wird gesichert</value></data>
+  <data name="Saving the files" xml:space="preserve"><value>Dateien werden gesichert</value></data>
   <data name="Saving…" xml:space="preserve"><value>Wird gespeichert …</value></data>
   <data name="Scan the QR code with the app. Cannot scan it? Enter this key in the app (type: time based):" xml:space="preserve"><value>Scannen Sie den QR-Code mit der App. Scannen nicht möglich? Geben Sie diesen Schlüssel in der App ein (Typ: zeitbasiert):</value></data>
+  <data name="Schedule" xml:space="preserve"><value>Zeitplan</value></data>
+  <data name="Scheduled backups are switched off in the configuration (Backup:Enabled)." xml:space="preserve"><value>Geplante Backups sind in der Konfiguration ausgeschaltet (Backup:Enabled).</value></data>
+  <data name="Schedules" xml:space="preserve"><value>Zeitpläne</value></data>
   <data name="Search" xml:space="preserve"><value>Suche</value></data>
   <data name="Search address, subject, server…" xml:space="preserve"><value>Adresse, Betreff, Server suchen …</value></data>
+  <data name="Search backups…" xml:space="preserve"><value>Backups suchen…</value></data>
   <data name="Search domains…" xml:space="preserve"><value>Domänen suchen …</value></data>
   <data name="Search in" xml:space="preserve"><value>Suchen in</value></data>
   <data name="Search mail" xml:space="preserve"><value>E-Mails durchsuchen</value></data>
   <data name="Search name or address…" xml:space="preserve"><value>Name oder Adresse suchen …</value></data>
   <data name="Search name, address or server…" xml:space="preserve"><value>Name, Adresse oder Server suchen …</value></data>
   <data name="Search name, login or e-mail…" xml:space="preserve"><value>Name, Login oder E-Mail suchen …</value></data>
+  <data name="Search name, server or base…" xml:space="preserve"><value>Name, Server oder Basis suchen …</value></data>
   <data name="Search options" xml:space="preserve"><value>Suchoptionen</value></data>
   <data name="Search roles…" xml:space="preserve"><value>Rollen suchen …</value></data>
   <data name="Search rules or networks…" xml:space="preserve"><value>Regeln oder Netzwerke suchen …</value></data>
+  <data name="Search schedules or targets…" xml:space="preserve"><value>Zeitpläne oder Ziele suchen…</value></data>
   <data name="Search sender, subject or address…" xml:space="preserve"><value>Absender, Betreff oder Adresse suchen …</value></data>
   <data name="Search signatures…" xml:space="preserve"><value>Signaturen suchen …</value></data>
   <data name="Search subject, sender, recipient or error…" xml:space="preserve"><value>Betreff, Absender, Empfänger oder Fehler suchen …</value></data>
+  <data name="Search targets…" xml:space="preserve"><value>Ziele suchen…</value></data>
   <data name="Search templates…" xml:space="preserve"><value>Vorlagen suchen …</value></data>
   <data name="Search tenants…" xml:space="preserve"><value>Mandanten suchen …</value></data>
   <data name="Search the log…" xml:space="preserve"><value>Protokoll durchsuchen …</value></data>
@@ -852,6 +1057,7 @@
   <data name="Select" xml:space="preserve"><value>Auswählen</value></data>
   <data name="Select a mailbox." xml:space="preserve"><value>Wählen Sie ein Postfach aus.</value></data>
   <data name="Select a mailbox…" xml:space="preserve"><value>Postfach auswählen …</value></data>
+  <data name="Select a message to read." xml:space="preserve"><value>Wählen Sie eine Nachricht zum Lesen aus.</value></data>
   <data name="Select a user." xml:space="preserve"><value>Wählen Sie einen Benutzer aus.</value></data>
   <data name="Select a user…" xml:space="preserve"><value>Benutzer auswählen …</value></data>
   <data name="Select all" xml:space="preserve"><value>Alle auswählen</value></data>
@@ -870,6 +1076,7 @@
   <data name="Sender" xml:space="preserve"><value>Absender</value></data>
   <data name="Sender domains" xml:space="preserve"><value>Absenderdomänen</value></data>
   <data name="Sending" xml:space="preserve"><value>Versand</value></data>
+  <data name="Sending the backup to the target" xml:space="preserve"><value>Backup wird zum Ziel übertragen</value></data>
   <data name="Sending was cancelled." xml:space="preserve"><value>Der Versand wurde abgebrochen.</value></data>
   <data name="Sending…" xml:space="preserve"><value>Wird gesendet …</value></data>
   <data name="Sent" xml:space="preserve"><value>Gesendet</value></data>
@@ -887,11 +1094,14 @@
   <data name="Shared (public folder)" xml:space="preserve"><value>Gemeinsam (öffentlicher Ordner)</value></data>
   <data name="Shared mailbox (public folder)" xml:space="preserve"><value>Gemeinsames Postfach (öffentlicher Ordner)</value></data>
   <data name="Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox." xml:space="preserve"><value>Gemeinsame Postfächer, die Ihnen zugewiesen wurden, erscheinen unter dem Ordner „Shared“. Um mit einer gemeinsamen Adresse zu senden, wählen Sie sie als Absender; dafür muss am Postfach das Senderecht vergeben sein.</value></data>
+  <data name="Shares of {0}: {1}" xml:space="preserve"><value>Freigaben von {0}: {1}</value></data>
+  <data name="Show" xml:space="preserve"><value>Anzeigen</value></data>
   <data name="Show original" xml:space="preserve"><value>Original anzeigen</value></data>
   <data name="Show password" xml:space="preserve"><value>Passwort anzeigen</value></data>
   <data name="Show pictures" xml:space="preserve"><value>Bilder anzeigen</value></data>
   <data name="Show subfolders" xml:space="preserve"><value>Unterordner anzeigen</value></data>
   <data name="Show the first words of a message in the list" xml:space="preserve"><value>Die ersten Worte einer Nachricht in der Liste anzeigen</value></data>
+  <data name="Show the shares of the server" xml:space="preserve"><value>Freigaben des Servers anzeigen</value></data>
   <data name="Show the subject of a message in the mail transfer log" xml:space="preserve"><value>Betreff einer Nachricht im Mail-Transferprotokoll anzeigen</value></data>
   <data name="Show trimmed content" xml:space="preserve"><value>Ausgeblendeten Inhalt anzeigen</value></data>
   <data name="Sign in" xml:space="preserve"><value>Anmelden</value></data>
@@ -910,6 +1120,7 @@
   <data name="Signed in" xml:space="preserve"><value>Angemeldet</value></data>
   <data name="Signing in asks for a code from your authenticator app after the password. For a new phone, turn it off and set it up again." xml:space="preserve"><value>Nach dem Passwort fragt die Anmeldung nach einem Code Ihrer Authenticator-App. Für ein neues Smartphone schalten Sie sie aus und richten sie neu ein.</value></data>
   <data name="Signing in needs the password alone again, and mail programs may use your password." xml:space="preserve"><value>Die Anmeldung braucht dann wieder nur das Passwort, und Mailprogramme dürfen Ihr Passwort verwenden.</value></data>
+  <data name="Signs in through the directory “{0}”: the password is the one of the directory and is changed there. Name and contact data are taken over from the directory." xml:space="preserve"><value>Meldet sich über das Verzeichnis „{0}“ an: Das Passwort ist das des Verzeichnisses und wird dort geändert. Name und Kontaktdaten werden aus dem Verzeichnis übernommen.</value></data>
   <data name="Size" xml:space="preserve"><value>Größe</value></data>
   <data name="Sizes must be at least 1 MB." xml:space="preserve"><value>Größen müssen mindestens 1 MB betragen.</value></data>
   <data name="Small" xml:space="preserve"><value>Klein</value></data>
@@ -923,7 +1134,10 @@
   <data name="SMTP user name" xml:space="preserve"><value>SMTP-Benutzername</value></data>
   <data name="SMTP: connected to {0} (without sign-in)." xml:space="preserve"><value>SMTP: Verbindung zu {0} hergestellt (ohne Anmeldung).</value></data>
   <data name="SMTP: signed in at {0}." xml:space="preserve"><value>SMTP: Anmeldung bei {0} erfolgreich.</value></data>
+  <data name="Somebody the directory lets in gets a user when they sign in for the first time" xml:space="preserve"><value>Wen das Verzeichnis hineinlässt, bekommt bei der ersten Anmeldung einen Benutzer</value></data>
   <data name="Someone who lost their phone can be helped on the user page: “Reset two-factor authentication”." xml:space="preserve"><value>Wer sein Smartphone verloren hat, dem hilft die Benutzerseite: „Zwei-Faktor-Authentifizierung zurücksetzen“.</value></data>
+  <data name="Something else is running (a backup or another restore). Wait until it is done." xml:space="preserve"><value>Es läuft gerade etwas anderes (ein Backup oder eine andere Wiederherstellung). Warten Sie, bis es fertig ist.</value></data>
+  <data name="Something else is running. Wait until it is done." xml:space="preserve"><value>Es läuft gerade etwas anderes. Warten Sie, bis es fertig ist.</value></data>
   <data name="Something went wrong" xml:space="preserve"><value>Da ist etwas schiefgelaufen</value></data>
   <data name="Sort" xml:space="preserve"><value>Sortierung</value></data>
   <data name="Source" xml:space="preserve"><value>Quelle</value></data>
@@ -935,6 +1149,7 @@
   <data name="Start the set-up first." xml:space="preserve"><value>Starten Sie zuerst die Einrichtung.</value></data>
   <data name="Started" xml:space="preserve"><value>Gestartet</value></data>
   <data name="starts with" xml:space="preserve"><value>beginnt mit</value></data>
+  <data name="STARTTLS (port 389, switched to encryption before anything is sent)" xml:space="preserve"><value>STARTTLS (Port 389, wird vor dem Senden von Daten auf Verschlüsselung umgestellt)</value></data>
   <data name="STARTTLS (upgraded to encryption)" xml:space="preserve"><value>STARTTLS (nachträglich verschlüsselt)</value></data>
   <data name="Status" xml:space="preserve"><value>Status</value></data>
   <data name="Stay signed in" xml:space="preserve"><value>Angemeldet bleiben</value></data>
@@ -943,6 +1158,7 @@
   <data name="Stored encrypted." xml:space="preserve"><value>Verschlüsselt gespeichert.</value></data>
   <data name="Subject" xml:space="preserve"><value>Betreff</value></data>
   <data name="Subjects are not recorded." xml:space="preserve"><value>Betreffzeilen werden nicht aufgezeichnet.</value></data>
+  <data name="Succeeded" xml:space="preserve"><value>Erfolgreich</value></data>
   <data name="Switch tenant" xml:space="preserve"><value>Mandant wechseln</value></data>
   <data name="Switch this off if administrators are to see who wrote to whom, but not what about." xml:space="preserve"><value>Schalten Sie das aus, wenn Administratoren sehen sollen, wer wem geschrieben hat, aber nicht worüber.</value></data>
   <data name="Synchronisation" xml:space="preserve"><value>Synchronisierung</value></data>
@@ -956,15 +1172,20 @@
   <data name="System folders cannot be deleted." xml:space="preserve"><value>Systemordner können nicht gelöscht werden.</value></data>
   <data name="System folders cannot be moved." xml:space="preserve"><value>Systemordner können nicht verschoben werden.</value></data>
   <data name="System folders cannot be renamed." xml:space="preserve"><value>Systemordner können nicht umbenannt werden.</value></data>
+  <data name="Takes as long as reading the file once. A damaged backup is found before MatMail is stopped; without this it is found while restoring, and nothing is changed either way." xml:space="preserve"><value>Dauert so lange wie einmal die Datei zu lesen. Ein beschädigtes Backup wird gefunden, bevor MatMail angehalten wird; ohne dies beim Wiederherstellen – verändert wird in beiden Fällen nichts.</value></data>
   <data name="Tap the share button of Safari, then “Add to Home Screen”. Open MatMail from there afterwards." xml:space="preserve"><value>Tippen Sie in Safari auf die Teilen-Taste und dann auf „Zum Home-Bildschirm“. Öffnen Sie MatMail danach von dort.</value></data>
+  <data name="Target" xml:space="preserve"><value>Ziel</value></data>
   <data name="Target mailbox" xml:space="preserve"><value>Zielpostfach</value></data>
+  <data name="Targets" xml:space="preserve"><value>Ziele</value></data>
   <data name="Tell me about new mail on this device" xml:space="preserve"><value>Auf diesem Gerät über neue Mail informieren</value></data>
+  <data name="Tell the administrators (a message in their mailbox) when a backup fails" xml:space="preserve"><value>Administratoren benachrichtigen (Nachricht in ihrem Postfach), wenn ein Backup fehlschlägt</value></data>
   <data name="Template" xml:space="preserve"><value>Vorlage</value></data>
   <data name="Templates" xml:space="preserve"><value>Vorlagen</value></data>
   <data name="Tenant" xml:space="preserve"><value>Mandant</value></data>
   <data name="Tenants" xml:space="preserve"><value>Mandanten</value></data>
   <data name="Tenants keep users, mailboxes and settings apart: your family, a company, a hosting customer." xml:space="preserve"><value>Mandanten halten Benutzer, Postfächer und Einstellungen getrennt: Ihre Familie, eine Firma, ein Hosting-Kunde.</value></data>
   <data name="Test connection" xml:space="preserve"><value>Verbindung testen</value></data>
+  <data name="Test result" xml:space="preserve"><value>Testergebnis</value></data>
   <data name="Text colour" xml:space="preserve"><value>Textfarbe</value></data>
   <data name="Text of the message" xml:space="preserve"><value>Text der Nachricht</value></data>
   <data name="Text size" xml:space="preserve"><value>Schriftgröße</value></data>
@@ -984,6 +1205,14 @@
   <data name="The app shows a new 6-digit code every 30 seconds." xml:space="preserve"><value>Die App zeigt alle 30 Sekunden einen neuen 6-stelligen Code.</value></data>
   <data name="The archive is empty." xml:space="preserve"><value>Das Archiv ist leer.</value></data>
   <data name="The attachment is too large." xml:space="preserve"><value>Der Anhang ist zu groß.</value></data>
+  <data name="The attribute is required." xml:space="preserve"><value>Das Attribut ist erforderlich.</value></data>
+  <data name="The backup" xml:space="preserve"><value>Das Backup</value></data>
+  <data name="The backup is encrypted: enter its passphrase." xml:space="preserve"><value>Das Backup ist verschlüsselt: Geben Sie die Passphrase ein.</value></data>
+  <data name="The backup is encrypted. Without its passphrase it cannot be opened." xml:space="preserve"><value>Das Backup ist verschlüsselt. Ohne seine Passphrase lässt es sich nicht öffnen.</value></data>
+  <data name="The backup is ready." xml:space="preserve"><value>Das Backup ist fertig.</value></data>
+  <data name="The backup replaces this empty installation: its users, mailboxes and settings come back. MatMail restarts to do it." xml:space="preserve"><value>Das Backup ersetzt diese leere Installation: Benutzer, Postfächer und Einstellungen kommen zurück. Dafür startet MatMail neu.</value></data>
+  <data name="The backup was started." xml:space="preserve"><value>Das Backup wurde gestartet.</value></data>
+  <data name="The base is required." xml:space="preserve"><value>Die Basis ist erforderlich.</value></data>
   <data name="The branding was saved." xml:space="preserve"><value>Das Branding wurde gespeichert.</value></data>
   <data name="The certificate could not be read: {0}" xml:space="preserve"><value>Das Zertifikat konnte nicht gelesen werden: {0}</value></data>
   <data name="The certificate has expired." xml:space="preserve"><value>Das Zertifikat ist abgelaufen.</value></data>
@@ -996,6 +1225,9 @@
   <data name="The content is required." xml:space="preserve"><value>Der Inhalt ist erforderlich.</value></data>
   <data name="The current password is wrong." xml:space="preserve"><value>Das aktuelle Passwort ist falsch.</value></data>
   <data name="The device gets no more notifications." xml:space="preserve"><value>Das Gerät bekommt keine Benachrichtigungen mehr.</value></data>
+  <data name="The directory was deleted." xml:space="preserve"><value>Das Verzeichnis wurde gelöscht.</value></data>
+  <data name="The directory was saved, but it cannot be used yet: {0}" xml:space="preserve"><value>Das Verzeichnis wurde gespeichert, ist aber noch nicht nutzbar: {0}</value></data>
+  <data name="The directory was saved. {0}" xml:space="preserve"><value>Das Verzeichnis wurde gespeichert. {0}</value></data>
   <data name="The domain must be registered under Domains (or you may register it on the fly). Leave empty to add addresses later." xml:space="preserve"><value>Die Domäne muss unter Domänen registriert sein (oder Sie legen sie gleich mit an). Leer lassen, um Adressen später hinzuzufügen.</value></data>
   <data name="The domain of this address belongs to another tenant." xml:space="preserve"><value>Die Domäne dieser Adresse gehört zu einem anderen Mandanten.</value></data>
   <data name="The domain of this address is not registered. Add it under Domains first." xml:space="preserve"><value>Die Domäne dieser Adresse ist nicht registriert. Fügen Sie sie zuerst unter Domänen hinzu.</value></data>
@@ -1005,7 +1237,18 @@
   <data name="The e-mail address is not valid." xml:space="preserve"><value>Die E-Mail-Adresse ist ungültig.</value></data>
   <data name="The entry was removed." xml:space="preserve"><value>Der Eintrag wurde entfernt.</value></data>
   <data name="The file contains no private key." xml:space="preserve"><value>Die Datei enthält keinen privaten Schlüssel.</value></data>
+  <data name="The file is an Outlook item, but not a message." xml:space="preserve"><value>Die Datei ist ein Outlook-Element, aber keine Nachricht.</value></data>
+  <data name="The file is empty." xml:space="preserve"><value>Die Datei ist leer.</value></data>
+  <data name="The file is not a message." xml:space="preserve"><value>Die Datei ist keine Nachricht.</value></data>
+  <data name="The file is not a readable Outlook message." xml:space="preserve"><value>Die Datei ist keine lesbare Outlook-Nachricht.</value></data>
+  <data name="The file is too large." xml:space="preserve"><value>Die Datei ist zu groß.</value></data>
+  <data name="The file stays on the server for an hour." xml:space="preserve"><value>Die Datei bleibt eine Stunde auf dem Server.</value></data>
+  <data name="The filter is not valid: every opening bracket needs its closing one, e.g. (objectClass=person)." xml:space="preserve"><value>Der Filter ist ungültig: Zu jeder öffnenden Klammer gehört eine schließende, z. B. (objectClass=person).</value></data>
+  <data name="The first {0} people are shown. Narrow the search to find the others." xml:space="preserve"><value>Die ersten {0} Personen werden angezeigt. Schränken Sie die Suche ein, um die anderen zu finden.</value></data>
   <data name="The folder does not exist." xml:space="preserve"><value>Der Ordner existiert nicht.</value></data>
+  <data name="The folder is missing." xml:space="preserve"><value>Der Ordner fehlt.</value></data>
+  <data name="The folder must be a full path, e.g. /backups." xml:space="preserve"><value>Der Ordner muss ein vollständiger Pfad sein, z. B. /backups.</value></data>
+  <data name="The folder must not contain “..”." xml:space="preserve"><value>Der Ordner darf kein „..“ enthalten.</value></data>
   <data name="The folder name is not valid." xml:space="preserve"><value>Der Ordnername ist ungültig.</value></data>
   <data name="The folders are nested too deeply." xml:space="preserve"><value>Die Ordner sind zu tief verschachtelt.</value></data>
   <data name="The host name is required." xml:space="preserve"><value>Der Hostname ist erforderlich.</value></data>
@@ -1013,6 +1256,11 @@
   <data name="The IMAP server is switched off." xml:space="preserve"><value>Der IMAP-Server ist ausgeschaltet.</value></data>
   <data name="The installation is already set up." xml:space="preserve"><value>Die Installation ist bereits eingerichtet.</value></data>
   <data name="The interval must be between 1 and 1440 minutes." xml:space="preserve"><value>Das Intervall muss zwischen 1 und 1440 Minuten liegen.</value></data>
+  <data name="the last {0}" xml:space="preserve"><value>die letzten {0}</value></data>
+  <data name="The last backup failed" xml:space="preserve"><value>Das letzte Backup ist fehlgeschlagen</value></data>
+  <data name="The last backup of “{0}” failed: {1}" xml:space="preserve"><value>Das letzte Backup von „{0}“ ist fehlgeschlagen: {1}</value></data>
+  <data name="The last successful backup is from {0}." xml:space="preserve"><value>Das letzte erfolgreiche Backup ist vom {0}.</value></data>
+  <data name="The list shows one row per conversation; opening it shows all its messages." xml:space="preserve"><value>Die Liste zeigt eine Zeile pro Unterhaltung; beim Öffnen sehen Sie alle ihre Nachrichten.</value></data>
   <data name="The login name must not contain spaces." xml:space="preserve"><value>Der Anmeldename darf keine Leerzeichen enthalten.</value></data>
   <data name="The login name or the password is wrong." xml:space="preserve"><value>Der Anmeldename oder das Passwort ist falsch.</value></data>
   <data name="The logo is larger than 512 KB." xml:space="preserve"><value>Das Logo ist größer als 512 KB.</value></data>
@@ -1042,14 +1290,19 @@
   <data name="The name of a header field has no blanks and no colon." xml:space="preserve"><value>Der Name eines Header-Felds enthält keine Leerzeichen und keinen Doppelpunkt.</value></data>
   <data name="The name of this server: used in the SMTP/IMAP greeting and for the generated certificate." xml:space="preserve"><value>Der Name dieses Servers: wird in der SMTP-/IMAP-Begrüßung und für das erzeugte Zertifikat verwendet.</value></data>
   <data name="The new recovery codes are valid; the old ones are not." xml:space="preserve"><value>Die neuen Wiederherstellungscodes gelten, die alten nicht mehr.</value></data>
+  <data name="The newest" xml:space="preserve"><value>Die neuesten</value></data>
+  <data name="The newest {0} of {1} backups are shown." xml:space="preserve"><value>Es werden die neuesten {0} von {1} Backups angezeigt.</value></data>
   <data name="The notification could not be sent. Turn notifications off and on again." xml:space="preserve"><value>Die Benachrichtigung konnte nicht gesendet werden. Schalten Sie die Benachrichtigungen aus und wieder ein.</value></data>
   <data name="The owner already has full access." xml:space="preserve"><value>Der Besitzer hat bereits vollen Zugriff.</value></data>
   <data name="The owner always has full access. Users listed here may also work in this mailbox, for example as a substitute." xml:space="preserve"><value>Der Besitzer hat immer vollen Zugriff. Die hier aufgeführten Benutzer dürfen ebenfalls in diesem Postfach arbeiten, z. B. als Vertretung.</value></data>
   <data name="The owner has full access to a personal mailbox." xml:space="preserve"><value>Der Besitzer hat vollen Zugriff auf ein persönliches Postfach.</value></data>
   <data name="The page is out of date. Reload it and try again." xml:space="preserve"><value>Die Seite ist veraltet. Laden Sie sie neu und versuchen Sie es erneut.</value></data>
+  <data name="The passphrase needs at least {0} characters." xml:space="preserve"><value>Die Passphrase braucht mindestens {0} Zeichen.</value></data>
   <data name="The password is required." xml:space="preserve"><value>Das Passwort ist erforderlich.</value></data>
   <data name="The password is wrong." xml:space="preserve"><value>Das Passwort ist falsch.</value></data>
   <data name="The password must have at least 10 characters." xml:space="preserve"><value>Das Passwort muss mindestens 10 Zeichen lang sein.</value></data>
+  <data name="The password of the account is required." xml:space="preserve"><value>Das Passwort des Kontos ist erforderlich.</value></data>
+  <data name="The password of this user is managed in the directory." xml:space="preserve"><value>Das Passwort dieses Benutzers wird im Verzeichnis verwaltet.</value></data>
   <data name="The passwords do not match." xml:space="preserve"><value>Die Passwörter stimmen nicht überein.</value></data>
   <data name="The picture is too large, even after shrinking it." xml:space="preserve"><value>Das Bild ist zu groß, auch nach dem Verkleinern.</value></data>
   <data name="The port must be between 0 and 65535." xml:space="preserve"><value>Der Port muss zwischen 0 und 65535 liegen.</value></data>
@@ -1058,6 +1311,10 @@
   <data name="The provider’s SMTP server, used to send mail from addresses that belong to this account." xml:space="preserve"><value>Der SMTP-Server des Anbieters, über den E-Mails von Adressen gesendet werden, die zu diesem Konto gehören.</value></data>
   <data name="The queue is empty." xml:space="preserve"><value>Die Warteschlange ist leer.</value></data>
   <data name="The request could not be completed. Please try again." xml:space="preserve"><value>Die Anfrage konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.</value></data>
+  <data name="The restore could not be prepared." xml:space="preserve"><value>Die Wiederherstellung konnte nicht vorbereitet werden.</value></data>
+  <data name="The restore failed. Nothing was changed." xml:space="preserve"><value>Die Wiederherstellung ist fehlgeschlagen. Es wurde nichts verändert.</value></data>
+  <data name="The restore is being prepared" xml:space="preserve"><value>Die Wiederherstellung wird vorbereitet</value></data>
+  <data name="The role does not exist." xml:space="preserve"><value>Die Rolle gibt es nicht.</value></data>
   <data name="The role was created." xml:space="preserve"><value>Die Rolle wurde angelegt.</value></data>
   <data name="The role was deleted." xml:space="preserve"><value>Die Rolle wurde gelöscht.</value></data>
   <data name="The role was saved." xml:space="preserve"><value>Die Rolle wurde gespeichert.</value></data>
@@ -1070,9 +1327,13 @@
   <data name="The rule was created." xml:space="preserve"><value>Die Regel wurde angelegt.</value></data>
   <data name="The rule was deleted." xml:space="preserve"><value>Die Regel wurde gelöscht.</value></data>
   <data name="The rule was saved." xml:space="preserve"><value>Die Regel wurde gespeichert.</value></data>
+  <data name="The schedule was created." xml:space="preserve"><value>Der Zeitplan wurde angelegt.</value></data>
+  <data name="The schedule was deleted. The backups it made are still where they are." xml:space="preserve"><value>Der Zeitplan wurde gelöscht. Die Backups, die er erstellt hat, liegen weiterhin dort, wo sie sind.</value></data>
+  <data name="The schedule was saved." xml:space="preserve"><value>Der Zeitplan wurde gespeichert.</value></data>
   <data name="The security settings were saved." xml:space="preserve"><value>Die Sicherheitseinstellungen wurden gespeichert.</value></data>
   <data name="The sender: everybody of the tenant, one mailbox or one user. A more specific template wins." xml:space="preserve"><value>Der Absender: alle im Mandanten, ein Postfach oder ein Benutzer. Die genauere Vorlage gewinnt.</value></data>
   <data name="The server is required." xml:space="preserve"><value>Der Server ist erforderlich.</value></data>
+  <data name="The server offers no shares." xml:space="preserve"><value>Der Server bietet keine Freigaben an.</value></data>
   <data name="The session was ended." xml:space="preserve"><value>Die Sitzung wurde beendet.</value></data>
   <data name="The set-up has to be started again." xml:space="preserve"><value>Die Einrichtung muss neu gestartet werden.</value></data>
   <data name="The settings were saved. Ports and server switches apply after a restart of the container." xml:space="preserve"><value>Die Einstellungen wurden gespeichert. Ports und Server-Schalter gelten nach einem Neustart des Containers.</value></data>
@@ -1083,9 +1344,15 @@
   <data name="The signature was deleted." xml:space="preserve"><value>Die Signatur wurde gelöscht.</value></data>
   <data name="The signature was saved." xml:space="preserve"><value>Die Signatur wurde gespeichert.</value></data>
   <data name="The SMTP server is switched off." xml:space="preserve"><value>Der SMTP-Server ist ausgeschaltet.</value></data>
+  <data name="The state before is saved as {0}." xml:space="preserve"><value>Der Stand davor ist als {0} gesichert.</value></data>
   <data name="The synchronisation could not be started." xml:space="preserve"><value>Die Synchronisation konnte nicht gestartet werden.</value></data>
   <data name="The synchronisation is not available in this installation." xml:space="preserve"><value>Die Synchronisierung ist in dieser Installation nicht verfügbar.</value></data>
   <data name="The synchronisation is switched off on this server." xml:space="preserve"><value>Die Synchronisation ist auf diesem Server ausgeschaltet.</value></data>
+  <data name="The target does not exist any more." xml:space="preserve"><value>Das Ziel gibt es nicht mehr.</value></data>
+  <data name="The target is used by {0} schedule(s). Delete or change those first." xml:space="preserve"><value>Das Ziel wird von {0} Zeitplan/Zeitplänen verwendet. Löschen oder ändern Sie diese zuerst.</value></data>
+  <data name="The target was deleted. The backups in it are still there." xml:space="preserve"><value>Das Ziel wurde gelöscht. Die Backups darin sind weiterhin vorhanden.</value></data>
+  <data name="The target was saved, but it cannot be used yet: {0}" xml:space="preserve"><value>Das Ziel wurde gespeichert, ist aber noch nicht nutzbar: {0}</value></data>
+  <data name="The target was saved. {0}" xml:space="preserve"><value>Das Ziel wurde gespeichert. {0}</value></data>
   <data name="The template is too large; use smaller pictures." xml:space="preserve"><value>Die Vorlage ist zu groß; verwenden Sie kleinere Bilder.</value></data>
   <data name="The template must say where the message goes: add the placeholder {{Body}}." xml:space="preserve"><value>Die Vorlage muss sagen, wo die Nachricht hinkommt: Fügen Sie den Platzhalter {{Body}} ein.</value></data>
   <data name="The template was created." xml:space="preserve"><value>Die Vorlage wurde angelegt.</value></data>
@@ -1099,7 +1366,10 @@
   <data name="The text is too long." xml:space="preserve"><value>Der Text ist zu lang.</value></data>
   <data name="The TLS certificate could not be loaded; keeping the previous one." xml:space="preserve"><value>Das TLS-Zertifikat konnte nicht geladen werden; das bisherige bleibt in Verwendung.</value></data>
   <data name="The trash is empty." xml:space="preserve"><value>Der Papierkorb ist leer.</value></data>
+  <data name="The two passphrases are not the same." xml:space="preserve"><value>Die beiden Passphrasen sind nicht gleich.</value></data>
   <data name="The upload failed." xml:space="preserve"><value>Das Hochladen ist fehlgeschlagen.</value></data>
+  <data name="The uploaded file" xml:space="preserve"><value>Die hochgeladene Datei</value></data>
+  <data name="The uploaded file is not there any more. Upload it again." xml:space="preserve"><value>Die hochgeladene Datei ist nicht mehr da. Laden Sie sie erneut hoch.</value></data>
   <data name="The user does not exist." xml:space="preserve"><value>Der Benutzer existiert nicht.</value></data>
   <data name="The user must choose a new password at the next sign-in" xml:space="preserve"><value>Der Benutzer muss bei der nächsten Anmeldung ein neues Passwort wählen</value></data>
   <data name="The user name is required." xml:space="preserve"><value>Der Benutzername ist erforderlich.</value></data>
@@ -1114,6 +1384,12 @@
   <data name="Theme" xml:space="preserve"><value>Darstellung</value></data>
   <data name="Then" xml:space="preserve"><value>Dann</value></data>
   <data name="There are no rules for this mailbox yet." xml:space="preserve"><value>Für dieses Postfach gibt es noch keine Regeln.</value></data>
+  <data name="There is a directory of this name already." xml:space="preserve"><value>Es gibt bereits ein Verzeichnis mit diesem Namen.</value></data>
+  <data name="There is a schedule of that name already." xml:space="preserve"><value>Es gibt bereits einen Zeitplan mit diesem Namen.</value></data>
+  <data name="There is a target of that name already." xml:space="preserve"><value>Es gibt bereits ein Ziel mit diesem Namen.</value></data>
+  <data name="There is no backup in this target." xml:space="preserve"><value>In diesem Ziel gibt es kein Backup.</value></data>
+  <data name="There is no successful backup yet." xml:space="preserve"><value>Es gibt noch kein erfolgreiches Backup.</value></data>
+  <data name="There is no target yet. A backup needs a place to go to." xml:space="preserve"><value>Es gibt noch kein Ziel. Ein Backup braucht einen Ort, an den es geht.</value></data>
   <data name="There must be at least one active system administrator." xml:space="preserve"><value>Es muss mindestens einen aktiven Systemadministrator geben.</value></data>
   <data name="These also work typed into the search box, for example from:anna has:attachment newer_than:7d. Combine with OR, leave out with -, group with ( )." xml:space="preserve"><value>Das geht auch direkt im Suchfeld, zum Beispiel von:anna hat:anhang neuer_als:7d. Mit OR kombinieren, mit - ausschließen, mit ( ) gruppieren.</value></data>
   <data name="These details appear in your signature and in the user list." xml:space="preserve"><value>Diese Angaben erscheinen in Ihrer Signatur und in der Benutzerliste.</value></data>
@@ -1121,11 +1397,13 @@
   <data name="This address is already in use." xml:space="preserve"><value>Diese Adresse wird bereits verwendet.</value></data>
   <data name="This device is not registered for notifications." xml:space="preserve"><value>Dieses Gerät ist nicht für Benachrichtigungen angemeldet.</value></data>
   <data name="This domain is already registered." xml:space="preserve"><value>Diese Domäne ist bereits registriert.</value></data>
+  <data name="This file is no longer available. Open it again." xml:space="preserve"><value>Diese Datei ist nicht mehr verfügbar. Öffnen Sie sie erneut.</value></data>
   <data name="This is not a valid address or network." xml:space="preserve"><value>Das ist keine gültige Adresse und kein gültiges Netzwerk.</value></data>
   <data name="This is not a valid domain name." xml:space="preserve"><value>Das ist kein gültiger Domänenname.</value></data>
   <data name="This login name is already in use." xml:space="preserve"><value>Dieser Anmeldename wird bereits verwendet.</value></data>
   <data name="This mailbox has no address yet." xml:space="preserve"><value>Dieses Postfach hat noch keine Adresse.</value></data>
   <data name="This mailbox may send as this address" xml:space="preserve"><value>Dieses Postfach darf mit dieser Adresse senden</value></data>
+  <data name="This message comes from a file. It is not in your mailbox." xml:space="preserve"><value>Diese Nachricht stammt aus einer Datei. Sie liegt nicht in Ihrem Postfach.</value></data>
   <data name="This message no longer exists." xml:space="preserve"><value>Diese Nachricht gibt es nicht mehr.</value></data>
   <data name="This name is reserved for a system folder." xml:space="preserve"><value>Dieser Name ist für einen Systemordner reserviert.</value></data>
   <data name="This page does not exist." xml:space="preserve"><value>Diese Seite gibt es nicht.</value></data>
@@ -1138,6 +1416,7 @@
   <data name="This user already has a personal mailbox." xml:space="preserve"><value>Dieser Benutzer hat bereits ein persönliches Postfach.</value></data>
   <data name="This user already has access." xml:space="preserve"><value>Dieser Benutzer hat bereits Zugriff.</value></data>
   <data name="This user has no personal mailbox yet." xml:space="preserve"><value>Dieser Benutzer hat noch kein persönliches Postfach.</value></data>
+  <data name="This version cannot restore the backup." xml:space="preserve"><value>Diese Version kann das Backup nicht wiederherstellen.</value></data>
   <data name="Thunderbird on my laptop" xml:space="preserve"><value>Thunderbird auf meinem Laptop</value></data>
   <data name="Time zone" xml:space="preserve"><value>Zeitzone</value></data>
   <data name="Title" xml:space="preserve"><value>Titel</value></data>
@@ -1175,7 +1454,10 @@
   <data name="Undo" xml:space="preserve"><value>Rückgängig</value></data>
   <data name="Unknown addresses" xml:space="preserve"><value>Unbekannte Adressen</value></data>
   <data name="Unread" xml:space="preserve"><value>Ungelesen</value></data>
+  <data name="Up to the 28th, so that every month has the day." xml:space="preserve"><value>Bis zum 28., damit jeder Monat den Tag hat.</value></data>
+  <data name="Upload" xml:space="preserve"><value>Hochladen</value></data>
   <data name="Upload either a PEM certificate chain with its private key, or a PKCS#12 (.pfx) file. It replaces the current certificate at once. Renewed files that you place in the certs folder of the data volume are picked up automatically." xml:space="preserve"><value>Laden Sie entweder eine PEM-Zertifikatskette mit privatem Schlüssel oder eine PKCS#12-Datei (.pfx) hoch. Sie ersetzt das aktuelle Zertifikat sofort. Erneuerte Dateien, die Sie im Ordner certs des Datenvolumes ablegen, werden automatisch übernommen.</value></data>
+  <data name="Uploading …" xml:space="preserve"><value>Wird hochgeladen …</value></data>
   <data name="Use *@example.com to catch every address of the domain that has no mailbox of its own." xml:space="preserve"><value>Mit *@example.com werden alle Adressen der Domäne aufgefangen, die kein eigenes Postfach haben.</value></data>
   <data name="Use a self-signed certificate" xml:space="preserve"><value>Selbstsigniertes Zertifikat verwenden</value></data>
   <data name="Use an own accent colour for this tenant" xml:space="preserve"><value>Eine eigene Akzentfarbe für diesen Mandanten verwenden</value></data>
@@ -1192,6 +1474,7 @@
   <data name="Users who chose an accent colour of their own keep it." xml:space="preserve"><value>Benutzer, die sich eine eigene Akzentfarbe gewählt haben, behalten sie.</value></data>
   <data name="Uses mail; no administration." xml:space="preserve"><value>Nutzt E-Mail; keine Administration.</value></data>
   <data name="Using two-factor authentication" xml:space="preserve"><value>Mit Zwei-Faktor-Authentifizierung</value></data>
+  <data name="Usual values" xml:space="preserve"><value>Übliche Werte</value></data>
   <data name="Valid" xml:space="preserve"><value>Gültig</value></data>
   <data name="valid until {0}" xml:space="preserve"><value>gültig bis {0}</value></data>
   <data name="Value" xml:space="preserve"><value>Wert</value></data>
@@ -1207,22 +1490,33 @@
   <data name="Web address (or mailto:)" xml:space="preserve"><value>Webadresse (oder mailto:)</value></data>
   <data name="Web address of the company" xml:space="preserve"><value>Webadresse der Firma</value></data>
   <data name="Web client" xml:space="preserve"><value>Webclient</value></data>
+  <data name="weeks" xml:space="preserve"><value>Wochen</value></data>
   <data name="Welcome to MatMail" xml:space="preserve"><value>Willkommen bei MatMail</value></data>
   <data name="What came in and went out, one line per message. 0 = no transfer log." xml:space="preserve"><value>Was eingegangen und hinausgegangen ist, eine Zeile pro Nachricht. 0 = kein Transferprotokoll.</value></data>
   <data name="What came into the server, what went out and what moved between mailboxes, with the way it took and how it ended." xml:space="preserve"><value>Was in den Server hineinkam, was ihn verlassen hat und was zwischen Postfächern bewegt wurde, mit dem Weg, den es genommen hat, und wie es ausging.</value></data>
   <data name="What happened" xml:space="preserve"><value>Was geschah</value></data>
   <data name="What happens to a message that fits. The message is dealt with before it is stored, so it arrives where it belongs." xml:space="preserve"><value>Was mit einer passenden Nachricht geschieht. Sie wird behandelt, bevor sie gespeichert wird, und landet gleich dort, wo sie hingehört.</value></data>
   <data name="What happens to mail for an address of this domain that no mailbox has." xml:space="preserve"><value>Was mit Nachrichten für eine Adresse dieser Domäne geschieht, die kein Postfach besitzt.</value></data>
+  <data name="What is kept" xml:space="preserve"><value>Was aufbewahrt wird</value></data>
   <data name="What is this account used for?" xml:space="preserve"><value>Wofür wird dieses Konto verwendet?</value></data>
   <data name="What it is used for, so you can tell the passwords apart." xml:space="preserve"><value>Wofür es verwendet wird, damit Sie die Passwörter unterscheiden können.</value></data>
   <data name="What members of this role may do. Reading somebody else’s mail is never part of a role: delegate it on the mailbox." xml:space="preserve"><value>Was die Mitglieder dieser Rolle tun dürfen. Fremde E-Mails zu lesen ist nie Teil einer Rolle: Vergeben Sie dafür am Postfach eine Vertretung.</value></data>
+  <data name="What people type as their login name: uid, sAMAccountName or userPrincipalName." xml:space="preserve"><value>Was die Personen als Anmeldenamen eintippen: uid, sAMAccountName oder userPrincipalName.</value></data>
+  <data name="What somebody gets who signs in for the first time. A login name that exists on this server already always belongs to that user." xml:space="preserve"><value>Was jemand bekommt, der sich zum ersten Mal anmeldet. Ein Anmeldename, den es auf diesem Server schon gibt, gehört immer diesem Benutzer.</value></data>
   <data name="What the mailbox takes up on this server: the complete messages with their attachments." xml:space="preserve"><value>Was das Postfach auf diesem Server belegt: die vollständigen Nachrichten samt Anhängen.</value></data>
+  <data name="What they get" xml:space="preserve"><value>Was sie bekommen</value></data>
   <data name="When" xml:space="preserve"><value>Wann</value></data>
   <data name="When a message arrives" xml:space="preserve"><value>Wenn eine Nachricht eintrifft</value></data>
+  <data name="Where" xml:space="preserve"><value>Wo</value></data>
   <data name="Where does it belong?" xml:space="preserve"><value>Wohin gehört sie?</value></data>
   <data name="Where mail lives: personal mailboxes of users and shared mailboxes (public folders) that several users work in." xml:space="preserve"><value>Wo die E-Mails liegen: persönliche Postfächer der Benutzer und gemeinsame Postfächer (öffentliche Ordner), in denen mehrere Benutzer arbeiten.</value></data>
+  <data name="Where the groups are read" xml:space="preserve"><value>Woher die Gruppen gelesen werden</value></data>
+  <data name="Where the search starts; everything below it is searched. Active Directory: the domain, e.g. dc=example,dc=com." xml:space="preserve"><value>Wo die Suche beginnt; alles darunter wird durchsucht. Active Directory: die Domäne, z. B. dc=example,dc=com.</value></data>
+  <data name="Which attribute of the directory fills which field of the user. Empty: the field is not filled from the directory. They are read at every sign-in and at every comparison." xml:space="preserve"><value>Welches Attribut des Verzeichnisses welches Feld des Benutzers füllt. Leer: Das Feld wird nicht aus dem Verzeichnis gefüllt. Sie werden bei jeder Anmeldung und bei jedem Abgleich gelesen.</value></data>
   <data name="Which mailboxes" xml:space="preserve"><value>Welche Postfächer</value></data>
   <data name="Which messages" xml:space="preserve"><value>Welche Nachrichten</value></data>
+  <data name="Who is a person" xml:space="preserve"><value>Wer eine Person ist</value></data>
+  <data name="Who may sign in" xml:space="preserve"><value>Wer sich anmelden darf</value></data>
   <data name="Who uses it" xml:space="preserve"><value>Wer sie verwendet</value></data>
   <data name="Width in pixels" xml:space="preserve"><value>Breite in Pixel</value></data>
   <data name="With a rule chosen, the template is only for the messages that came in through it, whatever the boxes above say." xml:space="preserve"><value>Ist eine Regel gewählt, gilt die Vorlage nur für Nachrichten, die über sie hereingekommen sind – gleich, was oben angehakt ist.</value></data>
@@ -1246,7 +1540,9 @@
   <data name="You have no drafts." xml:space="preserve"><value>Sie haben keine Entwürfe.</value></data>
   <data name="You have no mailbox whose rules you may change." xml:space="preserve"><value>Sie haben kein Postfach, dessen Regeln Sie ändern dürfen.</value></data>
   <data name="You have no mailbox yet. Ask an administrator to create one for you." xml:space="preserve"><value>Sie haben noch kein Postfach. Bitten Sie einen Administrator, eines für Sie anzulegen.</value></data>
+  <data name="You have the backup of another MatMail (or of this one)? Restore it instead of setting up: users, mailboxes, settings and keys come back." xml:space="preserve"><value>Sie haben das Backup eines anderen MatMail (oder dieses)? Stellen Sie es statt der Einrichtung wieder her: Benutzer, Postfächer, Einstellungen und Schlüssel kommen zurück.</value></data>
   <data name="You have to choose a new password before you continue." xml:space="preserve"><value>Sie müssen ein neues Passwort wählen, bevor Sie fortfahren.</value></data>
+  <data name="You sign in through the directory “{0}”. Your password is the one of that directory: change it there, in the way your organisation does it. For mail programs you can still make app passwords under Security." xml:space="preserve"><value>Sie melden sich über das Verzeichnis „{0}“ an. Ihr Passwort ist das dieses Verzeichnisses: Ändern Sie es dort, so wie es Ihre Organisation vorsieht. Für Mailprogramme können Sie unter Sicherheit weiterhin App-Passwörter anlegen.</value></data>
   <data name="You signed in with a recovery code. Recovery codes left: {0}. You can create new ones under Security in your account." xml:space="preserve"><value>Sie haben sich mit einem Wiederherstellungscode angemeldet. Verbleibende Wiederherstellungscodes: {0}. Neue können Sie unter „Sicherheit“ in Ihrem Konto erstellen.</value></data>
   <data name="You signed in with your last recovery code. Create new ones under Security in your account." xml:space="preserve"><value>Sie haben sich mit Ihrem letzten Wiederherstellungscode angemeldet. Erstellen Sie neue unter „Sicherheit“ in Ihrem Konto.</value></data>
   <data name="Your account is bound to two-factor authentication: after turning it off you have to set it up again at once." xml:space="preserve"><value>Ihr Konto ist an die Zwei-Faktor-Authentifizierung gebunden: Nach dem Ausschalten müssen Sie sie sofort neu einrichten.</value></data>

@@ -53,6 +53,25 @@
         </section>
     }
 
+    @if (Model.DirectoryProblems.Count > 0)
+    {
+        <section class="card">
+            <h2 class="card__title"><mm-icon name="alert" />@L["Directories with problems"]</h2>
+            <mm-table item-count="Model.DirectoryProblems.Count">
+                <thead><tr><th>@L["Directory"]</th><th>@L["Problem"]</th></tr></thead>
+                <tbody>
+                    @foreach (var directory in Model.DirectoryProblems)
+                    {
+                        <tr data-row-href="/Admin/Directories/Edit?id=@directory.Id">
+                            <td class="cell-title">@directory.Name</td>
+                            <td class="cell-sub">@(directory.LastSyncDate is not null ? directory.LastSyncMessage : directory.LastCheckMessage)</td>
+                        </tr>
+                    }
+                </tbody>
+            </mm-table>
+        </section>
+    }
+
     @if (Model.Can(Permissions.LogsView))
     {
         <section class="card">
@@ -99,6 +118,25 @@
                     else
                     {
                         <mm-badge kind="danger">@L["None"]</mm-badge>
+                    }
+                </dd>
+                <dt>@L["Backup"]</dt>
+                <dd>
+                    @if (Model.BackupPlans == 0)
+                    {
+                        <a href="/Admin/Backup"><mm-badge kind="warn" icon="alert">@L["Not scheduled"]</mm-badge></a>
+                    }
+                    else if (Model.BackupFailed)
+                    {
+                        <a href="/Admin/Backup"><mm-badge kind="danger" icon="alert-circle">@L["The last backup failed"]</mm-badge></a>
+                    }
+                    else if (Model.LastBackup is { } last && last > DateTime.UtcNow.AddDays(-2))
+                    {
+                        <a href="/Admin/Backup"><mm-badge kind="ok" icon="check-circle">@Fmt.Ago(last)</mm-badge></a>
+                    }
+                    else
+                    {
+                        <a href="/Admin/Backup"><mm-badge kind="warn" icon="alert">@(Model.LastBackup is null ? L["No backup yet"].Value : string.Format(L["Last: {0}"].Value, Fmt.Ago(Model.LastBackup)))</mm-badge></a>
                     }
                 </dd>
             </dl>

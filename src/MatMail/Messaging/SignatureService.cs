@@ -404,10 +404,18 @@ public sealed partial class SignatureService
         TextPart? plain = bodies.LastOrDefault(p => p.IsPlain);
         var pictures = new List<MimePart>();
 
+        // The sender signed already, as their mail program does it: then neither version of the text gets another one (they are the
+        // same message, and the program need not have written the signature into both the same way).
+        if (signature is not null
+            && ((html is not null && HtmlCarriesSignature(html.Text, signature.Plain)) || (plain is not null && PlainCarriesSignature(plain.Text, signature.Plain))))
+        {
+            signature = null;
+        }
+
         if (html is not null)
         {
             string addition = string.Empty;
-            if (signature is { Html.Length: > 0 } && !HtmlCarriesSignature(html.Text, signature.Plain))
+            if (signature is { Html.Length: > 0 })
             {
                 addition += "<div class=\"mm-signature\">" + signature.Html + "</div>";
             }
@@ -426,7 +434,7 @@ public sealed partial class SignatureService
         {
             string text = plain.Text.TrimEnd();
             string original = text;
-            if (signature is { Plain.Length: > 0 } && !PlainCarriesSignature(text, signature.Plain))
+            if (signature is { Plain.Length: > 0 })
             {
                 text += "\r\n\r\n-- \r\n" + signature.Plain;
             }
@@ -469,23 +477,16 @@ public sealed partial class SignatureService
             .ThenByDescending(s => s.IsDefault).ThenBy(s => s.Id).FirstOrDefault();
 
     /// <summary>
-    /// Whether the message already carries the signature: the marker of the web client, or its text. What is quoted from an older
-    /// message (a block quote) does not count: a reply to a message that was signed is not signed itself.
+    /// Whether the message already carries a signature: one that a mail program put there (see <see cref="SignatureDetector"/>) or the
+    /// text of ours. What is quoted from an older message does not count: a reply to a message that was signed is not signed itself.
     /// </summary>
     private static bool HtmlCarriesSignature(string html, string signatureText)
-    {
-        IHtmlDocument document = new HtmlParser().ParseDocument(html);
-        foreach (IElement quote in document.QuerySelectorAll("blockquote").ToList())
-        {
-            quote.Remove();
-        }
-
-        return document.QuerySelector(".mm-signature") is not null || ContainsText(ToPlainText(document.Body?.InnerHtml ?? string.Empty), signatureText);
-    }
+        => SignatureDetector.HtmlCarries(html) || ContainsText(SignatureDetector.WrittenText(html), signatureText);
 
     /// <summary>Plain text: quoted lines (those that begin with "&gt;") do not count.</summary>
     private static bool PlainCarriesSignature(string text, string signatureText)
-        => ContainsText(string.Join('\n', text.Split('\n').Where(line => !line.TrimStart().StartsWith('>'))), signatureText);
+        => SignatureDetector.PlainCarries(text)
+           || ContainsText(string.Join('\n', text.Split('\n').Where(line => !line.TrimStart().StartsWith('>'))), signatureText);
 
     /// <summary>Whether the snippet is in the text, whatever the line breaks and the spacing.</summary>
     private static bool ContainsText(string text, string snippet)

@@ -58,6 +58,7 @@
         {
             new NavEntry("/Admin/Users", "users", L["Users"].Value, Permissions.UsersManage),
             new NavEntry("/Admin/Roles", "shield", L["Roles"].Value, Permissions.RolesManage),
+            new NavEntry("/Admin/Directories", "server", L["Directories"].Value, Permissions.DirectoriesManage),
         }),
         (L["Delivery"].Value, new[]
         {
@@ -70,13 +71,14 @@
             new NavEntry("/Admin/Logs", "activity", L["Activity log"].Value, Permissions.LogsView),
             new NavEntry("/Admin/Branding", "image", L["Branding"].Value, Permissions.BrandingManage),
             new NavEntry("/Admin/Security", "lock", L["Security"].Value, Permissions.SecurityManage),
+            new NavEntry("/Admin/Backup", "archive", L["Backups"].Value, null, true),
             new NavEntry("/Admin/Settings", "settings", L["Server settings"].Value, null, true),
             new NavEntry("/Admin/Tenants", "building", L["Tenants"].Value, null, true),
         }),
     };
 }
 <!DOCTYPE html>
-<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
+<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-reading-pane="@theme.ReadingPane" data-conversations="@(theme.ConversationView ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
 <head>
     <meta charset="utf-8" />
     @* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@

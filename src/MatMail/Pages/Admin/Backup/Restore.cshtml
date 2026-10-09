@@ -1,0 +1,87 @@
+@page "/Admin/Backup/Restore"
+@model MatMail.Pages.Admin.Backup.RestoreModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups / Restore";
+    ViewData["Title"] = L["Backups"].Value;
+    ViewData["Description"] = L["Put a backup in place of what is here: the database and the files of the data volume. Backups of earlier versions can be restored too; they are brought up to this version."].Value;
+}
+
+<partial name="_BackupTabs" model='"restore"' />
+
+<script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+<div class="notice notice--warn" role="status">
+    <mm-icon name="alert" class="notice__icon" />
+    <span class="notice__text">@L["A restore replaces the current data completely. Mail that arrived after the backup was made is not in it. Before anything is replaced the current state is saved, so that a restore can be undone."]</span>
+</div>
+
+<form method="get" class="inline-form inline-form--spaced">
+    <label for="restore-target">@L["Backups in"]</label>
+    <select id="restore-target" name="Target" class="form-control form-control--inline" onchange="this.form.submit()">
+        <option value="">@L["Choose a target …"]</option>
+        @foreach (var item in Model.TargetItems) { <option value="@item.Value" selected="@(Model.Target?.ToString() == item.Value)">@item.Text</option> }
+    </select>
+    <noscript><button type="submit" class="btn btn--secondary">@L["Show"]</button></noscript>
+</form>
+
+@if (Model.TargetError is not null)
+{
+    <div class="notice notice--danger" role="status">
+        <mm-icon name="alert-circle" class="notice__icon" />
+        <span class="notice__text">@Model.TargetError</span>
+    </div>
+}
+
+@if (Model.Target is not null && Model.TargetError is null)
+{
+    <mm-table item-count="Model.Files.Count" empty-text='@L["There is no backup in this target."]' empty-icon="archive">
+        <thead>
+            <tr>
+                <th>@L["Made"]</th>
+                <th>@L["By"]</th>
+                <th class="hide-sm">@L["Version"]</th>
+                <th class="hide-sm">@L["Size"]</th>
+                <th class="is-actions"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var file in Model.Files)
+            {
+                <tr>
+                    <td class="nowrap">@Fmt.DateTimeText(file.CreatedUtc)@if (file.Encrypted) { <mm-icon name="lock" class="cell-icon" /> }</td>
+                    <td class="cell-title">@file.MadeBy</td>
+                    <td class="hide-sm mono cell-sub">@file.Version</td>
+                    <td class="hide-sm nowrap">@Fmt.Size(file.Bytes)</td>
+                    <td class="is-actions">
+                        <span class="icon-actions">
+                            <a class="icon-btn" href="/Admin/Backup/Restore?handler=File&target=@Model.Target&file=@Uri.EscapeDataString(file.Name)" title="@L["Download"]" aria-label="@L["Download"]"><mm-icon name="download" /></a>
+                            <a class="icon-btn" href="/Admin/Backup/RestoreConfirm?target=@Model.Target&file=@Uri.EscapeDataString(file.Name)" title="@L["Restore this backup"]" aria-label="@L["Restore this backup"]"><mm-icon name="rotate-ccw" /></a>
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </mm-table>
+    @if (Model.TotalFiles > Model.Files.Count)
+    {
+        <p class="muted">@string.Format(L["The newest {0} of {1} backups are shown."].Value, Model.Files.Count, Model.TotalFiles)</p>
+    }
+}
+
+<section class="card card--spaced" id="backup-upload" data-url="/Admin/Backup/Restore?handler=Upload" data-next="/Admin/Backup/RestoreConfirm">
+    <h2 class="card__title"><mm-icon name="upload" />@L["Restore from a file"]</h2>
+    <p class="muted">@L["A backup you have on your computer, from this or another MatMail. The file is sent to the server first; then you see what it holds before anything is replaced."]</p>
+    <div class="form-row">
+        <input class="form-control" type="file" accept=".zip,.mmbak" aria-label="@L["Backup file"]" />
+    </div>
+    <div class="progress" hidden><div class="progress__bar"></div></div>
+    <p class="muted" data-upload-text></p>
+    <div class="btn-row btn-row--tight">
+        <button type="button" class="btn btn--primary" data-upload><mm-icon name="upload" /><span>@L["Upload"]</span></button>
+    </div>
+    @Html.AntiForgeryToken()
+</section>
+
+@section Scripts {
+    <script src="~/js/backup.js" asp-append-version="true"></script>
+}

@@ -8,3 +8,6 @@
 *.jpeg binary
 *.gif binary
 *.pfx binary
+# Backups (the golden files of the tests): a single converted byte would make them damaged
+*.zip binary
+*.mmbak binary

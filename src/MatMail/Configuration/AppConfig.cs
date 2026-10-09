@@ -140,6 +140,21 @@ public class PushConfig
     public string? Contact { get; set; }
 }
 
+public class BackupConfig
+{
+    /// <summary>Scheduled backups on or off (the schedules stay as they are).</summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>Where a backup is written before it goes to its target (room for the backup is needed, twice when it is encrypted). Empty = {data}/tmp.</summary>
+    public string? TempDirectory { get; set; }
+}
+
+public class DirectoriesConfig
+{
+    /// <summary>How often the users of a directory (Active Directory, LDAP) are compared with it, in minutes: somebody who left or was disabled loses open sessions then. 0 = never (sign-ins still ask the directory).</summary>
+    public int SyncMinutes { get; set; } = 60;
+}
+
 public class RetentionConfig
 {
     public int ActivityLogDays { get; set; } = 60;
@@ -160,6 +175,16 @@ public class RetentionConfig
 /// </summary>
 public class AppConfig
 {
+    private string? _dataDir;
+
+    /// <summary>The data volume this configuration was read from (not part of the file).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DataDir
+    {
+        get => _dataDir ?? AppInfo.DataDir;
+        set => _dataDir = value;
+    }
+
     public DatabaseConfig Database { get; set; } = new();
     public DisplayConfig Display { get; set; } = new();
     public ServerConfig Server { get; set; } = new();
@@ -169,6 +194,8 @@ public class AppConfig
     public SyncConfig Sync { get; set; } = new();
     public QueueConfig Queue { get; set; } = new();
     public PushConfig Push { get; set; } = new();
+    public BackupConfig Backup { get; set; } = new();
+    public DirectoriesConfig Directories { get; set; } = new();
     public RetentionConfig Retention { get; set; } = new();
 }
 
@@ -220,7 +247,9 @@ public static class AppConfigLoader
             .AddJsonFile(path, optional: true, reloadOnChange: false)
             .AddEnvironmentVariables("MATMAIL__")
             .Build();
-        return configuration.Get<AppConfig>() ?? new AppConfig();
+        AppConfig config = configuration.Get<AppConfig>() ?? new AppConfig();
+        config.DataDir = dataDir;
+        return config;
     }
 
     /// <summary>The configuration exactly as stored in the file (without environment overrides).</summary>

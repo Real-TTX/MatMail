@@ -1,0 +1,41 @@
+@page "/Admin/Backup/Download"
+@model MatMail.Pages.Admin.Backup.DownloadModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups / Download";
+    ViewData["Title"] = L["Download a backup"].Value;
+    ViewData["Description"] = L["Makes a complete backup now – database and files – and offers it for download. Use it to keep a copy somewhere else, or to move to another server."].Value;
+}
+
+<script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+@if (Model.Token is Guid token)
+{
+    <section class="card" id="backup-download" data-status-url="@Url.Page("/Admin/Backup/Download", "Status", new { token })">
+        <h2 class="card__title"><mm-icon name="archive" />@L["The backup"]</h2>
+        <div class="progress" id="backup-download-progress"><div class="progress__bar"></div></div>
+        <p class="muted" id="backup-download-text">@L["Getting ready …"]</p>
+        <div class="btn-row btn-row--tight">
+            <a class="btn btn--primary" id="backup-download-link" href="@Url.Page("/Admin/Backup/Download", "File", new { token })" hidden><mm-icon name="download" /><span>@L["Download"]</span></a>
+            <a class="btn btn--secondary" href="/Admin/Backup"><mm-icon name="arrow-left" /><span>@L["Back"]</span></a>
+        </div>
+        <p class="muted">@L["The file stays on the server for an hour."]</p>
+    </section>
+}
+else
+{
+    <mm-form>
+        <mm-form-section title='@L["Protection"]' icon="lock">
+            <mm-field asp-for="Input.Passphrase" kind="password" label='@L["Passphrase (optional)"]' autocomplete="new-password" reveal="true"
+                      help='@string.Format(L["Encrypts the backup. At least {0} characters. Without it the backup cannot be opened – keep it somewhere safe."].Value, DownloadModel.MinPassphraseLength)' />
+            <mm-field asp-for="Input.PassphraseRepeat" kind="password" label='@L["Passphrase once more"]' autocomplete="new-password" />
+        </mm-form-section>
+        <mm-button-row>
+            <mm-button variant="primary" type="submit" handler="Start" icon="download">@L["Make the backup"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Backup" icon="arrow-left">@L["Back"]</mm-button>
+        </mm-button-row>
+    </mm-form>
+}
+
+@section Scripts {
+    <script src="~/js/backup.js" asp-append-version="true"></script>
+}

@@ -20,4 +20,6 @@ public static class AppClaims
     public const string Density = "matmail:density";
     public const string TimeZone = "matmail:timezone";
     public const string ShowPreviews = "matmail:showpreviews";
+    public const string ReadingPane = "matmail:readingpane";
+    public const string ConversationView = "matmail:conversations";
 }

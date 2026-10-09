@@ -75,7 +75,7 @@ public sealed class MailAccessService
     public async Task<MailUser?> RefreshAsync(MailUser user, CancellationToken cancel = default)
     {
         User? row = await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.UserId, cancel);
-        if (row is null || !row.IsActive)
+        if (row is null || !row.IsActive || row.DirectoryDisabledDate is not null)   // the last: the directory has let them go
         {
             return null;
         }

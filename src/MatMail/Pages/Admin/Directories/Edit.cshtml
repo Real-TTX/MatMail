@@ -1,0 +1,214 @@
+@page "/Admin/Directories/Edit"
+@model MatMail.Pages.Admin.Directories.EditModel
+@{
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Directories / Edit directory" : "Administration / Directories / New directory";
+    ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New directory"].Value;
+}
+
+<mm-form>
+    <input type="hidden" asp-for="Id" />
+
+    @if (Model.IsEdit && Model.Connection is { } known)
+    {
+        @if (known.LastSyncDate is not null)
+        {
+            <div class="notice notice--@(known.LastSyncOk == false ? "danger" : "ok")">
+                <mm-icon name="@(known.LastSyncOk == false ? "alert-circle" : "refresh")" class="notice__icon" />
+                <span class="notice__text">
+                    <b>@L["Last comparison"]:</b> @Fmt.DateTimeText(known.LastSyncDate)
+                    @if (!string.IsNullOrEmpty(known.LastSyncMessage)) { <span> – @known.LastSyncMessage</span> }
+                </span>
+            </div>
+        }
+        else if (known.LastCheckOk == false)
+        {
+            <div class="notice notice--danger">
+                <mm-icon name="alert-circle" class="notice__icon" />
+                <span class="notice__text"><b>@L["Last check"]:</b> @known.LastCheckMessage <span class="muted">@Fmt.DateTimeText(known.LastCheckDate)</span></span>
+            </div>
+        }
+    }
+
+    <mm-tabs>
+        <mm-tab-panel title='@L["Server"]' icon="server">
+            <mm-form-section>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.Name" label='@L["Name"]' placeholder='@L["e.g. Company Active Directory"]' autofocus="autofocus" />
+                    <mm-field asp-for="Input.Preset" kind="select" label='@L["Usual values"]' asp-items="Model.PresetItems"
+                              help='@L["Fills in the filter, the login attribute and the attributes below; you can change them afterwards."]' />
+                </div>
+                <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Enabled (people of this directory can sign in)"]' />
+            </mm-form-section>
+
+            <mm-form-section title='@L["Connection"]' icon="network">
+                <div class="form-grid">
+                    <mm-field asp-for="Input.Host" label='@L["Server"]' placeholder="dc1.example.com" autocomplete="off" />
+                    <mm-field asp-for="Input.Port" kind="number" label='@L["Port"]' />
+                </div>
+                <mm-field asp-for="Input.Security" kind="select" label='@L["Encryption"]' asp-items="Model.SecurityItems" />
+                <mm-field asp-for="Input.AllowInvalidCertificate" kind="checkbox"
+                          label='@L["Accept a self-signed or mismatching certificate (servers in your own network only)"]'
+                          show-when-field="Input.Security" show-when-value="StartTls,Ldaps" />
+            </mm-form-section>
+
+            <mm-form-section title='@L["Account that searches"]' icon="key"
+                             description='@L["Looks up the people and the groups (read access is enough). Empty: the directory is asked anonymously. The passwords of the people are never read: they are checked by signing in as the person."]'>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.BindDn" label='@L["Account"]' placeholder="cn=matmail,ou=service,dc=example,dc=com" autocomplete="off"
+                              help='@L["A distinguished name; Active Directory also takes name@example.com."]' />
+                    <mm-field asp-for="Input.BindPassword" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true"
+                              help='@(Model.HasStoredPassword ? L["Leave empty to keep the stored password. It is stored encrypted."].Value : L["Stored encrypted."].Value)' />
+                </div>
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["People"]' icon="users">
+            <mm-form-section title='@L["Who is a person"]' icon="search">
+                <mm-field asp-for="Input.BaseDn" label='@L["Base"]' placeholder="ou=people,dc=example,dc=com" autocomplete="off"
+                          help='@L["Where the search starts; everything below it is searched. Active Directory: the domain, e.g. dc=example,dc=com."]' />
+                <div class="form-grid">
+                    <mm-field asp-for="Input.UserFilter" label='@L["Filter"]' autocomplete="off"
+                              help='@L["An LDAP filter that matches the people, e.g. (objectClass=person)."]' />
+                    <mm-field asp-for="Input.LoginAttribute" label='@L["Login attribute"]' autocomplete="off"
+                              help='@L["What people type as their login name: uid, sAMAccountName or userPrincipalName."]' />
+                </div>
+            </mm-form-section>
+
+            <mm-form-section title='@L["Attributes"]' icon="list"
+                             description='@L["Which attribute of the directory fills which field of the user. Empty: the field is not filled from the directory. They are read at every sign-in and at every comparison."]'>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.DisplayNameAttribute" label='@L["Name"]' autocomplete="off" />
+                    <mm-field asp-for="Input.EmailAttribute" label='@L["E-mail address"]' autocomplete="off" />
+                </div>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.FirstNameAttribute" label='@L["First name"]' autocomplete="off" />
+                    <mm-field asp-for="Input.LastNameAttribute" label='@L["Last name"]' autocomplete="off" />
+                </div>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.JobTitleAttribute" label='@L["Job title"]' autocomplete="off" />
+                    <mm-field asp-for="Input.DepartmentAttribute" label='@L["Department"]' autocomplete="off" />
+                </div>
+                <div class="form-grid">
+                    <mm-field asp-for="Input.PhoneAttribute" label='@L["Phone"]' autocomplete="off" />
+                    <mm-field asp-for="Input.MobileAttribute" label='@L["Mobile"]' autocomplete="off" />
+                </div>
+            </mm-form-section>
+        </mm-tab-panel>
+
+        <mm-tab-panel title='@L["Access"]' icon="shield">
+            <mm-form-section title='@L["Who may sign in"]' icon="shield">
+                <mm-field asp-for="Input.AllowedGroupDn" label='@L["Group"]' placeholder="cn=mail,ou=groups,dc=example,dc=com" autocomplete="off"
+                          help='@L["Only the members of this group may sign in. Empty: everybody the filter finds."]' />
+                <mm-field asp-for="Input.GroupLookup" kind="select" label='@L["Where the groups are read"]' asp-items="Model.LookupItems" />
+                <mm-field asp-for="Input.NestedGroups" kind="checkbox" label='@L["Members of groups inside the group count too (Active Directory)"]'
+                          show-when-field="Input.GroupLookup" show-when-value="UserMemberOf" />
+            </mm-form-section>
+
+            <mm-form-section title='@L["New users"]' icon="user-plus"
+                             description='@L["What somebody gets who signs in for the first time. A login name that exists on this server already always belongs to that user."]'>
+                <mm-field asp-for="Input.CreateUsersOnSignIn" kind="checkbox" label='@L["Somebody the directory lets in gets a user when they sign in for the first time"]' />
+                <mm-picker asp-for="Input.DefaultRoleIds" asp-items="Model.RoleItems" multiple="true" label='@L["Roles"]'
+                           placeholder='@L["Add role…"]' help='@L["Empty: the role “User”."]' />
+                <mm-field asp-for="Input.CreateMailbox" kind="checkbox"
+                          label='@L["A personal mailbox, with the address of the directory when it is one of the domains of the tenant"]' />
+            </mm-form-section>
+        </mm-tab-panel>
+    </mm-tabs>
+
+    @* The message itself is the notice above the page; here is what the test found besides. *@
+    @if (Model.Check is { } check && (check.Notes.Count > 0 || check.Sample.Count > 0))
+    {
+        <mm-form-section title='@L["Test result"]' icon="@(check.Ok ? "check-circle" : "alert-circle")">
+            @foreach (string note in check.Notes)
+            {
+                <p class="form-help">@note</p>
+            }
+            @if (check.Sample.Count > 0)
+            {
+                <mm-table item-count="check.Sample.Count">
+                    <thead><tr><th>@L["Name"]</th><th>@L["Login name"]</th><th class="hide-sm">@L["E-mail address"]</th></tr></thead>
+                    <tbody>
+                        @foreach (var person in check.Sample)
+                        {
+                            <tr>
+                                <td class="cell-title">@person.DisplayName</td>
+                                <td>@person.Login</td>
+                                <td class="hide-sm">@person.Email</td>
+                            </tr>
+                        }
+                    </tbody>
+                </mm-table>
+                @if (check.Users > check.Sample.Count)
+                {
+                    <p class="form-help">@string.Format(L["… and {0} more."].Value, check.Users - check.Sample.Count)</p>
+                }
+            }
+        </mm-form-section>
+    }
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Directories" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" type="submit" handler="Test" icon="plug">@L["Test connection"]</mm-button>
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="secondary" type="submit" handler="Compare" icon="refresh">@L["Compare now"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Directories/Import?id=@Model.Id" icon="user-plus">@L["Import people"]</mm-button>
+        }
+        <mm-button-spacer />
+        @if (Model.IsEdit)
+        {
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash"
+                       confirm='@string.Format(L["Delete this directory? The {0} users that sign in through it stay, but they cannot sign in until an administrator gives each of them a password."].Value, Model.LinkedUsers)'>@L["Delete"]</mm-button>
+        }
+    </mm-button-row>
+</mm-form>
+
+@section Scripts {
+    <script>
+        (function () {
+          function field(name) { return document.getElementById("Input_" + name); }
+          var security = field("Security");
+          var port = field("Port");
+
+          // The port follows the encryption while it still holds a default.
+          var defaults = { None: 389, StartTls: 389, Ldaps: 636 };
+          var lastSecurity = security.value;
+          security.addEventListener("change", function () {
+            var value = parseInt(port.value, 10);
+            if (!value || value === defaults[lastSecurity]) { port.value = defaults[security.value]; }
+            lastSecurity = security.value;
+          });
+
+          // "Usual values": a starting point for the filter and the attributes of the common servers.
+          var presets = {
+            ad: {
+              UserFilter: "(&(objectCategory=person)(objectClass=user))", LoginAttribute: "sAMAccountName", DisplayNameAttribute: "displayName",
+              EmailAttribute: "mail", FirstNameAttribute: "givenName", LastNameAttribute: "sn", JobTitleAttribute: "title",
+              PhoneAttribute: "telephoneNumber", MobileAttribute: "mobile", DepartmentAttribute: "department", GroupLookup: "UserMemberOf", NestedGroups: true
+            },
+            openldap: {
+              UserFilter: "(objectClass=inetOrgPerson)", LoginAttribute: "uid", DisplayNameAttribute: "cn",
+              EmailAttribute: "mail", FirstNameAttribute: "givenName", LastNameAttribute: "sn", JobTitleAttribute: "title",
+              PhoneAttribute: "telephoneNumber", MobileAttribute: "mobile", DepartmentAttribute: "departmentNumber", GroupLookup: "GroupMembers", NestedGroups: false
+            },
+            freeipa: {
+              UserFilter: "(objectClass=posixAccount)", LoginAttribute: "uid", DisplayNameAttribute: "displayName",
+              EmailAttribute: "mail", FirstNameAttribute: "givenName", LastNameAttribute: "sn", JobTitleAttribute: "title",
+              PhoneAttribute: "telephoneNumber", MobileAttribute: "mobile", DepartmentAttribute: "ou", GroupLookup: "UserMemberOf", NestedGroups: false
+            }
+          };
+          field("Preset").addEventListener("change", function () {
+            var preset = presets[this.value];
+            if (!preset) { return; }
+            Object.keys(preset).forEach(function (name) {
+              var input = field(name);
+              if (!input) { return; }
+              if (input.type === "checkbox") { input.checked = !!preset[name]; } else { input.value = preset[name]; }
+              input.dispatchEvent(new Event("change", { bubbles: true }));
+            });
+            this.value = "";
+          });
+        })();
+    </script>
+}

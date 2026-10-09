@@ -92,6 +92,15 @@ public static class TwoFactorTestExtensions
         return await query(scope.ServiceProvider.GetRequiredService<MatMailDbContext>());
     }
 
+    /// <summary>Changes rows the way the application does and saves them (a scope of its own, acting as the system).</summary>
+    public static async Task WriteAsync(this TestHost host, Func<MatMailDbContext, Task> change)
+    {
+        using IServiceScope scope = host.Scope();
+        var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+        await change(db);
+        await db.SaveChangesAsync();
+    }
+
     public static Task<User> ReloadAsync(this TestHost host, User user)
         => host.ReadAsync(db => db.Users.IgnoreQueryFilters().AsNoTracking().FirstAsync(u => u.Id == user.Id));
 

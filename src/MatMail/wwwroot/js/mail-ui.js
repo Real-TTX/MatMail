@@ -15,6 +15,10 @@
   // ---------------------------------------------------------------------------------------------
   function init() {
     els.app = doc.getElementById("mail-app");
+    els.panes = doc.getElementById("mail-panes");
+    els.drop = doc.getElementById("mail-drop");
+    els.file = doc.getElementById("mail-file");
+    els.splitter = doc.getElementById("mail-splitter");
     els.folders = doc.getElementById("mail-folders");
     els.listPane = doc.getElementById("mail-list-pane");
     els.readerPane = doc.getElementById("mail-reader-pane");
@@ -49,6 +53,12 @@
     App.search.attach({ wrap: els.search, input: els.searchInput, options: doc.getElementById("mail-search-options"), run: search });
     window.addEventListener("hashchange", route);
     doc.addEventListener("keydown", onKey);
+    setupSplitter();
+    setupFileDrops();
+    applyLayout();
+    // A window that grows or shrinks past the width of the reading pane changes the layout; the screen is drawn again for it.
+    var onWidth = function () { applyLayout(); if (App.boot) { route(); renderList(); } };
+    if (wide.addEventListener) { wide.addEventListener("change", onWidth); } else { wide.addListener(onWidth); }
 
     // The connection comes and goes: the banner follows, and what was written offline goes out (mail-outbox.js).
     els.offline.textContent = T("offlineNotice");
@@ -90,12 +100,13 @@
       folder: parseInt(params.get("folder"), 10) || 0,
       page: parseInt(params.get("page"), 10) || 1,
       q: params.get("q") || "",
-      m: parseInt(params.get("m"), 10) || 0
+      m: parseInt(params.get("m"), 10) || 0,
+      p: params.get("p") || ""   // a message file that is open (nothing of it is in the mailbox)
     };
   }
 
   function navigate(changes) {
-    var current = { mailbox: S.mailboxId, folder: S.folderId, page: S.page, q: S.query, m: S.messageId };
+    var current = { mailbox: S.mailboxId, folder: S.folderId, page: S.page, q: S.query, m: S.messageId, p: "" };   // an open file is only kept when it is asked for
     Object.keys(changes).forEach(function (key) { current[key] = changes[key]; });
     var params = new URLSearchParams();
     if (current.mailbox) { params.set("mailbox", current.mailbox); }
@@ -103,6 +114,7 @@
     if (current.page > 1) { params.set("page", current.page); }
     if (current.q) { params.set("q", current.q); }
     if (current.m) { params.set("m", current.m); }
+    if (current.p) { params.set("p", current.p); }
     var hash = "#" + params.toString();
     if (location.hash === hash) { route(); } else { location.hash = hash; }
   }
@@ -136,24 +148,113 @@
     S.page = h.page;
     S.query = h.q;
     var previousMessage = S.messageId;
+    var previousPreview = S.previewId;
     S.messageId = h.m;
+    S.previewId = h.p;
     els.searchInput.value = h.q;
     els.searchClear.hidden = !h.q;
     renderFolders();
     if (window.MatMail && window.MatMail.setSidebarOpen) { window.MatMail.setSidebarOpen(false); }
 
-    if (h.m) {
+    if (h.p || h.m) {
       showReader();
-      if (previousMessage !== h.m) { loadMessage(h.m); }
-      if (!sameList && !S.items.length) { loadList(true); }
+      if (h.p ? previousPreview !== h.p : previousMessage !== h.m) { if (h.p) { loadPreview(h.p); } else { loadMessage(h.m); } }
+      // With a reading pane the list stays on the screen next to the message, so it has to be the right one.
+      if (isSplit() ? (!sameList || !S.items.length) : (!sameList && !S.items.length)) { loadList(true); }
     } else {
       showList();
-      if (!sameList || previousMessage) { loadList(false); }
+      if (!sameList || ((previousMessage || previousPreview) && !isSplit())) { loadList(false); }
     }
+    markOpenRow();
   }
 
-  function showList() { els.listPane.hidden = false; els.readerPane.hidden = true; els.app.classList.remove("is-reading"); doc.title = pageTitle(); }
-  function showReader() { els.listPane.hidden = true; els.readerPane.hidden = false; els.app.classList.add("is-reading"); }
+  function showList() {
+    els.listPane.hidden = false;
+    els.readerPane.hidden = !isSplit();
+    els.app.classList.remove("is-reading");
+    if (isSplit()) { showPlaceholder(); }
+    doc.title = pageTitle();
+  }
+  function showReader() { els.listPane.hidden = !isSplit(); els.readerPane.hidden = false; els.app.classList.add("is-reading"); }
+
+  // ---------------------------------------------------------------------------------------------
+  // Layout: the reading pane of the appearance settings, beside or below the list (wide screens only)
+  // ---------------------------------------------------------------------------------------------
+  var wide = window.matchMedia("(min-width: 961px)");
+
+  /** "right", "below" or "": the reading pane the user chose, when the screen has room for it. */
+  function splitMode() {
+    var mode = doc.documentElement.getAttribute("data-reading-pane");
+    return wide.matches && (mode === "right" || mode === "below") ? mode : "";
+  }
+  function isSplit() { return splitMode() !== ""; }
+
+  function applyLayout() {
+    var mode = splitMode();
+    els.app.classList.toggle("is-split", !!mode);
+    els.app.classList.toggle("is-split-right", mode === "right");
+    els.app.classList.toggle("is-split-below", mode === "below");
+    els.splitter.hidden = !mode;
+    els.splitter.setAttribute("aria-orientation", mode === "below" ? "horizontal" : "vertical");
+    var saved = mode ? parseInt(localStorage.getItem("matmail-split-" + mode), 10) : 0;
+    if (saved > 0) { els.panes.style.setProperty("--mail-list-size", saved + "px"); } else { els.panes.style.removeProperty("--mail-list-size"); }
+  }
+
+  /** The bar between list and reader: dragged with the pointer or moved with the arrow keys; the size is remembered per layout. */
+  function setupSplitter() {
+    var dragging = false;
+    function sizeAt(e) {
+      var rect = els.panes.getBoundingClientRect();
+      var below = splitMode() === "below";
+      var total = below ? rect.height : rect.width;
+      var value = below ? e.clientY - rect.top : e.clientX - rect.left;
+      return Math.round(Math.max(total * 0.2, Math.min(total * 0.8, value)));
+    }
+    function remember(size) {
+      els.panes.style.setProperty("--mail-list-size", size + "px");
+      localStorage.setItem("matmail-split-" + splitMode(), String(size));
+    }
+    els.splitter.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      els.splitter.setPointerCapture(e.pointerId);
+      els.splitter.classList.add("is-dragging");
+      e.preventDefault();
+    });
+    els.splitter.addEventListener("pointermove", function (e) { if (dragging) { els.panes.style.setProperty("--mail-list-size", sizeAt(e) + "px"); } });
+    els.splitter.addEventListener("pointerup", function (e) {
+      if (!dragging) { return; }
+      dragging = false;
+      els.splitter.classList.remove("is-dragging");
+      remember(sizeAt(e));
+    });
+    els.splitter.addEventListener("pointercancel", function () { dragging = false; els.splitter.classList.remove("is-dragging"); });
+    els.splitter.addEventListener("keydown", function (e) {
+      var below = splitMode() === "below";
+      var step = e.key === (below ? "ArrowDown" : "ArrowRight") ? 24 : e.key === (below ? "ArrowUp" : "ArrowLeft") ? -24 : 0;
+      if (!step) { return; }
+      e.preventDefault();
+      var box = els.panes.getBoundingClientRect();
+      var rect = els.listPane.getBoundingClientRect();
+      var total = below ? box.height : box.width;
+      remember(Math.round(Math.max(total * 0.2, Math.min(total * 0.8, (below ? rect.height : rect.width) + step))));
+    });
+  }
+
+  /** What the reader pane says while no message is open. */
+  function showPlaceholder() {
+    messageRequest++;
+    els.readerToolbar.innerHTML = "";
+    els.reader.innerHTML = "";
+    els.reader.appendChild(App.el("div", { class: "mail-reader-empty" }, [App.icon("mail-open"), App.el("p", { text: T("selectMessage") })]));
+  }
+
+  /** The row of the message that is open in the reading pane. */
+  function markOpenRow() {
+    var open = isSplit() ? S.messageId : 0;
+    els.list.querySelectorAll(".mail-row").forEach(function (row) {
+      row.classList.toggle("is-open", open !== 0 && parseInt(row.getAttribute("data-id"), 10) === open);
+    });
+  }
   function showLoading(on) { els.loading.hidden = !on; }
   function pageTitle() {
     var total = 0;
@@ -405,7 +506,8 @@
   function loadList(quiet) {
     var request = ++listRequest;
     if (!quiet) { showLoading(true); }
-    var url = "/api/mail/messages?mailboxId=" + S.mailboxId + (S.folderId ? "&folderId=" + S.folderId : "") + "&page=" + S.page + (S.query ? "&q=" + encodeURIComponent(S.query) : "");
+    var url = "/api/mail/messages?mailboxId=" + S.mailboxId + (S.folderId ? "&folderId=" + S.folderId : "") + "&page=" + S.page + (S.query ? "&q=" + encodeURIComponent(S.query) : "")
+      + (conversationsOn() && S.folderId && !S.query ? "&conversations=true" : "");   // a search lists single messages
     return App.get(url).then(function (data) {
       if (request !== listRequest) { return; }
       showLoading(false);
@@ -450,7 +552,7 @@
     }
 
     S.items.forEach(function (item, index) {
-      var row = App.el("div", { class: "mail-row" + (item.isRead ? "" : " is-unread") + (S.selected.has(item.id) ? " is-selected" : "") + (index === S.cursor ? " is-cursor" : ""), role: "listitem", "data-id": item.id, tabindex: "-1" });
+      var row = App.el("div", { class: "mail-row" + (item.isRead ? "" : " is-unread") + (S.selected.has(item.id) ? " is-selected" : "") + (index === S.cursor ? " is-cursor" : "") + (isSplit() && item.id === S.messageId ? " is-open" : ""), role: "listitem", "data-id": item.id, tabindex: "-1" });
 
       var check = App.el("input", { type: "checkbox", "aria-label": T("select") });
       check.checked = S.selected.has(item.id);
@@ -465,7 +567,12 @@
 
       var who = showTo ? (item.toSummary ? T("toPrefix") + " " + shortRecipients(item.toSummary) : T("noRecipient")) : App.displayName(item.fromName, item.fromAddress);
       if (item.isDraft && !showTo) { who = App.displayName(item.fromName, item.fromAddress); }
-      row.appendChild(App.el("div", { class: "mail-row__from", text: who }));
+      // A conversation names the people who wrote and how many messages it has.
+      if (item.participants && item.participants.length && !showTo) { who = item.participants.join(", "); }
+      row.appendChild(App.el("div", { class: "mail-row__from" }, [
+        App.el("span", { class: "mail-row__who", text: who }),
+        item.ids && item.ids.length > 1 ? App.el("span", { class: "mail-row__count", text: String(item.ids.length), title: T("messagesCount").replace("{0}", item.ids.length) }) : null
+      ]));
 
       var main = App.el("div", { class: "mail-row__main" }, [
         App.el("span", { class: "mail-row__subject", text: item.subject || T("noSubject") }),
@@ -485,6 +592,8 @@
       }
       row.appendChild(actions);
 
+      row.draggable = true;
+      row.addEventListener("dragstart", function (e) { dragOut(e, item); });
       row.addEventListener("click", function () { S.cursor = index; openItem(item); });
       row.addEventListener("keydown", function (e) { if (e.key === "Enter") { openItem(item); } });
       els.list.appendChild(row);
@@ -518,7 +627,8 @@
     button.classList.toggle("is-on", item.isStarred);
     button.setAttribute("aria-pressed", String(item.isStarred));
     button.querySelector("svg").classList.toggle("icon--filled", item.isStarred);
-    App.post("/api/mail/messages/flags", { ids: [item.id], isStarred: item.isStarred }).catch(function (e) { App.toast(e.message, { error: true }); loadList(true); });
+    var ids = !item.isStarred && item.ids ? item.ids : [item.id];   // taking the star off a conversation takes it off all its messages
+    App.post("/api/mail/messages/flags", { ids: ids, isStarred: item.isStarred }).catch(function (e) { App.toast(e.message, { error: true }); loadList(true); });
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -553,6 +663,7 @@
 
     if (count === 0) {
       bar.appendChild(App.iconButton("refresh", T("refresh"), function () { loadList(false); refreshCounts(); }));
+      bar.appendChild(App.iconButton("upload", T("openMessageFile"), function () { els.file.click(); }));
       if (box && box.canEdit && folder) {
         var more = App.iconButton("more-vertical", T("more"), function (e) { folderMenu(e.currentTarget, box, folder); });
         bar.appendChild(more);
@@ -663,10 +774,10 @@
   }
 
   /** everything: move whatever the list matches (see actSelected) instead of the given ids. */
-  function moveMenu(anchor, ids, everything) {
+  function moveMenu(anchor, ids, everything, origin) {
     var box = currentBox();
     var items = [];
-    var run = function (target) { if (everything) { actSelected("move", target); } else { act("move", ids, target); } };
+    var run = function (target) { if (everything) { actSelected("move", target); } else { act("move", ids, target, origin ? { origin: origin } : undefined); } };
     box.folders.forEach(function (f) {
       if (f.id !== S.folderId) { items.push({ label: App.folderLabel(f), icon: KIND_ICONS[f.kind] || "folder", indent: f.depth, onClick: function () { run(f.id); } }); }
     });
@@ -690,6 +801,7 @@
     options = options || {};
     var byId = {};
     S.items.forEach(function (i) { byId[i.id] = i; });
+    ids = expandRows(ids, byId);
     var origin = options.origin || ids.map(function (id) { return { id: id, folderId: byId[id] ? byId[id].folderId : S.folderId }; });
     var request, undo = null, message = null, removes = false;
     var folder = currentFolder();
@@ -716,13 +828,23 @@
     send(request, message, undo, removes, origin);
   }
 
+  /** A row of a list of conversations stands for all the messages of its conversation in that list: they are what an action changes. */
+  function expandRows(ids, byId) {
+    var all = [];
+    ids.forEach(function (id) {
+      var row = byId[id];
+      (row && row.ids ? row.ids : [id]).forEach(function (x) { if (all.indexOf(x) < 0) { all.push(x); } });
+    });
+    return all;
+  }
+
   function send(request, message, undo, removes, origin) {
     request.then(function (result) {
       App.applyCounts(result.counts);
       if (removes) {
         S.selected.clear();
         S.allMatching = false;
-        if (S.messageId) { navigate({ m: 0 }); } else { loadList(true); }
+        if (S.messageId) { navigate({ m: 0 }); if (isSplit()) { loadList(true); } } else { loadList(true); }
       } else {
         renderList(); renderListToolbar();
       }
@@ -749,13 +871,22 @@
     var set = new Set(ids);
     var wasUnread = 0;
     S.items.forEach(function (item) {
-      if (set.has(item.id)) {
-        if (changes.isRead !== undefined && item.isRead !== changes.isRead) { wasUnread += changes.isRead ? -1 : 1; }
-        Object.keys(changes).forEach(function (k) { item[k] = changes[k]; });
+      var members = item.ids || [item.id];
+      var hit = members.filter(function (id) { return set.has(id); }).length;
+      if (!hit) { return; }
+      if (changes.isRead !== undefined) {
+        // A row of a conversation is read when none of its messages is unread.
+        var before = item.ids ? item.unreadCount : (item.isRead ? 0 : 1);
+        var after = changes.isRead ? Math.max(0, before - hit) : Math.min(members.length, before + hit);
+        wasUnread += after - before;
+        if (item.ids) { item.unreadCount = after; }
+        item.isRead = after === 0;
       }
+      Object.keys(changes).forEach(function (k) { if (k !== "isRead") { item[k] = changes[k]; } });
     });
     var folder = currentFolder();
     if (folder && wasUnread) { folder.unread = Math.max(0, folder.unread + wasUnread); renderFolders(); }
+    if (isSplit()) { renderList(); }   // the list is on the screen next to the reader
   }
 
   function refreshCounts() {
@@ -765,47 +896,196 @@
   }
 
   // ---------------------------------------------------------------------------------------------
+  // Message files: dropped into the client (or chosen with the button) to be read; dragged out of the list to be kept
+  // ---------------------------------------------------------------------------------------------
+  /** A file dropped anywhere on the client is opened (not in the compose window: there it is an attachment). */
+  function setupFileDrops() {
+    var depth = 0;
+    var hasFiles = function (e) { return !!e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0; };
+    var foreign = function (e) { return !!(e.target && e.target.closest && e.target.closest(".compose, dialog[open]")); };
+    doc.addEventListener("dragenter", function (e) { if (hasFiles(e) && !foreign(e)) { depth++; els.drop.hidden = false; } });
+    doc.addEventListener("dragover", function (e) { if (hasFiles(e) && !foreign(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+    doc.addEventListener("dragleave", function (e) { if (hasFiles(e)) { depth = Math.max(0, depth - 1); if (!depth) { els.drop.hidden = true; } } });
+    doc.addEventListener("drop", function (e) {
+      depth = 0;
+      els.drop.hidden = true;
+      if (!hasFiles(e) || foreign(e)) { return; }
+      e.preventDefault();
+      if (e.dataTransfer.files.length) { openFile(e.dataTransfer.files[0]); }
+    });
+    els.file.addEventListener("change", function () {
+      if (els.file.files.length) { openFile(els.file.files[0]); }
+      els.file.value = "";
+    });
+  }
+
+  /** The file goes to the server, which reads it (an .eml as it is, an Outlook .msg turned into a message) and keeps it for a day. */
+  function openFile(file) {
+    if (!/\.(eml|msg)$/i.test(file.name)) { App.toast(T("onlyMessageFiles"), { error: true }); return; }
+    showLoading(true);
+    App.api("POST", "/api/mail/preview", file, { headers: { "X-File-Name": encodeURIComponent(file.name) } }).then(function (preview) {
+      showLoading(false);
+      S.preview = preview;
+      navigate({ p: preview.id, m: 0 });
+    }).catch(function (error) {
+      showLoading(false);
+      App.toast(error.message, { error: true });
+    });
+  }
+
+  function loadPreview(id) {
+    var request = ++messageRequest;
+    els.reader.innerHTML = "";
+    els.readerToolbar.innerHTML = "";
+    var cached = S.preview && S.preview.id === id ? Promise.resolve(S.preview) : (showLoading(true), App.get("/api/mail/preview/" + id));
+    cached.then(function (preview) {
+      if (request !== messageRequest) { return; }
+      showLoading(false);
+      S.preview = preview;
+      renderPreview(preview);
+    }).catch(function (error) {
+      if (request !== messageRequest) { return; }
+      showLoading(false);
+      els.reader.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("fileGone") : error.message }));
+      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    });
+  }
+
+  /** A message from a file: shown like one of the mailbox, without what belongs to a mailbox (stars, answers), with a way to keep it. */
+  function renderPreview(preview) {
+    var m = preview.message;
+    var bar = els.readerToolbar;
+    bar.innerHTML = "";
+    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    var canSave = App.boot.mailboxes.some(function (box) { return box.canEdit; });
+    var saveButton = null;
+    if (canSave) {
+      saveButton = App.el("button", { type: "button", class: "btn btn--secondary btn--sm mail-toolbar__button" }, [App.icon("folder-input"), App.el("span", { text: T("saveToFolder") })]);
+      saveButton.addEventListener("click", function (e) { saveMenu(e.currentTarget, preview); });
+      bar.appendChild(saveButton);
+    }
+    bar.appendChild(App.iconButton("download", T("downloadEml"), function () { window.location.href = "/api/mail/preview/" + preview.id + "/raw"; }));
+    bar.appendChild(App.el("span", { class: "mail-toolbar__spacer" }));
+
+    var wrap = App.el("div", { class: "reader" });
+    var head = readerHead(m.subject, 0, 0);
+    head.appendChild(App.el("span", { class: "chip", text: preview.fileName }));
+    wrap.appendChild(head);
+    wrap.appendChild(App.el("div", { class: "reader__banner" }, [App.icon("file-text"), App.el("span", { text: T("fileNotice") })]));
+    wrap.appendChild(messageView(m, null, { preview: true }));
+    els.reader.innerHTML = "";
+    els.reader.appendChild(wrap);
+    els.reader.scrollTop = 0;
+  }
+
+  /** The folders (of every mailbox one may change) to keep a message file in. */
+  function saveMenu(anchor, preview) {
+    var items = [];
+    var several = App.boot.mailboxes.filter(function (box) { return box.canEdit; }).length > 1;
+    App.boot.mailboxes.forEach(function (box) {
+      if (!box.canEdit) { return; }
+      box.folders.forEach(function (folder) {
+        if (folder.kind === "Drafts") { return; }
+        items.push({ label: (several ? box.name + " – " : "") + App.folderLabel(folder), icon: KIND_ICONS[folder.kind] || "folder", indent: folder.depth, onClick: function () { keepFile(preview, box, folder); } });
+      });
+    });
+    App.showMenu(anchor, items, { title: T("saveToFolder") });
+  }
+
+  function keepFile(preview, box, folder) {
+    showLoading(true);
+    App.post("/api/mail/preview/" + preview.id + "/import", { folderId: folder.id }).then(function (result) {
+      showLoading(false);
+      App.applyCounts(result.counts);
+      if (S.folderId === folder.id) { loadList(true); }
+      App.toast(T("savedTo").replace("{0}", App.folderLabel(folder)), {
+        action: { label: T("open"), run: function () { navigate({ mailbox: box.id, folder: folder.id, page: 1, q: "", m: result.id }); } }
+      });
+    }).catch(function (error) {
+      showLoading(false);
+      App.toast(error.message, { error: true });
+    });
+  }
+
+  /**
+   * A row dragged out of the client becomes a file of its own (Chrome and Edge: the DownloadURL of the drag makes the browser fetch the
+   * .eml with the session of the page, to the desktop or into a folder of the file manager).
+   */
+  function dragOut(e, item) {
+    var name = (item.subject || "message").replace(/[\\/:*?"<>|\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "message";
+    var url = location.origin + "/api/mail/messages/" + item.id + "/raw";
+    e.dataTransfer.effectAllowed = "copy";
+    e.dataTransfer.setData("DownloadURL", "message/rfc822:" + name + ".eml:" + url);
+    e.dataTransfer.setData("text/uri-list", url);
+  }
+
+  // ---------------------------------------------------------------------------------------------
   // Reader
   // ---------------------------------------------------------------------------------------------
   var messageRequest = 0;
+
+  /** The conversations of the appearance settings: the reader stacks the messages of a thread. */
+  function conversationsOn() { return doc.documentElement.getAttribute("data-conversations") === "on"; }
+
   function loadMessage(id) {
     var request = ++messageRequest;
     els.reader.innerHTML = "";
     els.readerToolbar.innerHTML = "";
     showLoading(true);
-    App.get("/api/mail/messages/" + id).then(function (message) {
+    var detail = App.get("/api/mail/messages/" + id);
+    // Where conversations are on, the thread is asked for along with the message (without it, the message is shown alone).
+    var thread = conversationsOn() ? App.get("/api/mail/messages/" + id + "/thread").catch(function () { return []; }) : Promise.resolve([]);
+    Promise.all([detail, thread]).then(function (results) {
       if (request !== messageRequest) { return; }
       showLoading(false);
+      var message = results[0], items = results[1];
       S.current = message;
       if (message.isDraft) { App.compose.openDraft(id); navigate({ m: 0 }); return; }
+      if (items.length > 1) { renderConversation(message, items); return; }
       renderReader(message);
-      if (!message.isRead && message.canEdit) {
-        App.post("/api/mail/messages/flags", { ids: [id], isRead: true }).then(function (result) { App.applyCounts(result.counts); message.isRead = true; patch([id], { isRead: true }); }).catch(function () { /* stays unread */ });
-      }
+      markRead(message);
     }).catch(function (error) {
       if (request !== messageRequest) { return; }
       showLoading(false);
       els.reader.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("messageGone") : error.message }));
-      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }));
+      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
     });
+  }
+
+  /** A message that is opened is read: the server and the list are told, when it was unread and may be changed. */
+  function markRead(message) {
+    if (message.isRead || !message.canEdit) { return; }
+    message.isRead = true;
+    App.post("/api/mail/messages/flags", { ids: [message.id], isRead: true })
+      .then(function (result) { App.applyCounts(result.counts); patch([message.id], { isRead: true }); })
+      .catch(function () { message.isRead = false; /* stays unread */ });
   }
 
   function addrLabel(a) { return a ? (a.name ? a.name + " <" + a.address + ">" : a.address) : ""; }
 
-  function renderReader(m) {
+  /** What the buttons over the reader change: the message, or the messages of its conversation that are in its folder. */
+  function scopeOf(m, items) {
+    var inFolder = (items || []).filter(function (i) { return i.folderId === m.folderId; });
+    if (!inFolder.length) { inFolder = [{ id: m.id, folderId: m.folderId }]; }
+    return {
+      ids: inFolder.map(function (i) { return i.id; }),
+      origin: inFolder.map(function (i) { return { id: i.id, folderId: i.folderId }; })
+    };
+  }
+
+  function renderReaderToolbar(m, scope) {
     var bar = els.readerToolbar;
     bar.innerHTML = "";
-    var box = App.mailbox(m.mailboxId);
-    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }));
-    var id = [m.id];
+    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    var ids = scope.ids, options = { origin: scope.origin };
     if (m.canEdit) {
-      if (m.folderKind !== "Archive" && m.folderKind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { act("archive", id); })); }
-      if (m.folderKind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { act("notspam", id); })); }
-      else if (m.folderKind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { act("spam", id); })); }
-      bar.appendChild(App.iconButton("trash", m.folderKind === "Trash" ? T("deleteForever") : T("delete"), function () { act("delete", id); }));
+      if (m.folderKind !== "Archive" && m.folderKind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { act("archive", ids, undefined, options); })); }
+      if (m.folderKind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { act("notspam", ids, undefined, options); })); }
+      else if (m.folderKind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { act("spam", ids, undefined, options); })); }
+      bar.appendChild(App.iconButton("trash", m.folderKind === "Trash" ? T("deleteForever") : T("delete"), function () { act("delete", ids, undefined, options); }));
       bar.appendChild(App.el("span", { class: "mail-toolbar__sep" }));
-      bar.appendChild(App.iconButton("mail", T("markUnread"), function () { App.post("/api/mail/messages/flags", { ids: id, isRead: false }).then(function (r) { App.applyCounts(r.counts); navigate({ m: 0 }); }); }));
-      bar.appendChild(App.iconButton("folder-input", T("moveTo"), function (e) { moveMenu(e.currentTarget, id); }));
+      bar.appendChild(App.iconButton("mail", T("markUnread"), function () { App.post("/api/mail/messages/flags", { ids: ids, isRead: false }).then(function (r) { App.applyCounts(r.counts); navigate({ m: 0 }); }); }));
+      bar.appendChild(App.iconButton("folder-input", T("moveTo"), function (e) { moveMenu(e.currentTarget, ids, false, scope.origin); }));
     }
     bar.appendChild(App.el("span", { class: "mail-toolbar__spacer" }));
     bar.appendChild(App.iconButton("more-vertical", T("more"), function (e) {
@@ -817,13 +1097,94 @@
       );
       App.showMenu(e.currentTarget, items, { alignRight: true });
     }));
+  }
 
+  /** The subject over the reader, with the folder the message is in and, for a conversation, how many messages it has. */
+  function readerHead(subject, folderId, count) {
+    var row = App.el("div", { class: "reader__head" }, [App.el("h1", { class: "reader__subject", text: subject || T("noSubject") })]);
+    var hit = App.folder(folderId);
+    if (hit) { row.appendChild(App.el("span", { class: "chip", text: App.folderLabel(hit.folder) })); }
+    if (count > 1) { row.appendChild(App.el("span", { class: "chip", text: T("messagesCount").replace("{0}", count) })); }
+    return row;
+  }
+
+  function renderReader(m) {
+    renderReaderToolbar(m, scopeOf(m, null));
     var wrap = App.el("div", { class: "reader" });
+    wrap.appendChild(readerHead(m.subject, m.folderId, 0));
+    wrap.appendChild(messageView(m));
+    els.reader.innerHTML = "";
+    els.reader.appendChild(wrap);
+    els.reader.scrollTop = 0;
+  }
 
-    var subjectRow = App.el("div", { class: "reader__head" }, [App.el("h1", { class: "reader__subject", text: m.subject || T("noSubject") })]);
-    var hit = App.folder(m.folderId);
-    if (hit) { subjectRow.appendChild(App.el("span", { class: "chip", text: App.folderLabel(hit.folder) })); }
-    wrap.appendChild(subjectRow);
+  /** "Re: Re: Offer" is the conversation "Offer". */
+  function withoutReplyPrefix(subject) {
+    var plain = (subject || "").replace(/^\s*((re|aw|antw|wg|fw|fwd|sv|vs|tr|rv)(\[\d+\])?\s*:\s*)+/i, "").trim();
+    return plain || subject;
+  }
+
+  /** The messages of a conversation as a stack: the newest and the unread ones open, the others closed to a line each (a click opens them). */
+  function renderConversation(anchor, items) {
+    renderReaderToolbar(anchor, scopeOf(anchor, items));
+    var wrap = App.el("div", { class: "reader thread" });
+    wrap.appendChild(readerHead(withoutReplyPrefix(anchor.subject), anchor.folderId, items.length));
+    var first = null;
+    items.forEach(function (item) {
+      var open = item.id === anchor.id || !item.isRead;
+      var card = threadCard(item, anchor, open);
+      if (!first && open && !item.isRead) { first = card; }
+      wrap.appendChild(card);
+    });
+    els.reader.innerHTML = "";
+    els.reader.appendChild(wrap);
+    // The older messages above are closed and short: the first unread one (else the newest) is brought to the top.
+    var target = first || wrap.querySelector('.thread__msg[data-id="' + anchor.id + '"]');
+    els.reader.scrollTop = target ? Math.max(0, target.offsetTop - 12) : 0;
+  }
+
+  function threadCard(item, anchor, open) {
+    var card = App.el("div", { class: "thread__msg is-collapsed", "data-id": item.id });
+    var line = App.el("button", { type: "button", class: "thread__line" + (item.isRead ? "" : " is-unread"), "aria-expanded": "false" }, [
+      App.avatar(item.fromName, item.fromAddress),
+      App.el("span", { class: "thread__from", text: App.displayName(item.fromName, item.fromAddress) }),
+      App.el("span", { class: "thread__snippet", text: item.snippet || "" }),
+      item.hasAttachments ? App.icon("paperclip") : null,
+      App.el("span", { class: "thread__date", text: App.formatListDate(item.date), title: App.formatFullDate(item.date) })
+    ]);
+    var body = App.el("div", { class: "thread__body" });
+    card.appendChild(line);
+    card.appendChild(body);
+
+    var loaded = false;
+    var close = function () { card.classList.add("is-collapsed"); line.setAttribute("aria-expanded", "false"); };
+    var show = function (m) {
+      body.innerHTML = "";
+      body.appendChild(messageView(m, close));
+      markRead(m);
+      line.classList.remove("is-unread");   // it was opened: when it is closed again it reads as read
+    };
+    var openCard = function () {
+      card.classList.remove("is-collapsed");
+      line.setAttribute("aria-expanded", "true");
+      if (loaded) { return; }
+      loaded = true;
+      if (item.id === anchor.id) { show(anchor); return; }
+      body.appendChild(App.el("div", { class: "thread__loading" }, [App.el("span", { class: "spinner" })]));
+      App.get("/api/mail/messages/" + item.id).then(function (m) { if (card.isConnected) { show(m); } }).catch(function (error) {
+        loaded = false;
+        body.innerHTML = "";
+        body.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("messageGone") : error.message }));
+      });
+    };
+    line.addEventListener("click", openCard);
+    if (open) { openCard(); }
+    return card;
+  }
+
+  /** One message: sender, details, the text in its frame, attachments, the buttons to answer. onCollapse: a button that closes it again (in a conversation). */
+  function messageView(m, onCollapse, options) {
+    var wrap = App.el("div", { class: "reader__message" });
 
     // Sender line
     var from = m.from || { name: "", address: "" };
@@ -853,10 +1214,10 @@
         App.el("div", { class: "reader__from" }, [App.el("b", { text: App.displayName(from.name, from.address) }), App.el("span", { class: "muted", text: " <" + from.address + ">" })]),
         toggle
       ]),
-      App.el("div", { class: "reader__meta" }, [App.el("span", { class: "reader__date", text: App.formatFullDate(m.date), title: m.date }), star])
+      App.el("div", { class: "reader__meta" }, [App.el("span", { class: "reader__date", text: App.formatFullDate(m.date), title: m.date }), options && options.preview ? null : star])
     ]);
+    var meta = sender.querySelector(".reader__meta");
     if (m.canSend || m.canEdit) {
-      var meta = sender.querySelector(".reader__meta");
       meta.appendChild(App.iconButton("reply", T("reply"), function () { App.compose.reply(m.id, "reply"); }));
       meta.appendChild(App.iconButton("more-vertical", T("more"), function (e) {
         App.showMenu(e.currentTarget, [
@@ -866,6 +1227,7 @@
         ], { alignRight: true });
       }));
     }
+    if (onCollapse) { meta.appendChild(App.iconButton("chevron-up", T("collapse"), onCollapse)); }
     wrap.appendChild(sender);
     wrap.appendChild(details);
 
@@ -911,9 +1273,7 @@
       ]));
     }
 
-    els.reader.innerHTML = "";
-    els.reader.appendChild(wrap);
-    els.reader.scrollTop = 0;
+    return wrap;
   }
 
   /**
@@ -965,7 +1325,8 @@
     var typing = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable);
     if (typing || e.ctrlKey || e.metaKey || e.altKey || doc.querySelector("dialog[open]")) { return; }
     var key = e.key;
-    var inReader = !!S.messageId;
+    var open = !!S.messageId;
+    var inReader = open && !isSplit();   // next to a reading pane the list keys keep working
     var cursorItem = S.items[S.cursor];
 
     if (key === "c") { e.preventDefault(); App.compose.open({}); }
@@ -973,38 +1334,46 @@
     else if (key === "j" && !inReader) { moveCursor(1); }
     else if (key === "k" && !inReader) { moveCursor(-1); }
     else if ((key === "Enter" || key === "o") && !inReader && cursorItem) { openItem(cursorItem); }
-    else if (key === "u" && inReader) { navigate({ m: 0 }); }
+    else if (key === "u" && (open || S.previewId)) { navigate({ m: 0 }); }
     else if (key === "x" && !inReader && cursorItem) { toggleSelect(cursorItem.id, !S.selected.has(cursorItem.id)); renderList(); }
     else if (key === "s" && !inReader && cursorItem) { act(cursorItem.isStarred ? "unstar" : "star", [cursorItem.id]); }
     else if (key === "e") { shortcutAct("archive"); }
     else if (key === "#" || key === "Delete") { shortcutAct("delete"); }
     else if (key === "I" && !inReader) { shortcutAct("read"); }
     else if (key === "U" && !inReader) { shortcutAct("unread"); }
-    else if (inReader && key === "r") { e.preventDefault(); App.compose.reply(S.messageId, "reply"); }
-    else if (inReader && key === "a") { e.preventDefault(); App.compose.reply(S.messageId, "replyall"); }
-    else if (inReader && key === "f") { e.preventDefault(); App.compose.reply(S.messageId, "forward"); }
+    else if (open && key === "r") { e.preventDefault(); App.compose.reply(S.messageId, "reply"); }
+    else if (open && key === "a") { e.preventDefault(); App.compose.reply(S.messageId, "replyall"); }
+    else if (open && key === "f") { e.preventDefault(); App.compose.reply(S.messageId, "forward"); }
   }
 
   /** A key for the selection: with "everything that matches" selected it covers all of it. */
   function shortcutAct(kind) {
-    if (S.allMatching && !S.messageId) { actSelected(kind); return; }
+    if (S.allMatching && (!S.messageId || isSplit())) { actSelected(kind); return; }
     var ids = targetIds();
     if (ids.length) { act(kind, ids); }
   }
 
   function targetIds() {
+    if (isSplit() && S.selected.size) { return Array.from(S.selected); }   // the list is in sight: what is ticked there comes first
     if (S.messageId) { return [S.messageId]; }
     if (S.selected.size) { return Array.from(S.selected); }
     var item = S.items[S.cursor];
     return item ? [item.id] : [];
   }
 
+  var openTimer = 0;
   function moveCursor(delta) {
     if (!S.items.length) { return; }
     S.cursor = Math.max(0, Math.min(S.items.length - 1, S.cursor + delta));
     var rows = els.list.querySelectorAll(".mail-row");
     rows.forEach(function (r, i) { r.classList.toggle("is-cursor", i === S.cursor); });
     if (rows[S.cursor]) { rows[S.cursor].scrollIntoView({ block: "nearest" }); }
+    // Next to a reading pane the message under the cursor is the one shown there (after a moment, so that holding the key does not load them all).
+    if (isSplit()) {
+      var item = S.items[S.cursor];
+      clearTimeout(openTimer);
+      if (item && !item.isDraft) { openTimer = setTimeout(function () { navigate({ m: item.id }); }, 250); }
+    }
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -1021,7 +1390,7 @@
       pending = setTimeout(function () {
         if (evt.kind === "FoldersChanged") { refreshBootstrap(); return; }
         App.get("/api/mail/counts?mailboxId=" + evt.mailboxId).then(App.applyCounts);
-        if (evt.mailboxId === S.mailboxId && !S.messageId && S.page === 1 && !S.query && (!evt.folderId || evt.folderId === S.folderId || S.folderId === 0)) { loadList(true); }
+        if (evt.mailboxId === S.mailboxId && (!S.messageId || isSplit()) && S.page === 1 && !S.query && (!evt.folderId || evt.folderId === S.folderId || S.folderId === 0)) { loadList(true); }
       }, 600);
     });
   }

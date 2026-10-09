@@ -469,3 +469,17 @@ th.num, td.num { text-align: right; }
 .rule-order__buttons .icon-btn { width: 1.7rem; height: 1.7rem; }
 .rule-order__buttons .icon-btn:disabled { opacity: 0.3; }
 .rule-order__buttons form { margin: 0; }
+
+/* ---- Progress (backups) ---- */
+.progress { position: relative; height: 0.6rem; margin: 0.75rem 0; overflow: hidden; border-radius: 999px; background: var(--color-surface-alt); }
+.progress[hidden] { display: none; }
+.progress__bar { height: 100%; width: 0; border-radius: inherit; background: var(--color-primary); transition: width 0.4s ease; }
+.progress--busy .progress__bar { width: 30%; animation: progress-slide 1.4s ease-in-out infinite; }
+@keyframes progress-slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+.is-danger { color: var(--color-danger); }
+
+/* A form of a few controls in a row (a select and a button under a list, the choice of a target above one). */
+.inline-form { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+.inline-form--spaced { margin-bottom: 1rem; }
+.form-control--inline { width: auto; min-width: 12rem; max-width: 100%; }
+.cell-icon { width: 0.9em; height: 0.9em; margin-left: 0.35rem; vertical-align: -0.1em; color: var(--color-text-muted); }

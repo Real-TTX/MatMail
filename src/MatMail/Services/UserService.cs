@@ -34,6 +34,9 @@ public sealed class UserInput
 /// <summary>Business functions around users: create, update, password, delete. Errors come back as English source strings.</summary>
 public sealed class UserService
 {
+    /// <summary>What a person is told who tries to set the password of somebody a directory (Active Directory, LDAP) signs in.</summary>
+    public const string DirectoryPasswordMessage = "The password of this user is managed in the directory.";
+
     private readonly MatMailDbContext _db;
     private readonly CurrentUser _current;
     private readonly SignInService _signIn;
@@ -131,12 +134,18 @@ public sealed class UserService
         string? error = ValidateCommon(input, loginName);
         if (error is null && !string.IsNullOrEmpty(input.Password))
         {
-            error = SignInService.ValidatePasswordStrength(input.Password);
+            // The password of somebody who signs in through a directory is the directory's: a hash set here would never be asked for.
+            error = user.DirectoryId is not null ? DirectoryPasswordMessage : SignInService.ValidatePasswordStrength(input.Password);
         }
 
         if (error is not null)
         {
             return error;
+        }
+
+        if (user.DirectoryId is not null)
+        {
+            input.MustChangePassword = false;
         }
 
         if (loginName != user.LoginName && await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.LoginName == loginName && u.Id != id))
@@ -221,6 +230,11 @@ public sealed class UserService
         if (user is null)
         {
             return "The user does not exist.";
+        }
+
+        if (user.DirectoryId is not null)
+        {
+            return DirectoryPasswordMessage;
         }
 
         user.PasswordHash = _signIn.HashPassword(user, newPassword);

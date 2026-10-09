@@ -84,6 +84,7 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, IStringLoc
         nameof(ActivityCategory.Imap) => "IMAP",
         nameof(ActivityCategory.Sync) => l["Synchronisation"].Value,
         nameof(ActivityCategory.Queue) => l["Delivery"].Value,
+        nameof(ActivityCategory.Backup) => l["Backups"].Value,
         _ => l["System"].Value,
     };
 }

@@ -6,6 +6,71 @@
     ViewData["ShellClass"] = "auth-shell--wide";
 }
 
+<script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
+
+@if (Model.HasUpload || Model.UploadError is not null)
+{
+    <div class="auth-card">
+        <h1>@L["Restore a backup"]</h1>
+        <p class="auth-card__lead">@L["The backup replaces this empty installation: its users, mailboxes and settings come back. MatMail restarts to do it."]</p>
+
+        @if (Model.UploadError is not null)
+        {
+            <div class="notice notice--danger" role="status"><mm-icon name="alert-circle" class="notice__icon" /><span class="notice__text">@Model.UploadError</span></div>
+        }
+
+        @if (Model.UploadProblem is not null)
+        {
+            <div class="notice notice--danger" role="status"><mm-icon name="alert-circle" class="notice__icon" /><span class="notice__text"><b>@L["This version cannot restore the backup."]</b> @Model.UploadProblem</span></div>
+        }
+
+        @if (Model.UploadInfo is { } info)
+        {
+            <dl class="kv">
+                <dt>@L["Made"]</dt><dd>@Fmt.DateTimeText(info.CreatedUtc)@if (!string.IsNullOrEmpty(info.Host)) { <span class="muted"> · @info.Host</span> }</dd>
+                <dt>@L["Version"]</dt><dd class="mono">@info.AppVersion</dd>
+                <dt>@L["Contents"]</dt><dd>@string.Format(L["{0} tables with {1} rows, {2} files ({3})"].Value, info.Tables, info.Rows.ToString("N0"), info.Files, Fmt.Size(info.FilesBytes))</dd>
+            </dl>
+        }
+
+        @if (Model.Preparation.State != MatMail.Backup.PreparationState.Idle)
+        {
+            <section id="restore-preparation" data-status-url="/Account/Setup?handler=Status">
+                <div class="progress" id="restore-progress"><div class="progress__bar"></div></div>
+                <p class="muted" id="restore-progress-text">@(Model.Preparation.State == MatMail.Backup.PreparationState.Failed ? Model.Preparation.Message : L["Getting ready …"].Value)</p>
+                <form method="post" asp-page-handler="Reset" id="restore-back" hidden="@(Model.Preparation.State != MatMail.Backup.PreparationState.Failed)">
+                    <input type="hidden" name="Upload" value="@Model.Upload" />
+                    <button type="submit" class="btn btn--secondary"><mm-icon name="arrow-left" /><span>@L["Back"]</span></button>
+                </form>
+            </section>
+        }
+        else if (Model.HasUpload && Model.UploadProblem is null)
+        {
+            <mm-form>
+                <input type="hidden" name="Upload" value="@Model.Upload" />
+                @if (Model.UploadEncrypted)
+                {
+                    <mm-field asp-for="Restore.Passphrase" kind="password" label='@L["Passphrase of the backup"]' autocomplete="off" reveal="true" />
+                }
+
+                <mm-button-row>
+                    <mm-button variant="danger" type="submit" handler="Restore" icon="rotate-ccw">@L["Restore"]</mm-button>
+                    @if (Model.UploadEncrypted)
+                    {
+                        <mm-button variant="secondary" type="submit" handler="Check" icon="search">@L["Check the backup"]</mm-button>
+                    }
+                    <mm-button variant="secondary" type="submit" handler="Discard" icon="arrow-left">@L["Cancel"]</mm-button>
+                </mm-button-row>
+            </mm-form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Discard"><input type="hidden" name="Upload" value="@Model.Upload" /><button type="submit" class="btn btn--secondary"><mm-icon name="arrow-left" /><span>@L["Back"]</span></button></form>
+        }
+    </div>
+}
+else
+{
 <div class="auth-card">
     <h1>@L["Welcome to MatMail"]</h1>
     <p class="auth-card__lead">@L["Create the first tenant and its administrator. You can add more tenants, users and mail addresses afterwards."]</p>
@@ -28,3 +93,22 @@
         </mm-button-row>
     </mm-form>
 </div>
+
+<div class="auth-card auth-card--spaced" id="backup-upload" data-url="/Account/Setup?handler=Upload" data-next="/Account/Setup">
+    <h2>@L["Or restore a backup"]</h2>
+    <p class="auth-card__lead">@L["You have the backup of another MatMail (or of this one)? Restore it instead of setting up: users, mailboxes, settings and keys come back."]</p>
+    <div class="form-row">
+        <input class="form-control" type="file" accept=".zip,.mmbak" aria-label="@L["Backup file"]" />
+    </div>
+    <div class="progress" hidden><div class="progress__bar"></div></div>
+    <p class="muted" data-upload-text></p>
+    <div class="btn-row btn-row--tight">
+        <button type="button" class="btn btn--secondary" data-upload><mm-icon name="upload" /><span>@L["Upload"]</span></button>
+    </div>
+    @Html.AntiForgeryToken()
+</div>
+}
+
+@section Scripts {
+    <script src="~/js/backup.js" asp-append-version="true"></script>
+}

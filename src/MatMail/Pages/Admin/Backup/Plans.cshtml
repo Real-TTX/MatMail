@@ -1,0 +1,62 @@
+@page "/Admin/Backup/Plans"
+@model MatMail.Pages.Admin.Backup.PlansModel
+@{
+    ViewData["Breadcrumb"] = "Administration / Backups / Schedules";
+    ViewData["Title"] = L["Backups"].Value;
+    ViewData["Description"] = L["A schedule says when a backup is made, where it goes, and how many are kept."].Value;
+}
+
+<partial name="_BackupTabs" model='"plans"' />
+
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search schedules or targets…"]' />
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="enabled">@L["Enabled"]</option>
+        <option value="disabled">@L["Disabled"]</option>
+        <option value="failed">@L["Last backup failed"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="next_asc">@L["Next run"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No schedule yet. Without one, nothing is backed up."]' empty-icon="calendar">
+    <thead>
+        <tr>
+            <th>@L["Schedule"]</th>
+            <th>@L["When"]</th>
+            <th class="hide-sm">@L["Target"]</th>
+            <th class="hide-sm">@L["Keeps"]</th>
+            <th>@L["Next run"]</th>
+            <th>@L["Last run"]</th>
+            <th class="is-actions"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var plan in Model.Paged.Rows)
+        {
+            <tr data-row-href="/Admin/Backup/Plan?id=@plan.Id" tabindex="0">
+                <td class="cell-title">@plan.Name@if (plan.Encrypt) { <mm-icon name="lock" class="cell-icon" /> }</td>
+                <td>@Model.Schedule(plan)</td>
+                <td class="hide-sm">@plan.Target?.Name</td>
+                <td class="hide-sm cell-sub">@Model.Keeps(plan)</td>
+                <td class="nowrap">@if (!plan.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> } else { @Fmt.DateTimeText(plan.NextRunDate) }</td>
+                <td class="nowrap">
+                    @if (plan.LastStatus == BackupRunStatus.Failed) { <mm-badge kind="danger" icon="alert-circle">@L["Failed"]</mm-badge> }
+                    else if (plan.LastStatus == BackupRunStatus.Succeeded) { <mm-badge kind="ok" icon="check-circle">@Fmt.Ago(plan.LastRunDate)</mm-badge> }
+                    else { <span class="muted">–</span> }
+                </td>
+                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Backup/Plan?id=@plan.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Admin/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
+</mm-list-actions>

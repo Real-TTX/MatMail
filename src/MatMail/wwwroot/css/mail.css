@@ -4,8 +4,45 @@
 .app-shell[data-area="mail"] .app-main { height: 100vh; height: 100dvh; }
 .app-shell[data-area="mail"] .app-content--bleed { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--color-surface); }
 .mail-app { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.mail-panes { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .mail-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .mail-pane[hidden] { display: none; }
+
+/* ---- Reading pane (appearance settings; wide screens only, mail-ui.js sets the classes): list and reader next to or above each other ---- */
+.mail-splitter { flex: none; display: none; background: var(--color-border); touch-action: none; }
+.mail-app.is-split .mail-splitter { display: block; }
+.mail-app.is-split .mail-pane--list { flex: 0 0 var(--mail-list-size, 42%); min-width: 0; }
+.mail-app.is-split .mail-pane--reader { flex: 1; min-width: 0; }
+.mail-app.is-split-right .mail-panes { flex-direction: row; }
+.mail-app.is-split-right .mail-splitter { width: 5px; margin: 0 -2px; cursor: col-resize; z-index: 2; background: transparent; box-shadow: inset 2px 0 0 var(--color-border); }
+.mail-app.is-split-right .mail-splitter:hover, .mail-app.is-split-right .mail-splitter.is-dragging, .mail-app.is-split-right .mail-splitter:focus-visible { box-shadow: inset 2px 0 0 var(--color-primary); outline: none; }
+.mail-app.is-split-below .mail-panes { flex-direction: column; }
+.mail-app.is-split-below .mail-pane--list { flex-basis: var(--mail-list-size, 40%); }
+.mail-app.is-split-below .mail-splitter { height: 5px; margin: -2px 0; cursor: row-resize; z-index: 2; background: transparent; box-shadow: inset 0 2px 0 var(--color-border); }
+.mail-app.is-split-below .mail-splitter:hover, .mail-app.is-split-below .mail-splitter.is-dragging, .mail-app.is-split-below .mail-splitter:focus-visible { box-shadow: inset 0 2px 0 var(--color-primary); outline: none; }
+.mail-app.is-split .reader-back { display: none; }
+.mail-app.is-split .mail-pane--reader { background: var(--color-surface); }
+.mail-reader-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; height: 100%; min-height: 12rem; color: var(--color-text-muted); text-align: center; }
+.mail-reader-empty .icon { width: 3.5rem; height: 3.5rem; opacity: 0.35; stroke-width: 1.25; }
+/* A narrow list (the reader sits to its right) gets the two-line rows of a phone. */
+.mail-app.is-split-right .mail-row {
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+  grid-template-areas: "avatar from date" "avatar subject star" "avatar snippet attach";
+  row-gap: 0.1rem;
+  padding: 0.55rem 0.75rem;
+  min-height: 4.2rem;
+  align-items: start;
+}
+.mail-app.is-split-right .mail-row__check { grid-area: avatar; align-self: center; }
+.mail-app.is-split-right .mail-row__star { grid-area: star; width: 1.8rem; height: 1.8rem; justify-self: end; align-self: center; }
+.mail-app.is-split-right .mail-row__from { grid-area: from; }
+.mail-app.is-split-right .mail-row__main { grid-area: subject; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mail-app.is-split-right .mail-row__snippet { display: none; }
+.mail-app.is-split-right .mail-row__attach { grid-area: attach; justify-self: end; }
+.mail-app.is-split-right .mail-row__date { grid-area: date; }
+.mail-app.is-split-right .mail-row__actions { display: none !important; }
+.mail-app.is-split-right .mail-row:hover .mail-row__date, .mail-app.is-split-right .mail-row:hover .mail-row__attach { visibility: visible; }
+.mail-app.is-split-right .mail-toolbar__count, .mail-app.is-split-right .mail-pager__text { display: none; }
 
 /* ---- Search in the header ---- */
 .mail-search { position: relative; flex: 1; max-width: 46rem; display: flex; align-items: center; }
@@ -172,6 +209,7 @@
 .mail-row.is-unread { background: var(--color-surface); color: var(--color-text); font-weight: 700; }
 .mail-row:hover { z-index: 1; box-shadow: inset 1px 0 0 var(--color-border), inset -1px 0 0 var(--color-border), 0 1px 3px rgba(20, 30, 60, 0.18); }
 .mail-row.is-selected { background: var(--color-primary-soft); }
+.mail-row.is-open { background: var(--color-primary-soft); box-shadow: inset 3px 0 0 var(--color-primary); }
 .mail-row.is-cursor { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 .mail-row:not(.is-unread) .mail-row__from, .mail-row:not(.is-unread) .mail-row__subject { color: var(--color-text); font-weight: 400; }
 .mail-row__check { display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem; cursor: pointer; }
@@ -179,6 +217,12 @@
 .mail-row__star:hover { color: var(--color-text-muted); background: var(--color-surface-hover); }
 .mail-row__star.is-on { color: #f4b400; }
 .mail-row__from, .mail-row__main { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* A conversation: the people who wrote and, in grey, how many messages it has. */
+.mail-row__from { display: flex; align-items: baseline; gap: 0.35rem; }
+.mail-row__who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mail-row__count { flex: none; font-size: 0.78rem; font-weight: 400; color: var(--color-text-muted); }
+.mail-row__count::before { content: "("; }
+.mail-row__count::after { content: ")"; }
 .mail-row__snippet { color: var(--color-text-muted); font-weight: 400; }
 html[data-previews="off"] .mail-row__snippet { display: none; }
 .mail-row__attach { color: var(--color-text-muted); display: inline-flex; justify-content: center; }
@@ -207,13 +251,18 @@ html[data-previews="off"] .mail-row__snippet { display: none; }
 .mail-notice { margin: 1rem; padding: 0.75rem 1rem; border-radius: var(--radius); background: var(--color-info-soft); color: var(--color-text); }
 .mail-notice.is-error { background: var(--color-danger-soft); color: var(--color-danger); }
 .mail-notice[hidden] { display: none; }
+.mail-drop { position: absolute; inset: 0.5rem; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; border: 3px dashed var(--color-primary); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--color-surface) 88%, var(--color-primary)); color: var(--color-primary); font-size: 1.1rem; font-weight: 600; pointer-events: none; }
+.mail-drop[hidden] { display: none; }
+.mail-drop .icon { width: 3rem; height: 3rem; }
+.mail-toolbar__button { margin-left: 0.35rem; }
+.mail-row[draggable="true"] { -webkit-user-drag: element; }
 .mail-loading { position: absolute; inset: 3rem 0 0 0; display: flex; justify-content: center; padding-top: 3rem; pointer-events: none; z-index: 5; }
 .mail-loading[hidden] { display: none; }
 .spinner { width: 1.8rem; height: 1.8rem; border: 3px solid var(--color-border-strong); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---- Reader ---- */
-.mail-reader { flex: 1; min-height: 0; overflow-y: auto; padding: 0.5rem 1.25rem 2rem; }
+.mail-reader { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 0.5rem 1.25rem 2rem; }
 .reader { max-width: 62rem; }
 .reader__head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin: 0.75rem 0 1rem; }
 .reader__subject { font-size: 1.35rem; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
@@ -246,6 +295,22 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
 .attachment.is-uploading { opacity: 0.7; }
 .attachment__remove { width: 1.5rem; height: 1.5rem; margin: -0.2rem -0.45rem -0.2rem 0; }
 .reader__reply { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.75rem; }
+
+/* ---- A conversation in the reader: one card per message, the older ones closed to a line ---- */
+.thread__msg { margin: 0 0 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); overflow: hidden; }
+.thread__msg.is-collapsed .thread__body { display: none; }
+.thread__msg:not(.is-collapsed) > .thread__line { display: none; }
+.thread__line { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.55rem 0.85rem; border: 0; background: transparent; color: var(--color-text-muted); font: inherit; text-align: left; cursor: pointer; }
+.thread__line:hover { background: var(--color-surface-hover); }
+.thread__line .avatar--round { width: 1.9rem; height: 1.9rem; font-size: 0.85rem; }
+.thread__line.is-unread { color: var(--color-text); }
+.thread__from { flex: none; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text); font-weight: 500; }
+.thread__line.is-unread .thread__from { font-weight: 700; }
+.thread__snippet { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread__date { flex: none; font-size: 0.8rem; white-space: nowrap; }
+.thread__body { padding: 0.75rem 1rem 1rem; }
+.thread__loading { display: flex; justify-content: center; padding: 1.5rem; }
+.thread .reader__reply { margin-top: 1.1rem; }
 .reader__reply .btn { border-radius: 999px; padding: 0 1.1rem; }
 
 /* ---- Menus (anchored on desktop, a full-screen sheet on phones) ---- */
@@ -395,6 +460,8 @@ a.attachment:hover { background: var(--color-surface-hover); text-decoration: no
   .reader__details { margin-left: 0; }
   .reader__sender { flex-wrap: wrap; }
   .reader__meta { margin-left: 3.35rem; }
+  .thread__from { max-width: 8rem; }
+  .thread__body { padding: 0.5rem 0.65rem 0.8rem; }
 
   .compose-dock { right: 0; left: 0; }
   .compose, .compose.is-maximized { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; border: 0; border-radius: 0; z-index: 130; }

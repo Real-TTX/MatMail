@@ -142,6 +142,7 @@ public enum ActivityCategory
     Imap,
     Sync,
     Queue,
+    Backup,
 }
 
 public enum ActivityLevel
@@ -267,4 +268,33 @@ public enum TransferStatus
 
     /// <summary>Accepted, but deleted at once by a mailbox rule.</summary>
     Discarded,
+}
+
+public enum BackupTargetKind
+{
+    /// <summary>A folder of the server: a mounted disk or share, or a folder of the data volume.</summary>
+    Local,
+
+    /// <summary>A folder on an SMB share (a NAS), reached by the program itself.</summary>
+    Smb,
+}
+
+public enum BackupFrequency
+{
+    Hourly,
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+public enum BackupRunKind
+{
+    Scheduled,
+    Manual,
+}
+
+public enum BackupRunStatus
+{
+    Succeeded,
+    Failed,
 }

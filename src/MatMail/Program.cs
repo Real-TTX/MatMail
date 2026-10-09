@@ -1,8 +1,10 @@
 using System.Globalization;
 using MatMail;
 using MatMail.Api;
+using MatMail.Backup;
 using MatMail.Configuration;
 using MatMail.Data;
+using MatMail.Directories;
 using MatMail.MailServer.Imap;
 using MatMail.MailServer.Smtp;
 using MatMail.MailSync;
@@ -37,26 +39,30 @@ foreach (string sub in new[] { "config", "keys", "certs", "tmp" })
 AppConfig config = AppConfigLoader.Load(dataDir);
 AppInfo.DataDir = dataDir;
 
-var builder = WebApplication.CreateBuilder(args);
-
 using ILoggerFactory bootstrapLogging = LoggerFactory.Create(b => b.AddConsole());
+
+// ---------------------------------------------------------------------------------------------
+// Backup and restore come first, while nothing else uses the database and the data volume: the command line (--backup, --restore),
+// a restore that the web interface asked for before it stopped, or one from the environment into an empty installation.
+// ---------------------------------------------------------------------------------------------
+StartupOutcome startup = await RestoreStartup.RunAsync(args, config, dataDir, bootstrapLogging.CreateLogger("Restore"));
+if (startup.ExitCode is int exitCode)
+{
+    return exitCode;
+}
+
+if (startup.Restored)
+{
+    config = AppConfigLoader.Load(dataDir);   // the settings file of the backup (apart from how this server is deployed)
+}
+
+var builder = WebApplication.CreateBuilder(args);
 var certificates = new CertificateProvider(config, dataDir, bootstrapLogging.CreateLogger("Certificates"));
 
 // ---------------------------------------------------------------------------------------------
 // Web server (Kestrel): one port for the web interface, plain HTTP (a reverse proxy terminates TLS) unless Server.WebHttps is on
 // ---------------------------------------------------------------------------------------------
-builder.WebHost.ConfigureKestrel(kestrel =>
-{
-    kestrel.AddServerHeader = false;
-    kestrel.Limits.MaxRequestBodySize = (long)Math.Max(config.Server.MaxUploadMb, 1) * 1024 * 1024 + 4 * 1024 * 1024;
-    kestrel.ListenAnyIP(config.Server.WebPort, listen =>
-    {
-        if (config.Server.WebHttps && certificates.Current is not null)
-        {
-            listen.UseHttps(https => https.ServerCertificateSelector = (_, _) => certificates.Current);
-        }
-    });
-});
+builder.WebHost.ConfigureMatMailWebServer(config, certificates);
 
 // ---------------------------------------------------------------------------------------------
 // Services
@@ -68,6 +74,8 @@ builder.Services.AddImapServer();
 builder.Services.AddSmtpServer();
 builder.Services.AddHostedService<MaintenanceService>();
 builder.Services.AddHostedService<PushNotifier>();
+builder.Services.AddHostedService<BackupScheduler>();
+builder.Services.AddHostedService<DirectorySyncService>();
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
@@ -131,6 +139,7 @@ builder.Services.AddRazorPages(options =>
         // One line per admin area: who may open it.
         options.Conventions.AuthorizeFolder("/Admin/Tenants", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Settings", Permissions.SystemAdminPolicy);
+        options.Conventions.AuthorizeFolder("/Admin/Backup", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Users", Permissions.UsersManage);
         options.Conventions.AuthorizeFolder("/Admin/Roles", Permissions.RolesManage);
         options.Conventions.AuthorizeFolder("/Admin/Domains", Permissions.DomainsManage);
@@ -145,6 +154,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AuthorizeFolder("/Admin/Unassigned", Permissions.UnassignedManage);
         options.Conventions.AuthorizeFolder("/Admin/Branding", Permissions.BrandingManage);
         options.Conventions.AuthorizeFolder("/Admin/Security", Permissions.SecurityManage);
+        options.Conventions.AuthorizeFolder("/Admin/Directories", Permissions.DirectoriesManage);
         options.Conventions.AuthorizePage("/Mail/Index", Permissions.MailUse);
         options.Conventions.AuthorizeFolder("/Account/Rules", Permissions.MailUse);
     })
@@ -192,7 +202,17 @@ WebApplication app = builder.Build();
 ILogger startupLogger = app.Logger;
 startupLogger.LogInformation("MatMail {Version} starting. Data directory: {DataDir}", AppInfo.Version, dataDir);
 
-await StartupInitializer.MigrateDatabaseAsync(app.Services, startupLogger);
+try
+{
+    await StartupInitializer.MigrateDatabaseAsync(app.Services, startupLogger);
+}
+catch (MatMail.Versioning.IncompatibleVersionException ex)
+{
+    // A database that a newer version upgraded: say so plainly instead of a stack trace, and do not start.
+    startupLogger.LogCritical("{Message}", ex.Message);
+    return 2;
+}
+
 await StartupInitializer.SeedAdministratorFromEnvironmentAsync(app.Services, startupLogger);
 
 if (config.Server.TrustProxyHeaders)

@@ -50,29 +50,35 @@ public class DisplaySettingsTests
         Assert.Equal("comfortable", theme.Density);
         Assert.True(theme.ShowPreviews);
         Assert.Null(theme.UserTimeZone);
+        Assert.Equal("off", theme.ReadingPane);
+        Assert.False(theme.ConversationView);
     }
 
     [Fact]
     public void The_choices_of_the_user_are_used()
     {
         ThemeChoice theme = new ThemeService(Signed(
-            (AppClaims.TextSize, "large"), (AppClaims.Density, "compact"), (AppClaims.TimeZone, "Asia/Tokyo"), (AppClaims.ShowPreviews, "0")), Config()).Resolve();
+            (AppClaims.TextSize, "large"), (AppClaims.Density, "compact"), (AppClaims.TimeZone, "Asia/Tokyo"), (AppClaims.ShowPreviews, "0"),
+            (AppClaims.ReadingPane, "below"), (AppClaims.ConversationView, "1")), Config()).Resolve();
 
         Assert.Equal("large", theme.TextSize);
         Assert.Equal("compact", theme.Density);
         Assert.False(theme.ShowPreviews);
         Assert.Equal("Asia/Tokyo", theme.UserTimeZone);
+        Assert.Equal("below", theme.ReadingPane);
+        Assert.True(theme.ConversationView);
     }
 
     [Fact]
     public void Values_nobody_offers_fall_back_to_the_standard()
     {
         ThemeChoice theme = new ThemeService(Signed(
-            (AppClaims.TextSize, "gigantic"), (AppClaims.Density, "cramped"), (AppClaims.TimeZone, "Mars/Olympus")), Config()).Resolve();
+            (AppClaims.TextSize, "gigantic"), (AppClaims.Density, "cramped"), (AppClaims.TimeZone, "Mars/Olympus"), (AppClaims.ReadingPane, "diagonal")), Config()).Resolve();
 
         Assert.Equal("normal", theme.TextSize);
         Assert.Equal("comfortable", theme.Density);
         Assert.Null(theme.UserTimeZone);
+        Assert.Equal("off", theme.ReadingPane);
     }
 
     [Fact]
@@ -80,7 +86,7 @@ public class DisplaySettingsTests
     {
         var snapshot = new SessionSnapshot(
             1, 1, "Home", 1, "alice", "Alice", false, false, new[] { Permissions.MailUse }, null, null, null,
-            "small", "compact", "Asia/Tokyo", false, DateTime.UtcNow.AddDays(1), false, false);
+            "small", "compact", "Asia/Tokyo", false, DateTime.UtcNow.AddDays(1), false, false, ReadingPane: "right", ConversationView: true);
 
         ClaimsPrincipal principal = SignInService.BuildPrincipal(snapshot, Guid.NewGuid());
 
@@ -88,10 +94,14 @@ public class DisplaySettingsTests
         Assert.Equal("compact", principal.FindFirstValue(AppClaims.Density));
         Assert.Equal("Asia/Tokyo", principal.FindFirstValue(AppClaims.TimeZone));
         Assert.Equal("0", principal.FindFirstValue(AppClaims.ShowPreviews));
+        Assert.Equal("right", principal.FindFirstValue(AppClaims.ReadingPane));
+        Assert.Equal("1", principal.FindFirstValue(AppClaims.ConversationView));
 
         ThemeChoice theme = new ThemeService(new HttpContextAccessor { HttpContext = new DefaultHttpContext { User = principal } }, Config()).Resolve();
         Assert.Equal("small", theme.TextSize);
         Assert.False(theme.ShowPreviews);
+        Assert.Equal("right", theme.ReadingPane);
+        Assert.True(theme.ConversationView);
     }
 }
 
@@ -130,6 +140,8 @@ public class DisplaySettingsStorageTests : IAsyncLifetime
         Assert.Null(snapshot.TextSize);
         Assert.Null(snapshot.Density);
         Assert.Null(snapshot.TimeZone);
+        Assert.Null(snapshot.ReadingPane);
+        Assert.False(snapshot.ConversationView);
     }
 
     [DbFact]
@@ -143,6 +155,8 @@ public class DisplaySettingsStorageTests : IAsyncLifetime
             alice.Density = "compact";
             alice.TimeZone = "America/New_York";
             alice.ShowPreviews = false;
+            alice.ReadingPane = "right";
+            alice.ConversationView = true;
             await db.SaveChangesAsync();
         }
 
@@ -152,5 +166,7 @@ public class DisplaySettingsStorageTests : IAsyncLifetime
         Assert.Equal("compact", snapshot.Density);
         Assert.Equal("America/New_York", snapshot.TimeZone);
         Assert.False(snapshot.ShowPreviews);
+        Assert.Equal("right", snapshot.ReadingPane);
+        Assert.True(snapshot.ConversationView);
     }
 }

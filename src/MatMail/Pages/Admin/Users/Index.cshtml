@@ -44,13 +44,14 @@
         {
             <tr data-row-href="/Admin/Users/Edit?id=@user.Id" tabindex="0">
                 <td>
-                    <div class="cell-title">@user.DisplayName @if (user.IsSystemAdmin) { <mm-badge kind="info" icon="shield">@L["System administrator"]</mm-badge> }</div>
+                    <div class="cell-title">@user.DisplayName @if (user.IsSystemAdmin) { <mm-badge kind="info" icon="shield">@L["System administrator"]</mm-badge> } @if (user.InDirectory) { <mm-badge kind="muted" icon="server">@L["Directory"]</mm-badge> }</div>
                     <div class="cell-sub">@user.LoginName@(string.IsNullOrEmpty(user.Email) ? "" : " · " + user.Email)</div>
                 </td>
                 <td class="hide-sm"><div class="chip-list">@foreach (var role in user.Roles) { <mm-badge kind="muted">@role</mm-badge> }</div></td>
                 <td class="hide-sm">@Fmt.Ago(user.LastLoginDate)</td>
                 <td>
                     @if (!user.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }
+                    else if (user.BlockedByDirectory) { <mm-badge kind="warn" icon="lock">@L["Blocked by the directory"]</mm-badge> }
                     else if (user.LockedUntilDate > DateTime.UtcNow) { <mm-badge kind="warn" icon="lock">@L["Locked"]</mm-badge> }
                     else { <mm-badge kind="ok">@L["Active"]</mm-badge> }
                     @if (user.TwoFactor) { <mm-badge kind="info" icon="smartphone">2FA</mm-badge> }

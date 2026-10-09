@@ -24,6 +24,11 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
     /// <summary>Where the user stands with two-factor authentication (shown on the Access tab).</summary>
     public TwoFactorStatus TwoFactor { get; private set; } = TwoFactorStatus.Off;
 
+    /// <summary>Set for somebody a directory (Active Directory, LDAP) signs in: their password is the directory's, not one of this server.</summary>
+    public DirectorySignIn? DirectoryUser { get; private set; }
+
+    public sealed record DirectorySignIn(string Name, string? Dn, DateTime? BlockedSince);
+
     public bool IsEdit => Id != 0;
     public bool IsSelf => Id == currentUser.UserId;
     public bool CanSetSystemAdmin => currentUser.IsSystemAdmin;
@@ -213,6 +218,8 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
         }
 
         TwoFactor = await twoFactor.GetStatusAsync(Id);
+        DirectoryUser = await db.Users.AsNoTracking().Where(u => u.Id == Id && u.DirectoryId != null)
+            .Select(u => new DirectorySignIn(u.DirectoryConnection!.Name, u.DirectoryDn, u.DirectoryDisabledDate)).FirstOrDefaultAsync();
         Mailbox = await db.Mailboxes.AsNoTracking().FirstOrDefaultAsync(m => m.OwnerUserId == Id && m.Type == MailboxType.Personal);
         if (Mailbox is not null)
         {

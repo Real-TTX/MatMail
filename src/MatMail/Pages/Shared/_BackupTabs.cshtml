@@ -1,0 +1,8 @@
+@model string
+@* The tabs of the backup pages; Model = key of the active tab. *@
+<mm-tabbar>
+    <mm-tab title='@L["Overview"]' href="/Admin/Backup" icon="archive" active='@(Model == "overview")' />
+    <mm-tab title='@L["Schedules"]' href="/Admin/Backup/Plans" icon="calendar" active='@(Model == "plans")' />
+    <mm-tab title='@L["Targets"]' href="/Admin/Backup/Targets" icon="hard-drive" active='@(Model == "targets")' />
+    <mm-tab title='@L["Restore"]' href="/Admin/Backup/Restore" icon="rotate-ccw" active='@(Model == "restore")' />
+</mm-tabbar>

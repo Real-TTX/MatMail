@@ -132,6 +132,13 @@ public sealed partial class ComposeService
 
         if (!result.Accepted)
         {
+            // Whose mailbox is full (the text the SMTP server answers has no room for the addresses).
+            if (result.Temporary && result.Rejected.Count > 0)
+            {
+                return new ComposeResult(false, string.Format(
+                    _l["{0}: the mailbox is full and takes no new mail until something is deleted. Nothing was sent."].Value, string.Join(", ", result.Rejected)));
+            }
+
             return new ComposeResult(false, result.Error ?? "The message could not be sent.");
         }
 

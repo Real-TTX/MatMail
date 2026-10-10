@@ -323,13 +323,21 @@ public sealed class MailRuleEngine
 
         if (await delivery.ResolveAsync(target, null, cancel) is not null)
         {
-            await delivery.DeliverAsync(resent, new DeliverySource
+            try
             {
-                EnvelopeRecipients = new[] { target },
-                Channel = TransferChannel.Rule,
-                Peer = origin,
-                EnvelopeSender = envelopeFrom,
-            }, cancel);
+                await delivery.DeliverAsync(resent, new DeliverySource
+                {
+                    EnvelopeRecipients = new[] { target },
+                    Channel = TransferChannel.Rule,
+                    Peer = origin,
+                    EnvelopeSender = envelopeFrom,
+                }, cancel);
+            }
+            catch (MailboxFullException)
+            {
+                await _log.WarnAsync(ActivityCategory.Queue, $"A rule of {mailbox.Name} could not forward a message to {target}: that mailbox is full.", tenantId: mailbox.TenantId);
+            }
+
             return;
         }
 

@@ -139,6 +139,13 @@
   cursor: pointer;
 }
 .folder-group__title:hover { background: var(--color-surface-hover); }
+/* The mailbox heading: the title, the three dots, and a drop target for a folder (it goes to the top level). */
+.folder-group__head { display: flex; align-items: center; border-radius: var(--radius-sm); }
+.folder-group__head .folder-group__title { flex: 1; min-width: 0; }
+.folder-group__more { flex: none; width: 1.9rem; height: 1.9rem; opacity: 0; }
+.folder-group__head:hover .folder-group__more, .folder-group__more:focus-visible { opacity: 1; }
+.folder-group__head.is-drop { background: var(--color-primary-soft); outline: 2px dashed var(--color-primary); outline-offset: -2px; }
+@media (hover: none) { .folder-group__more, .folder-item__more { opacity: 1; } }
 .folder-group__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .folder-item {
   position: relative;
@@ -174,8 +181,34 @@
 .folder-item:hover .folder-item__fold, .folder-item__fold:focus-visible { opacity: 1; }
 .folder-item.is-drop { background: var(--color-primary-soft); outline: 2px dashed var(--color-primary); outline-offset: -2px; }
 .folder-item[draggable="true"] { cursor: grab; }
+/* What is dragged out of the list when it is more than one message. */
+.drag-ghost { position: fixed; top: -200px; left: -200px; padding: 0.35rem 0.8rem; border-radius: 999px; background: var(--color-primary); color: #fff; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+
+/* ---- Info dialog of a mailbox ---- */
+.mailbox-info .kv { margin: 0 0 0.5rem; }
+.mailbox-info__heading { margin: 1.1rem 0 0.5rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--color-text-muted); }
+.dialog__subtitle { font-size: 0.8rem; }
+.meter__bar { height: 0.75rem; overflow: hidden; border-radius: 999px; background: var(--color-surface-alt); }
+.meter__fill { height: 100%; border-radius: inherit; background: var(--color-primary); transition: width 0.4s ease; }
+.meter__bar.is-warn .meter__fill { background: #d99a1d; }
+.meter__bar.is-high .meter__fill { background: #e0701a; }
+.meter__bar.is-full .meter__fill { background: var(--color-danger); }
+.meter__text { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.45rem; }
+.meter__more { margin-top: 0.2rem; font-size: 0.85rem; }
+.meter .mail-notice { margin: 0.6rem 0 0; }
+.folder-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.folder-bars__row { display: grid; grid-template-columns: minmax(0, 9rem) 1fr 4.5rem; align-items: center; gap: 0.6rem; font-size: 0.88rem; }
+.folder-bars__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-bars__track { height: 0.5rem; border-radius: 999px; background: var(--color-surface-alt); overflow: hidden; }
+.folder-bars__fill { display: block; height: 100%; border-radius: inherit; background: color-mix(in srgb, var(--color-primary) 70%, transparent); }
+.folder-bars__size { text-align: right; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .folder-usage { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; padding: 0.25rem 0.5rem 0.25rem 1.5rem; color: var(--color-text-muted); font-size: 0.8rem; }
 .folder-usage .icon { width: 0.95rem; height: 0.95rem; }
+.folder-usage-bar { height: 4px; margin: 0 0.5rem 0.25rem 1.5rem; border-radius: 999px; background: var(--color-surface-alt); overflow: hidden; }
+.folder-usage-bar span { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); }
+.folder-usage-bar.is-warn span { background: #d99a1d; }
+.folder-usage-bar.is-high span { background: #e0701a; }
+.folder-usage-bar.is-full span { background: var(--color-danger); }
 
 /* ---- Toolbar above list and reader ---- */
 .mail-toolbar { display: flex; align-items: center; gap: 0.15rem; min-height: 3rem; padding: 0.25rem 0.75rem; border-bottom: 1px solid var(--color-border); background: var(--color-surface); flex: none; }

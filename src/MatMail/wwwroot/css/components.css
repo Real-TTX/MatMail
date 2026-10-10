@@ -483,3 +483,9 @@ th.num, td.num { text-align: right; }
 .inline-form--spaced { margin-bottom: 1rem; }
 .form-control--inline { width: auto; min-width: 12rem; max-width: 100%; }
 .cell-icon { width: 0.9em; height: 0.9em; margin-left: 0.35rem; vertical-align: -0.1em; color: var(--color-text-muted); }
+/* A progress bar that is a measure (a mailbox against its limit), not a task: thin, amber when nearly full, red when full. */
+.progress--thin { height: 0.35rem; margin: 0.3rem 0 0; min-width: 6rem; }
+.usage-meter .progress { margin: 0 0 0.4rem; }
+.progress--warn .progress__bar { background: #d99a1d; }
+.progress--high .progress__bar { background: #e0701a; }
+.progress--full .progress__bar { background: var(--color-danger); }

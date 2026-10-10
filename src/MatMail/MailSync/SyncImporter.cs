@@ -132,12 +132,14 @@ public sealed class SyncImporter
     private readonly ActivityLogger _activity;
     private readonly MailSyncOptions _options;
     private readonly ILogger<SyncImporter> _logger;
+    private readonly MailboxQuotaService _quota;
     private readonly Dictionary<string, long> _localFolders = new(StringComparer.Ordinal);
     private long? _fallbackInboxId;
+    private Mailbox? _fallbackMailbox;
 
     public SyncImporter(
         MatMailDbContext db, MailDelivery delivery, MailStore store, FolderService folders, MailboxService mailboxes,
-        SyncFailureTracker failures, ActivityLogger activity, MailSyncOptions options, ILogger<SyncImporter> logger)
+        SyncFailureTracker failures, ActivityLogger activity, MailSyncOptions options, ILogger<SyncImporter> logger, MailboxQuotaService quota)
     {
         _db = db;
         _delivery = delivery;
@@ -148,6 +150,7 @@ public sealed class SyncImporter
         _activity = activity;
         _options = options;
         _logger = logger;
+        _quota = quota;
     }
 
     // ---------------------------------------------------------------------------------------------------------------
@@ -188,6 +191,7 @@ public sealed class SyncImporter
                 await _mailboxes.EnsureDefaultFoldersAsync(target);
                 run.TargetMailbox = target;
                 _fallbackInboxId = (await _folders.FindByKindAsync(target.Id, FolderKind.Inbox, cancel))?.Id;
+                _fallbackMailbox = target;
             }
             else
             {
@@ -384,7 +388,7 @@ public sealed class SyncImporter
         {
             if (current is OperationCanceledException or IOException or SocketException or TimeoutException
                 or ServiceNotConnectedException or ServiceNotAuthenticatedException or ImapProtocolException or Pop3ProtocolException
-                or SyncConfigurationException or SyncFolderException or NpgsqlException { IsTransient: true })
+                or SyncConfigurationException or SyncFolderException or MailboxFullException or NpgsqlException { IsTransient: true })
             {
                 return false;
             }
@@ -473,7 +477,7 @@ public sealed class SyncImporter
             await DescribeLiveCopiesAsync(remote, delivery, cancel);
         }
 
-        await MoveUnclaimedAsync(delivery, cancel);
+        await MoveUnclaimedAsync(delivery, storage, cancel);
         DeliveredCopy first = delivery.Copies[0];
         ImportStatus status = delivery.Copies.All(c => c.WasDuplicate) ? ImportStatus.AlreadyPresent : ImportStatus.Stored;
         bool discarded = delivery.Copies.All(c => c.Message is null && c.Rules?.Discard == true);
@@ -498,7 +502,7 @@ public sealed class SyncImporter
     }
 
     /// <summary>Mail that only the "Unassigned" mailbox took goes to the account's fallback mailbox instead, when one is set.</summary>
-    private async Task MoveUnclaimedAsync(DeliveryResult delivery, CancellationToken cancel)
+    private async Task MoveUnclaimedAsync(DeliveryResult delivery, MessageStorage storage, CancellationToken cancel)
     {
         if (_fallbackInboxId is not long inboxId || delivery.Copies.Count != 1)
         {
@@ -506,16 +510,29 @@ public sealed class SyncImporter
         }
 
         DeliveredCopy copy = delivery.Copies[0];
-        if (copy is { WentToUnassigned: true, WasDuplicate: false, Message: not null })
+        if (copy is not { WentToUnassigned: true, WasDuplicate: false, Message: not null })
         {
-            await _store.MoveAsync(new[] { copy.Message.Id }, inboxId, cancel);
+            return;
         }
+
+        // A full fallback mailbox takes nothing more: the mail waits in Unassigned, where an administrator sees it (a stand-in of live access takes no room).
+        if (storage == MessageStorage.Local && _fallbackMailbox is not null && await _quota.IsFullAsync(_fallbackMailbox, cancel))
+        {
+            return;
+        }
+
+        await _store.MoveAsync(new[] { copy.Message.Id }, inboxId, cancel);
     }
 
     /// <summary>Backup and migration: the copy goes into the prepared local folder as it is (flags and date kept, no routing).</summary>
     private async Task<ImportResult> StoreCopyAsync(SyncRun run, RemoteMessage remote, byte[] raw, CancellationToken cancel)
     {
         await PrepareFolderAsync(run, remote.Folder, cancel);
+        if (run.TargetMailbox is { } targetMailbox && await _quota.IsFullAsync(targetMailbox, cancel))
+        {
+            throw new MailboxFullException(new[] { targetMailbox });   // the copies wait at the provider: the run ends here, the next one goes on
+        }
+
         MailMessage stored = await _store.AddAsync(_localFolders[remote.Folder.FullName], new NewMessage(raw)
         {
             ReceivedDate = remote.InternalDate,

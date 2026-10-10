@@ -667,6 +667,90 @@ public class MailSyncProviderTests : IAsyncLifetime
         Assert.Equal(5, (await InboxAsync(_seed.AliceMailbox.Id)).Count);
     }
 
+    // ----- a mailbox that is full ------------------------------------------------------------------------------------
+
+    [ProviderFact]
+    public async Task A_full_mailbox_ends_the_run_without_losing_mail_and_the_next_run_goes_on_when_there_is_room()
+    {
+        ProviderUser provider = await ProviderUser.CreateAsync();
+        for (int i = 1; i <= 4; i++)
+        {
+            await provider.AppendAsync("INBOX", RawMail.Build("max@sender.test", "alice@example.test", $"Mail {i}", new string('x', 1000)));
+        }
+
+        // Room for two of them (about 1.2 KB each): the third finds the mailbox full. Delete after download is where mail could get lost.
+        await QuotaTestSupport.SetLimitAsync(_host, _seed.AliceMailbox.Id, 2000);
+        MailAccount account = await AddAccountAsync(provider, a => a.Retention = ServerRetention.DeleteAfterDownload);
+
+        SyncReport report = await SyncAsync(account);
+
+        Assert.False(report.Succeeded);
+        Assert.Equal((2, 0), (report.Downloaded, report.Failed));   // the mailbox is to blame, not the messages: none is counted towards giving up
+        Assert.Contains("is full", report.Message);
+        Assert.Equal(new[] { "Mail 1", "Mail 2" }, (await InboxAsync(_seed.AliceMailbox.Id)).Select(m => m.Subject));
+        Assert.Equal(2, await provider.CountAsync("INBOX"));        // the other two are still there
+        MailAccount state = await AccountAsync(account.Id);
+        Assert.Equal(SyncState.Error, state.LastSyncState);
+        Assert.Contains("is full", state.LastSyncMessage);
+
+        // Still full: nothing happens, and still nothing is lost.
+        SyncReport again = await SyncAsync(account);
+        Assert.False(again.Succeeded);
+        Assert.Equal(0, again.Downloaded);
+        Assert.Equal(2, await provider.CountAsync("INBOX"));
+
+        await QuotaTestSupport.SetLimitAsync(_host, _seed.AliceMailbox.Id, null);
+        SyncReport recovered = await SyncAsync(account);
+
+        Assert.True(recovered.Succeeded, recovered.Message);
+        Assert.Equal(2, recovered.Downloaded);
+        Assert.Equal(new[] { "Mail 1", "Mail 2", "Mail 3", "Mail 4" }, (await InboxAsync(_seed.AliceMailbox.Id)).Select(m => m.Subject));
+        Assert.Equal(0, await provider.CountAsync("INBOX"));
+        Assert.Equal(SyncState.Ok, (await AccountAsync(account.Id)).LastSyncState);
+    }
+
+    [ProviderFact]
+    public async Task A_backup_into_a_full_mailbox_stops_and_continues_later()
+    {
+        ProviderUser provider = await ProviderUser.CreateAsync();
+        for (int i = 1; i <= 3; i++)
+        {
+            await provider.AppendAsync("INBOX", RawMail.Build("max@sender.test", "alice@example.test", $"Mail {i}", new string('x', 1000)));
+        }
+
+        Mailbox backup = await CreateMailboxAsync("Backups");
+        await QuotaTestSupport.SetLimitAsync(_host, backup.Id, 2000);
+        MailAccount account = await AddAccountAsync(provider, a => { a.Name = "Strato"; a.Role = MailAccountRole.Backup; a.TargetMailboxId = backup.Id; });
+
+        SyncReport report = await SyncAsync(account);
+
+        Assert.False(report.Succeeded);
+        Assert.Equal(2, report.Downloaded);
+        Assert.Contains("is full", report.Message);
+        Assert.Equal(3, await provider.CountAsync("INBOX"));   // a backup never deletes at the provider
+
+        await QuotaTestSupport.SetLimitAsync(_host, backup.Id, null);
+        SyncReport recovered = await SyncAsync(account);
+
+        Assert.True(recovered.Succeeded, recovered.Message);
+        Assert.Equal(new[] { "Mail 1", "Mail 2", "Mail 3" }, (await FolderAsync(backup.Id, "Backup/Strato/INBOX")).Select(m => m.Subject));
+    }
+
+    [ProviderFact]
+    public async Task Unclaimed_mail_waits_in_unassigned_when_the_fallback_mailbox_is_full()
+    {
+        ProviderUser provider = await ProviderUser.CreateAsync();
+        await provider.AppendAsync("INBOX", RawMail.Build("friend@sender.test", "max.mueller@example.test", "For Max", "x"));
+        await QuotaTestSupport.FillUpAsync(_host, _seed.Info.Id);
+        MailAccount account = await AddAccountAsync(provider, a => { a.Address = "max.mueller@example.test"; a.TargetMailboxId = _seed.Info.Id; });
+
+        SyncReport report = await SyncAsync(account);
+
+        Assert.True(report.Succeeded, report.Message);   // the mail is not lost and not refused: an administrator sees it in Unassigned
+        Assert.Equal("For Max", Assert.Single(await InboxAsync(_seed.UnassignedMailboxId)).Subject);
+        Assert.Single(await InboxAsync(_seed.Info.Id));   // the filler only
+    }
+
     [ProviderFact]
     public async Task Only_the_configured_folders_are_fetched_and_a_missing_one_is_reported()
     {

@@ -26,7 +26,7 @@ public class IndexModel(MatMailDbContext db) : PageModel
     public PageResult<MailboxRow> Paged { get; private set; } = new(Array.Empty<MailboxRow>(), 0, 1, 1, Pager.DefaultPageSize);
 
     public sealed record MailboxRow(
-        long Id, string Name, MailboxType Type, bool IsActive, string? OwnerName, string? PrimaryAddress, int AddressCount, int DelegateCount, int MessageCount, long UsedBytes);
+        long Id, string Name, MailboxType Type, bool IsActive, string? OwnerName, string? PrimaryAddress, int AddressCount, int DelegateCount, int MessageCount, long UsedBytes, long? QuotaBytes);
 
     public async Task OnGetAsync()
     {
@@ -72,7 +72,8 @@ public class IndexModel(MatMailDbContext db) : PageModel
                 db.MailboxAliases.Count(a => a.MailboxId == m.Id),
                 db.MailboxPermissions.Count(p => p.MailboxId == m.Id),
                 db.MailMessages.Count(x => x.MailboxId == m.Id),
-                db.MailMessages.Where(x => x.MailboxId == m.Id && x.Storage == MessageStorage.Local).Sum(x => x.SizeBytes)))
+                db.MailMessages.Where(x => x.MailboxId == m.Id && x.Storage == MessageStorage.Local).Sum(x => x.SizeBytes),
+                m.QuotaBytes))
             .ToPageAsync(PageNumber);
         PageNumber = Paged.PageNumber;
     }

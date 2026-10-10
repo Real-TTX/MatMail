@@ -57,7 +57,16 @@
                 </td>
                 <td class="hide-sm">@mailbox.DelegateCount</td>
                 <td class="hide-sm">@mailbox.MessageCount</td>
-                <td class="hide-sm nowrap">@(mailbox.UsedBytes == 0 ? "–" : Fmt.Size(mailbox.UsedBytes))</td>
+                <td class="hide-sm nowrap">
+                    @if (mailbox.QuotaBytes is long quota)
+                    {
+                        int percent = Fmt.Percent(mailbox.UsedBytes, quota);
+                        string state = Fmt.UsageState(mailbox.UsedBytes, quota);
+                        <span>@Fmt.Size(mailbox.UsedBytes) <span class="muted">/ @Fmt.Size(quota)</span></span>
+                        <div class="progress progress--thin @(state.Length == 0 ? "" : "progress--" + state)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@percent"><div class="progress__bar" style="width:@(percent)%"></div></div>
+                    }
+                    else { <span>@(mailbox.UsedBytes == 0 ? "–" : Fmt.Size(mailbox.UsedBytes))</span> }
+                </td>
                 <td>@if (mailbox.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
                 <td class="is-actions">
                     <span class="icon-actions">

@@ -221,7 +221,7 @@ public sealed class MailSyncRunner
 
         if (failure is not null)
         {
-            _logger.LogWarning(failure is SyncConfigurationException ? null : failure, "Synchronisation of account {AccountId} failed: {Problem}", account.Id, problem);
+            _logger.LogWarning(failure is SyncConfigurationException or MailboxFullException ? null : failure, "Synchronisation of account {AccountId} failed: {Problem}", account.Id, problem);
         }
 
         await SaveStateAsync(account.Id, succeeded ? SyncState.Ok : SyncState.Error, now, message, failureCount, next);

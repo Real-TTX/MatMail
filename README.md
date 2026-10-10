@@ -55,15 +55,20 @@ branding.
 
 **The web client**
 - Folders (also those of the provider) with **subfolders** – below the inbox or any other folder,
-  created from the folder menu and moved by menu or drag & drop – stars, drafts with auto-save,
-  attachments, address suggestions, **live updates** when mail arrives
+  created from the folder menu and moved by menu or drag & drop (onto another folder, or onto the
+  mailbox for the top level); **messages are dragged from the list onto a folder**, all the ticked
+  ones at once – stars, drafts with auto-save, attachments, address suggestions, **live updates**
+  when mail arrives
 - **Rules per mailbox** (*Account → Mail rules*): when a message arrives and fits – sender, recipient,
   subject, text, a header field, attachment, size – it is moved into a folder, marked as read,
   starred, labelled, sent to the trash, deleted or **forwarded** as a copy. They run before the
   message is stored, so it arrives where it belongs. Rules of shared mailboxes are for those who
   have full control of the mailbox
-- **Storage per mailbox** shown below the folders, in the mailbox list of the administration (sortable)
-  and per folder on the page of the mailbox
+- **Mailbox info and storage limit**: every mailbox has a menu (the three dots at its name, or the
+  right mouse button) with *Info* – whose it is, its addresses, your access and what it takes up, as
+  a bar against its limit and by folder. An administrator can give a mailbox a **storage limit**; a
+  full mailbox takes no new mail until something is deleted. The use is also shown below the folders,
+  in the mailbox list of the administration (sortable) and per folder on the page of the mailbox
 - **Search like in Gmail**: `from:anna has:attachment newer_than:7d`, several operators at once,
   `OR`, `-` to leave out, brackets and quoted phrases; the operators work in German too (`von:`,
   `hat:anhang`, `ist:ungelesen`). An **advanced search** panel builds the text for you. When a search
@@ -192,6 +197,26 @@ in place of the list. With conversations the list has one row per thread – who
 messages – and opening it stacks all of them: the newest and the unread ones open, the older ones
 closed to a line each. Archiving, deleting or moving a row does that to the whole conversation. A
 search still lists single messages.
+
+### Mailbox info and storage limits
+
+| The info of a mailbox | The limit in the administration |
+|---|---|
+| ![The info of a mailbox: addresses, access, the storage as a bar and by folder](docs/images/mail-mailbox-info.png) | ![The page of a mailbox: the use against the limit, the limit, the folders](docs/images/admin-mailbox-limit.png) |
+
+The menu of a mailbox (the three dots or the right mouse button) opens its *Info*: whose it is, its
+addresses, what you may do with it and what it takes up – as a bar against the limit (amber from 75 %,
+orange from 90 %, red when it is reached) and by folder, the largest first. An administrator sets the
+**limit** on the page of the mailbox, in gigabytes; empty means none.
+
+A mailbox that has reached its limit takes no new mail until something is deleted (messages in the
+trash count until it is emptied). The SMTP server answers *452*, a temporary error, so the sending
+server tries again later; a connected account leaves the mail at the provider and goes on when there is
+room again, so nothing is lost. Sending to it – from the web client, a mail program or by a rule – is
+refused (the web client names the mailboxes that are full), and so is moving or copying messages into
+it, over IMAP with `OVERQUOTA`. What always works, so that the owner can make room: deleting, moving
+within the mailbox and what the owner writes themselves (drafts, the copy in *Sent*). A message for
+several recipients goes to all of them or to none, so that a second try never delivers twice.
 
 ### Compose with the right signature
 
@@ -600,6 +625,7 @@ The mail itself lives in the PostgreSQL volume. A backup contains both.
 | Look and language | Theme, accent, text size, density, time zone per user; English and German | ✅ |
 | Backups | Complete backups of database and files, schedules with retention, folder and SMB (NAS) targets, encryption, restore (also of earlier versions) | ✅ |
 | Reading pane, conversation view | The reader beside or below the list, threads as one row (per user) | ✅ |
+| Mailbox info, storage limits | A menu and an info dialog per mailbox; a limit that a full mailbox obeys (SMTP, provider accounts, IMAP, web client); drag & drop of messages onto folders | ✅ |
 | Tenant switcher for ordinary users | Needs "member of several tenants" first | open question |
 | `.eml` / `.msg` files | Drop a file in to read it and keep it, drag a message out | ✅ |
 | AD / LDAP | Directories per tenant: sign-in with the password of Active Directory or another LDAP server, a mapper, a group that says who may sign in, import, a comparison that blocks whoever left | ✅ |

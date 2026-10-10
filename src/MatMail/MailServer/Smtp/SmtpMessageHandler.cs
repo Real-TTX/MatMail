@@ -27,14 +27,24 @@ internal sealed class SmtpMessageHandler
 
         if (transaction.Kind == SmtpClientKind.Anonymous)
         {
-            DeliveryResult delivered = await scope.ServiceProvider.GetRequiredService<MailDelivery>()
-                .DeliverAsync(raw, new DeliverySource
-                {
-                    EnvelopeRecipients = transaction.Recipients,
-                    Channel = TransferChannel.SmtpServer,
-                    RemoteIp = remoteIp,
-                    EnvelopeSender = transaction.Sender,
-                }, cancel);
+            DeliveryResult delivered;
+            try
+            {
+                delivered = await scope.ServiceProvider.GetRequiredService<MailDelivery>()
+                    .DeliverAsync(raw, new DeliverySource
+                    {
+                        EnvelopeRecipients = transaction.Recipients,
+                        Channel = TransferChannel.SmtpServer,
+                        RemoteIp = remoteIp,
+                        EnvelopeSender = transaction.Sender,
+                    }, cancel);
+            }
+            catch (MailboxFullException)
+            {
+                // One of the mailboxes filled up since RCPT TO (nothing was stored): the sender tries the whole message again later.
+                return "452 4.2.2 Mailbox full, try again later";
+            }
+
             return delivered.Copies.Count > 0
                 ? Queued(queueId)
                 : "451 4.3.0 The recipients cannot be resolved right now, please try again later";
@@ -58,7 +68,7 @@ internal sealed class SmtpMessageHandler
             ApplyFooters = true,
         }, cancel);
 
-        return result.Accepted ? Queued(queueId) : $"554 5.4.4 {result.Error ?? "The message cannot be sent"}";
+        return result.Accepted ? Queued(queueId) : result.Temporary ? $"452 4.2.2 {result.Error}" : $"554 5.4.4 {result.Error ?? "The message cannot be sent"}";
     }
 
     private static string Queued(string queueId) => $"250 2.0.0 OK queued as {queueId}";

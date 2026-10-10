@@ -67,6 +67,7 @@
   <data name="---------- Forwarded message ----------" xml:space="preserve"><value>---------- Weitergeleitete Nachricht ----------</value></data>
   <data name="— Nobody —" xml:space="preserve"><value>— Niemand —</value></data>
   <data name="— None —" xml:space="preserve"><value>— Keine —</value></data>
+  <data name="… and {0} more folders." xml:space="preserve"><value>… und {0} weitere Ordner.</value></data>
   <data name="… and {0} more." xml:space="preserve"><value>… und {0} weitere.</value></data>
   <data name="“{0}” is a user with a password of their own already." xml:space="preserve"><value>„{0}“ ist schon ein Benutzer mit eigenem Passwort.</value></data>
   <data name="“{0}” is larger than {1} MB." xml:space="preserve"><value>„{0}“ ist größer als {1} MB.</value></data>
@@ -90,6 +91,8 @@
   <data name="{0} message(s) were handed over to “{1}”." xml:space="preserve"><value>{0} Nachricht(en) an „{1}“ übergeben.</value></data>
   <data name="{0} messages" xml:space="preserve"><value>{0} Nachrichten</value></data>
   <data name="{0} new messages" xml:space="preserve"><value>{0} neue Nachrichten</value></data>
+  <data name="{0} of {1}" xml:space="preserve"><value>{0} von {1}</value></data>
+  <data name="{0} of {1} used ({2} %)." xml:space="preserve"><value>{0} von {1} belegt ({2} %).</value></data>
   <data name="{0} selected" xml:space="preserve"><value>{0} ausgewählt</value></data>
   <data name="{0} so far" xml:space="preserve"><value>bisher {0}</value></data>
   <data name="{0} stay at the provider" xml:space="preserve"><value>{0} bleiben beim Anbieter</value></data>
@@ -100,6 +103,7 @@
   <data name="{0}–{1} of {2}" xml:space="preserve"><value>{0}–{1} von {2}</value></data>
   <data name="{0}: cannot connect ({1})." xml:space="preserve"><value>{0}: Verbindung nicht möglich ({1}).</value></data>
   <data name="{0}: the connection was closed." xml:space="preserve"><value>{0}: Die Verbindung wurde geschlossen.</value></data>
+  <data name="{0}: the mailbox is full and takes no new mail until something is deleted. Nothing was sent." xml:space="preserve"><value>{0}: Das Postfach ist voll und nimmt keine neue Post an, bis etwas gelöscht wird. Es wurde nichts gesendet.</value></data>
   <data name="{0}: the server did not answer in time." xml:space="preserve"><value>{0}: Der Server hat nicht rechtzeitig geantwortet.</value></data>
   <data name="{0}: the TLS connection failed (certificate or protocol problem): {1}" xml:space="preserve"><value>{0}: Die TLS-Verbindung ist fehlgeschlagen (Zertifikats- oder Protokollproblem): {1}</value></data>
   <data name="{0}: the user name or password was refused." xml:space="preserve"><value>{0}: Benutzername oder Passwort wurden abgelehnt.</value></data>
@@ -135,6 +139,7 @@
   <data name="A PEM certificate needs its private key file." xml:space="preserve"><value>Ein PEM-Zertifikat braucht die Datei mit seinem privaten Schlüssel.</value></data>
   <data name="A personal mailbox needs an owner." xml:space="preserve"><value>Ein persönliches Postfach braucht einen Besitzer.</value></data>
   <data name="A personal mailbox, with the address of the directory when it is one of the domains of the tenant" xml:space="preserve"><value>Ein persönliches Postfach, mit der Adresse aus dem Verzeichnis, wenn sie zu den Domains des Mandanten gehört</value></data>
+  <data name="A recipient's mailbox is full and takes no new mail until something is deleted. Nothing was sent." xml:space="preserve"><value>Das Postfach eines Empfängers ist voll und nimmt keine neue Post an, bis etwas gelöscht wird. Es wurde nichts gesendet.</value></data>
   <data name="A restore replaces the current data completely. Mail that arrived after the backup was made is not in it. Before anything is replaced the current state is saved, so that a restore can be undone." xml:space="preserve"><value>Eine Wiederherstellung ersetzt die aktuellen Daten vollständig. E-Mails, die nach dem Backup eingegangen sind, sind nicht darin. Bevor etwas ersetzt wird, wird der aktuelle Stand gesichert, damit sich eine Wiederherstellung rückgängig machen lässt.</value></data>
   <data name="A reverse proxy is in front (trust X-Forwarded-For / X-Forwarded-Proto)" xml:space="preserve"><value>Ein Reverse-Proxy ist vorgeschaltet (X-Forwarded-For / X-Forwarded-Proto vertrauen)</value></data>
   <data name="A role is a set of permissions. Users can hold several roles." xml:space="preserve"><value>Eine Rolle ist ein Bündel von Berechtigungen. Benutzer können mehrere Rollen haben.</value></data>
@@ -267,6 +272,7 @@
   <data name="Bulleted list" xml:space="preserve"><value>Aufzählung</value></data>
   <data name="By" xml:space="preserve"><value>Von</value></data>
   <data name="By address" xml:space="preserve"><value>Nach Adresse</value></data>
+  <data name="By folder" xml:space="preserve"><value>Nach Ordnern</value></data>
   <data name="By hand" xml:space="preserve"><value>Von Hand</value></data>
   <data name="Cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="Cancel sending" xml:space="preserve"><value>Versand abbrechen</value></data>
@@ -454,6 +460,7 @@
   <data name="Edit tenant" xml:space="preserve"><value>Mandant bearbeiten</value></data>
   <data name="Edit user" xml:space="preserve"><value>Benutzer bearbeiten</value></data>
   <data name="Empty trash now" xml:space="preserve"><value>Papierkorb jetzt leeren</value></data>
+  <data name="Empty: no limit. A mailbox that has reached its limit takes no new mail until something is deleted: mail from outside waits (the sender tries again, the provider keeps it); deleting is always possible." xml:space="preserve"><value>Leer: kein Limit. Ein Postfach, das sein Limit erreicht hat, nimmt keine neue Post mehr an, bis etwas gelöscht wird: Post von außen wartet (der Absender versucht es erneut, der Provider behält sie); Löschen ist immer möglich.</value></data>
   <data name="Empty: the role “User”." xml:space="preserve"><value>Leer: die Rolle „Benutzer“.</value></data>
   <data name="Enabled" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Enabled (people of this directory can sign in)" xml:space="preserve"><value>Aktiv (die Personen dieses Verzeichnisses können sich anmelden)</value></data>
@@ -525,6 +532,7 @@
   <data name="From the person (memberOf: Active Directory, FreeIPA, OpenLDAP with the memberOf overlay)" xml:space="preserve"><value>Von der Person (memberOf: Active Directory, FreeIPA, OpenLDAP mit memberOf-Overlay)</value></data>
   <data name="Full control" xml:space="preserve"><value>Vollzugriff</value></data>
   <data name="Full screen" xml:space="preserve"><value>Vollbild</value></data>
+  <data name="GB" xml:space="preserve"><value>GB</value></data>
   <data name="General" xml:space="preserve"><value>Allgemein</value></data>
   <data name="Getting ready …" xml:space="preserve"><value>Wird vorbereitet …</value></data>
   <data name="Give up after" xml:space="preserve"><value>Aufgeben nach</value></data>
@@ -565,6 +573,7 @@
   <data name="Inbox" xml:space="preserve"><value>Posteingang</value></data>
   <data name="Incoming" xml:space="preserve"><value>Eingehend</value></data>
   <data name="Incoming mail (IMAP)" xml:space="preserve"><value>Posteingangsserver (IMAP)</value></data>
+  <data name="Info…" xml:space="preserve"><value>Info …</value></data>
   <data name="Information" xml:space="preserve"><value>Information</value></data>
   <data name="Insert picture" xml:space="preserve"><value>Bild einfügen</value></data>
   <data name="Insert placeholder" xml:space="preserve"><value>Platzhalter einfügen</value></data>
@@ -659,9 +668,10 @@
   <data name="Mail transfer" xml:space="preserve"><value>Mail-Transfer</value></data>
   <data name="Mail transfer log" xml:space="preserve"><value>Mail-Transferprotokoll</value></data>
   <data name="Mail transfers" xml:space="preserve"><value>Mail-Transfers</value></data>
+  <data name="Mail: leave it empty and mail that nobody claims waits in Unassigned; with a mailbox here, such mail goes to its inbox instead. Backup and migration: the mailbox that receives the copies." xml:space="preserve"><value>Mail: Lassen Sie es leer, dann wartet Post, die niemand beansprucht, in „Unverteilt“; mit einem Postfach hier landet solche Post stattdessen in dessen Posteingang. Backup und Migration: das Postfach, das die Kopien erhält.</value></data>
   <data name="Mail: the mail is fetched and distributed to the mailboxes by recipient address. The account can also be used to send." xml:space="preserve"><value>E-Mail: Die Nachrichten werden abgeholt und anhand der Empfängeradresse auf die Postfächer verteilt. Das Konto kann auch zum Senden verwendet werden.</value></data>
-  <data name="Mail: where mail goes that nobody claims. Backup and migration: the mailbox that receives the copies." xml:space="preserve"><value>E-Mail: wohin Nachrichten gehen, die niemand beansprucht. Backup und Migration: das Postfach, das die Kopien erhält.</value></data>
   <data name="Mailbox" xml:space="preserve"><value>Postfach</value></data>
+  <data name="Mailbox info" xml:space="preserve"><value>Postfach-Info</value></data>
   <data name="Mailbox rule" xml:space="preserve"><value>Postfachregel</value></data>
   <data name="Mailboxes" xml:space="preserve"><value>Postfächer</value></data>
   <data name="Main navigation" xml:space="preserve"><value>Hauptnavigation</value></data>
@@ -792,6 +802,7 @@
   <data name="No entries." xml:space="preserve"><value>Keine Einträge.</value></data>
   <data name="No file." xml:space="preserve"><value>Keine Datei.</value></data>
   <data name="No folders." xml:space="preserve"><value>Keine Ordner.</value></data>
+  <data name="No limit" xml:space="preserve"><value>Kein Limit</value></data>
   <data name="No mailboxes match." xml:space="preserve"><value>Keine passenden Postfächer.</value></data>
   <data name="No messages match your search." xml:space="preserve"><value>Keine Nachrichten entsprechen Ihrer Suche.</value></data>
   <data name="No receiving server is configured." xml:space="preserve"><value>Es ist kein Empfangsserver konfiguriert.</value></data>
@@ -1092,6 +1103,7 @@
   <data name="Settings of the whole installation (stored in config/app.json in the data volume). Environment variables MATMAIL__Section__Key override them." xml:space="preserve"><value>Einstellungen der gesamten Installation (gespeichert in config/app.json im Datenvolume). Umgebungsvariablen der Form MATMAIL__Section__Key überschreiben sie.</value></data>
   <data name="Share" xml:space="preserve"><value>Teilen</value></data>
   <data name="Shared (public folder)" xml:space="preserve"><value>Gemeinsam (öffentlicher Ordner)</value></data>
+  <data name="Shared mailbox" xml:space="preserve"><value>Gemeinsames Postfach</value></data>
   <data name="Shared mailbox (public folder)" xml:space="preserve"><value>Gemeinsames Postfach (öffentlicher Ordner)</value></data>
   <data name="Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox." xml:space="preserve"><value>Gemeinsame Postfächer, die Ihnen zugewiesen wurden, erscheinen unter dem Ordner „Shared“. Um mit einer gemeinsamen Adresse zu senden, wählen Sie sie als Absender; dafür muss am Postfach das Senderecht vergeben sein.</value></data>
   <data name="Shares of {0}: {1}" xml:space="preserve"><value>Freigaben von {0}: {1}</value></data>
@@ -1155,6 +1167,7 @@
   <data name="Stay signed in" xml:space="preserve"><value>Angemeldet bleiben</value></data>
   <data name="Stays at the provider" xml:space="preserve"><value>Bleibt beim Anbieter</value></data>
   <data name="Storage" xml:space="preserve"><value>Speicherplatz</value></data>
+  <data name="Storage limit" xml:space="preserve"><value>Speicherlimit</value></data>
   <data name="Stored encrypted." xml:space="preserve"><value>Verschlüsselt gespeichert.</value></data>
   <data name="Subject" xml:space="preserve"><value>Betreff</value></data>
   <data name="Subjects are not recorded." xml:space="preserve"><value>Betreffzeilen werden nicht aufgezeichnet.</value></data>
@@ -1260,6 +1273,7 @@
   <data name="The last backup failed" xml:space="preserve"><value>Das letzte Backup ist fehlgeschlagen</value></data>
   <data name="The last backup of “{0}” failed: {1}" xml:space="preserve"><value>Das letzte Backup von „{0}“ ist fehlgeschlagen: {1}</value></data>
   <data name="The last successful backup is from {0}." xml:space="preserve"><value>Das letzte erfolgreiche Backup ist vom {0}.</value></data>
+  <data name="The limit must be between 0 and 100000 gigabytes (empty: no limit)." xml:space="preserve"><value>Das Limit muss zwischen 0 und 100000 Gigabyte liegen (leer: kein Limit).</value></data>
   <data name="The list shows one row per conversation; opening it shows all its messages." xml:space="preserve"><value>Die Liste zeigt eine Zeile pro Unterhaltung; beim Öffnen sehen Sie alle ihre Nachrichten.</value></data>
   <data name="The login name must not contain spaces." xml:space="preserve"><value>Der Anmeldename darf keine Leerzeichen enthalten.</value></data>
   <data name="The login name or the password is wrong." xml:space="preserve"><value>Der Anmeldename oder das Passwort ist falsch.</value></data>
@@ -1271,6 +1285,7 @@
   <data name="The mailbox does not exist." xml:space="preserve"><value>Das Postfach existiert nicht.</value></data>
   <data name="The mailbox has no Drafts folder." xml:space="preserve"><value>Das Postfach hat keinen Ordner „Entwürfe“.</value></data>
   <data name="The mailbox holds the user’s mail and folders." xml:space="preserve"><value>Das Postfach enthält die Nachrichten und Ordner des Benutzers.</value></data>
+  <data name="The mailbox is full: it takes no new mail until something is deleted." xml:space="preserve"><value>Das Postfach ist voll: Es nimmt keine neue Post an, bis etwas gelöscht wird.</value></data>
   <data name="The mailbox was created. Add its addresses now." xml:space="preserve"><value>Das Postfach wurde angelegt. Fügen Sie jetzt seine Adressen hinzu.</value></data>
   <data name="The mailbox was deleted." xml:space="preserve"><value>Das Postfach wurde gelöscht.</value></data>
   <data name="The mailbox was saved." xml:space="preserve"><value>Das Postfach wurde gespeichert.</value></data>
@@ -1366,6 +1381,7 @@
   <data name="The text is too long." xml:space="preserve"><value>Der Text ist zu lang.</value></data>
   <data name="The TLS certificate could not be loaded; keeping the previous one." xml:space="preserve"><value>Das TLS-Zertifikat konnte nicht geladen werden; das bisherige bleibt in Verwendung.</value></data>
   <data name="The trash is empty." xml:space="preserve"><value>Der Papierkorb ist leer.</value></data>
+  <data name="The trash still holds {0}: deleted messages keep taking up room there until the trash is emptied." xml:space="preserve"><value>Im Papierkorb liegen noch {0}: Gelöschte Nachrichten belegen dort weiter Platz, bis der Papierkorb geleert wird.</value></data>
   <data name="The two passphrases are not the same." xml:space="preserve"><value>Die beiden Passphrasen sind nicht gleich.</value></data>
   <data name="The upload failed." xml:space="preserve"><value>Das Hochladen ist fehlgeschlagen.</value></data>
   <data name="The uploaded file" xml:space="preserve"><value>Die hochgeladene Datei</value></data>
@@ -1402,6 +1418,7 @@
   <data name="This is not a valid domain name." xml:space="preserve"><value>Das ist kein gültiger Domänenname.</value></data>
   <data name="This login name is already in use." xml:space="preserve"><value>Dieser Anmeldename wird bereits verwendet.</value></data>
   <data name="This mailbox has no address yet." xml:space="preserve"><value>Dieses Postfach hat noch keine Adresse.</value></data>
+  <data name="This mailbox is full: it takes no new mail until something is deleted." xml:space="preserve"><value>Dieses Postfach ist voll: Es nimmt keine neue Post an, bis etwas gelöscht wird.</value></data>
   <data name="This mailbox may send as this address" xml:space="preserve"><value>Dieses Postfach darf mit dieser Adresse senden</value></data>
   <data name="This message comes from a file. It is not in your mailbox." xml:space="preserve"><value>Diese Nachricht stammt aus einer Datei. Sie liegt nicht in Ihrem Postfach.</value></data>
   <data name="This message no longer exists." xml:space="preserve"><value>Diese Nachricht gibt es nicht mehr.</value></data>
@@ -1418,6 +1435,7 @@
   <data name="This user has no personal mailbox yet." xml:space="preserve"><value>Dieser Benutzer hat noch kein persönliches Postfach.</value></data>
   <data name="This version cannot restore the backup." xml:space="preserve"><value>Diese Version kann das Backup nicht wiederherstellen.</value></data>
   <data name="Thunderbird on my laptop" xml:space="preserve"><value>Thunderbird auf meinem Laptop</value></data>
+  <data name="Tick this when the provider forwards several addresses or a whole domain to this mailbox: every message is then routed by the address it was sent to, and addresses that no mailbox has end up in Unassigned. Without it, everything in this mailbox counts as mail for the address of the account itself." xml:space="preserve"><value>Haken Sie das an, wenn der Provider mehrere Adressen oder eine ganze Domain an dieses Postfach weiterleitet: Jede Nachricht wird dann nach der Adresse zugestellt, an die sie geschickt wurde, und Adressen, die kein Postfach hat, landen in „Unverteilt“. Ohne den Haken gilt alles in diesem Postfach als Post für die Adresse des Kontos selbst.</value></data>
   <data name="Time zone" xml:space="preserve"><value>Zeitzone</value></data>
   <data name="Title" xml:space="preserve"><value>Titel</value></data>
   <data name="TLS certificate" xml:space="preserve"><value>TLS-Zertifikat</value></data>
@@ -1450,6 +1468,7 @@
   <data name="Unassigned" xml:space="preserve"><value>Unverteilt</value></data>
   <data name="Unassigned (an administrator distributes it)" xml:space="preserve"><value>Unverteilt (ein Administrator verteilt sie)</value></data>
   <data name="Unassigned messages" xml:space="preserve"><value>Unverteilte Nachrichten</value></data>
+  <data name="Unassigned: mail that nobody claimed" xml:space="preserve"><value>Unverteilt: Post, die niemand beansprucht hat</value></data>
   <data name="Underline" xml:space="preserve"><value>Unterstrichen</value></data>
   <data name="Undo" xml:space="preserve"><value>Rückgängig</value></data>
   <data name="Unknown addresses" xml:space="preserve"><value>Unbekannte Adressen</value></data>
@@ -1545,6 +1564,7 @@
   <data name="You sign in through the directory “{0}”. Your password is the one of that directory: change it there, in the way your organisation does it. For mail programs you can still make app passwords under Security." xml:space="preserve"><value>Sie melden sich über das Verzeichnis „{0}“ an. Ihr Passwort ist das dieses Verzeichnisses: Ändern Sie es dort, so wie es Ihre Organisation vorsieht. Für Mailprogramme können Sie unter Sicherheit weiterhin App-Passwörter anlegen.</value></data>
   <data name="You signed in with a recovery code. Recovery codes left: {0}. You can create new ones under Security in your account." xml:space="preserve"><value>Sie haben sich mit einem Wiederherstellungscode angemeldet. Verbleibende Wiederherstellungscodes: {0}. Neue können Sie unter „Sicherheit“ in Ihrem Konto erstellen.</value></data>
   <data name="You signed in with your last recovery code. Create new ones under Security in your account." xml:space="preserve"><value>Sie haben sich mit Ihrem letzten Wiederherstellungscode angemeldet. Erstellen Sie neue unter „Sicherheit“ in Ihrem Konto.</value></data>
+  <data name="Your access" xml:space="preserve"><value>Ihr Zugriff</value></data>
   <data name="Your account is bound to two-factor authentication: after turning it off you have to set it up again at once." xml:space="preserve"><value>Ihr Konto ist an die Zwei-Faktor-Authentifizierung gebunden: Nach dem Ausschalten müssen Sie sie sofort neu einrichten.</value></data>
   <data name="Your appearance settings were saved." xml:space="preserve"><value>Ihre Darstellungseinstellungen wurden gespeichert.</value></data>
   <data name="Your browser blocks notifications for this site. Allow them in the settings of the site, then come back." xml:space="preserve"><value>Ihr Browser blockiert Benachrichtigungen für diese Seite. Erlauben Sie sie in den Einstellungen der Seite und kommen Sie dann zurück.</value></data>

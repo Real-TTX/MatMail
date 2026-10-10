@@ -21,6 +21,9 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
 
     /// <summary>What the mailbox holds (existing mailboxes only) and where.</summary>
     public MailboxUsage Usage { get; private set; } = MailboxUsage.Empty;
+
+    /// <summary>The limit as it is stored (the form shows what was typed).</summary>
+    public long? QuotaBytesStored { get; private set; }
     public IReadOnlyList<FolderUsage> FolderUsages { get; private set; } = Array.Empty<FolderUsage>();
     public string TypeText { get; private set; } = string.Empty;
     public IReadOnlyList<SelectListItem> UserItems { get; private set; } = Array.Empty<SelectListItem>();
@@ -38,7 +41,15 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
         public long? OwnerUserId { get; set; }
         public string? Description { get; set; }
         public bool IsActive { get; set; } = true;
+
+        /// <summary>The storage limit in gigabytes (a decimal number); empty = no limit.</summary>
+        public decimal? QuotaGb { get; set; }
     }
+
+    private const decimal BytesPerGb = 1024m * 1024m * 1024m;
+
+    /// <summary>The limit in bytes (at least a megabyte, so that "0" is not a mailbox that takes nothing); null = none.</summary>
+    private long? QuotaBytes => Input.QuotaGb is decimal gb and > 0 ? (long)Math.Max(1024m * 1024m, Math.Round(gb * BytesPerGb)) : null;
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -61,6 +72,7 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
             OwnerUserId = mailbox.OwnerUserId,
             Description = mailbox.Description,
             IsActive = mailbox.IsActive,
+            QuotaGb = mailbox.QuotaBytes is long quota ? Math.Round(quota / BytesPerGb, 2) : null,
         };
         TypeText = TypeLabel(mailbox.Type);
         return Page();
@@ -98,6 +110,11 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
             ModelState.AddModelError("Input.OwnerUserId", l["This user already has a personal mailbox."]);
         }
 
+        if (Input.QuotaGb is decimal limit && (limit < 0 || limit > 100000))
+        {
+            ModelState.AddModelError("Input.QuotaGb", l["The limit must be between 0 and 100000 gigabytes (empty: no limit)."]);
+        }
+
         if (!ModelState.IsValid)
         {
             return Page();
@@ -108,6 +125,7 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
             Mailbox created = await mailboxes.CreateMailboxAsync(name, type, ownerId);
             created.Description = Clean(Input.Description);
             created.IsActive = Input.IsActive;
+            created.QuotaBytes = QuotaBytes;
             await db.SaveChangesAsync();
 
             this.Notify(l["The mailbox was created. Add its addresses now."].Value);
@@ -118,6 +136,7 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
         mailbox.OwnerUserId = ownerId;
         mailbox.Description = Clean(Input.Description);
         mailbox.IsActive = Input.IsActive;
+        mailbox.QuotaBytes = QuotaBytes;
         await db.SaveChangesAsync();
 
         this.Notify(l["The mailbox was saved."].Value);
@@ -151,6 +170,7 @@ public class EditModel(MatMailDbContext db, MailboxService mailboxes, MailboxUsa
         {
             Usage = await usageService.GetAsync(Id);
             FolderUsages = await usageService.GetFoldersAsync(Id);
+            QuotaBytesStored = await db.Mailboxes.AsNoTracking().Where(m => m.Id == Id).Select(m => m.QuotaBytes).FirstOrDefaultAsync();
         }
     }
 }

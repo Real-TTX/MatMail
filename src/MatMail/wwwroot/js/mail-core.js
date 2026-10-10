@@ -244,6 +244,23 @@
     });
   };
 
+  /** A dialog that only shows something: the Close button, Escape and a click on the backdrop close it. */
+  App.infoDialog = function (title, subtitle, body) {
+    var dialog = App.el("dialog", { class: "dialog dialog--sm" }, [
+      App.el("div", { class: "dialog__header" }, [
+        App.el("div", null, [App.el("h2", { class: "dialog__title", text: title }), subtitle ? App.el("div", { class: "dialog__subtitle muted", text: subtitle }) : null]),
+        App.iconButton("x", App.T("close"), function () { dialog.close(); })
+      ]),
+      App.el("div", { class: "dialog__body" }, [body]),
+      App.el("div", { class: "dialog__footer" }, [App.el("form", { method: "dialog" }, [App.el("button", { type: "submit", class: "btn btn--secondary", text: App.T("close") })])])
+    ]);
+    doc.body.appendChild(dialog);
+    dialog.addEventListener("close", function () { dialog.remove(); });
+    dialog.addEventListener("click", function (e) { if (e.target === dialog) { dialog.close(); } });
+    dialog.showModal();
+    return dialog;
+  };
+
   App.promptDialog = function (title, value, label) {
     return new Promise(function (resolve) {
       var input = App.el("input", { type: "text", class: "form-control", value: value || "", "aria-label": label || title });

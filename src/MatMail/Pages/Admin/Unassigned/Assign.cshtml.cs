@@ -9,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Admin.Unassigned;
 
-public class AssignModel(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes, IStringLocalizer<SharedResource> l) : PageModel
+public class AssignModel(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes, MailboxQuotaService quota, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public long Id { get; set; }
@@ -44,6 +44,12 @@ public class AssignModel(MatMailDbContext db, MailStore store, FolderService fol
         if (target is null)
         {
             ModelState.AddModelError("Input.MailboxId", l["Select a mailbox."]);
+            return Page();
+        }
+
+        if (await quota.IsFullAsync(target))
+        {
+            ModelState.AddModelError("Input.MailboxId", l["This mailbox is full: it takes no new mail until something is deleted."]);
             return Page();
         }
 

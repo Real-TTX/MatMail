@@ -31,5 +31,7 @@ internal sealed class ImapWork : IAsyncDisposable
 
     public MailAccessService Access => Services.GetRequiredService<MailAccessService>();
 
+    public MailboxQuotaService Quota => Services.GetRequiredService<MailboxQuotaService>();
+
     public ValueTask DisposeAsync() => _scope.DisposeAsync();
 }

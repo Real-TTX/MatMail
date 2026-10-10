@@ -66,8 +66,9 @@ public sealed class MailDelivery
     private readonly MailRuleEngine _rules;
     private readonly TransferLog _transfers;
     private readonly ActivityLogger _log;
+    private readonly MailboxQuotaService _quota;
 
-    public MailDelivery(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes, MailRuleEngine rules, TransferLog transfers, ActivityLogger log)
+    public MailDelivery(MatMailDbContext db, MailStore store, FolderService folders, MailboxService mailboxes, MailRuleEngine rules, TransferLog transfers, ActivityLogger log, MailboxQuotaService quota)
     {
         _db = db;
         _store = store;
@@ -76,11 +77,13 @@ public sealed class MailDelivery
         _rules = rules;
         _transfers = transfers;
         _log = log;
+        _quota = quota;
     }
 
     /// <summary>
     /// Delivers a raw message to every mailbox its recipients lead to (one copy per mailbox, in the Inbox). Mail that nobody claims
-    /// goes to the tenant's "Unassigned" mailbox. Throws when no tenant can be determined for a message that matches nothing.
+    /// goes to the tenant's "Unassigned" mailbox. Throws when no tenant can be determined for a message that matches nothing, and a
+    /// <see cref="MailboxFullException"/> (nothing stored) when one of the mailboxes has reached its storage limit.
     /// </summary>
     public async Task<DeliveryResult> DeliverAsync(byte[] raw, DeliverySource source, CancellationToken cancel = default)
     {
@@ -124,6 +127,18 @@ public sealed class MailDelivery
 
             Mailbox unassigned = await _mailboxes.GetUnassignedMailboxAsync(tenantId.Value);
             targets[unassigned.Id] = (unassigned, candidates, true);
+        }
+
+        // A full mailbox takes no new mail. All or nothing: if any of the mailboxes is full, none gets the message, so that the sender (who is
+        // told to try again) or the provider (which keeps the mail) does not deliver it twice to the others. The stand-in of a message that
+        // stays at the provider (live access) takes no room here and is never refused.
+        if (source.Storage == MessageStorage.Local)
+        {
+            List<Mailbox> full = await _quota.FullAmongAsync(targets.Values.Select(t => t.Mailbox), cancel);
+            if (full.Count > 0)
+            {
+                throw new MailboxFullException(full);
+            }
         }
 
         var copies = new List<DeliveredCopy>();

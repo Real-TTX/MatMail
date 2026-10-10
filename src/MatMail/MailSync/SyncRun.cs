@@ -1,4 +1,5 @@
 using MatMail.Data;
+using MatMail.Messaging;
 using MatMail.Services;
 
 namespace MatMail.MailSync;
@@ -213,7 +214,7 @@ public static class SyncText
         var problems = new List<string>();
         if (failure is not null)
         {
-            problems.Add(failure is SyncConfigurationException ? failure.Message : ProviderConnector.Describe(failure, host));
+            problems.Add(failure is SyncConfigurationException or MailboxFullException ? failure.Message : ProviderConnector.Describe(failure, host));
         }
 
         problems.AddRange(run.FolderErrors);

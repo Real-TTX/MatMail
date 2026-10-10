@@ -273,6 +273,11 @@ internal sealed class OutboundDelivery
             DeliveryResult result = await _delivery.DeliverAsync(bounce, new DeliverySource { EnvelopeRecipients = new[] { sender }, TenantId = message.TenantId, Channel = TransferChannel.System, Peer = "bounce" });
             return result.Copies.Count > 0;
         }
+        catch (MailboxFullException ex)
+        {
+            _logger.LogWarning("The bounce for queue entry {Id} could not be delivered: {Reason}", message.Id, ex.Message);
+            return false;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "The bounce for queue entry {Id} could not be delivered.", message.Id);

@@ -8,7 +8,15 @@ public sealed record FolderDto(long Id, string Name, string Path, string Kind, i
 
 /// <summary>A mailbox of the user with its folders (in tree order) and what it occupies: <c>UsedBytes</c> is stored here, <c>RemoteBytes</c> stays at the provider (live access).</summary>
 public sealed record MailboxDto(
-    long Id, string Name, string Type, bool IsOwn, string Access, bool CanEdit, bool CanSend, bool CanManage, List<FolderDto> Folders, long UsedBytes, long RemoteBytes, long MessageCount);
+    long Id, string Name, string Type, bool IsOwn, string Access, bool CanEdit, bool CanSend, bool CanManage, List<FolderDto> Folders, long UsedBytes, long RemoteBytes, long MessageCount, long? QuotaBytes);
+
+/// <summary>What the info dialog of a mailbox shows: who it is for, its addresses, what it takes up (against its limit, if it has one) and where.</summary>
+public sealed record MailboxInfoDto(
+    long Id, string Name, string Type, bool IsOwn, string Access, string? Owner, List<string> Addresses,
+    long Messages, long UsedBytes, long RemoteBytes, long? QuotaBytes, List<FolderUsageDto> Folders);
+
+/// <summary>One folder of the info dialog: its place in the tree, what it holds and how much room that takes.</summary>
+public sealed record FolderUsageDto(string Name, string Path, string Kind, long Messages, long Bytes);
 
 public sealed record IdentityDto(string Address, string Label, long MailboxId, bool IsPrimary, bool IsOwn);
 

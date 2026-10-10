@@ -55,6 +55,8 @@ internal sealed partial class ImapSession
             throw new ImapNoException("[CANNOT] An empty message cannot be stored");
         }
 
+        await EnsureRoomAsync(work, node.Folder!.Folder.MailboxId);
+
         MailMessage stored = await work.Store.AddAsync(node.Folder!.Id, new NewMessage(message)
         {
             ReceivedDate = receivedDate,
@@ -268,6 +270,15 @@ internal sealed partial class ImapSession
         }
     }
 
+    /// <summary>A mailbox that has reached its storage limit takes no new messages (RFC 5530: OVERQUOTA); deleting is always possible.</summary>
+    private static async Task EnsureRoomAsync(ImapWork work, long mailboxId)
+    {
+        if (await work.Quota.IsFullAsync(mailboxId))
+        {
+            throw new ImapNoException("[OVERQUOTA] The mailbox is full: it takes no new messages until something is deleted");
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------------------------
     // COPY / MOVE
     // ---------------------------------------------------------------------------------------------------------------
@@ -275,10 +286,19 @@ internal sealed partial class ImapSession
     /// <summary>COPY set mailbox — answered with COPYUID (RFC 4315). All or nothing: a message that cannot be read undoes the copy.</summary>
     private async Task CopyAsync(ImapCommand command)
     {
-        (_, List<ImapMessage> messages, string targetName) = ReadTransfer(command);
+        (ImapSelection selection, List<ImapMessage> messages, string targetName) = ReadTransfer(command);
 
         await using ImapWork work = OpenWork();
         ImapMailboxNode target = await FindTransferTargetAsync(work, targetName);
+
+        // A copy takes up room, also in the mailbox it comes from. Except into the trash of that same mailbox: that is how a mail program without MOVE
+        // deletes (copy to the trash, mark as deleted, expunge), and deleting must always be possible.
+        bool deleting = target.Folder!.Folder.Kind == FolderKind.Trash && target.Folder.Folder.MailboxId == selection.MailboxId;
+        if (!deleting)
+        {
+            await EnsureRoomAsync(work, target.Folder.Folder.MailboxId);
+        }
+
         var sourceUids = new List<long>();
         var targetUids = new List<long>();
         var copiedIds = new List<long>();
@@ -321,6 +341,11 @@ internal sealed partial class ImapSession
         if (target.Folder!.Id == selection.FolderId)
         {
             throw new ImapNoException("[CANNOT] The messages are already in this mailbox");
+        }
+
+        if (target.Folder.Folder.MailboxId != selection.MailboxId)
+        {
+            await EnsureRoomAsync(work, target.Folder.Folder.MailboxId);   // moving inside a mailbox changes nothing; into another one it adds
         }
 
         Dictionary<long, ImapMessage> byId = messages.ToDictionary(m => m.Id);

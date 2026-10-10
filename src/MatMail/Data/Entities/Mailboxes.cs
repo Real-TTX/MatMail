@@ -31,6 +31,12 @@ public class Mailbox : AuditedEntity, ITenantEntity
     public bool IsActive { get; set; } = true;
     public string? Description { get; set; }
 
+    /// <summary>
+    /// The most the messages of this mailbox may take up on this server, in bytes (see <c>MailboxUsageService</c>); null = no limit.
+    /// Mail that would not fit is not accepted (see <c>MailboxQuota</c>); deleting is always possible.
+    /// </summary>
+    public long? QuotaBytes { get; set; }
+
     public List<MailboxAlias> Aliases { get; set; } = new();
     public List<MailboxPermission> Permissions { get; set; } = new();
     public List<MailFolder> Folders { get; set; } = new();

@@ -59,6 +59,7 @@ internal sealed class SmtpPolicy
     private readonly MailDelivery _delivery;
     private readonly SendRouting _routing;
     private readonly AppConfig _config;
+    private readonly MailboxQuotaService _quota;
 
     public SmtpPolicy(IServiceProvider services)
     {
@@ -68,6 +69,7 @@ internal sealed class SmtpPolicy
         _delivery = services.GetRequiredService<MailDelivery>();
         _routing = services.GetRequiredService<SendRouting>();
         _config = services.GetRequiredService<AppConfig>();
+        _quota = services.GetRequiredService<MailboxQuotaService>();
     }
 
     /// <summary>
@@ -157,9 +159,10 @@ internal sealed class SmtpPolicy
     /// </summary>
     public async Task<string?> CheckRecipientAsync(SmtpTransaction transaction, string recipient, CancellationToken cancel)
     {
-        if (await _delivery.ResolveAsync(recipient, null, cancel) is not null)
+        if (await _delivery.ResolveAsync(recipient, null, cancel) is { } resolution)
         {
-            return null;
+            // A full mailbox takes no new mail: a temporary refusal, so that the sender tries again later (when something was deleted or the limit raised).
+            return await _quota.IsFullAsync(resolution.Mailbox, cancel) ? $"452 4.2.2 <{recipient}>: Mailbox full, try again later" : null;
         }
 
         if (transaction.Kind == SmtpClientKind.Anonymous || transaction.TenantId is not long tenantId)

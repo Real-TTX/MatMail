@@ -49,6 +49,17 @@
                     <div><dt>@L["Stays at the provider"]</dt><dd>@Fmt.Size(Model.Usage.RemoteBytes)</dd></div>
                 }
             </dl>
+            @if (Model.QuotaBytesStored is long quota)
+            {
+                int percent = Fmt.Percent(Model.Usage.LocalBytes, quota);
+                string state = Fmt.UsageState(Model.Usage.LocalBytes, quota);
+                <div class="usage-meter">
+                    <div class="progress @(state.Length == 0 ? "" : "progress--" + state)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@percent"><div class="progress__bar" style="width:@(percent)%"></div></div>
+                    <p class="form-help">@string.Format(L["{0} of {1} used ({2} %)."].Value, Fmt.Size(Model.Usage.LocalBytes), Fmt.Size(quota), percent)</p>
+                </div>
+            }
+            <mm-field asp-for="Input.QuotaGb" kind="number" step="0.01" min="0" max="100000" label='@L["Storage limit"]' suffix='@L["GB"]'
+                      help='@L["Empty: no limit. A mailbox that has reached its limit takes no new mail until something is deleted: mail from outside waits (the sender tries again, the provider keeps it); deleting is always possible."]' />
             <mm-table item-count="Model.FolderUsages.Count" empty-text='@L["No folders."]' empty-icon="folder">
                 <thead>
                     <tr>

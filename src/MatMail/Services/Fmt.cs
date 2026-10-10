@@ -111,4 +111,11 @@ public sealed class Fmt
 
         return unit == 0 ? $"{bytes} B" : $"{value.ToString(value >= 100 ? "0" : "0.#", CultureInfo.CurrentCulture)} {units[unit]}";
     }
+
+    /// <summary>How much of a limit is used, in whole percent: 100 only when it is reached.</summary>
+    public static int Percent(long used, long limit) => limit <= 0 ? 0 : (int)Math.Min(100, used * 100 / limit);
+
+    /// <summary>The state that colours a storage bar: "full" when the limit is reached, "high" from 90 %, "warn" from 75 %, otherwise none. The web client does the same (<c>usageLevel</c>).</summary>
+    public static string UsageState(long used, long limit)
+        => limit > 0 && used >= limit ? "full" : Percent(used, limit) switch { >= 90 => "high", >= 75 => "warn", _ => string.Empty };
 }

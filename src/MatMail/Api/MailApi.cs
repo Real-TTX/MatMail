@@ -30,6 +30,7 @@ public static class MailApi
         api.MapGet("/bootstrap", Bootstrap);
         api.MapGet("/counts", Counts);
         api.MapPost("/sync", SyncNow);
+        api.MapGet("/mailboxes/{mailboxId:long}/info", MailboxInfo);
         api.MapGet("/messages", ListMessages);
         api.MapGet("/messages/ids", ListMessageIds);
         api.MapGet("/messages/{id:long}", GetMessage);
@@ -183,7 +184,8 @@ public static class MailApi
                 infos.Select(i => new FolderDto(i.Id, i.Folder.Name, i.Path, i.Kind.ToString(), i.Path.Count(c => c == FolderService.Separator), counts[i.Id].Unread, counts[i.Id].Total, i.Folder.ParentId)).ToList(),
                 used.LocalBytes,
                 used.RemoteBytes,
-                used.Messages));
+                used.Messages,
+                box.Mailbox.QuotaBytes));
         }
 
         IReadOnlyList<SendIdentity> identities = await access.GetSendIdentitiesAsync(user, cancel);
@@ -213,6 +215,46 @@ public static class MailApi
             identityDtos,
             signatureDtos,
             new SettingsDto(50, config.Server.MaxUploadMb, config.Server.Hostname)));
+    }
+
+    /// <summary>The info dialog of a mailbox: for anybody who may read it (the addresses are the ones they could send as or already see).</summary>
+    internal static async Task<IResult> MailboxInfo(
+        long mailboxId, MailAccessService access, MailboxUsageService usage, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
+    {
+        (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
+        if (user is null)
+        {
+            return error!;
+        }
+
+        AccessibleMailbox? box = (await access.GetMailboxesAsync(user, cancel)).FirstOrDefault(b => b.Mailbox.Id == mailboxId);
+        if (box is null)
+        {
+            return Results.NotFound();
+        }
+
+        List<string> addresses = await db.MailboxAliases.AsNoTracking().Where(a => a.MailboxId == mailboxId)
+            .OrderByDescending(a => a.IsPrimary).ThenBy(a => a.Address).Select(a => a.Address).ToListAsync(cancel);
+        string? owner = box.Mailbox.Type == MailboxType.Personal && box.Mailbox.OwnerUserId is long ownerId
+            ? await db.Users.IgnoreQueryFilters().AsNoTracking().Where(u => u.Id == ownerId).Select(u => u.DisplayName).FirstOrDefaultAsync(cancel)
+            : null;
+        MailboxUsage used = await usage.GetAsync(mailboxId, cancel);
+        IReadOnlyList<FolderUsage> folders = await usage.GetFoldersAsync(mailboxId, cancel);
+
+        return Results.Ok(new MailboxInfoDto(
+            mailboxId,
+            box.Mailbox.Type == MailboxType.Unassigned ? l["Unassigned"].Value : box.Mailbox.Name,
+            box.Mailbox.Type.ToString(),
+            box.IsOwn,
+            box.Access.ToString(),
+            owner,
+            addresses,
+            used.Messages,
+            used.LocalBytes,
+            used.RemoteBytes,
+            box.Mailbox.QuotaBytes,
+            folders.Where(f => f.Messages > 0).OrderByDescending(f => f.Bytes).ThenBy(f => f.Path, StringComparer.CurrentCultureIgnoreCase)
+                .Select(f => new FolderUsageDto(f.Path.Split(FolderService.Separator).Last(), f.Path, f.Kind.ToString(), f.Messages, f.Bytes)).ToList()));
     }
 
     private static async Task<IResult> Counts(long mailboxId, MailAccessService access, MailStore store, FolderService folders, CancellationToken cancel)
@@ -464,7 +506,7 @@ public static class MailApi
 
     /// <summary>Puts the message of a file into a folder (needs the right to change it): from then on it is a message like any other.</summary>
     private static async Task<IResult> ImportPreview(
-        string id, ImportPreviewRequest request, MailAccessService access, AttachmentStaging staging, MailStore store, CancellationToken cancel)
+        string id, ImportPreviewRequest request, MailAccessService access, AttachmentStaging staging, MailStore store, MailboxQuotaService quota, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -476,6 +518,11 @@ public static class MailApi
         if (folder is null)
         {
             return Results.NotFound();
+        }
+
+        if (await quota.IsFullAsync(folder.MailboxId, cancel))
+        {
+            return new Failure(MailboxFullText);
         }
 
         (MimeMessage? mime, byte[]? raw) = await LoadPreviewAsync(access, staging, id, cancel);
@@ -649,7 +696,7 @@ public static class MailApi
         return Results.Ok(new ChangeResult(changed, await CountsOfAsync(store, messages.Select(m => m.FolderId), cancel)));
     }
 
-    private static async Task<IResult> MoveMessages(MoveRequest request, MailAccessService access, MailStore store, MatMailDbContext db, CancellationToken cancel)
+    internal static async Task<IResult> MoveMessages(MoveRequest request, MailAccessService access, MailStore store, MailboxQuotaService quota, MatMailDbContext db, CancellationToken cancel)
     {
         (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, db, request.Ids, MailboxAccess.Edit, cancel);
         if (user is null)
@@ -663,7 +710,13 @@ public static class MailApi
             return Results.NotFound();
         }
 
-        // Moving between mailboxes needs the same rights on both sides; the tenant filter keeps it inside the tenant.
+        // Moving between mailboxes needs the same rights on both sides; the tenant filter keeps it inside the tenant. Into a mailbox that is full
+        // (moving inside a mailbox changes nothing there) nothing can be moved.
+        if (messages.Any(m => m.MailboxId != target.MailboxId) && await quota.IsFullAsync(target.MailboxId, cancel))
+        {
+            return new Failure(MailboxFullText);
+        }
+
         IReadOnlyList<MailMessage> moved = await store.MoveAsync(messages.Select(m => m.Id), target.Id, cancel);
         return Results.Ok(new ChangeResult(moved.Count, await CountsOfAsync(store, messages.Select(m => m.FolderId).Append(target.Id), cancel)));
     }
@@ -1090,6 +1143,9 @@ public static class MailApi
     /// A 400 whose message is shown to the user. The services return English texts; they are the translation keys, so the text
     /// goes out in the language of the request.
     /// </summary>
+    /// <summary>What a person is told who puts mail into a mailbox that has reached its storage limit (translated by <see cref="Failure"/>).</summary>
+    private const string MailboxFullText = "This mailbox is full: it takes no new mail until something is deleted.";
+
     private sealed class Failure(string? message) : IResult
     {
         public Task ExecuteAsync(HttpContext http)

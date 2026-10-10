@@ -137,7 +137,8 @@ public sealed record SubmissionRequest
     public string? RemoteIp { get; init; }
 }
 
-public sealed record SubmissionResult(bool Accepted, string? Error, int LocalCopies, int Queued, IReadOnlyList<string> Rejected);
+/// <summary><paramref name="Temporary"/>: the refusal is not final (a full mailbox): the sender is to try again later.</summary>
+public sealed record SubmissionResult(bool Accepted, string? Error, int LocalCopies, int Queued, IReadOnlyList<string> Rejected, bool Temporary = false);
 
 /// <summary>
 /// Sending: takes a finished message and distributes it. Recipients on registered domains are delivered locally at once, all
@@ -157,10 +158,11 @@ public sealed class MailSubmission
     private readonly AppConfig _config;
     private readonly IServiceScopeFactory _scopes;
     private readonly BrandingService _branding;
+    private readonly MailboxQuotaService _quota;
 
     public MailSubmission(
         MatMailDbContext db, MailDelivery delivery, SendRouting routing, OutboundQueue queue, SignatureService signatures, TemplateService templates,
-        MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes, BrandingService branding)
+        MailStore store, FolderService folders, AppConfig config, IServiceScopeFactory scopes, BrandingService branding, MailboxQuotaService quota)
     {
         _db = db;
         _delivery = delivery;
@@ -173,7 +175,11 @@ public sealed class MailSubmission
         _config = config;
         _scopes = scopes;
         _branding = branding;
+        _quota = quota;
     }
+
+    /// <summary>What the sender is told when a mailbox of the recipients is full (the web client translates it; the addresses are in <see cref="SubmissionResult.Rejected"/>).</summary>
+    public const string RecipientMailboxFull = "A recipient's mailbox is full and takes no new mail until something is deleted. Nothing was sent.";
 
     public async Task<SubmissionResult> SubmitAsync(SubmissionRequest request, CancellationToken cancel = default)
     {
@@ -208,16 +214,27 @@ public sealed class MailSubmission
 
         var local = new List<string>();
         var external = new List<string>();
+        var full = new List<string>();
         foreach (string recipient in request.Recipients.Select(MailAddresses.Normalize).Where(MailAddresses.IsValid).Distinct())
         {
-            if (await _delivery.ResolveAsync(recipient, null, cancel) is not null)
+            if (await _delivery.ResolveAsync(recipient, null, cancel) is { } resolution)
             {
                 local.Add(recipient);
+                if (await _quota.IsFullAsync(resolution.Mailbox, cancel))
+                {
+                    full.Add(recipient);
+                }
             }
             else
             {
                 external.Add(recipient);
             }
+        }
+
+        // A full mailbox takes no new mail. Nothing is sent at all (not to the others either, or a second try would send it twice to them).
+        if (full.Count > 0)
+        {
+            return new SubmissionResult(false, RecipientMailboxFull, 0, 0, full, Temporary: true);
         }
 
         TransferChannel channel = request.Source switch
@@ -235,15 +252,34 @@ public sealed class MailSubmission
             // runs as the system (the sender's scope only sees and may only write the sender's own tenant).
             using IServiceScope delivery = _scopes.CreateScope();
             delivery.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
-            DeliveryResult delivered = await delivery.ServiceProvider.GetRequiredService<MailDelivery>()
-                .DeliverAsync(clean, new DeliverySource
+            DeliveryResult delivered;
+            try
+            {
+                delivered = await delivery.ServiceProvider.GetRequiredService<MailDelivery>()
+                    .DeliverAsync(clean, new DeliverySource
+                    {
+                        EnvelopeRecipients = local,
+                        Channel = channel,
+                        Peer = request.Peer,
+                        RemoteIp = request.RemoteIp,
+                        EnvelopeSender = request.EnvelopeFrom,
+                    }, cancel);
+            }
+            catch (MailboxFullException ex)
+            {
+                // A mailbox filled up since the check above: nothing was stored and nothing is queued (that comes below), the sender is to try again.
+                var names = new List<string>();
+                foreach (string recipient in local)
                 {
-                    EnvelopeRecipients = local,
-                    Channel = channel,
-                    Peer = request.Peer,
-                    RemoteIp = request.RemoteIp,
-                    EnvelopeSender = request.EnvelopeFrom,
-                }, cancel);
+                    if (await _delivery.ResolveAsync(recipient, null, cancel) is { } resolution && ex.MailboxIds.Contains(resolution.Mailbox.Id))
+                    {
+                        names.Add(recipient);
+                    }
+                }
+
+                return new SubmissionResult(false, RecipientMailboxFull, 0, 0, names, Temporary: true);
+            }
+
             localCopies = delivered.Delivered;
         }
 

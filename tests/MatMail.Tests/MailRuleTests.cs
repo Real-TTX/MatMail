@@ -391,6 +391,22 @@ public class MailRuleDeliveryTests : IAsyncLifetime
     }
 
     [DbFact]
+    public async Task A_forward_to_a_full_local_mailbox_is_left_out_with_a_note_and_the_original_stays()
+    {
+        await AddRuleAsync(_seed.AliceMailbox, "To Bob", r => { r.Conditions.Add(From("shop")); r.Actions.Add(Do(RuleActionType.ForwardTo, value: "bob@example.test")); });
+        await QuotaTestSupport.FillUpAsync(_host, _seed.BobMailbox.Id);
+
+        DeliveryResult result = await DeliverAsync("Offers");
+
+        Assert.Equal(1, result.Delivered);
+        Assert.Single(await MessagesAsync(_seed.AliceMailbox));
+        Assert.Single(await QuotaTestSupport.MessagesAsync(_host, _seed.BobMailbox.Id));   // the filler only
+        using IServiceScope scope = _host.Scope();
+        List<ActivityLog> log = await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().ActivityLogs.AsNoTracking().OrderBy(l => l.Id).ToListAsync();
+        Assert.Contains(log, l => l.Message.Contains("could not forward") && l.Message.Contains("is full"));
+    }
+
+    [DbFact]
     public async Task A_copy_forwarded_to_an_outside_address_goes_through_the_queue_from_an_address_of_the_mailbox()
     {
         await AddRuleAsync(_seed.AliceMailbox, "Away", r => { r.Conditions.Add(From("shop")); r.Actions.Add(Do(RuleActionType.ForwardTo, value: "friend@outside.test")); });

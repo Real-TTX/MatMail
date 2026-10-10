@@ -31,7 +31,8 @@ public sealed class MailboxUsageService
     public async Task<Dictionary<long, MailboxUsage>> GetAsync(IEnumerable<long> mailboxIds, CancellationToken cancel = default)
     {
         long[] ids = mailboxIds.Distinct().ToArray();
-        var rows = await _db.MailMessages.AsNoTracking()
+        // Looked up by mailbox, not by tenant: a message to a mailbox of another tenant has to see how full that mailbox is.
+        var rows = await _db.MailMessages.IgnoreQueryFilters().AsNoTracking()
             .Where(m => ids.Contains(m.MailboxId))
             .GroupBy(m => m.MailboxId)
             .Select(g => new

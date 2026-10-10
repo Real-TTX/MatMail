@@ -34,9 +34,10 @@
 
         <mm-field asp-for="Input.IsEnabled" kind="checkbox" label='@L["Enabled"]' />
         <mm-field asp-for="Input.IsCatchAll" kind="checkbox" label='@L["Catch-all: this provider mailbox receives the mail of a whole domain"]'
+                  help='@L["Tick this when the provider forwards several addresses or a whole domain to this mailbox: every message is then routed by the address it was sent to, and addresses that no mailbox has end up in Unassigned. Without it, everything in this mailbox counts as mail for the address of the account itself."]'
                   show-when-field="Input.Role" show-when-value="Mail,Backup,Migration" />
         <mm-picker asp-for="Input.TargetMailboxId" asp-items="Model.MailboxItems" label='@L["Target mailbox"]' placeholder='@L["Unassigned (an administrator distributes it)"]'
-                   help='@L["Mail: where mail goes that nobody claims. Backup and migration: the mailbox that receives the copies."]'
+                   help='@L["Mail: leave it empty and mail that nobody claims waits in Unassigned; with a mailbox here, such mail goes to its inbox instead. Backup and migration: the mailbox that receives the copies."]'
                    show-when-field="Input.Role" show-when-value="Mail,Backup,Migration" />
     </mm-form-section>
 

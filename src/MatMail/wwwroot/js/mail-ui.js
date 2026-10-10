@@ -282,15 +282,21 @@
       var hasSelection = box.id === S.mailboxId;
       var collapsed = !box.isOwn && !hasSelection && localStorage.getItem(collapsedKey) !== "0";
 
-      if (!box.isOwn || App.boot.mailboxes.length > 1) {
-        var heading = App.el("button", { type: "button", class: "folder-group__title", "aria-expanded": String(!collapsed) }, [
-          App.icon(collapsed ? "chevron-right" : "chevron-down"),
-          App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert-circle" : "user"),
-          App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name })
-        ]);
-        heading.addEventListener("click", function () { localStorage.setItem(collapsedKey, collapsed ? "0" : "1"); renderFolders(); });
-        group.appendChild(heading);
-      }
+      // The mailbox is the top of its tree, the parent of its folders: its menu (the three dots, or the right button) has the info,
+      // and a folder that is dropped on it goes to the top level.
+      var head = App.el("div", { class: "folder-group__head" });
+      var heading = App.el("button", { type: "button", class: "folder-group__title", "aria-expanded": String(!collapsed) }, [
+        box.isOwn ? null : App.icon(collapsed ? "chevron-right" : "chevron-down"),   // the own mailbox is always open
+        App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert-circle" : "user"),
+        App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name })
+      ]);
+      heading.addEventListener("click", function () { if (box.isOwn) { return; } localStorage.setItem(collapsedKey, collapsed ? "0" : "1"); renderFolders(); });
+      head.appendChild(heading);
+      var boxMore = App.iconButton("more-vertical", T("more"), function (e) { e.preventDefault(); e.stopPropagation(); mailboxMenu(boxMore, box); }, "folder-group__more");
+      head.appendChild(boxMore);
+      head.addEventListener("contextmenu", function (e) { e.preventDefault(); mailboxMenu(head, box); });
+      makeRootTarget(head, box);
+      group.appendChild(head);
 
       if (!collapsed) {
         // The folders come in tree order (every folder is followed by its subfolders): a folded folder hides what follows it
@@ -312,7 +318,12 @@
 
         // What the mailbox takes up on the server (what stays at the provider with live access is not counted).
         var usage = usageText(box);
-        if (usage) { group.appendChild(App.el("div", { class: "folder-usage", title: usage.title }, [App.icon("hard-drive"), App.el("span", { text: usage.text })])); }
+        if (usage) {
+          group.appendChild(App.el("div", { class: "folder-usage", title: usage.title }, [App.icon("hard-drive"), App.el("span", { text: usage.text })]));
+          if (usage.percent !== null) {
+            group.appendChild(App.el("div", { class: "folder-usage-bar" + (usage.state ? " is-" + usage.state : ""), role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(usage.percent) }, [App.el("span", { style: "width:" + Math.max(usage.percent, box.usedBytes ? 1 : 0) + "%" })]));
+          }
+        }
       }
 
       els.folders.appendChild(group);
@@ -334,10 +345,19 @@
   }
 
   function usageText(box) {
-    if (!box.messageCount && !box.usedBytes) { return null; }
+    if (!box.messageCount && !box.usedBytes && !box.quotaBytes) { return null; }
     var title = T("storageMessages").replace("{0}", Number(box.messageCount).toLocaleString());
     if (box.remoteBytes) { title += " · " + T("storageRemote").replace("{0}", App.formatSize(box.remoteBytes)); }
-    return { text: T("storageUsed").replace("{0}", App.formatSize(box.usedBytes)), title: title };
+    // With a limit the line says how much of it is used, and a bar shows it.
+    var text = box.quotaBytes ? T("storageOf").replace("{0}", App.formatSize(box.usedBytes)).replace("{1}", App.formatSize(box.quotaBytes)) : T("storageUsed").replace("{0}", App.formatSize(box.usedBytes));
+    var level = box.quotaBytes ? usageLevel(box.usedBytes, box.quotaBytes) : null;
+    return { text: text, title: title, percent: level ? level.percent : null, state: level ? level.state : "" };
+  }
+
+  /** How much of a limit is used, in whole percent (100 only when it is reached), and the state that colours the bar: warn from 75 %, high from 90 %, full. */
+  function usageLevel(used, quota) {
+    var percent = Math.min(100, Math.floor(used * 100 / quota));
+    return { percent: percent, state: used >= quota ? "full" : percent >= 90 ? "high" : percent >= 75 ? "warn" : "" };
   }
 
   function folderItem(box, folder, tree) {
@@ -367,22 +387,33 @@
     node.appendChild(more);
     node.addEventListener("contextmenu", function (e) { e.preventDefault(); folderMenu(node, box, folder); });
 
-    // Folders are moved by dragging them onto another folder (the menu does the same, also on touch screens).
-    if (box.canManage) {
-      if (folder.kind === "Custom") {
-        node.draggable = true;
-        node.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-matmail-folder", String(folder.id)); e.dataTransfer.effectAllowed = "move"; dragged = { box: box, folder: folder }; });
-        node.addEventListener("dragend", function () { dragged = null; clearDropMarks(); });
-      }
+    // A folder is moved by dragging it onto another folder (or onto its mailbox: the top level), messages are moved by dragging them from the
+    // list onto a folder (the menus do the same, also on touch screens).
+    if (box.canManage && folder.kind === "Custom") {
+      node.draggable = true;
+      node.addEventListener("dragstart", function (e) { e.dataTransfer.setData("text/x-matmail-folder", String(folder.id)); e.dataTransfer.effectAllowed = "move"; dragged = { box: box, folder: folder }; doc.body.classList.add("is-dragging-folder"); });
+      node.addEventListener("dragend", function () { dragged = null; clearDropMarks(); doc.body.classList.remove("is-dragging-folder"); });
+    }
+    if (box.canManage || box.canEdit) {
       node.addEventListener("dragover", function (e) {
-        if (!dragged || !canDrop(dragged, box, folder)) { return; }
+        var accepts = draggedMessages ? canDropMessages(box, folder) : dragged && box.canManage && canDrop(dragged, box, folder);
+        if (!accepts) { return; }
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
         node.classList.add("is-drop");
+        if (draggedMessages && tree.folded) { unfoldSoon(folder); }   // hold the messages over a folded folder and it opens
       });
-      node.addEventListener("dragleave", function () { node.classList.remove("is-drop"); });
+      node.addEventListener("dragleave", function () { node.classList.remove("is-drop"); cancelUnfold(); });
       node.addEventListener("drop", function (e) {
-        if (!dragged || !canDrop(dragged, box, folder)) { return; }
+        if (draggedMessages && canDropMessages(box, folder)) {
+          e.preventDefault();
+          var drag = draggedMessages;
+          draggedMessages = null;
+          clearDropMarks();
+          dropMessages(drag, folder);
+          return;
+        }
+        if (!dragged || !box.canManage || !canDrop(dragged, box, folder)) { return; }
         e.preventDefault();
         var moving = dragged.folder;
         dragged = null;
@@ -393,8 +424,78 @@
     return node;
   }
 
-  var dragged = null;
-  function clearDropMarks() { Array.prototype.forEach.call(doc.querySelectorAll(".folder-item.is-drop"), function (n) { n.classList.remove("is-drop"); }); }
+  var dragged = null;          // the folder that is being dragged: { box, folder }
+  var draggedMessages = null;  // the messages that are being dragged: { ids, box, everything }
+  function clearDropMarks() { Array.prototype.forEach.call(doc.querySelectorAll(".folder-item.is-drop, .folder-group__head.is-drop"), function (n) { n.classList.remove("is-drop"); }); }
+
+  /** The mailbox is the top of its tree: a folder dropped on it is moved to the top level (where it is already, nothing happens). */
+  function makeRootTarget(node, box) {
+    var accepts = function () { return !!dragged && box.canManage && dragged.box.id === box.id && !!dragged.folder.parentId; };
+    node.addEventListener("dragover", function (e) {
+      if (!accepts()) { return; }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      node.classList.add("is-drop");
+    });
+    node.addEventListener("dragleave", function () { node.classList.remove("is-drop"); });
+    node.addEventListener("drop", function (e) {
+      if (!accepts()) { return; }
+      e.preventDefault();
+      var moving = dragged.folder;
+      dragged = null;
+      clearDropMarks();
+      moveFolder(moving, null);
+    });
+  }
+
+  // ---- Messages dragged onto a folder --------------------------------------------------------
+  /** A row is dragged: the ticked messages when it is one of them, else itself; as a file too, for the desktop (see dragOut). */
+  function dragRow(e, item) {
+    dragOut(e, item);
+    var box = currentBox();
+    if (!box || !box.canEdit) { return; }
+    var picked = S.selected.has(item.id);
+    var ids = picked ? Array.from(S.selected) : [item.id];
+    draggedMessages = { ids: ids, box: box, everything: picked && S.allMatching };
+    e.dataTransfer.setData("text/x-matmail-messages", ids.join(","));
+    e.dataTransfer.effectAllowed = "copyMove";   // copy: to the desktop as a file, move: onto a folder
+    var byId = {};
+    S.items.forEach(function (i) { byId[i.id] = i; });
+    var count = draggedMessages.everything ? S.total : expandRows(ids, byId).length;
+    if (count > 1) {
+      var ghost = App.el("div", { class: "drag-ghost", text: T("messagesCount").replace("{0}", String(count)) });
+      doc.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, 14, 14);
+      setTimeout(function () { ghost.remove(); }, 0);
+    }
+  }
+
+  function endRowDrag() { draggedMessages = null; clearDropMarks(); cancelUnfold(); }
+
+  /** Where the messages being dragged may go: any folder of a mailbox that may be changed, but not where they are, not Drafts and not the bucket of unclaimed mail. */
+  function canDropMessages(targetBox, folder) {
+    if (!draggedMessages || !targetBox.canEdit || folder.kind === "Drafts") { return false; }
+    if (targetBox.id !== draggedMessages.box.id && targetBox.type === "Unassigned") { return false; }
+    return !(targetBox.id === S.mailboxId && folder.id === S.folderId && !S.query);
+  }
+
+  function dropMessages(drag, folder) {
+    if (drag.everything) { actSelected("move", folder.id); return; }
+    act("move", drag.ids, folder.id);
+  }
+
+  var unfoldTimer = null, unfoldTarget = null;
+  function unfoldSoon(folder) {
+    if (unfoldTarget === folder.id) { return; }
+    cancelUnfold();
+    unfoldTarget = folder.id;
+    unfoldTimer = setTimeout(function () { unfoldTimer = null; unfoldTarget = null; setFolded(folder, false); }, 700);
+  }
+  function cancelUnfold() {
+    if (unfoldTimer) { clearTimeout(unfoldTimer); }
+    unfoldTimer = null;
+    unfoldTarget = null;
+  }
 
   /** A folder may go below any folder of its own mailbox except itself, what is below it, and where it already is. */
   function canDrop(source, box, target) {
@@ -407,6 +508,88 @@
     var index = box.folders.indexOf(folder);
     if (index < 0) { return false; }
     return candidate.id === folder.id || subtreeOf(box, index).some(function (f) { return f.id === candidate.id; });
+  }
+
+  /** The menu of a mailbox (the three dots and the right button on its heading). */
+  function mailboxMenu(anchor, box) {
+    var items = [{ label: T("mailboxInfo"), icon: "info", onClick: function () { showMailboxInfo(box); } }];
+    App.showMenu(anchor, items, { title: box.isOwn ? T("myMailbox") : box.name });
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Info dialog of a mailbox
+  // ---------------------------------------------------------------------------------------------
+  var ACCESS_TEXT = { Read: "accessRead", Edit: "accessEdit", Send: "accessSend", Manage: "accessManage" };
+  var TYPE_TEXT = { Personal: "typePersonal", Shared: "typeShared", Unassigned: "typeUnassigned" };
+
+  /** Who the mailbox is for, its addresses, and what it takes up – as a bar against its limit when it has one. */
+  function showMailboxInfo(box) {
+    App.get("/api/mail/mailboxes/" + box.id + "/info").then(function (info) {
+      var body = App.el("div", { class: "mailbox-info" });
+
+      var facts = App.el("dl", { class: "kv" });
+      var fact = function (label, values) {
+        values = [].concat(values).filter(function (v) { return v !== null && v !== undefined && v !== ""; });
+        if (!values.length) { return; }
+        facts.appendChild(App.el("dt", { text: label }));
+        facts.appendChild(App.el("dd", null, values.map(function (v) { return App.el("div", { text: v }); })));
+      };
+      fact(T("mailboxType"), T(TYPE_TEXT[info.type] || "typePersonal"));
+      fact(T("mailboxOwner"), info.owner);
+      fact(T("mailboxAddresses"), info.addresses.map(function (a) { return a.indexOf("*@") === 0 ? a + " (" + T("catchAll") + ")" : a; }));
+      fact(T("yourAccess"), T(ACCESS_TEXT[info.access] || "accessRead"));
+      body.appendChild(facts);
+
+      body.appendChild(App.el("h3", { class: "mailbox-info__heading", text: T("storage") }));
+      body.appendChild(storageMeter(info));
+
+      if (info.folders.length) {
+        body.appendChild(App.el("h3", { class: "mailbox-info__heading", text: T("byFolder") }));
+        var largest = info.folders[0].bytes || 1;
+        var list = App.el("ul", { class: "folder-bars" });
+        info.folders.slice(0, 8).forEach(function (f) {
+          var label = f.kind === "Custom" ? f.path.split("/").join(" › ") : App.folderLabel({ kind: f.kind, name: f.name });
+          list.appendChild(App.el("li", { class: "folder-bars__row" }, [
+            App.el("span", { class: "folder-bars__name", text: label, title: label }),
+            App.el("span", { class: "folder-bars__track" }, [App.el("span", { class: "folder-bars__fill", style: "width:" + Math.max(f.bytes ? 2 : 0, Math.round(f.bytes * 100 / largest)) + "%" })]),
+            App.el("span", { class: "folder-bars__size", text: App.formatSize(f.bytes), title: T("storageMessages").replace("{0}", Number(f.messages).toLocaleString()) })
+          ]));
+        });
+        body.appendChild(list);
+        if (info.folders.length > 8) { body.appendChild(App.el("p", { class: "muted", text: T("moreFolders").replace("{0}", String(info.folders.length - 8)) })); }
+      }
+
+      App.infoDialog(info.name, T("mailboxInfoTitle"), body);
+    }).catch(function (e) { App.toast(e.message, { error: true }); });
+  }
+
+  /** The storage as a bar (used against the limit: it turns amber when it is nearly full and red when it is) or, without a limit, as a number. */
+  function storageMeter(info) {
+    var wrap = App.el("div", { class: "meter" });
+    var used = info.usedBytes, quota = info.quotaBytes;
+    if (quota) {
+      var level = usageLevel(used, quota), percent = level.percent;
+      var bar = App.el("div", { class: "meter__bar" + (level.state ? " is-" + level.state : ""), role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(percent), "aria-label": T("storage") });
+      bar.appendChild(App.el("div", { class: "meter__fill", style: "width:" + Math.max(used ? 1 : 0, percent) + "%" }));
+      wrap.appendChild(bar);
+      wrap.appendChild(App.el("div", { class: "meter__text" }, [
+        App.el("strong", { text: T("storageOf").replace("{0}", App.formatSize(used)).replace("{1}", App.formatSize(quota)) }),
+        App.el("span", { text: percent + " %" })
+      ]));
+      if (used >= quota) { wrap.appendChild(App.el("div", { class: "mail-notice is-error", text: T("storageFull") })); }
+      // Deleting moves a message to the trash, where it still takes room: when space is short, say where it is.
+      var trash = (info.folders || []).filter(function (f) { return f.kind === "Trash"; })[0];
+      if (percent >= 90 && trash && trash.bytes) { wrap.appendChild(App.el("div", { class: "meter__more", text: T("storageTrash").replace("{0}", App.formatSize(trash.bytes)) })); }
+    } else {
+      wrap.appendChild(App.el("div", { class: "meter__text" }, [
+        App.el("strong", { text: T("storageUsed").replace("{0}", App.formatSize(used)) }),
+        App.el("span", { class: "muted", text: T("noLimit") })
+      ]));
+    }
+    var more = [T("storageMessages").replace("{0}", Number(info.messages).toLocaleString())];
+    if (info.remoteBytes) { more.push(T("storageRemote").replace("{0}", App.formatSize(info.remoteBytes))); }
+    wrap.appendChild(App.el("div", { class: "meter__more muted", text: more.join(" · ") }));
+    return wrap;
   }
 
   function folderMenu(anchor, box, folder) {
@@ -593,7 +776,8 @@
       row.appendChild(actions);
 
       row.draggable = true;
-      row.addEventListener("dragstart", function (e) { dragOut(e, item); });
+      row.addEventListener("dragstart", function (e) { dragRow(e, item); });
+      row.addEventListener("dragend", endRowDrag);
       row.addEventListener("click", function () { S.cursor = index; openItem(item); });
       row.addEventListener("keydown", function (e) { if (e.key === "Enter") { openItem(item); } });
       els.list.appendChild(row);

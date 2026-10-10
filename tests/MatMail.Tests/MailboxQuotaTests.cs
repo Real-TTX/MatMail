@@ -78,6 +78,7 @@ public class MailboxQuotaTests : IAsyncLifetime
     {
         _host = await TestHost.CreateAsync();
         _seed = await _host.SeedAsync();
+        AppInfo.DataDir = Path.Combine(Path.GetTempPath(), "matmail-test-data-" + Guid.NewGuid().ToString("N"));   // sending from the web client stages files there ("/data" is not writable in CI)
     }
 
     public async Task DisposeAsync() => await _host.DisposeAsync();

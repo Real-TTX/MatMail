@@ -65,6 +65,19 @@ public sealed class TenantService
         return (tenant, null);
     }
 
+    /// <summary>The tenants a system administrator can switch between, by name. Anyone else gets an empty list.</summary>
+    public async Task<List<Tenant>> ListSwitchableAsync()
+    {
+        if (!_current.IsSystemAdmin)
+        {
+            return new List<Tenant>();
+        }
+
+        using IServiceScope scope = _scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+        return await db.Tenants.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+    }
+
     /// <summary>Deletes a tenant with everything in it (users, mailboxes, messages). Returns an error text or null.</summary>
     public async Task<string?> DeleteAsync(long tenantId)
     {

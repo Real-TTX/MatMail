@@ -3,20 +3,20 @@
 @{
     ViewData["Breadcrumb"] = "Administration / Unassigned / Hand over";
     ViewData["Title"] = L["Hand over to a mailbox"].Value;
+    ViewData["Width"] = "narrow";
 }
 
 @if (Model.Message is { } message)
 {
-    <section class="card">
-        <h2 class="card__title"><mm-icon name="mail" />@(string.IsNullOrWhiteSpace(message.Subject) ? L["(no subject)"].Value : message.Subject)</h2>
-        <dl class="kv">
+    <mm-card title='@(string.IsNullOrWhiteSpace(message.Subject) ? L["(no subject)"].Value : message.Subject)' icon="mail">
+        <dl class="mat-kv">
             <dt>@L["From"]</dt><dd>@(string.IsNullOrWhiteSpace(message.FromName) ? message.FromAddress : $"{message.FromName} <{message.FromAddress}>")</dd>
-            <dt>@L["Addressed to"]</dt><dd class="mono">@(message.EnvelopeRecipients ?? "–")</dd>
-            <dt>@L["Received"]</dt><dd>@Fmt.DateTimeText(message.ReceivedDate)</dd>
-            <dt>@L["Preview"]</dt><dd class="muted">@message.Preview</dd>
+            <dt>@L["Addressed to"]</dt><dd class="mat-mono">@(message.EnvelopeRecipients ?? "–")</dd>
+            <dt>@L["Received"]</dt><dd class="mat-mono">@Fmt.DateTimeText(message.ReceivedDate)</dd>
+            <dt>@L["Preview"]</dt><dd class="mat-muted">@message.Preview</dd>
         </dl>
-        <mm-list-actions><mm-button variant="secondary" href="@($"/Mail#mailbox={message.MailboxId}&m={message.Id}")" icon="eye">@L["Read the message"]</mm-button></mm-list-actions>
-    </section>
+        <mm-list-actions><mm-button variant="secondary" href='@($"/Mail#mailbox={message.MailboxId}&m={message.Id}")' icon="eye">@L["Read the message"]</mm-button></mm-list-actions>
+    </mm-card>
 
     <mm-form>
         <input type="hidden" asp-for="Id" />
@@ -31,7 +31,7 @@
 
         <mm-button-row>
             <mm-button variant="primary" type="submit" icon="folder-input">@L["Hand over"]</mm-button>
-            <mm-button variant="secondary" href="/Admin/Unassigned" icon="arrow-left">@L["Back"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Unassigned" icon="back">@L["Back"]</mm-button>
             <mm-button-spacer />
             <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this message for good?"]'>@L["Delete"]</mm-button>
         </mm-button-row>

@@ -3,6 +3,16 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Mailboxes / Delegation / Edit access" : "Administration / Mailboxes / Delegation / New access";
     ViewData["Title"] = Model.IsEdit ? Model.UserName : L["Add user"].Value;
+    ViewData["Width"] = "narrow";
+
+    // What each level of access allows, shown under its name.
+    var accessHelp = new Dictionary<string, string>
+    {
+        [nameof(MailboxAccess.Read)] = L["See folders and messages."].Value,
+        [nameof(MailboxAccess.Edit)] = L["Also mark, move and delete messages and write drafts."].Value,
+        [nameof(MailboxAccess.Send)] = L["Also send mail from this mailbox’s addresses (as a substitute)."].Value,
+        [nameof(MailboxAccess.Manage)] = L["Also manage folders and the other users of this mailbox."].Value,
+    };
 }
 
 <mm-form>
@@ -20,22 +30,27 @@
             <mm-picker asp-for="Input.UserId" asp-items="Model.UserItems" label='@L["User"]' placeholder='@L["Select a user…"]' />
         }
 
-        <mm-field asp-for="Input.Access" kind="select" label='@L["Access"]' asp-items="Model.AccessItems" />
-        <dl class="kv">
-            <dt>@L["Read"]</dt><dd>@L["See folders and messages."]</dd>
-            <dt>@L["Read and edit"]</dt><dd>@L["Also mark, move and delete messages and write drafts."]</dd>
-            <dt>@L["Read, edit and send"]</dt><dd>@L["Also send mail from this mailbox’s addresses (as a substitute)."]</dd>
-            <dt>@L["Full control"]</dt><dd>@L["Also manage folders and the other users of this mailbox."]</dd>
-        </dl>
+        <fieldset class="mat-field mat-fieldset" id="Input_Access">
+            <legend class="mat-legend">@L["Access"]</legend>
+            <div class="mat-checks">
+                @foreach (var item in Model.AccessItems)
+                {
+                    <label class="mat-check">
+                        <input type="radio" id="Input_Access_@item.Value" name="Input.Access" value="@item.Value" checked="@(Model.Input.Access == item.Value)" />
+                        <span class="mat-check__text"><strong>@item.Text</strong><small class="mat-muted">@accessHelp[item.Value]</small></span>
+                    </label>
+                }
+            </div>
+        </fieldset>
     </mm-form-section>
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="@($"/Admin/Mailboxes/Access?id={Model.MailboxId}")" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="@($"/Admin/Mailboxes/Access?id={Model.MailboxId}")" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Remove the access of this user?"]'>@L["Remove access"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Remove the access of this user?"]' confirm-ok='@L["Remove access"]'>@L["Remove access"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

@@ -2,19 +2,17 @@
 @model MatMail.Pages.Account.Rules.IndexModel
 @{
     ViewData["Breadcrumb"] = "Account / Mail rules";
-    ViewData["Title"] = L["My account"].Value;
+    ViewData["Title"] = L["Mail rules"].Value;
+    ViewData["Description"] = L["Rules sort the mail that arrives in a mailbox: they move it into folders, mark it, star it, label it, delete it or forward a copy. They are applied from the top; a rule can end the list for the messages it matches."].Value;
 }
-
-<partial name="_AccountTabs" model='"rules"' />
-
-<p class="muted">@L["Rules sort the mail that arrives in a mailbox: they move it into folders, mark it, star it, label it, delete it or forward a copy. They are applied from the top; a rule can end the list for the messages it matches."]</p>
 
 @if (Model.MailboxItems.Count == 0)
 {
-    <div class="notice notice--info"><mm-icon name="info" class="notice__icon" /><span class="notice__text">@L["You have no mailbox whose rules you may change."]</span></div>
+    <mm-alert kind="info">@L["You have no mailbox whose rules you may change."]</mm-alert>
 }
 else
 {
+<mm-list>
     @if (Model.MailboxItems.Count > 1)
     {
         <mm-toolbar>
@@ -30,50 +28,48 @@ else
     <mm-table item-count="Model.Rules.Count" empty-text='@L["There are no rules for this mailbox yet."]' empty-icon="filter">
         <thead>
             <tr>
-                <th class="rule-order"></th>
+                <th scope="col"><span class="mat-sr-only">@L["Order"]</span></th>
                 <th>@L["Rule"]</th>
-                <th class="hide-sm">@L["Used"]</th>
+                <th class="mat-hide-sm">@L["Used"]</th>
                 <th>@L["Status"]</th>
-                <th class="is-actions"></th>
+                <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
             </tr>
         </thead>
         <tbody>
             @for (int i = 0; i < Model.Rules.Count; i++)
             {
                 var rule = Model.Rules[i];
-                <tr data-row-href="/Account/Rules/Edit?id=@rule.Id" tabindex="0">
-                    <td class="rule-order">
-                        <span class="rule-order__buttons">
+                <tr data-row-href="/Account/Rules/Edit?id=@rule.Id">
+                    <td class="mm-rule-order">
+                        <span class="mm-rule-order__buttons">
                             <form method="post" asp-page-handler="Move" data-no-busy>
                                 <input type="hidden" name="id" value="@rule.Id" /><input type="hidden" name="direction" value="up" />
-                                <button type="submit" class="icon-btn" title="@L["Move up"]" aria-label="@L["Move up"]" disabled="@(i == 0)"><mm-icon name="arrow-up" /></button>
+                                <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-tip="@L["Move up"]" aria-label="@L["Move up"]" disabled="@(i == 0)"><mm-icon name="arrow-up" /></button>
                             </form>
                             <form method="post" asp-page-handler="Move" data-no-busy>
                                 <input type="hidden" name="id" value="@rule.Id" /><input type="hidden" name="direction" value="down" />
-                                <button type="submit" class="icon-btn" title="@L["Move down"]" aria-label="@L["Move down"]" disabled="@(i == Model.Rules.Count - 1)"><mm-icon name="arrow-down" /></button>
+                                <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-tip="@L["Move down"]" aria-label="@L["Move down"]" disabled="@(i == Model.Rules.Count - 1)"><mm-icon name="arrow-down" /></button>
                             </form>
                         </span>
                     </td>
                     <td>
-                        <div class="cell-title">@rule.Name @if (rule.StopProcessing) { <mm-badge kind="muted">@L["Last rule for a match"]</mm-badge> }</div>
-                        <div class="cell-sub">
-                            <strong>@(rule.MatchAny ? L["If one of"].Value : L["If"].Value)</strong> @string.Join(rule.MatchAny ? " " + L["or"].Value + " " : " " + L["and"].Value + " ", rule.When)
-                        </div>
-                        <div class="cell-sub"><strong>@L["Then"]</strong> @string.Join(", ", rule.Then)</div>
+                        <div class="mat-table__name"><span><a href="/Account/Rules/Edit?id=@rule.Id">@rule.Name</a> @if (rule.StopProcessing) { <mm-badge kind="muted">@L["Last rule for a match"]</mm-badge> }
+                            <small><strong>@(rule.MatchAny ? L["If one of"].Value : L["If"].Value)</strong> @string.Join(rule.MatchAny ? " " + L["or"].Value + " " : " " + L["and"].Value + " ", rule.When)</small>
+                            <small><strong>@L["Then"]</strong> @string.Join(", ", rule.Then)</small></span></div>
                     </td>
-                    <td class="hide-sm nowrap">
-                        @if (rule.MatchCount == 0) { <span class="muted">@L["Never"]</span> }
-                        else { <span>@L["{0} time(s)", rule.MatchCount]</span> <div class="cell-sub" title="@Fmt.DateTimeText(rule.LastMatchDate)">@Fmt.Ago(rule.LastMatchDate)</div> }
+                    <td class="mat-hide-sm mat-nowrap">
+                        @if (rule.MatchCount == 0) { <span class="mat-muted">@L["Never"]</span> }
+                        else { <span>@L["{0} time(s)", rule.MatchCount]</span> <span class="mat-muted mat-d-block" title="@Fmt.DateTimeText(rule.LastMatchDate)">@Fmt.Ago(rule.LastMatchDate)</span> }
                     </td>
                     <td>@if (rule.IsActive) { <mm-badge kind="ok">@L["On"]</mm-badge> } else { <mm-badge kind="muted">@L["Off"]</mm-badge> }</td>
-                    <td class="is-actions">
-                        <span class="icon-actions">
+                    <td class="mat-table__cell-actions">
+                        <div class="mat-table__actions">
                             <form method="post" asp-page-handler="Toggle" data-no-busy>
                                 <input type="hidden" name="id" value="@rule.Id" />
-                                <button type="submit" class="icon-btn" title="@(rule.IsActive ? L["Turn off"].Value : L["Turn on"].Value)" aria-label="@(rule.IsActive ? L["Turn off"].Value : L["Turn on"].Value)"><mm-icon name="@(rule.IsActive ? "toggle-left" : "play")" /></button>
+                                <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-tip="@(rule.IsActive ? L["Turn off"].Value : L["Turn on"].Value)" aria-label="@(rule.IsActive ? L["Turn off"].Value : L["Turn on"].Value)"><mm-icon name="@(rule.IsActive ? "toggle-left" : "play")" /></button>
                             </form>
-                            <a class="icon-btn" href="/Account/Rules/Edit?id=@rule.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
-                        </span>
+                            <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Account/Rules/Edit?id=@rule.Id" data-tip="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                        </div>
                     </td>
                 </tr>
             }
@@ -87,7 +83,8 @@ else
         }
         else
         {
-            <span class="muted">@L["A mailbox can have {0} rules at most.", MatMail.Pages.Account.Rules.IndexModel.MaxRulesPerMailbox]</span>
+            <span class="mat-muted">@L["A mailbox can have {0} rules at most.", MatMail.Pages.Account.Rules.IndexModel.MaxRulesPerMailbox]</span>
         }
     </mm-list-actions>
+</mm-list>
 }

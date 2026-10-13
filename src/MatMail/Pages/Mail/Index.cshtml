@@ -13,8 +13,8 @@
 
 @section Sidebar {
     <div class="mail-sidebar">
-        <button type="button" class="btn-compose" id="mail-compose-button">
-            <mm-icon name="edit" /><span>@L["Compose"]</span>
+        <button type="button" class="mat-btn mat-btn--primary mat-btn--block" id="mail-compose-button">
+            <mm-icon name="pen-line" /><span>@L["Compose"]</span>
         </button>
         <nav class="mail-folders" id="mail-folders" aria-label="@L["Folders"]"></nav>
     </div>
@@ -22,10 +22,12 @@
 
 @section HeaderCenter {
     <form class="mail-search" id="mail-search" role="search" autocomplete="off">
-        <mm-icon name="search" class="mail-search__icon" />
-        <input type="search" id="mail-search-input" class="mail-search__input" placeholder="@L["Search mail"]" aria-label="@L["Search mail"]" />
-        <button type="button" class="icon-btn mail-search__clear" id="mail-search-clear" aria-label="@L["Clear search"]" hidden><mm-icon name="x" /></button>
-        <button type="button" class="icon-btn mail-search__options" id="mail-search-options" title="@L["Search options"]" aria-label="@L["Search options"]" aria-haspopup="dialog" aria-expanded="false"><mm-icon name="sliders" /></button>
+        <div class="mat-input-icon mail-search__field">
+            <mm-icon name="search" />
+            <input type="search" id="mail-search-input" class="mat-input" placeholder="@L["Search mail"]" aria-label="@L["Search mail"]" enterkeyhint="search" />
+        </div>
+        <button type="button" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" id="mail-search-clear" data-tip="@L["Clear search"]" aria-label="@L["Clear search"]" hidden><mm-icon name="x" /></button>
+        <button type="button" class="mat-btn mat-btn--ghost mat-btn--icon" id="mail-search-options" data-tip="@L["Search options"]" aria-label="@L["Search options"]" aria-haspopup="dialog"><mm-icon name="sliders" /></button>
     </form>
 }
 
@@ -35,10 +37,10 @@
     @* The two panes: one at a time, or – with the reading pane of the appearance settings, on wide screens – side by side or one above the other. *@
     <div class="mail-panes" id="mail-panes">
     <section class="mail-pane mail-pane--list" id="mail-list-pane">
-        <div class="mail-toolbar" id="mail-list-toolbar"></div>
+        <div class="mail-toolbar" id="mail-list-toolbar" role="toolbar"></div>
         @* "All 50 on this page are selected. Select all 1,234 that match": offered when the selection fills the page and there are more hits. *@
         <div class="mail-selectbar" id="mail-selectbar" hidden></div>
-        <div class="mail-notice" id="mail-notice" hidden></div>
+        <div class="mail-notice-host" id="mail-notice" hidden></div>
         <div class="mail-list" id="mail-list" role="list"></div>
         <div class="mail-empty" id="mail-empty" hidden>
             <mm-icon name="inbox" class="mail-empty__icon" />
@@ -49,26 +51,23 @@
     <div class="mail-splitter" id="mail-splitter" role="separator" aria-orientation="vertical" aria-label="@L["Resize the reading pane"]" tabindex="0" hidden></div>
 
     <section class="mail-pane mail-pane--reader" id="mail-reader-pane" hidden>
-        <div class="mail-toolbar" id="mail-reader-toolbar"></div>
+        <div class="mail-toolbar" id="mail-reader-toolbar" role="toolbar"></div>
         <div class="mail-reader" id="mail-reader"></div>
     </section>
     </div>
 
-    <div class="mail-loading" id="mail-loading" hidden><span class="spinner"></span></div>
+    <div class="mail-loading" id="mail-loading" hidden><span class="mat-spinner"></span></div>
 
     @* A message file (.eml, .msg) is opened by dropping it anywhere on the client, or with the button over the list. *@
     <div class="mail-drop" id="mail-drop" hidden aria-hidden="true"><mm-icon name="upload" /><p>@L["Drop a message file here to read it (.eml, .msg)"]</p></div>
     <input type="file" id="mail-file" accept=".eml,.msg,message/rfc822,application/vnd.ms-outlook" hidden />
 
     @* Where the folders are a drawer (up to 960 px): the round button over the list, bottom right; above that the one in the folder column does the job. *@
-    <button type="button" class="fab-compose" id="mail-compose-fab" title="@L["Compose"]" aria-label="@L["Compose"]"><mm-icon name="edit" /></button>
+    <button type="button" class="fab-compose" id="mail-compose-fab" aria-label="@L["Compose"]"><mm-icon name="pen-line" /></button>
 </div>
 
 <div class="compose-dock" id="compose-dock" aria-live="polite"></div>
-<div class="mail-toasts" id="mail-toasts" role="status" aria-live="polite"></div>
 <div class="menu-layer" id="mail-menu-layer" hidden></div>
-@* The advanced search lives out here, not in the header: its blurred background would make a full-screen sheet as small as the header. *@
-<div class="search-layer" id="mail-search-layer" hidden></div>
 
 @section Scripts {
     <script src="~/js/mail-core.js" asp-append-version="true"></script>

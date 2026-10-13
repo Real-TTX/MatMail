@@ -2,22 +2,17 @@
 @model MatMail.Pages.Account.IndexModel
 @{
     ViewData["Breadcrumb"] = "Account";
-    ViewData["Title"] = L["My account"].Value;
+    ViewData["Title"] = L["Profile"].Value;
+    ViewData["Width"] = "narrow";
 }
 
-<partial name="_AccountTabs" model='"profile"' />
-
 <mm-form>
-    <mm-form-section title='@L["Profile"]' description='@L["These details appear in your signature and in the user list."]' icon="user">
-        <div class="form-grid">
-            <mm-field asp-for="LoginName" kind="readonly" label='@L["Login name"]' />
-            <mm-field asp-for="TenantName" kind="readonly" label='@L["Tenant"]' />
-        </div>
-        <div class="form-grid">
-            <mm-field asp-for="Input.DisplayName" label='@L["Name"]' autocomplete="name" />
-            <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Used for notifications; it is not your login."]' />
-        </div>
-        <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' />
+    <mm-form-section title='@L["Account"]' description='@L["These details appear in your signature and in the user list."]' icon="user" columns="2">
+        <mm-field asp-for="LoginName" kind="readonly" label='@L["Login name"]' />
+        <mm-field asp-for="TenantName" kind="readonly" label='@L["Tenant"]' />
+        <mm-field asp-for="Input.DisplayName" label='@L["Name"]' autocomplete="name" />
+        <mm-field asp-for="Input.Email" kind="email" label='@L["E-mail address"]' help='@L["Used for notifications; it is not your login."]' />
+        <mm-field asp-for="Input.JobTitle" label='@L["Job title"]' full="true" />
     </mm-form-section>
     <partial name="_PersonFields" for="Input" />
 

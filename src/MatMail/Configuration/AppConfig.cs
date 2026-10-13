@@ -28,7 +28,7 @@ public class DisplayConfig
     public string ThemeMode { get; set; } = "system";
 
     /// <summary>Default accent: blue, green, violet, teal, amber, rose or graphite.</summary>
-    public string ThemeAccent { get; set; } = "blue";
+    public string ThemeAccent { get; set; } = "default";
 }
 
 public class ServerConfig

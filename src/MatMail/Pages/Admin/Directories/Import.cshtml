@@ -7,39 +7,39 @@
 }
 
 <mm-toolbar count="Model.People.Count">
-    <input type="hidden" name="Id" value="@Model.Id" />
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, login or e-mail…"]' />
 </mm-toolbar>
 
 <mm-form>
+    <div data-selectable>
     <mm-table item-count="Model.People.Count" empty-text='@L["Nobody found."]' empty-icon="users">
         <thead>
             <tr>
-                <th class="is-check"><input type="checkbox" data-select-all aria-label='@L["Select all"]' /></th>
+                <th scope="col" class="mat-table__select"><input type="checkbox" id="people-all" data-select-all aria-label="@L["Select all"]" /></th>
                 <th>@L["Person"]</th>
-                <th class="hide-sm">@L["Login name"]</th>
+                <th class="mat-hide-sm">@L["Login name"]</th>
                 <th>@L["Status"]</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var row in Model.People)
             {
+                // Somebody who is a user already, or whose login name belongs to a user of another directory, cannot be chosen; the toolkit's "select all" leaves such a row alone.
+                bool selectable = row.State is not (MatMail.Pages.Admin.Directories.ImportModel.PersonState.Imported or MatMail.Pages.Admin.Directories.ImportModel.PersonState.Taken);
                 <tr>
-                    <td class="is-check">
-                        <input type="checkbox" name="Input.Selected" value="@row.Person.Login" data-select-row
-                               disabled="@(row.State is MatMail.Pages.Admin.Directories.ImportModel.PersonState.Imported or MatMail.Pages.Admin.Directories.ImportModel.PersonState.Taken)"
-                               aria-label="@row.Person.DisplayName" />
+                    <td class="mat-table__select">
+                        <input type="checkbox" name="Input.Selected" value="@row.Person.Login" data-select-row="@(selectable ? string.Empty : null)"
+                               disabled="@(!selectable)" aria-label="@row.Person.DisplayName" />
                     </td>
                     <td>
-                        <div class="cell-title">@row.Person.DisplayName @if (row.Person.Disabled) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</div>
-                        <div class="cell-sub">@row.Person.Email</div>
+                        <div class="mat-table__name"><span>@row.Person.DisplayName @if (row.Person.Disabled) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }<small>@row.Person.Email</small></span></div>
                     </td>
-                    <td class="hide-sm">@row.Person.Login</td>
+                    <td class="mat-hide-sm">@row.Person.Login</td>
                     <td>
                         @switch (row.State)
                         {
                             case MatMail.Pages.Admin.Directories.ImportModel.PersonState.Imported:
-                                <mm-badge kind="ok" icon="check">@L["Is a user"]</mm-badge>
+                                <mm-badge kind="ok">@L["Is a user"]</mm-badge>
                                 break;
                             case MatMail.Pages.Admin.Directories.ImportModel.PersonState.Local:
                                 <mm-badge kind="info">@L["Local user"]</mm-badge>
@@ -56,9 +56,10 @@
             }
         </tbody>
     </mm-table>
+    </div>
     @if (Model.Truncated)
     {
-        <p class="form-help">@string.Format(L["The first {0} people are shown. Narrow the search to find the others."].Value, MatMail.Pages.Admin.Directories.ImportModel.Limit)</p>
+        <p class="mat-hint">@string.Format(L["The first {0} people are shown. Narrow the search to find the others."].Value, MatMail.Pages.Admin.Directories.ImportModel.Limit)</p>
     }
 
     <mm-form-section title='@L["What they get"]' icon="user-plus">
@@ -72,18 +73,7 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="user-plus">@L["Import selected"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Directories/Edit?id=@Model.Id" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Directories/Edit?id=@Model.Id" icon="back">@L["Back"]</mm-button>
     </mm-button-row>
 </mm-form>
 
-@section Scripts {
-    <script>
-        (function () {
-          var all = document.querySelector("[data-select-all]");
-          if (!all) { return; }
-          all.addEventListener("change", function () {
-            document.querySelectorAll("[data-select-row]:not(:disabled)").forEach(function (box) { box.checked = all.checked; });
-          });
-        })();
-    </script>
-}

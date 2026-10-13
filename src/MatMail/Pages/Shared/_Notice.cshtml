@@ -1,17 +1,24 @@
+@inject Toolkit Toolkit
 @*
-    The page-level "what just happened" message. Rendered once by the layouts; page models fill it with
-    this.Notify(...) / this.NotifyNow(...). Field errors do NOT belong here: they stay with the validation summary.
+    The page-level "what just happened" message (SHELL-12). Rendered once by the layouts; page models fill it with this.Notify(...) / this.NotifyNow(...).
+    "Done" is a toast (the toolkit shows it and takes the element away), something the person has to read is an alert at the top of the content.
+    Field errors do NOT belong here: they stay with the validation summary.
 *@
 @{
     var noticeText = (ViewData[NoticeExtensions.TextKey] ?? TempData[NoticeExtensions.TextKey]) as string;
     var noticeKind = ((ViewData[NoticeExtensions.KindKey] ?? TempData[NoticeExtensions.KindKey]) as string ?? "Ok").ToLowerInvariant();
-    var noticeIcon = noticeKind switch { "danger" => "alert-circle", "warn" => "alert", "info" => "info", _ => "check-circle" };
 }
 
 @if (!string.IsNullOrWhiteSpace(noticeText))
 {
-    <div class="notice notice--@noticeKind" role="status">
-        <mm-icon name="@noticeIcon" class="notice__icon" />
-        <span class="notice__text">@noticeText</span>
-    </div>
+    if (noticeKind == "ok")
+    {
+        <div data-toast="@noticeText" data-tone="success" hidden></div>
+    }
+    else
+    {
+        var tone = noticeKind switch { "danger" => "danger", "warn" => "warning", _ => "info" };
+        var icon = noticeKind switch { "danger" => "x-circle", "warn" => "alert", _ => "info" };
+        <div class="mat-alert mat-alert--@tone" role="@(noticeKind == "danger" ? "alert" : "status")">@Toolkit.Icon(icon)<div class="mat-alert__body">@noticeText</div></div>
+    }
 }

@@ -81,15 +81,31 @@
     return node;
   };
 
+  // The two sprites of the page (matui-icons.svg: mat-i-NAME, the icons of MatMail's own library: mat-il-NAME).
+  var symbols = {};
+  App.symbol = function (name) {
+    if (!symbols[name]) { symbols[name] = doc.getElementById("mat-i-" + name) ? "#mat-i-" + name : "#mat-il-" + name; }
+    return symbols[name];
+  };
+
+  /** The icon itself, an svg of the toolkit (for places where the toolkit styles the svg as a direct child, like alerts and toasts). */
+  App.svg = function (name, extraClass) {
+    var holder = doc.createElement("span");
+    holder.innerHTML = '<svg class="mat-icon' + (extraClass ? " " + extraClass : "") + '" aria-hidden="true" focusable="false"><use href="' + App.symbol(name) + '"/></svg>';
+    return holder.firstChild;
+  };
+
+  /** The icon in a small wrapper (the style sheet of the client aligns it); extraClass goes to the wrapper. */
   App.icon = function (name, extraClass) {
     var span = doc.createElement("span");
     span.className = "ico" + (extraClass ? " " + extraClass : "");
-    span.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+    span.appendChild(App.svg(name));
     return span;
   };
 
+  /** An icon that is a button: the label is its name and, on a pointer device, its tooltip (BUTTON-04). */
   App.iconButton = function (name, label, onClick, extraClass) {
-    var button = App.el("button", { type: "button", class: "icon-btn" + (extraClass ? " " + extraClass : ""), title: label, "aria-label": label });
+    var button = App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" + (extraClass ? " " + extraClass : ""), "data-tip": label, "aria-label": label });
     button.appendChild(App.icon(name));
     if (onClick) { button.addEventListener("click", onClick); }
     return button;
@@ -133,32 +149,34 @@
 
   App.displayName = function (name, address) { return name && name.trim() ? name : (address || ""); };
 
-  var colors = ["#1a73e8", "#d93025", "#188038", "#e37400", "#9334e6", "#007b83", "#c5221f", "#5f6368", "#a142f4", "#12b5cb"];
+  /** The first letter of the name in a flat accent circle (the avatar of the toolkit): no colour per sender, no inline style. */
   App.avatar = function (name, address) {
     var label = (App.displayName(name, address) || "?").trim();
     var letter = (label.match(/[A-Za-zÀ-ÿ0-9]/) || ["?"])[0].toUpperCase();
-    var hash = 0, source = (address || label).toLowerCase();
-    for (var i = 0; i < source.length; i++) { hash = (hash * 31 + source.charCodeAt(i)) >>> 0; }
-    var node = App.el("span", { class: "avatar avatar--round", "aria-hidden": "true", text: letter });
-    node.style.background = colors[hash % colors.length];
-    node.style.color = "#fff";
-    return node;
+    return App.el("span", { class: "mat-avatar mail-avatar", "aria-hidden": "true", text: letter });
   };
 
-  // ---- Toasts --------------------------------------------------------------------------------
+  // ---- Toasts (the host and the look are the toolkit's; one with a button, like "Undo", is built here) ----------------------------
   App.toast = function (message, options) {
     options = options || {};
-    var host = doc.getElementById("mail-toasts");
-    var toast = App.el("div", { class: "toast" + (options.error ? " toast--error" : "") }, [App.el("span", { class: "toast__text", text: message })]);
+    var host = doc.querySelector(".mat-toasts");
+    if (!host) { host = App.el("div", { class: "mat-toasts", role: "status", "aria-live": "polite" }); doc.body.appendChild(host); }
+    var toast = App.el("div", { class: "mat-toast mat-toast--" + (options.error ? "danger" : "info") });
+    toast.appendChild(App.svg(options.error ? "x-circle" : "info"));
+    toast.appendChild(App.el("div", { class: "mat-alert__body", text: message }));
+    var close = function () { toast.remove(); };
     if (options.action) {
-      var action = App.el("button", { type: "button", class: "toast__action", text: options.action.label });
+      var action = App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--sm", text: options.action.label });
       action.addEventListener("click", function () { options.action.run(); close(); });
       toast.appendChild(action);
     }
-    var close = function () { toast.classList.add("is-leaving"); setTimeout(function () { toast.remove(); }, 200); };
-    toast.appendChild(App.iconButton("x", "×", close, "toast__close"));
+
+    var x = App.el("button", { type: "button", class: "mat-alert__close", "aria-label": App.T("close") });
+    x.appendChild(App.svg("x"));
+    x.addEventListener("click", close);
+    toast.appendChild(x);
     host.appendChild(toast);
-    setTimeout(close, options.duration || (options.error ? 8000 : 5000));
+    setTimeout(close, options.duration || (options.error ? 9000 : 6000));
   };
 
   // ---- Menus (dropdowns; full-screen sheets on phones) ---------------------------------------
@@ -169,20 +187,22 @@
     if (layer) { layer.hidden = true; layer.innerHTML = ""; }
   };
 
-  // items: [{ label, icon, onClick, danger, disabled, divider, checked }]
+  // items: [{ label, icon, onClick, danger, disabled, divider, checked, indent }]
   App.showMenu = function (anchor, items, options) {
     options = options || {};
     App.closeMenu();
     var layer = doc.getElementById("mail-menu-layer");
-    var menu = App.el("div", { class: "menu", role: "menu" });
-    var header = App.el("div", { class: "menu__header" }, [App.el("span", { class: "menu__title", text: options.title || "" }), App.iconButton("x", "×", App.closeMenu)]);
+    var menu = App.el("div", { class: "mat-menu mail-menu", role: "menu" });
+    var header = App.el("div", { class: "mail-menu__header" }, [App.el("span", { class: "mail-menu__title", text: options.title || "" }), App.iconButton("x", App.T("close"), App.closeMenu)]);
     menu.appendChild(header);
     items.forEach(function (item) {
-      if (item.divider) { menu.appendChild(App.el("div", { class: "menu__divider" })); return; }
-      var entry = App.el("button", { type: "button", class: "menu__item" + (item.danger ? " is-danger" : "") + (item.checked ? " is-checked" : ""), role: "menuitem", disabled: !!item.disabled });
+      if (item.divider) { menu.appendChild(App.el("div", { class: "mat-menu__sep", role: "separator" })); return; }
+      var entry = App.el("button", { type: "button", class: "mat-menu__item" + (item.danger ? " mat-menu__item--danger" : ""), role: item.checked !== undefined ? "menuitemradio" : "menuitem", "aria-checked": item.checked !== undefined ? String(!!item.checked) : null, disabled: !!item.disabled });
       entry.appendChild(item.icon ? App.icon(item.icon) : App.el("span", { class: "ico" }));
-      entry.appendChild(App.el("span", { class: "menu__label", text: item.label, style: item.indent ? "padding-left:" + (item.indent * 14) + "px" : null }));
-      if (item.checked) { entry.appendChild(App.icon("check", "menu__check")); }
+      var label = App.el("span", { class: "mail-menu__label", text: item.label });
+      if (item.indent) { label.style.setProperty("--mm-indent", String(item.indent)); }
+      entry.appendChild(label);
+      if (item.checked) { entry.appendChild(App.icon("check", "mat-menu__check")); }
       entry.addEventListener("click", function () { App.closeMenu(); if (item.onClick) { item.onClick(); } });
       menu.appendChild(entry);
     });
@@ -190,7 +210,7 @@
     layer.hidden = false;
     openMenu = { node: menu };
 
-    // Desktop: place under the anchor (flip when there is no room); phones: CSS makes it a full-screen sheet.
+    // Desktop: place under the anchor (flip when there is no room); phones: the style sheet makes it a full-screen sheet (DIALOG-07).
     if (window.matchMedia("(min-width: 721px)").matches && anchor) {
       var rect = anchor.getBoundingClientRect();
       var width = menu.offsetWidth, height = menu.offsetHeight;
@@ -204,7 +224,7 @@
   };
 
   doc.addEventListener("mousedown", function (e) {
-    if (openMenu && !e.target.closest(".menu")) { App.closeMenu(); }
+    if (openMenu && !e.target.closest(".mail-menu")) { App.closeMenu(); }
   }, true);
   doc.addEventListener("keydown", function (e) { if (e.key === "Escape") { App.closeMenu(); } });
   window.addEventListener("resize", function () { App.closeMenu(); });
@@ -232,59 +252,35 @@
 
   App.folderLabel = function (folder) { return App.labels[folder.kind] || folder.name; };
 
-  // ---- Dialogs (the shared <dialog> styles; full screen on phones) ---------------------------
-  App.confirm = function (message) {
-    return new Promise(function (resolve) {
-      var dialog = doc.getElementById("mm-confirm");
-      dialog.querySelector(".confirm__text").textContent = message;
-      dialog.returnValue = "";
-      var done = function () { dialog.removeEventListener("close", done); resolve(dialog.returnValue === "ok"); };
-      dialog.addEventListener("close", done);
-      dialog.showModal();
-    });
+  // ---- Dialogs: the ones of the toolkit (MatUi), full screen on phones ----------------------------------------------------------
+  /** Asks first; resolves with true when the person agrees. danger: the confirming button is the red one, Cancel comes first (DIALOG-06). */
+  App.confirm = function (message, options) {
+    options = options || {};
+    return window.MatUi.confirm(message, { danger: !!options.danger, ok: options.ok });
   };
 
-  /** A dialog that only shows something: the Close button, Escape and a click on the backdrop close it. */
+  /** A dialog that only shows something: the Close button, Escape and a click outside close it. body: a node. */
   App.infoDialog = function (title, subtitle, body) {
-    var dialog = App.el("dialog", { class: "dialog dialog--sm" }, [
-      App.el("div", { class: "dialog__header" }, [
-        App.el("div", null, [App.el("h2", { class: "dialog__title", text: title }), subtitle ? App.el("div", { class: "dialog__subtitle muted", text: subtitle }) : null]),
-        App.iconButton("x", App.T("close"), function () { dialog.close(); })
-      ]),
-      App.el("div", { class: "dialog__body" }, [body]),
-      App.el("div", { class: "dialog__footer" }, [App.el("form", { method: "dialog" }, [App.el("button", { type: "submit", class: "btn btn--secondary", text: App.T("close") })])])
+    var dialog = App.el("dialog", { class: "mat-dialog mat-dialog--sm", "aria-label": title }, [
+      App.el("div", { class: "mat-dialog__form" }, [
+        App.el("div", { class: "mat-dialog__head" }, [
+          App.el("div", { class: "mail-dialog__title" }, [App.el("h2", { class: "mat-dialog__title", text: title }), subtitle ? App.el("small", { class: "mat-muted", text: subtitle }) : null]),
+          App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--icon mat-dialog__close", "data-dialog-close": "", "aria-label": App.T("close") }, [App.icon("x")])
+        ]),
+        App.el("div", { class: "mat-dialog__body" }, [body]),
+        App.el("div", { class: "mat-dialog__foot" }, [App.el("div", { class: "mat-btn-row mat-btn-row--plain" }, [App.el("button", { type: "button", class: "mat-btn mat-btn--secondary", "data-dialog-close": "", text: App.T("close") })])])
+      ])
     ]);
     doc.body.appendChild(dialog);
     dialog.addEventListener("close", function () { dialog.remove(); });
-    dialog.addEventListener("click", function (e) { if (e.target === dialog) { dialog.close(); } });
-    dialog.showModal();
+    window.MatUi.dialog.open(dialog);
     return dialog;
   };
 
+  /** Asks for one line of text; resolves with the trimmed text, or null when the person cancels. */
   App.promptDialog = function (title, value, label) {
-    return new Promise(function (resolve) {
-      var input = App.el("input", { type: "text", class: "form-control", value: value || "", "aria-label": label || title });
-      var form = App.el("form", { method: "dialog", class: "form" }, [
-        App.el("div", { class: "form-row" }, [App.el("label", { text: label || title }), input]),
-        App.el("div", { class: "btn-row" }, [
-          App.el("button", { type: "submit", class: "btn btn--primary", value: "ok", text: App.T("ok") }),
-          App.el("button", { type: "submit", class: "btn btn--secondary", value: "cancel", formnovalidate: true, text: App.T("cancel") })
-        ])
-      ]);
-      var dialog = App.el("dialog", { class: "dialog dialog--sm" }, [
-        App.el("div", { class: "dialog__header" }, [App.el("h2", { class: "dialog__title", text: title })]),
-        App.el("div", { class: "dialog__body" }, [form])
-      ]);
-      doc.body.appendChild(dialog);
-      dialog.addEventListener("close", function () {
-        var ok = dialog.returnValue === "ok";
-        var result = ok ? input.value.trim() : null;
-        dialog.remove();
-        resolve(result);
-      });
-      dialog.showModal();
-      input.focus();
-      input.select();
+    return window.MatUi.prompt(label || title, { title: title, value: value || "", ok: App.T("ok"), cancel: App.T("cancel") }).then(function (text) {
+      return text === null || text === undefined ? null : String(text).trim();
     });
   };
 })();

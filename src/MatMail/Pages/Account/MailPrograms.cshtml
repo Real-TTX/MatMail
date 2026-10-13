@@ -2,73 +2,67 @@
 @model MatMail.Pages.Account.MailProgramsModel
 @{
     ViewData["Breadcrumb"] = "Account / Mail programs";
-    ViewData["Title"] = L["My account"].Value;
+    ViewData["Title"] = L["Mail programs"].Value;
+    ViewData["Description"] = L["Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed."].Value;
+    ViewData["Width"] = "narrow";
     string user = Model.PrimaryAddress ?? Model.LoginName;
 }
 
-<partial name="_AccountTabs" model='"mailprograms"' />
-
-<p class="muted">@L["Use these settings in Outlook, Thunderbird, Apple Mail or on your phone. Your mail is kept here; the passwords of the mail providers are never needed."]</p>
-
 @if (Model.NeedsAppPassword)
 {
-    <div class="notice notice--info"><mm-icon name="info" class="notice__icon" /><span class="notice__text">@L["Mail programs cannot ask for a code. While two-factor authentication is on or required for your account, they sign in with an app password instead of your password."] <a href="/Account/Security">@L["Create an app password"]</a></span></div>
+    <mm-alert kind="info">@L["Mail programs cannot ask for a code. While two-factor authentication is on or required for your account, they sign in with an app password instead of your password."] <a href="/Account/Security">@L["Create an app password"]</a></mm-alert>
 }
 
 @if (Model.SelfSignedCertificate)
 {
-    <div class="notice notice--warn"><mm-icon name="alert" class="notice__icon" /><span class="notice__text">@L["This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings."]</span></div>
+    <mm-alert kind="warn">@L["This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings."]</mm-alert>
 }
 
-<div class="card-grid">
-    <section class="card">
-        <h2 class="card__title"><mm-icon name="inbox" />@L["Incoming mail (IMAP)"]</h2>
-        @if (!Model.ImapEnabled || (Model.ImapTlsPort == 0 && Model.ImapStartTlsPort == 0))
-        {
-            <p class="muted">@L["The IMAP server is switched off."]</p>
-        }
-        else
-        {
-            <dl class="kv">
-                <dt>@L["Server"]</dt><dd class="mono">@Model.Host</dd>
-                @if (Model.ImapTlsPort != 0)
-                {
-                    <dt>@L["Port"]</dt><dd class="mono">@Model.ImapTlsPort <span class="muted">· SSL/TLS</span></dd>
-                }
-                @if (Model.ImapStartTlsPort != 0)
-                {
-                    <dt>@(Model.ImapTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.ImapStartTlsPort <span class="muted">· STARTTLS</span></dd>
-                }
-                <dt>@L["User name"]</dt><dd class="mono">@user</dd>
-                <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
-            </dl>
-        }
-    </section>
+<mm-card title='@L["Incoming mail (IMAP)"]' icon="inbox">
+    @if (!Model.ImapEnabled || (Model.ImapTlsPort == 0 && Model.ImapStartTlsPort == 0))
+    {
+        <p class="mat-muted">@L["The IMAP server is switched off."]</p>
+    }
+    else
+    {
+        <dl class="mat-kv">
+            <dt>@L["Server"]</dt><dd class="mat-mono">@Model.Host</dd>
+            @if (Model.ImapTlsPort != 0)
+            {
+                <dt>@L["Port"]</dt><dd class="mat-mono">@Model.ImapTlsPort <span class="mat-muted">· SSL/TLS</span></dd>
+            }
+            @if (Model.ImapStartTlsPort != 0)
+            {
+                <dt>@(Model.ImapTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mat-mono">@Model.ImapStartTlsPort <span class="mat-muted">· STARTTLS</span></dd>
+            }
+            <dt>@L["User name"]</dt><dd class="mat-mono">@user</dd>
+            <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
+        </dl>
+    }
+</mm-card>
 
-    <section class="card">
-        <h2 class="card__title"><mm-icon name="send" />@L["Outgoing mail (SMTP)"]</h2>
-        @if (!Model.SmtpEnabled || (Model.SmtpTlsPort == 0 && Model.SmtpSubmissionPort == 0))
-        {
-            <p class="muted">@L["The SMTP server is switched off."]</p>
-        }
-        else
-        {
-            <dl class="kv">
-                <dt>@L["Server"]</dt><dd class="mono">@Model.Host</dd>
-                @if (Model.SmtpTlsPort != 0)
-                {
-                    <dt>@L["Port"]</dt><dd class="mono">@Model.SmtpTlsPort <span class="muted">· SSL/TLS</span></dd>
-                }
-                @if (Model.SmtpSubmissionPort != 0)
-                {
-                    <dt>@(Model.SmtpTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mono">@Model.SmtpSubmissionPort <span class="muted">· STARTTLS</span></dd>
-                }
-                <dt>@L["Sign-in"]</dt><dd>@(Model.NeedsAppPassword ? L["Required (app password)"] : L["Required (normal password)"])</dd>
-                <dt>@L["User name"]</dt><dd class="mono">@user</dd>
-                <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
-            </dl>
-        }
-    </section>
-</div>
+<mm-card title='@L["Outgoing mail (SMTP)"]' icon="send">
+    @if (!Model.SmtpEnabled || (Model.SmtpTlsPort == 0 && Model.SmtpSubmissionPort == 0))
+    {
+        <p class="mat-muted">@L["The SMTP server is switched off."]</p>
+    }
+    else
+    {
+        <dl class="mat-kv">
+            <dt>@L["Server"]</dt><dd class="mat-mono">@Model.Host</dd>
+            @if (Model.SmtpTlsPort != 0)
+            {
+                <dt>@L["Port"]</dt><dd class="mat-mono">@Model.SmtpTlsPort <span class="mat-muted">· SSL/TLS</span></dd>
+            }
+            @if (Model.SmtpSubmissionPort != 0)
+            {
+                <dt>@(Model.SmtpTlsPort != 0 ? L["Alternative"].Value : L["Port"].Value)</dt><dd class="mat-mono">@Model.SmtpSubmissionPort <span class="mat-muted">· STARTTLS</span></dd>
+            }
+            <dt>@L["Sign-in"]</dt><dd>@(Model.NeedsAppPassword ? L["Required (app password)"] : L["Required (normal password)"])</dd>
+            <dt>@L["User name"]</dt><dd class="mat-mono">@user</dd>
+            <dt>@L["Password"]</dt><dd>@(Model.NeedsAppPassword ? L["An app password"] : L["Your MatMail password"])</dd>
+        </dl>
+    }
+</mm-card>
 
-<p class="muted page-note">@L["Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox."]</p>
+<p class="mat-muted">@L["Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox."]</p>

@@ -5,6 +5,7 @@
     ViewData["Description"] = L["Signatures are offered when writing a message. A footer is added by the server to every outgoing message, whatever program sent it."].Value;
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search signatures…"]' />
     <mm-toolbar-select name="Kind" label='@L["Type"]' value="@Model.Kind">
@@ -30,34 +31,34 @@
         <tr>
             <th>@L["Name"]</th>
             <th>@L["Type"]</th>
-            <th class="hide-sm">@L["Applies to"]</th>
+            <th class="mat-hide-sm">@L["Applies to"]</th>
             <th>@L["Status"]</th>
-            <th class="is-actions"></th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Signatures/Edit?id=@item.Id" tabindex="0">
-                <td class="cell-title">@item.Name</td>
+            <tr data-row-href="/Admin/Signatures/Edit?id=@item.Id">
+                <td><div class="mat-table__name"><span><a href="/Admin/Signatures/Edit?id=@item.Id">@item.Name</a></span></div></td>
                 <td>
-                    @if (item.Kind == SignatureKind.Footer) { <mm-badge kind="warn" icon="lock">@L["Footer"]</mm-badge> }
+                    @if (item.Kind == SignatureKind.Footer) { <mm-badge icon="lock">@L["Footer"]</mm-badge> }
                     else
                     {
-                        <mm-badge kind="info">@L["Signature"]</mm-badge>
-                        @if (item.AddOnServer) { <mm-badge kind="warn" icon="lock">@L["Also on the server"]</mm-badge> }
+                        <mm-badge icon="pen-line">@L["Signature"]</mm-badge>
+                        @if (item.AddOnServer) { <mm-badge icon="server">@L["Also on the server"]</mm-badge> }
                     }
                 </td>
-                <td class="hide-sm">@Model.Target(item)</td>
+                <td class="mat-hide-sm">@Model.Target(item)</td>
                 <td>
                     @if (!item.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }
                     else
                     {
                         <mm-badge kind="ok">@L["Active"]</mm-badge>
-                        @if (item.IsDefault) { <mm-badge kind="info" icon="star">@L["Default"]</mm-badge> }
+                        @if (item.IsDefault) { <mm-badge icon="star">@L["Default"]</mm-badge> }
                     }
                 </td>
-                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Signatures/Edit?id=@item.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+                <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Admin/Signatures/Edit?id=@item.Id" data-tip="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></div></td>
             </tr>
         }
     </tbody>
@@ -68,3 +69,4 @@
 <mm-list-actions>
     <mm-button variant="primary" href="/Admin/Signatures/Edit" icon="plus">@L["New signature"]</mm-button>
 </mm-list-actions>
+</mm-list>

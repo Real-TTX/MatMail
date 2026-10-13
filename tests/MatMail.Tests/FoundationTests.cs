@@ -121,21 +121,3 @@ public class ConfigTests : IDisposable
         }
     }
 }
-
-public class IconTests
-{
-    [Theory]
-    [InlineData("mail")]
-    [InlineData("inbox")]
-    [InlineData("trash")]
-    [InlineData("star")]
-    public void Common_icons_exist(string name) => Assert.True(Icons.Exists(name));
-
-    [Fact]
-    public void The_sprite_contains_every_icon_once()
-    {
-        string sprite = Icons.Sprite();
-        Assert.Contains("id=\"i-mail\"", sprite);
-        Assert.Equal(sprite.IndexOf("id=\"i-mail\"", StringComparison.Ordinal), sprite.LastIndexOf("id=\"i-mail\"", StringComparison.Ordinal));
-    }
-}

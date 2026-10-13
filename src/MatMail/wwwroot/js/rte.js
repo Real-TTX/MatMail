@@ -25,12 +25,14 @@
     return node;
   }
 
+  // The icons come from the two sprites of the page: the toolkit's (mat-i-NAME) and MatMail's own (mat-il-NAME).
   function icon(name) {
     var svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "icon");
+    svg.setAttribute("class", "mat-icon");
     svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
     var use = doc.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", "#i-" + name);
+    use.setAttribute("href", (doc.getElementById("mat-i-" + name) ? "#mat-i-" : "#mat-il-") + name);
     svg.appendChild(use);
     return svg;
   }
@@ -41,11 +43,11 @@
     var T = function (key, fallback) { return texts[key] || fallback; };
     var placeholders = options.placeholders || [];
 
-    var editor = el("div", { class: "rte__editor", contenteditable: "true", role: "textbox", "aria-multiline": "true", "aria-label": T("content", "Content"), spellcheck: "true" });
-    var toolbar = el("div", { class: "rte__toolbar", role: "toolbar" });
+    var editor = el("div", { class: "mm-rte__editor", contenteditable: "true", role: "textbox", "aria-multiline": "true", "aria-label": T("content", "Content"), spellcheck: "true" });
+    var toolbar = el("div", { class: "mm-rte__toolbar mat-btn-toolbar", role: "toolbar" });
     var imageBar = buildImageBar();
-    var root = el("div", { class: "rte" }, [toolbar, imageBar.node, editor]);
-    var fileInput = el("input", { type: "file", accept: "image/png,image/jpeg,image/gif,image/webp", hidden: "hidden" });
+    var root = el("div", { class: "mm-rte" }, [toolbar, imageBar.node, editor]);
+    var fileInput = el("input", { type: "file", accept: "image/png,image/jpeg,image/gif,image/webp", hidden: "hidden", "aria-label": T("picture", "Insert picture") });
     var savedRange = null;
     var sourceMode = false;
     var selectedImage = null;
@@ -54,13 +56,13 @@
     root.appendChild(fileInput);
     root.appendChild(textarea);
     textarea.hidden = true;
-    textarea.classList.add("rte__source");
+    textarea.classList.add("mm-rte__source");
     // Whatever the textarea holds is shown as live markup: nothing active may come along (the server cleans it again when it is saved).
     editor.innerHTML = clean(textarea.value);
 
     // ---- toolbar ---------------------------------------------------------------------------------
     function button(name, title, run, label) {
-      var b = el("button", { type: "button", class: "rte__button", title: title, "aria-label": title });
+      var b = el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--sm mm-rte__button" + (label ? "" : " mat-btn--icon"), "data-tip": title, "aria-label": title });
       if (label) { b.textContent = label; } else { b.appendChild(icon(name)); }
       b.addEventListener("mousedown", function (e) { e.preventDefault(); });
       b.addEventListener("click", function () { if (!sourceMode) { restoreRange(); run(); sync(); } });
@@ -68,7 +70,7 @@
       return b;
     }
 
-    function separator() { toolbar.appendChild(el("span", { class: "rte__separator", "aria-hidden": "true" })); }
+    function separator() { toolbar.appendChild(el("span", { class: "mm-rte__separator", "aria-hidden": "true" })); }
 
     function command(name, value) { doc.execCommand(name, false, value === undefined ? null : value); }
 
@@ -77,7 +79,7 @@
     button("underline", T("underline", "Underline"), function () { command("underline"); });
     separator();
 
-    var size = el("select", { class: "rte__select", title: T("size", "Text size"), "aria-label": T("size", "Text size") }, [
+    var size = el("select", { class: "mat-select mat-select--sm mm-rte__select", "data-tip": T("size", "Text size"), "aria-label": T("size", "Text size") }, [
       el("option", { value: "", text: T("size", "Text size") }),
       el("option", { value: "1", text: T("sizeSmall", "Small") }),
       el("option", { value: "3", text: T("sizeNormal", "Normal") }),
@@ -87,7 +89,7 @@
     size.addEventListener("change", function () { if (size.value) { restoreRange(); command("fontSize", size.value); sync(); } size.value = ""; });
     toolbar.appendChild(size);
 
-    var color = el("input", { type: "color", class: "rte__color", value: "#202124", title: T("color", "Text colour"), "aria-label": T("color", "Text colour") });
+    var color = el("input", { type: "color", class: "mm-rte__color", value: "#202124", "data-tip": T("color", "Text colour"), "aria-label": T("color", "Text colour") });
     color.addEventListener("input", function () { restoreRange(); command("foreColor", color.value); sync(); });
     toolbar.appendChild(color);
     separator();
@@ -95,8 +97,9 @@
     button("list", T("bulletList", "Bulleted list"), function () { command("insertUnorderedList"); });
     button("list-ordered", T("numberList", "Numbered list"), function () { command("insertOrderedList"); });
     button("link", T("link", "Link"), function () {
-      var url = window.prompt(T("linkPrompt", "Web address (or mailto:)"), "https://");
-      if (url) { command("createLink", url); }
+      window.MatUi.prompt(T("linkPrompt", "Web address (or mailto:)"), { value: "https://", title: T("link", "Link"), ok: T("ok", "OK"), cancel: T("cancel", "Cancel") }).then(function (url) {
+        if (url) { restoreRange(); command("createLink", url); sync(); }
+      });
     });
     button("image", T("picture", "Insert picture"), function () { fileInput.click(); });
     button("minus", T("rule", "Horizontal line"), function () { command("insertHorizontalRule"); });
@@ -104,7 +107,7 @@
     separator();
 
     if (placeholders.length) {
-      var holder = el("select", { class: "rte__select", title: T("placeholder", "Insert placeholder"), "aria-label": T("placeholder", "Insert placeholder") },
+      var holder = el("select", { class: "mat-select mat-select--sm mm-rte__select", "data-tip": T("placeholder", "Insert placeholder"), "aria-label": T("placeholder", "Insert placeholder") },
         [el("option", { value: "", text: T("placeholder", "Insert placeholder") })].concat(placeholders.map(function (name) { return el("option", { value: name, text: "{{" + name + "}}" }); })));
       holder.addEventListener("change", function () {
         if (holder.value) { restoreRange(); command("insertText", "{{" + holder.value + "}}"); sync(); }
@@ -218,7 +221,7 @@
       return null;
     }
 
-    function complain(message) { if (options.onError) { options.onError(message); } else { window.alert(message); } }
+    function complain(message) { if (options.onError) { options.onError(message); } else { window.MatUi.alert(message); } }
 
     editor.addEventListener("paste", function (e) {
       var data = e.clipboardData;
@@ -268,10 +271,10 @@
 
     // ---- selected picture: width and removal -----------------------------------------------------------
     function buildImageBar() {
-      var width = el("input", { type: "number", min: "16", max: "1200", class: "form-control rte__width", "aria-label": T("pictureWidth", "Width in pixels") });
-      var remove = el("button", { type: "button", class: "btn btn--secondary btn--sm", text: T("pictureRemove", "Remove picture") });
-      var node = el("div", { class: "rte__imagebar", hidden: "hidden" }, [
-        el("label", { text: T("pictureWidth", "Width in pixels") }), width, remove
+      var width = el("input", { type: "number", min: "16", max: "1200", class: "mat-input mat-input--sm mm-rte__width", "aria-label": T("pictureWidth", "Width in pixels") });
+      var remove = el("button", { type: "button", class: "mat-btn mat-btn--secondary mat-btn--sm", text: T("pictureRemove", "Remove picture") });
+      var node = el("div", { class: "mm-rte__imagebar", hidden: "hidden" }, [
+        el("label", { class: "mat-label", text: T("pictureWidth", "Width in pixels") }), width, remove
       ]);
       width.addEventListener("input", function () {
         if (selectedImage && width.value) { selectedImage.setAttribute("width", width.value); selectedImage.removeAttribute("height"); selectedImage.style.width = ""; sync(); }
@@ -334,7 +337,7 @@
     Array.prototype.forEach.call(doc.querySelectorAll("textarea[data-rich-text]"), function (area) {
       if (area.getAttribute("data-rte-ready")) { return; }
       area.setAttribute("data-rte-ready", "true");
-      var row = area.closest(".form-row") || area.parentNode;
+      var row = area.closest(".mat-field") || area.parentNode;
       var frame = row.querySelector("[data-rte-preview]");
       attach(area, {
         placeholders: (area.getAttribute("data-placeholders") || "").split(",").map(function (name) { return name.trim(); }).filter(Boolean),

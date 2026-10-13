@@ -1,3 +1,4 @@
+using MatMail.Configuration;
 using MatMail.Data;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Account;
 
-public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, SessionCache cache, ThemeService themes, IStringLocalizer<SharedResource> l) : PageModel
+public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, SessionCache cache, ThemeService themes, BrandingService branding, AppConfig config, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -16,7 +17,7 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
     public class InputModel
     {
         public string Mode { get; set; } = "system";
-        public string Accent { get; set; } = "blue";
+        public string Accent { get; set; } = "default";
         public string Culture { get; set; } = string.Empty;
         public string TextSize { get; set; } = "normal";
         public string Density { get; set; } = "comfortable";
@@ -36,6 +37,8 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
     private static string OffsetText(TimeSpan offset)
         => (offset < TimeSpan.Zero ? "-" : "+") + Math.Abs(offset.Hours).ToString("00") + ":" + Math.Abs(offset.Minutes).ToString("00");
 
+    public IReadOnlyList<(string Key, string Label)> AccentChoices => ThemeService.AccentChoices(l);
+
     public IReadOnlyList<SelectListItem> Cultures => new[]
     {
         new SelectListItem(l["Browser setting / default"].Value, string.Empty),
@@ -43,8 +46,15 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         new SelectListItem("English", "en-US"),
     };
 
-    public void OnGet()
+    /// <summary>The colour of the tenant (#rrggbb), or null: what the choice "Default" looks like.</summary>
+    public string? TenantColour { get; private set; }
+
+    /// <summary>The preset the administrator made the default of the installation, or null for the colour of the app.</summary>
+    public string? DefaultPreset => ThemeService.NormalizeAccent(config.Display.ThemeAccent) is { } preset && preset != "default" ? preset : null;
+
+    public async Task OnGetAsync()
     {
+        TenantColour = (await branding.GetAsync(currentUser.TenantId)).AccentColor;
         ThemeChoice theme = themes.Resolve();
         Input = new InputModel
         {
@@ -69,7 +79,7 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         }
 
         user.ThemeMode = ThemeService.Modes.Contains(Input.Mode) ? Input.Mode : "system";
-        user.ThemeAccent = ThemeService.Accents.Contains(Input.Accent) ? Input.Accent : "blue";
+        user.ThemeAccent = ThemeService.NormalizeAccent(Input.Accent) ?? "default";
         user.Culture = Cultures.Any(c => c.Value == Input.Culture && c.Value.Length > 0) ? Input.Culture : null;
         user.TextSize = ThemeService.TextSizes.Contains(Input.TextSize) ? Input.TextSize : "normal";
         user.Density = ThemeService.Densities.Contains(Input.Density) ? Input.Density : "comfortable";
@@ -84,16 +94,16 @@ public class AppearanceModel(MatMailDbContext db, CurrentUser currentUser, Sessi
         return RedirectToPage();
     }
 
-    /// <summary>The quick theme switch in the account menu posts here (fetch, no redirect).</summary>
-    public async Task<IActionResult> OnPostModeAsync(string mode)
+    /// <summary>The theme button of the menu (the toolkit posts <c>theme</c> and the token with fetch) saves here, without a redirect.</summary>
+    public async Task<IActionResult> OnPostModeAsync(string theme)
     {
         User? user = await LoadUserAsync();
-        if (user is null || !ThemeService.Modes.Contains(mode))
+        if (user is null || !ThemeService.Modes.Contains(theme))
         {
             return BadRequest();
         }
 
-        user.ThemeMode = mode;
+        user.ThemeMode = theme;
         await db.SaveChangesAsync();
         cache.InvalidateUser(user.Id);
         return new OkResult();

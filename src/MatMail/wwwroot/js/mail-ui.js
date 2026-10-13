@@ -8,7 +8,7 @@
   var T = App.T;
 
   var els = {};
-  var KIND_ICONS = { Inbox: "inbox", Drafts: "file-text", Sent: "send", Archive: "archive", Junk: "spam", Trash: "trash", Custom: "folder" };
+  var KIND_ICONS = { Inbox: "inbox", Drafts: "file-text", Sent: "send", Archive: "archive", Junk: "octagon-alert", Trash: "trash", Custom: "folder" };
 
   // ---------------------------------------------------------------------------------------------
   // Start
@@ -270,8 +270,8 @@
     els.folders.innerHTML = "";
     if (App.outbox.state.count) {
       // What was written without a connection and waits for it: always in sight until it is gone.
-      var waiting = App.el("button", { type: "button", class: "folder-item folder-item--outbox", title: T("outbox") }, [
-        App.icon("clock"), App.el("span", { class: "folder-item__name", text: T("outbox") }), App.el("span", { class: "folder-item__count", text: String(App.outbox.state.count) })
+      var waiting = App.el("button", { type: "button", class: "mat-nav__item folder-item folder-item--outbox", title: T("outbox") }, [
+        App.icon("clock"), App.el("span", { class: "folder-item__name", text: T("outbox") }), App.el("span", { class: "mat-nav__badge mat-nav__badge--warn", text: String(App.outbox.state.count) })
       ]);
       waiting.addEventListener("click", function () { App.outbox.open(); });
       els.folders.appendChild(waiting);
@@ -287,7 +287,7 @@
       var head = App.el("div", { class: "folder-group__head" });
       var heading = App.el("button", { type: "button", class: "folder-group__title", "aria-expanded": String(!collapsed) }, [
         box.isOwn ? null : App.icon(collapsed ? "chevron-right" : "chevron-down"),   // the own mailbox is always open
-        App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert-circle" : "user"),
+        App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert" : "user"),
         App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name })
       ]);
       heading.addEventListener("click", function () { if (box.isOwn) { return; } localStorage.setItem(collapsedKey, collapsed ? "0" : "1"); renderFolders(); });
@@ -311,7 +311,7 @@
           if (folded) { hideBelow = folder.depth; }
         });
         if (box.canManage && box.type !== "Unassigned") {
-          var add = App.el("button", { type: "button", class: "folder-item folder-item--add" }, [App.icon("plus"), App.el("span", { text: T("newFolder") })]);
+          var add = App.el("button", { type: "button", class: "mat-nav__item folder-item folder-item--add" }, [App.icon("plus"), App.el("span", { text: T("newFolder") })]);
           add.addEventListener("click", function () { createFolder(box, null); });
           group.appendChild(add);
         }
@@ -321,7 +321,7 @@
         if (usage) {
           group.appendChild(App.el("div", { class: "folder-usage", title: usage.title }, [App.icon("hard-drive"), App.el("span", { text: usage.text })]));
           if (usage.percent !== null) {
-            group.appendChild(App.el("div", { class: "folder-usage-bar" + (usage.state ? " is-" + usage.state : ""), role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(usage.percent) }, [App.el("span", { style: "width:" + Math.max(usage.percent, box.usedBytes ? 1 : 0) + "%" })]));
+            group.appendChild(meter(Math.max(usage.percent, box.usedBytes ? 1 : 0), usage.state, T("storage"), "folder-usage-bar", true));
           }
         }
       }
@@ -329,6 +329,17 @@
       els.folders.appendChild(group);
     });
     doc.title = pageTitle();
+  }
+
+  /**
+   * A bar of the toolkit for a share (the storage): the width is the custom property --mat-meter of its fill, set here and not in a style attribute.
+   * state: "" fine, "warn" getting full, "high" or "full" a problem.
+   */
+  function meter(percent, state, label, extraClass, small) {
+    var tone = state === "warn" ? "warn" : state === "high" || state === "full" ? "error" : "";
+    var fill = App.el("div", { class: "mat-meter__fill", "data-value": String(percent), "data-tone": tone || null });
+    fill.style.setProperty("--mat-meter", percent + "%");
+    return App.el("div", { class: "mat-meter" + (small ? " mat-meter--sm" : "") + (extraClass ? " " + extraClass : ""), role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(percent), "aria-label": label }, [fill]);
   }
 
   /** The folders below the one at <index> (they follow it in the list and are deeper). */
@@ -367,19 +378,18 @@
     var count = own + (tree.hiddenUnread || 0);
     var labelText = App.folderLabel(folder);
     var node = App.el("a", {
-      class: "folder-item" + (active ? " is-active" : "") + (count && folder.kind !== "Drafts" ? " has-unread" : ""),
+      class: "mat-nav__item folder-item" + (active ? " is-active" : "") + (count && folder.kind !== "Drafts" ? " has-unread" : ""),
       href: "#mailbox=" + box.id + "&folder=" + folder.id,
-      title: labelText,
-      style: "padding-left:" + (1.5 + folder.depth * 0.9) + "rem"   // the gutter on the left holds the fold arrow of folders with subfolders
+      title: labelText
     }, [
       App.icon(KIND_ICONS[folder.kind] || "folder"),
       App.el("span", { class: "folder-item__name", text: labelText }),
-      count ? App.el("span", { class: "folder-item__count", text: String(count) }) : null
+      count ? App.el("span", { class: "mat-nav__badge folder-item__count" + (folder.kind === "Drafts" ? " mat-nav__badge--plain" : ""), text: String(count) }) : null
     ]);
 
+    node.style.setProperty("--mm-depth", String(folder.depth));   // the gutter on the left holds the fold arrow of folders with subfolders
     if (tree.hasChildren) {
       var fold = App.iconButton(tree.folded ? "chevron-right" : "chevron-down", tree.folded ? T("expand") : T("collapse"), function (e) { e.preventDefault(); e.stopPropagation(); setFolded(folder, !tree.folded); }, "folder-item__fold");
-      fold.style.left = (0.15 + folder.depth * 0.9) + "rem";
       node.appendChild(fold);
     }
 
@@ -527,7 +537,7 @@
     App.get("/api/mail/mailboxes/" + box.id + "/info").then(function (info) {
       var body = App.el("div", { class: "mailbox-info" });
 
-      var facts = App.el("dl", { class: "kv" });
+      var facts = App.el("dl", { class: "mat-kv" });
       var fact = function (label, values) {
         values = [].concat(values).filter(function (v) { return v !== null && v !== undefined && v !== ""; });
         if (!values.length) { return; }
@@ -551,12 +561,12 @@
           var label = f.kind === "Custom" ? f.path.split("/").join(" › ") : App.folderLabel({ kind: f.kind, name: f.name });
           list.appendChild(App.el("li", { class: "folder-bars__row" }, [
             App.el("span", { class: "folder-bars__name", text: label, title: label }),
-            App.el("span", { class: "folder-bars__track" }, [App.el("span", { class: "folder-bars__fill", style: "width:" + Math.max(f.bytes ? 2 : 0, Math.round(f.bytes * 100 / largest)) + "%" })]),
-            App.el("span", { class: "folder-bars__size", text: App.formatSize(f.bytes), title: T("storageMessages").replace("{0}", Number(f.messages).toLocaleString()) })
+            meter(Math.max(f.bytes ? 2 : 0, Math.round(f.bytes * 100 / largest)), "", label, "folder-bars__track", true),
+            App.el("span", { class: "folder-bars__size mat-mono", text: App.formatSize(f.bytes), title: T("storageMessages").replace("{0}", Number(f.messages).toLocaleString()) })
           ]));
         });
         body.appendChild(list);
-        if (info.folders.length > 8) { body.appendChild(App.el("p", { class: "muted", text: T("moreFolders").replace("{0}", String(info.folders.length - 8)) })); }
+        if (info.folders.length > 8) { body.appendChild(App.el("p", { class: "mat-muted", text: T("moreFolders").replace("{0}", String(info.folders.length - 8)) })); }
       }
 
       App.infoDialog(info.name, T("mailboxInfoTitle"), body);
@@ -569,26 +579,24 @@
     var used = info.usedBytes, quota = info.quotaBytes;
     if (quota) {
       var level = usageLevel(used, quota), percent = level.percent;
-      var bar = App.el("div", { class: "meter__bar" + (level.state ? " is-" + level.state : ""), role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(percent), "aria-label": T("storage") });
-      bar.appendChild(App.el("div", { class: "meter__fill", style: "width:" + Math.max(used ? 1 : 0, percent) + "%" }));
-      wrap.appendChild(bar);
+      wrap.appendChild(meter(Math.max(used ? 1 : 0, percent), level.state, T("storage"), "", false));
       wrap.appendChild(App.el("div", { class: "meter__text" }, [
         App.el("strong", { text: T("storageOf").replace("{0}", App.formatSize(used)).replace("{1}", App.formatSize(quota)) }),
         App.el("span", { text: percent + " %" })
       ]));
-      if (used >= quota) { wrap.appendChild(App.el("div", { class: "mail-notice is-error", text: T("storageFull") })); }
+      if (used >= quota) { wrap.appendChild(notice(T("storageFull"), true)); }
       // Deleting moves a message to the trash, where it still takes room: when space is short, say where it is.
       var trash = (info.folders || []).filter(function (f) { return f.kind === "Trash"; })[0];
       if (percent >= 90 && trash && trash.bytes) { wrap.appendChild(App.el("div", { class: "meter__more", text: T("storageTrash").replace("{0}", App.formatSize(trash.bytes)) })); }
     } else {
       wrap.appendChild(App.el("div", { class: "meter__text" }, [
         App.el("strong", { text: T("storageUsed").replace("{0}", App.formatSize(used)) }),
-        App.el("span", { class: "muted", text: T("noLimit") })
+        App.el("span", { class: "mat-muted", text: T("noLimit") })
       ]));
     }
     var more = [T("storageMessages").replace("{0}", Number(info.messages).toLocaleString())];
     if (info.remoteBytes) { more.push(T("storageRemote").replace("{0}", App.formatSize(info.remoteBytes))); }
-    wrap.appendChild(App.el("div", { class: "meter__more muted", text: more.join(" · ") }));
+    wrap.appendChild(App.el("div", { class: "meter__more mat-muted", text: more.join(" · ") }));
     return wrap;
   }
 
@@ -652,7 +660,7 @@
   }
 
   function deleteFolder(folder) {
-    App.confirm(T("confirmDeleteFolder")).then(function (ok) {
+    App.confirm(T("confirmDeleteFolder"), { danger: true }).then(function (ok) {
       if (!ok) { return; }
       App.api("DELETE", "/api/mail/folders/" + folder.id).then(function () {
         if (S.folderId === folder.id) { navigate({ folder: 0, page: 1, m: 0 }); }
@@ -669,7 +677,7 @@
   }
 
   function emptyFolder(folder) {
-    App.confirm(T("confirmEmpty")).then(function (ok) {
+    App.confirm(T("confirmEmpty"), { danger: true }).then(function (ok) {
       if (!ok) { return; }
       App.post("/api/mail/folders/" + folder.id + "/empty").then(function (result) {
         App.applyCounts(result.counts);
@@ -715,10 +723,18 @@
     });
   }
 
+  /** A message of the toolkit (an alert) as a node: an icon and the text. */
+  function notice(message, error) {
+    return App.el("div", { class: "mat-alert mail-notice " + (error ? "mat-alert--danger" : "mat-alert--info"), role: error ? "alert" : "status" }, [
+      App.svg(error ? "x-circle" : "info"), App.el("div", { class: "mat-alert__body", text: message })
+    ]);
+  }
+
   function showNotice(message, error) {
     els.notice.hidden = !message;
-    els.notice.className = "mail-notice" + (error ? " is-error" : "");
-    els.notice.textContent = message || "";
+    els.notice.innerHTML = "";
+    els.notice.className = "mail-notice-host";
+    if (message) { els.notice.appendChild(notice(message, error)); }
   }
 
   function currentFolder() { var hit = App.folder(S.folderId); return hit ? hit.folder : null; }
@@ -743,8 +759,8 @@
       check.addEventListener("change", function () { toggleSelect(item.id, check.checked, row); });
       row.appendChild(App.el("label", { class: "mail-row__check" }, [check]));
 
-      var star = App.el("button", { type: "button", class: "mail-row__star" + (item.isStarred ? " is-on" : ""), title: T("star"), "aria-pressed": String(item.isStarred) });
-      star.innerHTML = '<svg class="icon' + (item.isStarred ? " icon--filled" : "") + '" aria-hidden="true"><use href="#i-star"/></svg>';
+      var star = App.el("button", { type: "button", class: "mail-row__star" + (item.isStarred ? " is-on" : ""), "data-tip": T("star"), "aria-label": T("star"), "aria-pressed": String(item.isStarred) });
+      star.appendChild(App.icon("star"));
       star.addEventListener("click", function (e) { e.stopPropagation(); toggleStar(item, star); });
       row.appendChild(star);
 
@@ -810,7 +826,6 @@
     item.isStarred = !item.isStarred;
     button.classList.toggle("is-on", item.isStarred);
     button.setAttribute("aria-pressed", String(item.isStarred));
-    button.querySelector("svg").classList.toggle("icon--filled", item.isStarred);
     var ids = !item.isStarred && item.ids ? item.ids : [item.id];   // taking the star off a conversation takes it off all its messages
     App.post("/api/mail/messages/flags", { ids: ids, isStarred: item.isStarred }).catch(function (e) { App.toast(e.message, { error: true }); loadList(true); });
   }
@@ -858,7 +873,7 @@
       if (box && box.canEdit) {
         if (kind !== "Archive" && kind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { actSelected("archive"); })); }
         if (kind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { actSelected("notspam"); })); }
-        else if (kind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { actSelected("spam"); })); }
+        else if (kind !== "Trash") { bar.appendChild(App.iconButton("octagon-alert", T("reportSpam"), function () { actSelected("spam"); })); }
         bar.appendChild(App.iconButton("trash", kind === "Trash" ? T("deleteForever") : T("delete"), function () { actSelected("delete"); }));
         bar.appendChild(App.el("span", { class: "mail-toolbar__sep" }));
         bar.appendChild(App.iconButton("mail-open", T("markRead"), function () { actSelected("read"); }));
@@ -909,7 +924,7 @@
     var folder = currentFolder();
     var gentle = kind === "read" || kind === "unread" || kind === "star" || kind === "unstar";
     var question = kind === "delete" && folder && folder.kind === "Trash" ? T("confirmDeleteForeverAll") : T("confirmAllMatching");
-    (gentle ? Promise.resolve(true) : App.confirm(question.replace("{0}", S.total.toLocaleString()))).then(function (ok) {
+    (gentle ? Promise.resolve(true) : App.confirm(question.replace("{0}", S.total.toLocaleString()), { danger: kind === "delete" })).then(function (ok) {
       if (!ok) { return; }
       showLoading(true);
       var url = "/api/mail/messages/ids?mailboxId=" + S.mailboxId + (S.folderId ? "&folderId=" + S.folderId : "") + (S.query ? "&q=" + encodeURIComponent(S.query) : "");
@@ -996,7 +1011,7 @@
       case "delete":
         if (folder && folder.kind === "Trash") {
           var forever = function () { send(postIds("/api/mail/messages/delete", ids, { permanent: true }), T("deletedForever"), false, true); };
-          if (options.confirmed) { forever(); } else { App.confirm(T("confirmDeleteForever")).then(function (ok) { if (ok) { forever(); } }); }
+          if (options.confirmed) { forever(); } else { App.confirm(T("confirmDeleteForever"), { danger: true }).then(function (ok) { if (ok) { forever(); } }); }
           return;
         }
         request = postIds("/api/mail/messages/delete", ids, { permanent: false }); message = T("movedToTrash"); undo = true; removes = true; break;
@@ -1130,8 +1145,8 @@
     }).catch(function (error) {
       if (request !== messageRequest) { return; }
       showLoading(false);
-      els.reader.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("fileGone") : error.message }));
-      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+      els.reader.appendChild(notice(error.status === 404 ? T("fileGone") : error.message, true));
+      els.readerToolbar.appendChild(App.iconButton("back", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
     });
   }
 
@@ -1140,11 +1155,11 @@
     var m = preview.message;
     var bar = els.readerToolbar;
     bar.innerHTML = "";
-    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    bar.appendChild(App.iconButton("back", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
     var canSave = App.boot.mailboxes.some(function (box) { return box.canEdit; });
     var saveButton = null;
     if (canSave) {
-      saveButton = App.el("button", { type: "button", class: "btn btn--secondary btn--sm mail-toolbar__button" }, [App.icon("folder-input"), App.el("span", { text: T("saveToFolder") })]);
+      saveButton = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary mat-btn--sm mail-toolbar__button" }, [App.icon("folder-input"), App.el("span", { text: T("saveToFolder") })]);
       saveButton.addEventListener("click", function (e) { saveMenu(e.currentTarget, preview); });
       bar.appendChild(saveButton);
     }
@@ -1153,7 +1168,7 @@
 
     var wrap = App.el("div", { class: "reader" });
     var head = readerHead(m.subject, 0, 0);
-    head.appendChild(App.el("span", { class: "chip", text: preview.fileName }));
+    head.appendChild(App.el("span", { class: "mat-tag", text: preview.fileName }));
     wrap.appendChild(head);
     wrap.appendChild(App.el("div", { class: "reader__banner" }, [App.icon("file-text"), App.el("span", { text: T("fileNotice") })]));
     wrap.appendChild(messageView(m, null, { preview: true }));
@@ -1231,8 +1246,8 @@
     }).catch(function (error) {
       if (request !== messageRequest) { return; }
       showLoading(false);
-      els.reader.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("messageGone") : error.message }));
-      els.readerToolbar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+      els.reader.appendChild(notice(error.status === 404 ? T("messageGone") : error.message, true));
+      els.readerToolbar.appendChild(App.iconButton("back", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
     });
   }
 
@@ -1260,12 +1275,12 @@
   function renderReaderToolbar(m, scope) {
     var bar = els.readerToolbar;
     bar.innerHTML = "";
-    bar.appendChild(App.iconButton("arrow-left", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
+    bar.appendChild(App.iconButton("back", T("back"), function () { navigate({ m: 0 }); }, "reader-back"));
     var ids = scope.ids, options = { origin: scope.origin };
     if (m.canEdit) {
       if (m.folderKind !== "Archive" && m.folderKind !== "Trash") { bar.appendChild(App.iconButton("archive", T("archive"), function () { act("archive", ids, undefined, options); })); }
       if (m.folderKind === "Junk") { bar.appendChild(App.iconButton("inbox", T("notSpam"), function () { act("notspam", ids, undefined, options); })); }
-      else if (m.folderKind !== "Trash") { bar.appendChild(App.iconButton("spam", T("reportSpam"), function () { act("spam", ids, undefined, options); })); }
+      else if (m.folderKind !== "Trash") { bar.appendChild(App.iconButton("octagon-alert", T("reportSpam"), function () { act("spam", ids, undefined, options); })); }
       bar.appendChild(App.iconButton("trash", m.folderKind === "Trash" ? T("deleteForever") : T("delete"), function () { act("delete", ids, undefined, options); }));
       bar.appendChild(App.el("span", { class: "mail-toolbar__sep" }));
       bar.appendChild(App.iconButton("mail", T("markUnread"), function () { App.post("/api/mail/messages/flags", { ids: ids, isRead: false }).then(function (r) { App.applyCounts(r.counts); navigate({ m: 0 }); }); }));
@@ -1287,8 +1302,8 @@
   function readerHead(subject, folderId, count) {
     var row = App.el("div", { class: "reader__head" }, [App.el("h1", { class: "reader__subject", text: subject || T("noSubject") })]);
     var hit = App.folder(folderId);
-    if (hit) { row.appendChild(App.el("span", { class: "chip", text: App.folderLabel(hit.folder) })); }
-    if (count > 1) { row.appendChild(App.el("span", { class: "chip", text: T("messagesCount").replace("{0}", count) })); }
+    if (hit) { row.appendChild(App.el("span", { class: "mat-tag", text: App.folderLabel(hit.folder) })); }
+    if (count > 1) { row.appendChild(App.el("span", { class: "mat-tag", text: T("messagesCount").replace("{0}", count) })); }
     return row;
   }
 
@@ -1354,11 +1369,11 @@
       if (loaded) { return; }
       loaded = true;
       if (item.id === anchor.id) { show(anchor); return; }
-      body.appendChild(App.el("div", { class: "thread__loading" }, [App.el("span", { class: "spinner" })]));
+      body.appendChild(App.el("div", { class: "thread__loading" }, [App.el("span", { class: "mat-spinner" })]));
       App.get("/api/mail/messages/" + item.id).then(function (m) { if (card.isConnected) { show(m); } }).catch(function (error) {
         loaded = false;
         body.innerHTML = "";
-        body.appendChild(App.el("div", { class: "mail-notice is-error", text: error.status === 404 ? T("messageGone") : error.message }));
+        body.appendChild(notice(error.status === 404 ? T("messageGone") : error.message, true));
       });
     };
     line.addEventListener("click", openCard);
@@ -1384,18 +1399,17 @@
     ]);
     var toggle = App.el("button", { type: "button", class: "reader__to", "aria-expanded": "false" }, [App.el("span", { text: T("toPrefix") + " " + (toLine || "–") }), App.icon("chevron-down")]);
     toggle.addEventListener("click", function () { details.hidden = !details.hidden; toggle.setAttribute("aria-expanded", String(!details.hidden)); });
-    var star = App.el("button", { type: "button", class: "mail-row__star" + (m.isStarred ? " is-on" : ""), title: T("star") });
-    star.innerHTML = '<svg class="icon' + (m.isStarred ? " icon--filled" : "") + '"><use href="#i-star"/></svg>';
+    var star = App.el("button", { type: "button", class: "mail-row__star" + (m.isStarred ? " is-on" : ""), "data-tip": T("star"), "aria-label": T("star") });
+    star.appendChild(App.icon("star"));
     star.addEventListener("click", function () {
       m.isStarred = !m.isStarred;
       star.classList.toggle("is-on", m.isStarred);
-      star.querySelector("svg").classList.toggle("icon--filled", m.isStarred);
       App.post("/api/mail/messages/flags", { ids: [m.id], isStarred: m.isStarred });
     });
     var sender = App.el("div", { class: "reader__sender" }, [
       App.avatar(from.name, from.address),
       App.el("div", { class: "reader__who" }, [
-        App.el("div", { class: "reader__from" }, [App.el("b", { text: App.displayName(from.name, from.address) }), App.el("span", { class: "muted", text: " <" + from.address + ">" })]),
+        App.el("div", { class: "reader__from" }, [App.el("b", { text: App.displayName(from.name, from.address) }), App.el("span", { class: "mat-muted", text: " <" + from.address + ">" })]),
         toggle
       ]),
       App.el("div", { class: "reader__meta" }, [App.el("span", { class: "reader__date", text: App.formatFullDate(m.date), title: m.date }), options && options.preview ? null : star])
@@ -1417,7 +1431,7 @@
 
     if (m.hasRemoteContent) {
       var banner = App.el("div", { class: "reader__banner" }, [App.icon("image"), App.el("span", { text: T("imagesBlocked") })]);
-      var show = App.el("button", { type: "button", class: "btn btn--secondary btn--sm", text: T("showImages") });
+      var show = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary mat-btn--sm", text: T("showImages") });
       show.addEventListener("click", function () { frame.src = m.bodyUrl + "?images=true"; banner.remove(); });
       banner.appendChild(show);
       wrap.appendChild(banner);
@@ -1427,7 +1441,7 @@
       class: "reader__body", sandbox: "allow-same-origin allow-popups allow-popups-to-escape-sandbox", title: T("messageBody"), "data-quote-title": T("showTrimmed"), src: m.bodyUrl
     });
     var viewer = App.viewer.attach(frame);
-    var fitButton = App.el("button", { type: "button", class: "btn btn--secondary btn--sm reader__fit", hidden: "hidden", text: T("originalSize") });
+    var fitButton = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary mat-btn--sm reader__fit", hidden: "hidden", text: T("originalSize") });
     fitButton.addEventListener("click", function () { viewer.setFit(!viewer.fitting); });
     frame.addEventListener("mm-fit", function (e) {
       fitButton.hidden = !e.detail.wide;
@@ -1496,7 +1510,7 @@
   function detailRow(label, value) { return App.el("div", { class: "reader__detail" }, [App.el("span", { class: "reader__detail-label", text: label }), App.el("span", { text: value })]); }
 
   function replyButton(icon, label, onClick) {
-    var button = App.el("button", { type: "button", class: "btn btn--secondary" }, [App.icon(icon), App.el("span", { text: label })]);
+    var button = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary" }, [App.icon(icon), App.el("span", { text: label })]);
     button.addEventListener("click", onClick);
     return button;
   }
@@ -1514,7 +1528,7 @@
     var cursorItem = S.items[S.cursor];
 
     if (key === "c") { e.preventDefault(); App.compose.open({}); }
-    else if (key === "/") { e.preventDefault(); els.searchInput.focus(); }
+    else if (key === "/") { e.preventDefault(); if (inReader) { navigate({ m: 0, p: "" }); } els.searchInput.focus(); }
     else if (key === "j" && !inReader) { moveCursor(1); }
     else if (key === "k" && !inReader) { moveCursor(-1); }
     else if ((key === "Enter" || key === "o") && !inReader && cursorItem) { openItem(cursorItem); }

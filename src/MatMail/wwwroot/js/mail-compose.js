@@ -107,7 +107,7 @@
       toolButton("x", T("clearFormatting"), function () { format("removeFormat"); })
     ]);
 
-    var send = App.el("button", { type: "button", class: "btn btn--primary compose__send" }, [App.el("span", { text: T("send") })]);
+    var send = App.el("button", { type: "button", class: "mat-btn mat-btn--primary compose__send" }, [App.el("span", { text: T("send") })]);
     var attach = App.iconButton("paperclip", T("attachFiles"), function () { fileInput.click(); }, "compose__attach");
     var discard = App.iconButton("trash", T("discardDraft"), function () { discardWindow(win); }, "compose__discard");
     var status = App.el("span", { class: "compose__status", role: "status" });
@@ -221,7 +221,7 @@
       suggestions.forEach(function (s, index) {
         var item = App.el("div", { class: "suggest__item" + (index === active ? " is-active" : ""), role: "option" }, [
           App.avatar(s.name, s.address),
-          App.el("span", { class: "suggest__text" }, [App.el("b", { text: s.name || s.address }), s.name ? App.el("span", { class: "muted", text: " " + s.address }) : null])
+          App.el("span", { class: "suggest__text" }, [App.el("b", { text: s.name || s.address }), s.name ? App.el("span", { class: "mat-muted", text: " " + s.address }) : null])
         ]);
         item.addEventListener("mousedown", function (e) { e.preventDefault(); pick(s); });
         list.appendChild(item);
@@ -503,7 +503,7 @@
         if (win.draftId) { return App.api("DELETE", "/api/mail/drafts/" + win.draftId).catch(function () { /* gone already */ }); }
       }).then(after);
     };
-    if (hasContent(win)) { App.confirm(T("confirmDiscard")).then(function (ok) { if (ok) { run(); } }); } else { run(); }
+    if (hasContent(win)) { App.confirm(T("confirmDiscard"), { danger: true }).then(function (ok) { if (ok) { run(); } }); } else { run(); }
   }
 
   window.addEventListener("beforeunload", function (e) {

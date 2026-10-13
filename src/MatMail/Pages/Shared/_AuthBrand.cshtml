@@ -1,0 +1,19 @@
+@inject Toolkit Toolkit
+@*
+    The top of the card of a page without a menu (SHELL-11): the logo above the title. The first card of the page includes it; the h1 follows.
+*@
+@{
+    Brand brand = ViewData["Brand"] as Brand ?? Brand.None;
+    string productName = brand.Name ?? "MatMail";
+}
+<div class="mat-auth__brand">
+    @if (brand.LogoUrl is { } logoUrl)
+    {
+        <img class="mm-brand-logo mm-brand-logo--auth" src="@logoUrl" alt="@productName" />
+    }
+    else
+    {
+        <span class="mat-logo" aria-hidden="true">@Toolkit.Icon("mail")</span>
+        <p class="mm-auth-name">@productName</p>
+    }
+</div>

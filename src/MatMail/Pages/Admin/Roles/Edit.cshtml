@@ -3,6 +3,10 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Roles / Edit role" : "Administration / Roles / New role";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New role"].Value;
+    ViewData["Width"] = "narrow";
+
+    // One id per box (a box of the permission matrix is a control of its own), counted over all groups.
+    int box = 0;
 }
 
 <mm-form>
@@ -15,19 +19,21 @@
 
     <mm-form-section title='@L["Permissions"]' icon="key"
                      description='@L["What members of this role may do. Reading somebody else’s mail is never part of a role: delegate it on the mailbox."]'>
-        <div class="checklist">
-            @foreach (var group in Permissions.Catalogue.GroupBy(p => p.Group))
-            {
-                <div class="checklist__group">@L[group.Key]</div>
-                @foreach (var permission in group)
-                {
-                    <label class="checklist__item">
-                        <input type="checkbox" name="Input.Permissions" value="@permission.Key" checked="@Model.Input.Permissions.Contains(permission.Key)" />
-                        <span>@L[permission.Description]<small class="mono">@permission.Key</small></span>
-                    </label>
-                }
-            }
-        </div>
+        @foreach (var group in Permissions.Catalogue.GroupBy(p => p.Group))
+        {
+            <fieldset class="mat-field mat-fieldset">
+                <legend class="mat-legend">@L[group.Key]</legend>
+                <div class="mat-checks">
+                    @foreach (var permission in group)
+                    {
+                        <label class="mat-check">
+                            <input type="checkbox" id="Input_Permissions_@(box++)" name="Input.Permissions" value="@permission.Key" checked="@Model.Input.Permissions.Contains(permission.Key)" />
+                            <span class="mat-check__text">@L[permission.Description]<small class="mat-muted mat-mono">@permission.Key</small></span>
+                        </label>
+                    }
+                </div>
+            </fieldset>
+        }
     </mm-form-section>
 
     <mm-form-section title='@L["Sign-in"]' icon="lock">
@@ -38,17 +44,17 @@
         }
         else
         {
-            <p class="form-help">@(Model.Input.RequiresTwoFactor ? L["Members of this role must use two-factor authentication."] : L["Members of this role do not have to use two-factor authentication."]) @L["Changing this needs the permission to manage security."]</p>
+            <p class="mat-muted">@(Model.Input.RequiresTwoFactor ? L["Members of this role must use two-factor authentication."] : L["Members of this role do not have to use two-factor authentication."]) @L["Changing this needs the permission to manage security."]</p>
         }
     </mm-form-section>
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Roles" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Roles" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit && !Model.IsBuiltIn)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this role?"]'>@L["Delete"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this role?"]' confirm-ok='@L["Delete"]'>@L["Delete"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

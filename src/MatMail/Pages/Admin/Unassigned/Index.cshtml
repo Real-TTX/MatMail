@@ -5,6 +5,7 @@
     ViewData["Description"] = L["Mail that nobody could be found for (the address exists at the provider or in a domain, but no mailbox has it). Hand it to a mailbox so nothing gets lost."].Value;
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search sender, subject or address…"]' />
     <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
@@ -19,25 +20,24 @@
         <tr>
             <th>@L["Message"]</th>
             <th>@L["Addressed to"]</th>
-            <th class="hide-sm">@L["Received"]</th>
-            <th class="is-actions"></th>
+            <th class="mat-hide-sm">@L["Received"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Unassigned/Assign?id=@item.Id" tabindex="0">
+            <tr data-row-href="/Admin/Unassigned/Assign?id=@item.Id">
                 <td>
-                    <div class="cell-title">@(string.IsNullOrWhiteSpace(item.Subject) ? L["(no subject)"].Value : item.Subject)</div>
-                    <div class="cell-sub">@(string.IsNullOrWhiteSpace(item.FromName) ? item.FromAddress : $"{item.FromName} <{item.FromAddress}>")</div>
+                    <div class="mat-table__name"><span><a href="/Admin/Unassigned/Assign?id=@item.Id">@(string.IsNullOrWhiteSpace(item.Subject) ? L["(no subject)"].Value : item.Subject)</a><small>@(string.IsNullOrWhiteSpace(item.FromName) ? item.FromAddress : $"{item.FromName} <{item.FromAddress}>")</small></span></div>
                 </td>
-                <td class="mono">@(item.EnvelopeRecipients ?? "–")</td>
-                <td class="hide-sm">@Fmt.DateTimeText(item.ReceivedDate)</td>
-                <td class="is-actions">
-                    <span class="icon-actions">
-                        <a class="icon-btn" href="/Mail#mailbox=@item.MailboxId&m=@item.Id" title="@L["Read"]" aria-label="@L["Read"]"><mm-icon name="eye" /></a>
-                        <a class="icon-btn" href="/Admin/Unassigned/Assign?id=@item.Id" title="@L["Hand over to a mailbox"]" aria-label="@L["Hand over to a mailbox"]"><mm-icon name="folder-input" /></a>
-                    </span>
+                <td class="mat-mono mat-text-break">@(item.EnvelopeRecipients ?? "–")</td>
+                <td class="mat-hide-sm mat-mono mat-nowrap">@Fmt.DateTimeText(item.ReceivedDate)</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions">
+                        <mm-button variant="ghost" href='@($"/Mail#mailbox={item.MailboxId}&m={item.Id}")' icon="eye" icon-only="true" small="true">@L["Read"]</mm-button>
+                        <mm-button variant="ghost" href='@($"/Admin/Unassigned/Assign?id={item.Id}")' icon="folder-input" icon-only="true" small="true">@L["Hand over to a mailbox"]</mm-button>
+                    </div>
                 </td>
             </tr>
         }
@@ -45,3 +45,4 @@
 </mm-table>
 
 <mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

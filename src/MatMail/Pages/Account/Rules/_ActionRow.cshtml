@@ -1,26 +1,28 @@
 @model (MatMail.Pages.Account.Rules.RuleLabels Labels, MatMail.Pages.Account.Rules.EditModel.ActionInput Row, string Index, IReadOnlyList<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Folders)
-@* One action of a rule. The names are Input.Actions[n].…; rules.js adds and removes rows and renumbers them. *@
+@* One action of a rule. The names are Input.Actions[n].…; rules.js adds and removes rows and renumbers them (names and ids). *@
 @{
     var a = Model.Row;
     string prefix = $"Input.Actions[{Model.Index}]";
+    string id = $"rule-action-{Model.Index}";
     bool showFolder = a.Type == RuleActionType.MoveToFolder;
     bool showValue = a.Type is RuleActionType.ForwardTo or RuleActionType.AddLabel;
 }
-<div class="rule-row" data-rule-row="action">
-    <select class="form-control rule-row__field" name="@(prefix).Type" data-role="action-type" aria-label="@L["Action"]">
+<div class="mm-rule-row" data-rule-row="action">
+    <select class="mat-select" id="@(id)-type" name="@(prefix).Type" data-role="action-type" aria-label="@L["Action"]">
         @foreach (var item in Model.Labels.ActionItems())
         {
             <option value="@item.Value" selected="@(item.Value == a.Type.ToString())">@item.Text</option>
         }
     </select>
-    <select class="form-control rule-row__value" name="@(prefix).FolderId" data-role="folder" aria-label="@L["Folder"]" hidden="@(!showFolder)" disabled="@(!showFolder)">
+    <select class="mat-select mm-rule-row__value" id="@(id)-folder" name="@(prefix).FolderId" data-role="folder" aria-label="@L["Folder"]" hidden="@(!showFolder)" disabled="@(!showFolder)">
         @foreach (var item in Model.Folders)
         {
             <option value="@item.Value" selected="@(item.Value == a.FolderId?.ToString())">@item.Text</option>
         }
     </select>
-    <input class="form-control rule-row__value" type="text" name="@(prefix).Value" value="@a.Value" maxlength="320" data-role="action-value" hidden="@(!showValue)" disabled="@(!showValue)"
-           placeholder="@(a.Type == RuleActionType.ForwardTo ? L["name@example.com"].Value : L["Label"].Value)" aria-label="@L["Value"]"
+    @* An address is typed as text with the e-mail keyboard: the server says what is wrong with it, where the browser would block the form without a word. *@
+    <input class="mat-input mm-rule-row__value" type="text" id="@(id)-value" name="@(prefix).Value" value="@a.Value" maxlength="320" data-role="action-value" hidden="@(!showValue)" disabled="@(!showValue)"
+           placeholder="@(a.Type == RuleActionType.ForwardTo ? L["name@example.com"].Value : L["Label"].Value)" aria-label="@L["Value"]" inputmode="@(a.Type == RuleActionType.ForwardTo ? "email" : null)"
            data-placeholder-forward="@L["name@example.com"]" data-placeholder-label="@L["Label"]" />
-    <button type="button" class="icon-btn rule-row__remove" data-rule-remove title="@L["Remove"]" aria-label="@L["Remove"]"><mm-icon name="x" /></button>
+    <mm-button variant="ghost" type="button" icon="x" icon-only="true" small="true" class="mm-rule-row__remove" data-rule-remove="data-rule-remove">@L["Remove"]</mm-button>
 </div>

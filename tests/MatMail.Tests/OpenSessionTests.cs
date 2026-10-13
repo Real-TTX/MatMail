@@ -177,8 +177,11 @@ public class OpenSmtpSessionTests : IAsyncLifetime
 public class GateAddressTests
 {
     [Theory]
-    [InlineData("/css/app.css")]
-    [InlineData("/js/app.js")]
+    [InlineData("/css/matmail.css")]
+    [InlineData("/js/matmail.js")]
+    [InlineData("/matui/matui.css")]
+    [InlineData("/matui/matui.js")]
+    [InlineData("/brand/accent.css")]
     [InlineData("/icons/logo.svg")]
     [InlineData("/brand/0f5c1b6e0c8a4a9c8d7e1a2b3c4d5e6f")]
     [InlineData("/favicon.ico")]
@@ -207,8 +210,8 @@ public class GateAddressTests
 
     [Theory]
     [InlineData("/Account/Password", true)]
-    [InlineData("/css/app.css", true)]
-    [InlineData("/js/app.js", true)]
+    [InlineData("/css/matmail.css", true)]
+    [InlineData("/js/matmail.js", true)]
     [InlineData("/Account/Logout", true)]
     [InlineData("/api/mail/messages/12/cid/logo.png", false)]
     [InlineData("/Mail", false)]

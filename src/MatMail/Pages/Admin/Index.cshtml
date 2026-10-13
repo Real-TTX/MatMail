@@ -4,105 +4,74 @@
     ViewData["Breadcrumb"] = "Administration";
     ViewData["Title"] = L["Dashboard"].Value;
     ViewData["Description"] = string.Format(L["Overview of tenant “{0}”."].Value, Model.TenantName);
+
+    // One number that somebody acts on, as a card that leads to its list.
+    Microsoft.AspNetCore.Html.IHtmlContent Stat(string href, long value, string label)
+        => new Microsoft.AspNetCore.Html.HtmlString($"<a class=\"mat-card mat-card--link mat-col-6 mat-col-md-4\" href=\"{href}\"><div class=\"mat-card__body mat-stat\"><span class=\"mat-stat__label\">{System.Net.WebUtility.HtmlEncode(label)}</span><span class=\"mat-stat__value\">{value}</span></div></a>");
 }
 
-<div class="stats">
-    @if (Model.Can(Permissions.UsersManage))
-    {
-        <a class="stat" href="/Admin/Users"><span class="stat__icon"><mm-icon name="users" /></span><span><div class="stat__value">@Model.UserCount</div><div class="stat__label">@L["Users"]</div></span></a>
-    }
-    @if (Model.Can(Permissions.MailboxesManage))
-    {
-        <a class="stat" href="/Admin/Mailboxes"><span class="stat__icon"><mm-icon name="inbox" /></span><span><div class="stat__value">@Model.MailboxCount</div><div class="stat__label">@L["Mailboxes"]</div></span></a>
-    }
-    @if (Model.Can(Permissions.DomainsManage))
-    {
-        <a class="stat" href="/Admin/Domains"><span class="stat__icon"><mm-icon name="globe" /></span><span><div class="stat__value">@Model.DomainCount</div><div class="stat__label">@L["Domains"]</div></span></a>
-    }
-    @if (Model.Can(Permissions.AccountsManage))
-    {
-        <a class="stat" href="/Admin/Accounts"><span class="stat__icon"><mm-icon name="plug" /></span><span><div class="stat__value">@Model.AccountCount</div><div class="stat__label">@L["Connected accounts"]</div></span></a>
-    }
-    @if (Model.Can(Permissions.QueueManage))
-    {
-        <a class="stat" href="/Admin/Queue"><span class="stat__icon"><mm-icon name="send" /></span><span><div class="stat__value">@Model.QueuedCount</div><div class="stat__label">@L["Waiting to be sent"]</div></span></a>
-    }
-    @if (Model.Can(Permissions.UnassignedManage))
-    {
-        <a class="stat" href="/Admin/Unassigned"><span class="stat__icon"><mm-icon name="alert-circle" /></span><span><div class="stat__value">@Model.UnassignedCount</div><div class="stat__label">@L["Unassigned messages"]</div></span></a>
-    }
+<div class="mat-cols">
+    @if (Model.Can(Permissions.UsersManage)) { @Stat("/Admin/Users", Model.UserCount, L["Users"].Value) }
+    @if (Model.Can(Permissions.MailboxesManage)) { @Stat("/Admin/Mailboxes", Model.MailboxCount, L["Mailboxes"].Value) }
+    @if (Model.Can(Permissions.DomainsManage)) { @Stat("/Admin/Domains", Model.DomainCount, L["Domains"].Value) }
+    @if (Model.Can(Permissions.AccountsManage)) { @Stat("/Admin/Accounts", Model.AccountCount, L["Connected accounts"].Value) }
+    @if (Model.Can(Permissions.QueueManage)) { @Stat("/Admin/Queue", Model.QueuedCount, L["Waiting to be sent"].Value) }
+    @if (Model.Can(Permissions.UnassignedManage)) { @Stat("/Admin/Unassigned", Model.UnassignedCount, L["Unassigned messages"].Value) }
 </div>
 
-<div class="card-grid">
+<div class="mat-cols">
     @if (Model.AccountProblems.Count > 0)
     {
-        <section class="card">
-            <h2 class="card__title"><mm-icon name="alert" />@L["Connected accounts with problems"]</h2>
-            <mm-table item-count="Model.AccountProblems.Count">
-                <thead><tr><th>@L["Account"]</th><th>@L["Problem"]</th></tr></thead>
-                <tbody>
-                    @foreach (var account in Model.AccountProblems)
-                    {
-                        <tr data-row-href="/Admin/Accounts/Edit?id=@account.Id">
-                            <td class="cell-title">@account.Name</td>
-                            <td class="cell-sub">@account.LastSyncMessage</td>
-                        </tr>
-                    }
-                </tbody>
-            </mm-table>
-        </section>
+        <mm-card class="mat-col-12 mat-col-md-6" title='@L["Connected accounts with problems"]' icon="alert">
+            <ul class="mat-listgroup mat-listgroup--flush">
+                @foreach (var account in Model.AccountProblems)
+                {
+                    <li><a class="mat-listgroup__item" href="/Admin/Accounts/Edit?id=@account.Id"><span class="mat-listgroup__text"><strong>@account.Name</strong><small>@account.LastSyncMessage</small></span></a></li>
+                }
+            </ul>
+        </mm-card>
     }
 
     @if (Model.DirectoryProblems.Count > 0)
     {
-        <section class="card">
-            <h2 class="card__title"><mm-icon name="alert" />@L["Directories with problems"]</h2>
-            <mm-table item-count="Model.DirectoryProblems.Count">
-                <thead><tr><th>@L["Directory"]</th><th>@L["Problem"]</th></tr></thead>
-                <tbody>
-                    @foreach (var directory in Model.DirectoryProblems)
-                    {
-                        <tr data-row-href="/Admin/Directories/Edit?id=@directory.Id">
-                            <td class="cell-title">@directory.Name</td>
-                            <td class="cell-sub">@(directory.LastSyncDate is not null ? directory.LastSyncMessage : directory.LastCheckMessage)</td>
-                        </tr>
-                    }
-                </tbody>
-            </mm-table>
-        </section>
+        <mm-card class="mat-col-12 mat-col-md-6" title='@L["Directories with problems"]' icon="alert">
+            <ul class="mat-listgroup mat-listgroup--flush">
+                @foreach (var directory in Model.DirectoryProblems)
+                {
+                    <li><a class="mat-listgroup__item" href="/Admin/Directories/Edit?id=@directory.Id"><span class="mat-listgroup__text"><strong>@directory.Name</strong><small>@(directory.LastSyncDate is not null ? directory.LastSyncMessage : directory.LastCheckMessage)</small></span></a></li>
+                }
+            </ul>
+        </mm-card>
     }
 
     @if (Model.Can(Permissions.LogsView))
     {
-        <section class="card">
-            <h2 class="card__title"><mm-icon name="activity" />@L["Recent activity"]</h2>
-            <mm-table item-count="Model.RecentLogs.Count" empty-text='@L["Nothing happened yet."]' empty-icon="activity">
-                <thead><tr><th>@L["When"]</th><th>@L["Event"]</th></tr></thead>
-                <tbody>
+        <mm-card class="mat-col-12 mat-col-md-6" title='@L["Recent activity"]' icon="activity">
+            @if (Model.RecentLogs.Count == 0)
+            {
+                <p class="mat-muted">@L["Nothing happened yet."]</p>
+            }
+            else
+            {
+                <ol class="mat-timeline">
                     @foreach (var log in Model.RecentLogs)
                     {
-                        <tr>
-                            <td class="nowrap cell-sub">@Fmt.Ago(log.CreateDate)</td>
-                            <td>
-                                @if (log.Level == ActivityLevel.Error) { <mm-badge kind="danger">@log.Category</mm-badge> }
-                                else if (log.Level == ActivityLevel.Warning) { <mm-badge kind="warn">@log.Category</mm-badge> }
-                                else { <mm-badge kind="muted">@log.Category</mm-badge> }
-                                @log.Message
-                            </td>
-                        </tr>
+                        <li class="@(log.Level == ActivityLevel.Error ? "mat-timeline__error" : log.Level == ActivityLevel.Warning ? "mat-timeline__warn" : "")">
+                            <span class="mat-timeline__time">@Fmt.Ago(log.CreateDate)</span>
+                            <strong>@log.Category</strong> @log.Message
+                        </li>
                     }
-                </tbody>
-            </mm-table>
+                </ol>
+            }
             <mm-list-actions><mm-button variant="secondary" href="/Admin/Logs" icon="activity">@L["Open the activity log"]</mm-button></mm-list-actions>
-        </section>
+        </mm-card>
     }
 
     @if (Model.IsSystemAdmin)
     {
-        <section class="card">
-            <h2 class="card__title"><mm-icon name="server" />@L["Server"]</h2>
-            <dl class="kv">
-                <dt>@L["Version"]</dt><dd class="mono">@AppInfo.Version</dd>
+        <mm-card class="mat-col-12 mat-col-md-6" title='@L["Server"]' icon="server">
+            <dl class="mat-kv">
+                <dt>@L["Version"]</dt><dd class="mat-mono">@AppInfo.Version</dd>
                 <dt>@L["Host name"]</dt><dd>@Model.Hostname</dd>
                 <dt>@L["Started"]</dt><dd>@Fmt.DateTimeText(AppInfo.StartedAt)</dd>
                 <dt>@L["Certificate"]</dt>
@@ -110,8 +79,8 @@
                     @if (Model.Certificate is { } cert)
                     {
                         <div>@cert.Subject</div>
-                        <div class="cell-sub">
-                            @if (cert.IsSelfSigned) { <mm-badge kind="warn" icon="alert">@L["Self-signed"]</mm-badge> }
+                        <div class="mat-muted">
+                            @if (cert.IsSelfSigned) { <mm-badge kind="warn">@L["Self-signed"]</mm-badge> }
                             @string.Format(L["valid until {0}"].Value, Fmt.DateText(cert.NotAfter))
                         </div>
                     }
@@ -124,22 +93,22 @@
                 <dd>
                     @if (Model.BackupPlans == 0)
                     {
-                        <a href="/Admin/Backup"><mm-badge kind="warn" icon="alert">@L["Not scheduled"]</mm-badge></a>
+                        <a href="/Admin/Backup"><mm-badge kind="warn">@L["Not scheduled"]</mm-badge></a>
                     }
                     else if (Model.BackupFailed)
                     {
-                        <a href="/Admin/Backup"><mm-badge kind="danger" icon="alert-circle">@L["The last backup failed"]</mm-badge></a>
+                        <a href="/Admin/Backup"><mm-badge kind="danger">@L["The last backup failed"]</mm-badge></a>
                     }
                     else if (Model.LastBackup is { } last && last > DateTime.UtcNow.AddDays(-2))
                     {
-                        <a href="/Admin/Backup"><mm-badge kind="ok" icon="check-circle">@Fmt.Ago(last)</mm-badge></a>
+                        <a href="/Admin/Backup"><mm-badge kind="ok">@Fmt.Ago(last)</mm-badge></a>
                     }
                     else
                     {
-                        <a href="/Admin/Backup"><mm-badge kind="warn" icon="alert">@(Model.LastBackup is null ? L["No backup yet"].Value : string.Format(L["Last: {0}"].Value, Fmt.Ago(Model.LastBackup)))</mm-badge></a>
+                        <a href="/Admin/Backup"><mm-badge kind="warn">@(Model.LastBackup is null ? L["No backup yet"].Value : string.Format(L["Last: {0}"].Value, Fmt.Ago(Model.LastBackup)))</mm-badge></a>
                     }
                 </dd>
             </dl>
-        </section>
+        </mm-card>
     }
 </div>

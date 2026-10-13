@@ -1,0 +1,105 @@
+/* ==========================================================================
+   MatMail · what the app adds to the toolkit (matui.css does the rest)
+   Only classes with the prefix mm-, and only the tokens of the toolkit (--mat-*, COLOR-01): the app has no colour of its own but its accent.
+   The mail client has its own file (mail.css), loaded on its page.
+   ========================================================================== */
+
+/* ---- The display settings of the user (attributes of <html>, written by the layouts) -------------------------------------
+   The toolkit sizes its type in rem, so the text size is the size of the root; the density tightens tables and the message list. */
+html[data-text-size="small"] { font-size: 87.5%; }
+html[data-text-size="large"] { font-size: 112.5%; }
+html[data-density="compact"] .mat-table td { padding-top: var(--mat-space-2); padding-bottom: var(--mat-space-2); }
+html[data-density="compact"] .mat-table th { padding-top: var(--mat-space-2); padding-bottom: var(--mat-space-2); }
+
+/* ---- The shell ---- */
+/* The logo of a tenant instead of the tile of the app: as wide as the menu allows, never stretched. */
+.mm-brand-logo { display: block; max-width: 100%; max-height: 40px; width: auto; height: auto; object-fit: contain; }
+.mm-brand-logo--auth { max-height: 56px; }
+
+/* The mail client fills the whole content area: no page padding, no scrolling of the page itself (the panes scroll). */
+.mat-app[data-area="mail"] .mat-main { overflow: hidden; }
+.mat-page.mm-flush { flex: 1 1 auto; min-height: 0; max-width: none; gap: 0; padding: 0; }
+
+/* What belongs to the whole page and stands in the top bar (the search of the mail client). */
+.mm-topbar-tools { flex: 1 1 auto; justify-content: flex-end; min-width: 0; margin-right: 0; }
+
+/* The user menu: a heading for the tenants and forms whose button looks like every other menu item. */
+.mm-menu-label { padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-1); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-weight: 600; }
+.mm-menu-form { display: block; margin: 0; }
+.mm-menu-form > .mat-menu__item { width: 100%; }
+
+/* ---- Pages without a menu: sign-in, setup, errors ---- */
+.mm-auth-stack { width: min(420px, 100%); display: flex; flex-direction: column; align-items: stretch; gap: var(--mat-space-5); }
+.mm-auth-stack--wide { width: min(780px, 100%); }
+.mm-auth-stack .mat-auth__card { width: 100%; }
+.mm-auth-name { margin: 0; font-size: var(--mat-fs-lg); font-weight: 650; }
+.mm-lang-switch { display: flex; justify-content: center; margin: 0; }
+.mm-auth-version { text-align: center; color: var(--mat-text-muted); font-family: var(--mat-mono); font-size: var(--mat-fs-xs); }
+
+/* ---- Rows that open their page ---- */
+.mat-table tr[data-row-href] { cursor: pointer; }
+
+/* ---- The preview of a signature or a template: the mail as it will look, so it stays white in the dark theme (COLOR-07) ---- */
+.mm-signature-preview { display: block; width: 100%; min-height: 12rem; border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius); background: var(--mat-thumb); }
+
+/* ---- The accent colours on the page Appearance: a dot in the colour, as the toolkit derives it (the element carries data-accent, so it has the colour of that preset) ---- */
+.mm-accents { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+.mm-accents .mat-choice { align-items: center; padding: var(--mat-space-3); }
+.mm-accents .mat-choice input { margin: 0; }
+.mm-accent-dot { flex: none; width: 20px; height: 20px; border-radius: var(--mat-radius-pill); background: var(--mat-app-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-text) 22%, transparent); }
+
+/* ---- The editor of signatures and templates (rte.js): a toolbar of toolkit buttons over the text, which is a mail and so stays white (COLOR-07) ---- */
+.mm-rte { border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius); background: var(--mat-surface); }
+.mm-rte:focus-within { border-color: var(--mat-accent); box-shadow: var(--mat-focus-ring); }
+.mm-rte__toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-1); padding: var(--mat-space-1) var(--mat-space-2); border-bottom: 1px solid var(--mat-border); background: var(--mat-surface-2); border-radius: var(--mat-radius) var(--mat-radius) 0 0; }
+.mm-rte__button { font-family: var(--mat-mono); }
+.mm-rte__button[aria-pressed="true"] { background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); }
+.mm-rte__separator { width: 1px; height: 1.3rem; margin: 0 var(--mat-space-1); background: var(--mat-border-strong); }
+.mm-rte__select { width: auto; max-width: 11rem; }
+.mm-rte__color { width: var(--mat-control-h-sm); height: var(--mat-control-h-sm); padding: 2px; border: 1px solid var(--mat-border); border-radius: var(--mat-radius-sm); background: var(--mat-surface); cursor: pointer; }
+.mm-rte__editor { min-height: 12rem; max-height: 32rem; padding: var(--mat-space-3) var(--mat-space-4); overflow: auto; background: var(--mat-thumb); color: var(--mat-picker-dark); font: 14px/1.5 var(--mat-font); outline: none; border-radius: 0 0 var(--mat-radius) var(--mat-radius); }
+.mm-rte__editor img { max-width: 100%; height: auto; cursor: pointer; }
+.mm-rte__editor img.is-selected { outline: 2px solid var(--mat-accent); outline-offset: 2px; }
+.mm-rte__source { display: block; width: 100%; min-height: 12rem; border: 0; border-radius: 0 0 var(--mat-radius) var(--mat-radius); font-family: var(--mat-mono); font-size: var(--mat-fs-sm); resize: vertical; }
+.mm-rte__imagebar { display: flex; align-items: center; gap: var(--mat-space-3); flex-wrap: wrap; padding: var(--mat-space-2) var(--mat-space-3); border-bottom: 1px solid var(--mat-border); background: var(--mat-accent-soft); font-size: var(--mat-fs-sm); }
+.mm-rte__imagebar[hidden] { display: none; }
+.mm-rte__width { width: 6rem; }
+
+/* ---- Account: the secrets of the Security page (shown once), the QR code of the authenticator app ---- */
+.mm-code-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: var(--mat-space-2); margin: 0; padding: 0; list-style: none; }
+.mm-code-grid__item { padding: var(--mat-space-2) var(--mat-space-3); background: var(--mat-surface-3); border: 1px solid var(--mat-border); border-radius: var(--mat-radius-sm); letter-spacing: .04em; text-align: center; user-select: all; }
+.mm-setup { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--mat-space-5); }
+.mm-setup__key { flex: 1 1 16rem; min-width: 0; }
+/* The code is read by a camera: black on white in both themes (COLOR-07). */
+.mm-qr { flex: none; width: 13.5rem; max-width: 100%; padding: var(--mat-space-2); background: var(--mat-thumb); border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius); line-height: 0; }
+.mm-qr svg { display: block; width: 100%; height: auto; }
+.mm-secret { margin: 0; padding: var(--mat-space-3) var(--mat-space-4); background: var(--mat-surface-3); border: 1px solid var(--mat-border); border-radius: var(--mat-radius); font-family: var(--mat-mono); font-size: var(--mat-fs-lg); letter-spacing: .06em; overflow-wrap: anywhere; user-select: all; }
+
+/* ---- Account: the rule editor (a row is one condition or one action) and the order buttons of the rule list ---- */
+.mm-rule-rows { display: flex; flex-direction: column; gap: var(--mat-space-2); }
+.mm-rule-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-2); padding: var(--mat-space-2); border: 1px solid var(--mat-border); border-radius: var(--mat-radius); background: var(--mat-surface-2); }
+.mm-rule-row > .mat-select, .mm-rule-row > .mat-input { flex: 1 1 9rem; width: auto; min-width: 0; }
+.mm-rule-row > .mm-rule-row__value { flex: 3 1 12rem; }
+.mm-rule-row__unit { color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+.mm-rule-row__remove { margin-left: auto; }
+.mm-rule-order { width: 1%; white-space: nowrap; }
+.mm-rule-order__buttons { display: inline-flex; flex-direction: column; }
+
+/* ---- Administration: a form in tabs whose panels hold several cards (the directory, the server settings): the cards stand under each other like those of a page ---- */
+.mm-tabs > .mat-tabpanel { display: flex; flex-direction: column; gap: var(--mat-space-4); }
+
+/* ---- Administration: Branding (the logo of a tenant beside the field that replaces it, and the preview of its colour) ---- */
+/* The current logo stays on white like every preview (COLOR-07). */
+.mm-logo-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-4); }
+.mm-logo-row > .mat-input { flex: 1 1 14rem; width: auto; min-width: 0; }
+.mm-logo-current { max-height: 56px; max-width: 200px; padding: var(--mat-space-2) var(--mat-space-3); border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius); background: var(--mat-thumb); object-fit: contain; }
+/* The preview has its own data-app: the toolkit derives the colours inside it, and admin-branding.js sets the colour that is chosen. */
+.mm-brand-preview { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--mat-space-4); padding: var(--mat-space-3) var(--mat-space-4); border: 1px dashed var(--mat-border-strong); border-radius: var(--mat-radius); background: var(--mat-surface-2); }
+.mm-brand-preview__bar { display: flex; align-items: center; gap: var(--mat-space-3); font-size: var(--mat-fs-lg); }
+
+/* ---- Administration: logs, transfers, queue ---- */
+/* A text of the log that keeps its line breaks and breaks a long word instead of widening the page (details of an entry, the last error of a message). */
+.mm-pre-wrap { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---- Tab panels: the cards inside stand under each other like the cards of a page ---- */
+.mat-tabpanel { display: flex; flex-direction: column; gap: var(--mat-gap); }

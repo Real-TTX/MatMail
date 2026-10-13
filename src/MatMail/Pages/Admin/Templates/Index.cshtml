@@ -5,6 +5,7 @@
     ViewData["Description"] = L["A template puts an outgoing message into an HTML frame, chosen by who sends it and where it comes from – for example to turn the plain text of a device into a proper mail."].Value;
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search templates…"]' />
     <mm-toolbar-select name="Scope" label='@L["Applies to"]' value="@Model.Scope">
@@ -25,26 +26,26 @@
     <thead>
         <tr>
             <th>@L["Name"]</th>
-            <th class="hide-sm">@L["Applies to"]</th>
-            <th class="hide-sm">@L["Messages from"]</th>
+            <th class="mat-hide-sm">@L["Applies to"]</th>
+            <th class="mat-hide-sm">@L["Messages from"]</th>
             <th>@L["Messages"]</th>
             <th>@L["Status"]</th>
-            <th class="is-actions"></th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Templates/Edit?id=@item.Id" tabindex="0">
-                <td class="cell-title">@item.Name</td>
-                <td class="hide-sm">@Model.Target(item)</td>
-                <td class="hide-sm">@Model.Sources(item)</td>
+            <tr data-row-href="/Admin/Templates/Edit?id=@item.Id">
+                <td><div class="mat-table__name"><span><a href="/Admin/Templates/Edit?id=@item.Id">@item.Name</a></span></div></td>
+                <td class="mat-hide-sm">@Model.Target(item)</td>
+                <td class="mat-hide-sm">@Model.Sources(item)</td>
                 <td>
-                    @if (item.Mode == TemplateMode.AllMessages) { <mm-badge kind="info">@L["All messages"]</mm-badge> }
-                    else { <mm-badge kind="muted">@L["Plain text only"]</mm-badge> }
+                    @if (item.Mode == TemplateMode.AllMessages) { <mm-badge icon="mail">@L["All messages"]</mm-badge> }
+                    else { <mm-badge icon="file-text">@L["Plain text only"]</mm-badge> }
                 </td>
                 <td>@if (item.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
-                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Templates/Edit?id=@item.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+                <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Admin/Templates/Edit?id=@item.Id" data-tip="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></div></td>
             </tr>
         }
     </tbody>
@@ -55,3 +56,4 @@
 <mm-list-actions>
     <mm-button variant="primary" href="/Admin/Templates/Edit" icon="plus">@L["New template"]</mm-button>
 </mm-list-actions>
+</mm-list>

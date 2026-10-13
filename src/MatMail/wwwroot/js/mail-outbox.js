@@ -163,26 +163,28 @@
   // ---------------------------------------------------------------------------------------------
   function openDialog() {
     return list().then(function (items) {
-      var dialog = App.el("dialog", { class: "dialog dialog--sm outbox-dialog" });
-      var body = App.el("div", { class: "dialog__body outbox" });
-      var send = App.el("button", { type: "button", class: "btn btn--primary", text: App.T("sendNow") });
-      var close = App.el("button", { type: "button", class: "btn btn--secondary", text: App.T("close") });
-      dialog.appendChild(App.el("div", { class: "dialog__header" }, [App.el("h2", { class: "dialog__title", text: App.T("outbox") }), App.iconButton("x", App.T("close"), function () { dialog.close(); })]));
+      var dialog = App.el("dialog", { class: "mat-dialog mat-dialog--sm", "aria-label": App.T("outbox") });
+      var form = App.el("div", { class: "mat-dialog__form" });
+      var body = App.el("div", { class: "mat-dialog__body outbox" });
+      var send = App.el("button", { type: "button", class: "mat-btn mat-btn--primary", text: App.T("sendNow") });
+      var close = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary", text: App.T("close") });
+      form.appendChild(App.el("div", { class: "mat-dialog__head" }, [App.icon("clock"), App.el("h2", { class: "mat-dialog__title", text: App.T("outbox") }),
+        App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--icon mat-dialog__close", "data-dialog-close": "", "aria-label": App.T("close") }, [App.icon("x")])]));
 
       function render(current) {
         body.innerHTML = "";
-        if (!current.length) { body.appendChild(App.el("p", { class: "muted", text: App.T("outboxEmpty") })); }
+        if (!current.length) { body.appendChild(App.el("p", { class: "mat-muted", text: App.T("outboxEmpty") })); }
         current.forEach(function (item) {
           var recipients = (item.model.to || []).concat(item.model.cc || []).join(", ");
           var row = App.el("div", { class: "outbox__item" }, [
             App.el("div", { class: "outbox__main" }, [
               App.el("b", { text: item.model.subject || App.T("noSubject") }),
-              App.el("span", { class: "muted", text: (item.kind === "draft" ? App.T("outboxDraft") : recipients || App.T("noRecipient")) + " · " + App.formatListDate(item.created) }),
+              App.el("span", { class: "mat-muted", text: (item.kind === "draft" ? App.T("outboxDraft") : recipients || App.T("noRecipient")) + " · " + App.formatListDate(item.created) }),
               item.error ? App.el("span", { class: "outbox__error", text: item.error }) : null
             ])
           ]);
           var edit = App.iconButton("edit", App.T("outboxEdit"), function () { dialog.close(); take(item.id).then(function (taken) { App.compose.openFromOutbox(taken); }); });
-          var discard = App.iconButton("trash", App.T("delete"), function () { remove(item.id).then(list).then(render); }, "icon-btn--danger");
+          var discard = App.iconButton("trash", App.T("delete"), function () { remove(item.id).then(list).then(render); }, "mat-btn--danger");
           row.appendChild(App.el("div", { class: "outbox__actions" }, [edit, discard]));
           body.appendChild(row);
         });
@@ -200,12 +202,13 @@
         });
       });
       close.addEventListener("click", function () { dialog.close(); });
-      dialog.appendChild(body);
-      dialog.appendChild(App.el("div", { class: "dialog__footer" }, [send, close]));
+      form.appendChild(body);
+      form.appendChild(App.el("div", { class: "mat-dialog__foot" }, [App.el("div", { class: "mat-btn-row mat-btn-row--plain" }, [send, close])]));
+      dialog.appendChild(form);
       dialog.addEventListener("close", function () { dialog.remove(); });
       document.body.appendChild(dialog);
       render(items);
-      dialog.showModal();
+      window.MatUi.dialog.open(dialog);
     });
   }
 

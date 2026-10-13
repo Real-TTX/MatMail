@@ -4,24 +4,26 @@
     ViewData["Breadcrumb"] = "Administration / Branding";
     ViewData["Title"] = L["Branding"].Value;
     ViewData["Description"] = L["How this tenant presents itself: its name and logo in the header and on its own sign-in page, its colour, its web address."].Value;
+    ViewData["Width"] = "narrow";
     string productName = Model.Current.Name ?? "MatMail";
+    bool logoInvalid = ViewData.ModelState.TryGetValue("Logo", out var logoState) && logoState.Errors.Count > 0;
 }
 
 <mm-form enctype="multipart/form-data">
     <mm-form-section title='@L["Name and logo"]' icon="image">
         <mm-field asp-for="Input.BrandName" label='@L["Name shown in the header"]' placeholder="MatMail"
                   help='@L["Leave empty to keep the name MatMail. With a logo the name is not shown next to it; put it into the logo."]' />
-        <div class="form-row">
-            <label for="Logo">@L["Logo"]</label>
-            <div class="brand-logo-row">
+        <div class="mat-field@(logoInvalid ? " is-invalid" : string.Empty)">
+            <label class="mat-label" for="Logo">@L["Logo"]</label>
+            <div class="mm-logo-row">
                 @if (Model.Current.LogoUrl is { } logoUrl)
                 {
-                    <img class="brand-logo-row__current" src="@logoUrl" alt="@L["Current logo"]" />
+                    <img class="mm-logo-current" src="@logoUrl" alt="@L["Current logo"]" />
                 }
-                <input class="form-control" type="file" id="Logo" name="Logo" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" />
+                <input class="mat-input" type="file" id="Logo" name="Logo" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" />
             </div>
-            <p class="form-help">@L["PNG, JPEG, GIF, WebP or SVG, at most 512 KB. A wide logo with a transparent background works best."]</p>
-            <span asp-validation-for="Logo" class="field-error"></span>
+            <span class="mat-hint">@L["PNG, JPEG, GIF, WebP or SVG, at most 512 KB. A wide logo with a transparent background works best."]</span>
+            <span class="mat-error" id="Logo-err" aria-live="polite" asp-validation-for="Logo"></span>
         </div>
         @if (Model.Current.HasLogo)
         {
@@ -29,22 +31,32 @@
         }
     </mm-form-section>
 
-    <mm-form-section title='@L["Colour"]' icon="sliders">
+    <mm-form-section title='@L["Colour"]' icon="palette">
         <mm-field asp-for="Input.UseAccent" kind="checkbox" label='@L["Use an own accent colour for this tenant"]'
                   help='@L["Users who chose an accent colour of their own keep it."]' />
-        <mm-field asp-for="Input.AccentColor" kind="color" label='@L["Accent colour"]' show-when-field="Input.UseAccent" show-when-value="true" />
-        <div class="brand-preview" id="brand-preview" aria-hidden="true">
-            <div class="brand-preview__bar">
-                @if (Model.Current.LogoUrl is { } previewLogo)
-                {
-                    <img src="@previewLogo" alt="@productName" />
-                }
-                else
-                {
-                    <strong>@productName</strong>
-                }
+        <div class="mat-field" data-show-if="Input.UseAccent" data-show-value="true">
+            <label class="mat-label" for="Input_AccentColor">@L["Accent colour"]</label>
+            <div class="mat-picker" data-picker="colour">
+                <input class="mat-picker__input" id="Input_AccentColor" name="Input.AccentColor" value="@Model.Input.AccentColor" />
             </div>
-            <button type="button" class="btn btn--primary" tabindex="-1">@L["Example button"]</button>
+            <span class="mat-error" id="Input_AccentColor-err" aria-live="polite"></span>
+        </div>
+        <div class="mat-field">
+            <span class="mat-label">@L["Preview"]</span>
+            <div class="mm-brand-preview" id="brand-preview" data-app="@Ui.App.Id" aria-hidden="true">
+                <div class="mm-brand-preview__bar">
+                    @if (Model.Current.LogoUrl is { } previewLogo)
+                    {
+                        <img class="mm-brand-logo" src="@previewLogo" alt="@productName" />
+                    }
+                    else
+                    {
+                        <span class="mat-logo"><mm-icon name="mail" /></span>
+                        <strong>@productName</strong>
+                    }
+                </div>
+                <span class="mat-btn mat-btn--primary">@L["Example button"]</span>
+            </div>
         </div>
     </mm-form-section>
 
@@ -53,7 +65,7 @@
                   help='@L["Gives this tenant an own sign-in page with its logo and colour: /t/name. Lower-case letters, digits and hyphens."]' />
         @if (!string.IsNullOrEmpty(Model.SignInAddress))
         {
-            <p class="form-help">@L["Sign-in page of this tenant:"] <a href="@Model.SignInAddress" target="_blank" rel="noopener"><code>@Model.SignInAddress</code></a></p>
+            <p class="mat-hint">@L["Sign-in page of this tenant:"] <a href="@Model.SignInAddress" target="_blank" rel="noopener"><code>@Model.SignInAddress</code></a></p>
         }
         <mm-field asp-for="Input.Website" kind="url" label='@L["Web address of the company"]' placeholder="https://www.example.com"
                   help='@L["Available in signatures as {{Website}}."]' />
@@ -61,33 +73,10 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin" icon="back">@L["Back"]</mm-button>
     </mm-button-row>
 </mm-form>
 
 @section Scripts {
-    <script>
-        (function () {
-          var color = document.getElementById("Input_AccentColor"), use = document.getElementById("Input_UseAccent"), preview = document.getElementById("brand-preview");
-          if (!color || !use || !preview) { return; }
-          function contrast(hex) {
-            var r = parseInt(hex.substr(1, 2), 16) / 255, g = parseInt(hex.substr(3, 2), 16) / 255, b = parseInt(hex.substr(5, 2), 16) / 255;
-            function lin(c) { return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
-            var l = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-            return 1.05 / (l + 0.05) >= (l + 0.05) / 0.0632 ? "#ffffff" : "#1b2130";
-          }
-          function update() {
-            if (use.checked && /^#[0-9a-f]{6}$/i.test(color.value)) {
-              preview.style.setProperty("--color-primary", color.value);
-              preview.style.setProperty("--color-primary-contrast", contrast(color.value));
-            } else {
-              preview.style.removeProperty("--color-primary");
-              preview.style.removeProperty("--color-primary-contrast");
-            }
-          }
-          color.addEventListener("input", update);
-          use.addEventListener("change", update);
-          update();
-        })();
-    </script>
+    <script src="~/js/admin-branding.js" asp-append-version="true"></script>
 }

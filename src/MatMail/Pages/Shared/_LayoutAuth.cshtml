@@ -1,68 +1,46 @@
 @inject ThemeService Themes
+@inject Toolkit Toolkit
 @{
+    // Pages without a menu (SHELL-11): sign-in, setup, errors. A centred card on the plain page background; a page that needs room sets ShellClass to "mm-auth-stack--wide".
     var theme = Themes.Resolve();
     Brand brand = ViewData["Brand"] as Brand ?? Brand.None;
-    string accent = !theme.UserHasAccent && brand.AccentColor is not null ? "brand" : theme.Accent;
     string productName = brand.Name ?? "MatMail";
     var title = ViewData["Title"] as string ?? "MatMail";
     var culture = global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+    string? preset = theme.Accent == "default" ? null : theme.Accent;
+    string? accent = theme.UserHasAccent ? preset : brand.AccentColor is not null ? "custom" : preset;
+    string? brandColor = accent == "custom" ? brand.AccentColor : null;
+    var head = new HeadModel(title + " · " + productName, productName, brandColor);
 }
 <!DOCTYPE html>
-<html lang="@culture" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")">
+<html lang="@culture" data-app="matmail" data-theme="@(theme.UserHasMode || theme.Mode != "system" ? theme.Mode : null)" data-accent="@accent" @Toolkit.LanguageAttributes(L)>
 <head>
-    <meta charset="utf-8" />
-    @* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>@title · @productName</title>
-    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
-    <partial name="_PwaHead" model="productName" />
-    <partial name="_ThemeHead" model="theme" />
-    <partial name="_BrandHead" model="brand" />
+    <partial name="_Head" model="head" />
 </head>
-<body class="auth-page">
-    @Html.Raw(Icons.Sprite())
-    <main class="auth-shell @(ViewData["ShellClass"] as string)">
-        <div class="auth-brand">
-            @if (brand.LogoUrl is { } logoUrl)
-            {
-                <img class="auth-brand__logo" src="@logoUrl" alt="@productName" />
-            }
-            else
-            {
-                <img class="auth-brand__mark" src="~/icons/logo.svg" alt="" width="40" height="40" />
-            }
-            @if (!brand.HasLogo)
-            {
-                <span class="auth-brand__text">@productName</span>
-            }
+<body>
+    <a class="mat-skip" href="#main">@L["Skip to the content"]</a>
+    @Html.Raw(Toolkit.Sprite)
+    <main class="mat-auth" id="main">
+        <div class="mm-auth-stack @(ViewData["ShellClass"] as string)">
+            <partial name="_Notice" />
+            @RenderBody()
+
+            <form class="mm-lang-switch" method="post" action="/Account/Language" role="group" aria-label="@L["Language"]">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                <div class="mat-seg">
+                    <button type="submit" name="culture" value="de-DE" class="mat-seg__btn" aria-pressed="@(culture == "de" ? "true" : "false")">DE</button>
+                    <button type="submit" name="culture" value="en-US" class="mat-seg__btn" aria-pressed="@(culture == "en" ? "true" : "false")">EN</button>
+                </div>
+            </form>
+            <div class="mm-auth-version">MatMail @AppInfo.Version</div>
         </div>
-
-        <partial name="_Notice" />
-        @RenderBody()
-
-        <form class="lang-switch" method="post" action="/Account/Language" role="group" aria-label="@L["Language"]">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-            <button type="submit" name="culture" value="de-DE" class="lang-switch__btn @(culture == "de" ? "is-active" : "")">DE</button>
-            <button type="submit" name="culture" value="en-US" class="lang-switch__btn @(culture == "en" ? "is-active" : "")">EN</button>
-        </form>
-        <div class="auth-version">MatMail @AppInfo.Version</div>
     </main>
 
-    <script src="~/js/app.js" asp-append-version="true"></script>
+    <script src="~/matui/matui.js" asp-append-version="true"></script>
+    <script src="~/js/matmail.js" asp-append-version="true"></script>
     <script src="~/js/pwa.js" asp-append-version="true" data-worker="/sw.js?v=@AppInfo.Version"></script>
     @await RenderSectionAsync("Scripts", required: false)
-
-    <dialog id="mm-confirm" class="dialog dialog--sm confirm">
-        <form method="dialog" class="confirm__inner" data-no-busy>
-            <p class="confirm__text"></p>
-            <div class="btn-row">
-                <button class="btn btn--primary confirm__ok" value="ok">@L["Confirm"]</button>
-                <button class="btn btn--secondary" value="cancel">@L["Cancel"]</button>
-            </div>
-        </form>
-    </dialog>
 </body>
 </html>

@@ -8,6 +8,7 @@
 
 <partial name="_BackupTabs" model='"targets"' />
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search targets…"]' />
     <mm-toolbar-select name="Kind" label='@L["Type"]' value="@Model.Kind">
@@ -25,27 +26,46 @@
     <thead>
         <tr>
             <th>@L["Name"]</th>
-            <th class="hide-sm">@L["Type"]</th>
+            <th class="mat-hide-sm">@L["Type"]</th>
             <th>@L["Where"]</th>
-            <th class="hide-sm">@L["Last check"]</th>
-            <th class="hide-sm">@L["Schedules"]</th>
-            <th class="is-actions"></th>
+            <th class="mat-hide-sm">@L["Last check"]</th>
+            <th class="mat-hide-sm mat-num">@L["Schedules"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var target in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Backup/Target?id=@target.Id" tabindex="0">
-                <td class="cell-title">@target.Name@if (!target.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</td>
-                <td class="hide-sm">@(target.Kind == BackupTargetKind.Smb ? L["Network share (SMB)"].Value : L["Folder of this server"].Value)</td>
-                <td class="mono cell-sub">@TargetsModel.Where(target)</td>
-                <td class="hide-sm">
-                    @if (target.LastCheckOk is true) { <mm-badge kind="ok" icon="check-circle">@Fmt.Ago(target.LastCheckDate)</mm-badge> }
-                    else if (target.LastCheckOk is false) { <mm-badge kind="danger" icon="alert-circle">@L["Failed"]</mm-badge><div class="cell-sub">@target.LastCheckMessage</div> }
-                    else { <span class="muted">–</span> }
+            <tr data-row-href="/Admin/Backup/Target?id=@target.Id">
+                <td>
+                    <div class="mat-table__name"><span><a href="/Admin/Backup/Target?id=@target.Id">@target.Name</a> @if (!target.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</span></div>
                 </td>
-                <td class="hide-sm">@(Model.PlanCounts.GetValueOrDefault(target.Id))</td>
-                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Backup/Target?id=@target.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+                <td class="mat-hide-sm">
+                    @if (target.Kind == BackupTargetKind.Smb) { <mm-badge kind="info" icon="network">@L["Network share (SMB)"]</mm-badge> }
+                    else { <mm-badge kind="muted" icon="folder">@L["Folder of this server"]</mm-badge> }
+                </td>
+                <td class="mat-mono mat-text-break">@TargetsModel.Where(target)</td>
+                <td class="mat-hide-sm">
+                    <div>
+                        @if (target.LastCheckOk is true)
+                        {
+                            <mm-badge kind="ok">@L["Succeeded"]</mm-badge>
+                            <small class="mat-muted mat-mono mat-d-block">@Fmt.Ago(target.LastCheckDate)</small>
+                        }
+                        else if (target.LastCheckOk is false)
+                        {
+                            <mm-badge kind="danger">@L["Failed"]</mm-badge>
+                            <small class="mat-muted mat-d-block">@target.LastCheckMessage</small>
+                        }
+                        else { <span class="mat-muted">–</span> }
+                    </div>
+                </td>
+                <td class="mat-hide-sm mat-num">@(Model.PlanCounts.GetValueOrDefault(target.Id))</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions">
+                        <mm-button variant="ghost" href='@($"/Admin/Backup/Target?id={target.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
+                    </div>
+                </td>
             </tr>
         }
     </tbody>
@@ -56,3 +76,4 @@
 <mm-list-actions>
     <mm-button variant="primary" href="/Admin/Backup/Target" icon="plus">@L["New target"]</mm-button>
 </mm-list-actions>
+</mm-list>

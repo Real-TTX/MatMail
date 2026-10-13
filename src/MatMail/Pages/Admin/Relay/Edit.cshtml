@@ -3,6 +3,7 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / SMTP relay / Edit rule" : "Administration / SMTP relay / New rule";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New relay rule"].Value;
+    ViewData["Width"] = "narrow";
 }
 
 <mm-form>
@@ -21,11 +22,11 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Relay" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Relay" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this relay rule?"]'>@L["Delete"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this relay rule?"]' confirm-ok='@L["Delete"]'>@L["Delete"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

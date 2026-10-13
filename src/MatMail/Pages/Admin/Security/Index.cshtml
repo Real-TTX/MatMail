@@ -4,6 +4,7 @@
     ViewData["Breadcrumb"] = "Administration / Security";
     ViewData["Title"] = L["Security"].Value;
     ViewData["Description"] = L["How the people of this tenant sign in."].Value;
+    ViewData["Width"] = "narrow";
 }
 
 <mm-form>
@@ -14,23 +15,25 @@
     </mm-form-section>
 
     <mm-form-section title='@L["Who uses it"]' icon="users">
-        <dl class="kv">
+        <dl class="mat-kv">
             <dt>@L["Active users"]</dt><dd>@Model.Summary.Users</dd>
             <dt>@L["Using two-factor authentication"]</dt><dd>@Model.Summary.Enabled</dd>
             <dt>@L["Bound to it, not set up yet"]</dt>
             <dd>
-                @Model.Summary.StillToSetUp
-                @if (Model.Summary.StillToSetUp > 0)
-                {
-                    <mm-badge kind="warn" icon="alert">@L["They set it up at their next sign-in"]</mm-badge>
-                }
+                <div class="mat-row">
+                    <span>@Model.Summary.StillToSetUp</span>
+                    @if (Model.Summary.StillToSetUp > 0)
+                    {
+                        <mm-badge kind="warn">@L["They set it up at their next sign-in"]</mm-badge>
+                    }
+                </div>
             </dd>
         </dl>
-        <p class="form-help">@L["Someone who lost their phone can be helped on the user page: “Reset two-factor authentication”."]</p>
+        <p class="mat-hint">@L["Someone who lost their phone can be helped on the user page: “Reset two-factor authentication”."]</p>
     </mm-form-section>
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin" icon="back">@L["Back"]</mm-button>
     </mm-button-row>
 </mm-form>

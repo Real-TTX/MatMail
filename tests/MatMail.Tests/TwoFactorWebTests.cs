@@ -183,8 +183,8 @@ public class TwoFactorSetupMiddlewareTests
     [InlineData("/Account/Language")]
     [InlineData("/healthz")]
     [InlineData("/Error")]
-    [InlineData("/css/app.css")]
-    [InlineData("/js/app.js")]
+    [InlineData("/css/matmail.css")]
+    [InlineData("/js/matmail.js")]
     [InlineData("/icons/logo.svg")]
     [InlineData("/brand/0123456789abcdef")]
     public async Task The_set_up_page_signing_out_and_what_a_page_is_made_of_stay_open(string path)

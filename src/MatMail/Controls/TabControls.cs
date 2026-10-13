@@ -3,27 +3,29 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.Extensions.Localization;
 
 namespace MatMail.Controls;
 
 /// <summary>
-/// A tab bar of links (each tab is its own page, e.g. the account pages). Usage:
+/// Tabs that are links: each tab is a page of its own, the current one carries <c>aria-current</c>. Usage:
 /// &lt;mm-tabbar&gt;&lt;mm-tab title="Profile" href="/Account" active="true" icon="user" /&gt;…&lt;/mm-tabbar&gt;
 /// </summary>
 [HtmlTargetElement("mm-tabbar")]
-public sealed class TabBarTagHelper : TagHelper
+public sealed class TabBarTagHelper(IStringLocalizer<SharedResource> l) : TagHelper
 {
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         output.TagName = "nav";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "tabbar");
+        output.Attributes.SetAttribute("class", "mat-tabs");
+        output.Attributes.SetAttribute("aria-label", l["Sections"].Value);
     }
 }
 
 /// <summary>One link tab of an <c>mm-tabbar</c>.</summary>
 [HtmlTargetElement("mm-tab")]
-public sealed class TabTagHelper : TagHelper
+public sealed class TabTagHelper(Toolkit toolkit) : TagHelper
 {
     [HtmlAttributeName("title")]
     public string? Title { get; set; }
@@ -41,7 +43,7 @@ public sealed class TabTagHelper : TagHelper
     {
         output.TagName = "a";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", Active ? "tabbar__tab is-active" : "tabbar__tab");
+        output.Attributes.SetAttribute("class", Active ? "mat-tab is-active" : "mat-tab");
         output.Attributes.SetAttribute("href", Href);
         if (Active)
         {
@@ -50,7 +52,7 @@ public sealed class TabTagHelper : TagHelper
 
         if (!string.IsNullOrEmpty(Icon))
         {
-            output.Content.SetHtmlContent($"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#i-{HtmlEncoder.Default.Encode(Icon)}\"/></svg>");
+            output.Content.SetHtmlContent(toolkit.IconMarkup(Icon));
         }
 
         if (!string.IsNullOrEmpty(Title))
@@ -66,12 +68,12 @@ public sealed class TabTagHelper : TagHelper
 
 /// <summary>
 /// Tabs that switch panels on the same page (one big form, split into sections). The tab bar is built from the child
-/// <c>mm-tab-panel</c>s. Several can share a page: ids come from a per-request counter and the script only looks inside its own
-/// <c>[data-tabs]</c> element. A tab that contains a validation error opens on its own.
+/// <c>mm-tab-panel</c>s; the toolkit's script moves between them (arrow keys, Home and End). Several can share a page: ids come from a per-request counter.
+/// A tab that contains a field with an error opens on its own (matmail.js).
 /// Usage: &lt;mm-tabs&gt;&lt;mm-tab-panel title="General" icon="user"&gt;…&lt;/mm-tab-panel&gt;…&lt;/mm-tabs&gt;
 /// </summary>
 [HtmlTargetElement("mm-tabs")]
-public sealed class TabsTagHelper : TagHelper
+public sealed class TabsTagHelper(IStringLocalizer<SharedResource> l, Toolkit toolkit) : TagHelper
 {
     internal const string ItemsKey = "mm-tabs-panels";
     internal const string ActiveKey = "mm-tabs-active";
@@ -90,18 +92,14 @@ public sealed class TabsTagHelper : TagHelper
 
         output.TagName = "div";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "tabs");
         output.Attributes.SetAttribute("data-tabs", string.Empty);
 
         HtmlEncoder enc = HtmlEncoder.Default;
-        var nav = new StringBuilder("<div class=\"tabbar tabbar--panels\" role=\"tablist\">");
+        var nav = new StringBuilder($"<div class=\"mat-tabs\" role=\"tablist\" aria-label=\"{enc.Encode(l["Sections"].Value)}\">");
         foreach (TabPanelInfo panel in panels)
         {
-            string selected = panel.IsActive ? " is-active" : string.Empty;
-            string icon = string.IsNullOrEmpty(panel.Icon)
-                ? string.Empty
-                : $"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#i-{enc.Encode(panel.Icon)}\"/></svg>";
-            nav.Append($"<button type=\"button\" class=\"tabbar__tab{selected}\" role=\"tab\" id=\"{panel.Id}-tab\" data-tab=\"{panel.Id}\" aria-controls=\"{panel.Id}\" aria-selected=\"{(panel.IsActive ? "true" : "false")}\">{icon}<span>{enc.Encode(panel.Title)}</span></button>");
+            string icon = string.IsNullOrEmpty(panel.Icon) ? string.Empty : toolkit.IconMarkup(panel.Icon);
+            nav.Append($"<button type=\"button\" class=\"mat-tab\" role=\"tab\" id=\"{panel.Id}-tab\" aria-controls=\"{panel.Id}\" aria-selected=\"{(panel.IsActive ? "true" : "false")}\"{(panel.IsActive ? string.Empty : " tabindex=\"-1\"")}>{icon}<span>{enc.Encode(panel.Title)}</span></button>");
         }
 
         nav.Append("</div>");
@@ -139,13 +137,13 @@ public sealed class TabPanelTagHelper : TagHelper
         ViewContext.HttpContext.Items["mm-tab-seq"] = sequence;
         string id = $"tabpanel-{sequence}";
 
-        // Without a wanted key the first panel opens; an unknown key opens none and app.js falls back to the first one.
+        // Without a wanted key the first panel opens; an unknown key opens none and the script falls back to the first one.
         bool isActive = string.IsNullOrEmpty(wanted) ? panels.Count == 0 : string.Equals(wanted, Key, StringComparison.Ordinal);
         panels.Add(new TabPanelInfo(id, Title, Icon, isActive));
 
         output.TagName = "div";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "tab-panel");
+        output.Attributes.SetAttribute("class", "mat-tabpanel");
         output.Attributes.SetAttribute("id", id);
         output.Attributes.SetAttribute("role", "tabpanel");
         output.Attributes.SetAttribute("aria-labelledby", id + "-tab");

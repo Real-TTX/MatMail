@@ -55,6 +55,31 @@ public class DisplaySettingsTests
     }
 
     [Fact]
+    public void The_accent_of_the_user_wins_and_the_default_accent_is_no_choice()
+    {
+        AppConfig config = Config();
+        config.Display.ThemeAccent = "teal";
+
+        ThemeChoice none = new ThemeService(Signed(), config).Resolve();
+        Assert.Equal("teal", none.Accent);
+        Assert.False(none.UserHasAccent);
+
+        ThemeChoice asked = new ThemeService(Signed((AppClaims.ThemeAccent, "default")), config).Resolve();
+        Assert.Equal("teal", asked.Accent);   // "default" follows the installation (and the colour of the tenant): it is not a colour of the user
+        Assert.False(asked.UserHasAccent);
+
+        ThemeChoice own = new ThemeService(Signed((AppClaims.ThemeAccent, "berry")), config).Resolve();
+        Assert.Equal("berry", own.Accent);
+        Assert.True(own.UserHasAccent);
+
+        ThemeChoice earlier = new ThemeService(Signed((AppClaims.ThemeAccent, "green")), config).Resolve();   // what an earlier version saved
+        Assert.Equal("forest", earlier.Accent);
+        Assert.True(earlier.UserHasAccent);
+
+        Assert.False(new ThemeService(Signed((AppClaims.ThemeAccent, "blue")), config).Resolve().UserHasAccent);
+    }
+
+    [Fact]
     public void The_choices_of_the_user_are_used()
     {
         ThemeChoice theme = new ThemeService(Signed(

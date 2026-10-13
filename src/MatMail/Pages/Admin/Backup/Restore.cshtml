@@ -10,26 +10,25 @@
 
 <script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
 
-<div class="notice notice--warn" role="status">
-    <mm-icon name="alert" class="notice__icon" />
-    <span class="notice__text">@L["A restore replaces the current data completely. Mail that arrived after the backup was made is not in it. Before anything is replaced the current state is saved, so that a restore can be undone."]</span>
-</div>
+<mm-alert kind="warn">@L["A restore replaces the current data completely. Mail that arrived after the backup was made is not in it. Before anything is replaced the current state is saved, so that a restore can be undone."]</mm-alert>
 
-<form method="get" class="inline-form inline-form--spaced">
-    <label for="restore-target">@L["Backups in"]</label>
-    <select id="restore-target" name="Target" class="form-control form-control--inline" onchange="this.form.submit()">
-        <option value="">@L["Choose a target …"]</option>
-        @foreach (var item in Model.TargetItems) { <option value="@item.Value" selected="@(Model.Target?.ToString() == item.Value)">@item.Text</option> }
-    </select>
-    <noscript><button type="submit" class="btn btn--secondary">@L["Show"]</button></noscript>
+@* Which target to look into: the list follows as soon as one is chosen (backup.js); without a script the button does it. *@
+<form method="get" class="mat-form mat-form--inline">
+    <div class="mat-field mat-field--auto">
+        <label class="mat-label" for="restore-target">@L["Backups in"]</label>
+        <select id="restore-target" name="Target" class="mat-select" data-autosubmit>
+            <option value="">@L["Choose a target …"]</option>
+            @foreach (var item in Model.TargetItems) { <option value="@item.Value" selected="@(Model.Target?.ToString() == item.Value)">@item.Text</option> }
+        </select>
+    </div>
+    <noscript>
+        <div class="mat-field mat-field--auto"><mm-button variant="secondary" type="submit" icon="search">@L["Show"]</mm-button></div>
+    </noscript>
 </form>
 
 @if (Model.TargetError is not null)
 {
-    <div class="notice notice--danger" role="status">
-        <mm-icon name="alert-circle" class="notice__icon" />
-        <span class="notice__text">@Model.TargetError</span>
-    </div>
+    <mm-alert kind="danger">@Model.TargetError</mm-alert>
 }
 
 @if (Model.Target is not null && Model.TargetError is null)
@@ -39,24 +38,26 @@
             <tr>
                 <th>@L["Made"]</th>
                 <th>@L["By"]</th>
-                <th class="hide-sm">@L["Version"]</th>
-                <th class="hide-sm">@L["Size"]</th>
-                <th class="is-actions"></th>
+                <th class="mat-hide-sm">@L["Version"]</th>
+                <th class="mat-hide-sm mat-num">@L["Size"]</th>
+                <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
             </tr>
         </thead>
         <tbody>
             @foreach (var file in Model.Files)
             {
                 <tr>
-                    <td class="nowrap">@Fmt.DateTimeText(file.CreatedUtc)@if (file.Encrypted) { <mm-icon name="lock" class="cell-icon" /> }</td>
-                    <td class="cell-title">@file.MadeBy</td>
-                    <td class="hide-sm mono cell-sub">@file.Version</td>
-                    <td class="hide-sm nowrap">@Fmt.Size(file.Bytes)</td>
-                    <td class="is-actions">
-                        <span class="icon-actions">
-                            <a class="icon-btn" href="/Admin/Backup/Restore?handler=File&target=@Model.Target&file=@Uri.EscapeDataString(file.Name)" title="@L["Download"]" aria-label="@L["Download"]"><mm-icon name="download" /></a>
-                            <a class="icon-btn" href="/Admin/Backup/RestoreConfirm?target=@Model.Target&file=@Uri.EscapeDataString(file.Name)" title="@L["Restore this backup"]" aria-label="@L["Restore this backup"]"><mm-icon name="rotate-ccw" /></a>
-                        </span>
+                    <td class="mat-nowrap">
+                        <span><span class="mat-mono">@Fmt.DateTimeText(file.CreatedUtc)</span>@if (file.Encrypted) { <span class="mat-muted" role="img" aria-label="@L["Encrypted"]" data-tip="@L["Encrypted"]"> <mm-icon name="lock" /></span> }</span>
+                    </td>
+                    <td>@file.MadeBy</td>
+                    <td class="mat-hide-sm mat-mono">@file.Version</td>
+                    <td class="mat-hide-sm mat-num mat-nowrap">@Fmt.Size(file.Bytes)</td>
+                    <td class="mat-table__cell-actions">
+                        <div class="mat-table__actions">
+                            <mm-button variant="ghost" href='@($"/Admin/Backup/Restore?handler=File&target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="download" icon-only="true" small="true">@L["Download"]</mm-button>
+                            <mm-button variant="ghost" href='@($"/Admin/Backup/RestoreConfirm?target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="restore" icon-only="true" small="true">@L["Restore this backup"]</mm-button>
+                        </div>
                     </td>
                 </tr>
             }
@@ -64,23 +65,21 @@
     </mm-table>
     @if (Model.TotalFiles > Model.Files.Count)
     {
-        <p class="muted">@string.Format(L["The newest {0} of {1} backups are shown."].Value, Model.Files.Count, Model.TotalFiles)</p>
+        <p class="mat-muted">@string.Format(L["The newest {0} of {1} backups are shown."].Value, Model.Files.Count, Model.TotalFiles)</p>
     }
 }
 
-<section class="card card--spaced" id="backup-upload" data-url="/Admin/Backup/Restore?handler=Upload" data-next="/Admin/Backup/RestoreConfirm">
-    <h2 class="card__title"><mm-icon name="upload" />@L["Restore from a file"]</h2>
-    <p class="muted">@L["A backup you have on your computer, from this or another MatMail. The file is sent to the server first; then you see what it holds before anything is replaced."]</p>
-    <div class="form-row">
-        <input class="form-control" type="file" accept=".zip,.mmbak" aria-label="@L["Backup file"]" />
-    </div>
-    <div class="progress" hidden><div class="progress__bar"></div></div>
-    <p class="muted" data-upload-text></p>
-    <div class="btn-row btn-row--tight">
-        <button type="button" class="btn btn--primary" data-upload><mm-icon name="upload" /><span>@L["Upload"]</span></button>
+@* A backup from the computer of the administrator: the file is sent as it is (backup.js), then the confirmation page shows what it holds. *@
+<mm-card id="backup-upload" title='@L["Restore from a file"]' icon="upload" data-url="/Admin/Backup/Restore?handler=Upload" data-next="/Admin/Backup/RestoreConfirm">
+    <p class="mat-muted">@L["A backup you have on your computer, from this or another MatMail. The file is sent to the server first; then you see what it holds before anything is replaced."]</p>
+    <label class="mat-dropzone" for="backup-file"><mm-icon name="upload" /><strong>@L["Drop the backup file here or click to choose it"]</strong><span class="mat-muted">.zip, .mmbak</span><input type="file" id="backup-file" accept=".zip,.mmbak" /><span class="mat-dropzone__files"></span></label>
+    <div class="mat-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]" hidden><div class="mat-meter__fill"></div></div>
+    <p class="mat-muted" data-upload-text></p>
+    <div class="mat-row">
+        <mm-button variant="primary" type="button" icon="upload" data-upload="true">@L["Upload"]</mm-button>
     </div>
     @Html.AntiForgeryToken()
-</section>
+</mm-card>
 
 @section Scripts {
     <script src="~/js/backup.js" asp-append-version="true"></script>

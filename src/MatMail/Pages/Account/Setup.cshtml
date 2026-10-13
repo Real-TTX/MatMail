@@ -3,44 +3,47 @@
 @{
     Layout = "_LayoutAuth";
     ViewData["Title"] = L["Set up MatMail"].Value;
-    ViewData["ShellClass"] = "auth-shell--wide";
+    ViewData["ShellClass"] = "mm-auth-stack--wide";
 }
 
 <script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
 
 @if (Model.HasUpload || Model.UploadError is not null)
 {
-    <div class="auth-card">
-        <h1>@L["Restore a backup"]</h1>
-        <p class="auth-card__lead">@L["The backup replaces this empty installation: its users, mailboxes and settings come back. MatMail restarts to do it."]</p>
+    <div class="mat-auth__card">
+        <partial name="_AuthBrand" />
+        <div class="mat-stack mat-stack--sm">
+            <h1>@L["Restore a backup"]</h1>
+            <p class="mat-muted">@L["The backup replaces this empty installation: its users, mailboxes and settings come back. MatMail restarts to do it."]</p>
+        </div>
 
         @if (Model.UploadError is not null)
         {
-            <div class="notice notice--danger" role="status"><mm-icon name="alert-circle" class="notice__icon" /><span class="notice__text">@Model.UploadError</span></div>
+            <mm-alert kind="danger">@Model.UploadError</mm-alert>
         }
 
         @if (Model.UploadProblem is not null)
         {
-            <div class="notice notice--danger" role="status"><mm-icon name="alert-circle" class="notice__icon" /><span class="notice__text"><b>@L["This version cannot restore the backup."]</b> @Model.UploadProblem</span></div>
+            <mm-alert kind="danger" title='@L["This version cannot restore the backup."]'>@Model.UploadProblem</mm-alert>
         }
 
         @if (Model.UploadInfo is { } info)
         {
-            <dl class="kv">
-                <dt>@L["Made"]</dt><dd>@Fmt.DateTimeText(info.CreatedUtc)@if (!string.IsNullOrEmpty(info.Host)) { <span class="muted"> · @info.Host</span> }</dd>
-                <dt>@L["Version"]</dt><dd class="mono">@info.AppVersion</dd>
+            <dl class="mat-kv">
+                <dt>@L["Made"]</dt><dd>@Fmt.DateTimeText(info.CreatedUtc)@if (!string.IsNullOrEmpty(info.Host)) { <span class="mat-muted"> · @info.Host</span> }</dd>
+                <dt>@L["Version"]</dt><dd class="mat-mono">@info.AppVersion</dd>
                 <dt>@L["Contents"]</dt><dd>@string.Format(L["{0} tables with {1} rows, {2} files ({3})"].Value, info.Tables, info.Rows.ToString("N0"), info.Files, Fmt.Size(info.FilesBytes))</dd>
             </dl>
         }
 
         @if (Model.Preparation.State != MatMail.Backup.PreparationState.Idle)
         {
-            <section id="restore-preparation" data-status-url="/Account/Setup?handler=Status">
-                <div class="progress" id="restore-progress"><div class="progress__bar"></div></div>
-                <p class="muted" id="restore-progress-text">@(Model.Preparation.State == MatMail.Backup.PreparationState.Failed ? Model.Preparation.Message : L["Getting ready …"].Value)</p>
+            <section class="mat-stack mat-stack--sm" id="restore-preparation" data-status-url="/Account/Setup?handler=Status">
+                <div class="mat-meter" id="restore-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]"><div class="mat-meter__fill"></div></div>
+                <p class="@(Model.Preparation.State == MatMail.Backup.PreparationState.Failed ? "mat-text-danger" : "mat-muted")" id="restore-progress-text">@(Model.Preparation.State == MatMail.Backup.PreparationState.Failed ? Model.Preparation.Message : L["Getting ready …"].Value)</p>
                 <form method="post" asp-page-handler="Reset" id="restore-back" hidden="@(Model.Preparation.State != MatMail.Backup.PreparationState.Failed)">
                     <input type="hidden" name="Upload" value="@Model.Upload" />
-                    <button type="submit" class="btn btn--secondary"><mm-icon name="arrow-left" /><span>@L["Back"]</span></button>
+                    <mm-button variant="secondary" type="submit" icon="back">@L["Back"]</mm-button>
                 </form>
             </section>
         }
@@ -54,59 +57,62 @@
                 }
 
                 <mm-button-row>
-                    <mm-button variant="danger" type="submit" handler="Restore" icon="rotate-ccw">@L["Restore"]</mm-button>
+                    <mm-button variant="danger" type="submit" handler="Restore" icon="restore">@L["Restore"]</mm-button>
                     @if (Model.UploadEncrypted)
                     {
                         <mm-button variant="secondary" type="submit" handler="Check" icon="search">@L["Check the backup"]</mm-button>
                     }
-                    <mm-button variant="secondary" type="submit" handler="Discard" icon="arrow-left">@L["Cancel"]</mm-button>
+                    <mm-button variant="secondary" type="submit" handler="Discard" icon="back">@L["Cancel"]</mm-button>
                 </mm-button-row>
             </mm-form>
         }
         else
         {
-            <form method="post" asp-page-handler="Discard"><input type="hidden" name="Upload" value="@Model.Upload" /><button type="submit" class="btn btn--secondary"><mm-icon name="arrow-left" /><span>@L["Back"]</span></button></form>
+            <form method="post" asp-page-handler="Discard"><input type="hidden" name="Upload" value="@Model.Upload" /><mm-button variant="secondary" type="submit" icon="back">@L["Back"]</mm-button></form>
         }
     </div>
 }
 else
 {
-<div class="auth-card">
-    <h1>@L["Welcome to MatMail"]</h1>
-    <p class="auth-card__lead">@L["Create the first tenant and its administrator. You can add more tenants, users and mail addresses afterwards."]</p>
-
-    <mm-form>
-        <mm-field asp-for="Input.TenantName" label='@L["Tenant"]' help='@L["A tenant keeps users, mailboxes and settings apart, e.g. “Home” for your family or the name of a company."]' />
-        <div class="form-grid">
-            <mm-field asp-for="Input.DisplayName" label='@L["Your name"]' autocomplete="name" />
-            <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" />
-        </div>
-        <mm-field asp-for="Input.MailAddress" kind="email" label='@L["Your e-mail address (optional)"]'
-                  help='@L["Creates your personal mailbox with this address. Leave empty to add it later."]' />
-        <div class="form-grid">
-            <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true" />
-            <mm-field asp-for="Input.PasswordRepeat" kind="password" label='@L["Repeat password"]' autocomplete="new-password" />
+    <div class="mat-auth__card">
+        <partial name="_AuthBrand" />
+        <div class="mat-stack mat-stack--sm">
+            <h1>@L["Welcome to MatMail"]</h1>
+            <p class="mat-muted">@L["Create the first tenant and its administrator. You can add more tenants, users and mail addresses afterwards."]</p>
         </div>
 
+        <mm-form>
+            <mm-field asp-for="Input.TenantName" label='@L["Tenant"]' help='@L["A tenant keeps users, mailboxes and settings apart, e.g. “Home” for your family or the name of a company."]' />
+            <div class="mat-form__grid">
+                <mm-field asp-for="Input.DisplayName" label='@L["Your name"]' autocomplete="name" />
+                <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" />
+            </div>
+            <mm-field asp-for="Input.MailAddress" kind="email" label='@L["Your e-mail address (optional)"]'
+                      help='@L["Creates your personal mailbox with this address. Leave empty to add it later."]' />
+            <div class="mat-form__grid">
+                <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="new-password" reveal="true" />
+                <mm-field asp-for="Input.PasswordRepeat" kind="password" label='@L["Repeat password"]' autocomplete="new-password" />
+            </div>
+
+            <mm-button-row>
+                <mm-button variant="primary" type="submit" icon="check">@L["Create administrator"]</mm-button>
+            </mm-button-row>
+        </mm-form>
+    </div>
+
+    <div class="mat-auth__card" id="backup-upload" data-url="/Account/Setup?handler=Upload" data-next="/Account/Setup">
+        <div class="mat-stack mat-stack--sm">
+            <h2>@L["Or restore a backup"]</h2>
+            <p class="mat-muted">@L["You have the backup of another MatMail (or of this one)? Restore it instead of setting up: users, mailboxes, settings and keys come back."]</p>
+        </div>
+        <label class="mat-dropzone" for="backup-file"><mm-icon name="upload" /><strong>@L["Drop the backup file here or click to choose it"]</strong><span class="mat-muted">.zip, .mmbak</span><input type="file" id="backup-file" accept=".zip,.mmbak" /><span class="mat-dropzone__files"></span></label>
+        <div class="mat-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]" hidden><div class="mat-meter__fill"></div></div>
+        <p class="mat-muted" data-upload-text></p>
         <mm-button-row>
-            <mm-button variant="primary" type="submit" icon="check">@L["Create administrator"]</mm-button>
+            <mm-button variant="secondary" type="button" icon="upload" data-upload="true">@L["Upload"]</mm-button>
         </mm-button-row>
-    </mm-form>
-</div>
-
-<div class="auth-card auth-card--spaced" id="backup-upload" data-url="/Account/Setup?handler=Upload" data-next="/Account/Setup">
-    <h2>@L["Or restore a backup"]</h2>
-    <p class="auth-card__lead">@L["You have the backup of another MatMail (or of this one)? Restore it instead of setting up: users, mailboxes, settings and keys come back."]</p>
-    <div class="form-row">
-        <input class="form-control" type="file" accept=".zip,.mmbak" aria-label="@L["Backup file"]" />
+        @Html.AntiForgeryToken()
     </div>
-    <div class="progress" hidden><div class="progress__bar"></div></div>
-    <p class="muted" data-upload-text></p>
-    <div class="btn-row btn-row--tight">
-        <button type="button" class="btn btn--secondary" data-upload><mm-icon name="upload" /><span>@L["Upload"]</span></button>
-    </div>
-    @Html.AntiForgeryToken()
-</div>
 }
 
 @section Scripts {

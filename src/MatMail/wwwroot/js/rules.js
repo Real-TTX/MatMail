@@ -1,6 +1,6 @@
 // MatMail – the rule editor (Account → Mail rules → edit): conditions and actions are rows that can be added and removed;
 // each row adjusts itself to its field or action. The rows are ordinary form fields named Input.Conditions[n].… and
-// Input.Actions[n].…, so the page posts like any other; after every change the rows are numbered 0, 1, 2 … again.
+// Input.Actions[n].…, so the page posts like any other; after every change the rows are numbered 0, 1, 2 … again (names and ids).
 (function () {
   "use strict";
 
@@ -21,6 +21,14 @@
     control.disabled = !on;
   }
 
+  /**
+   * The keyboard of a phone follows what is typed (a number for a size, an address for a forward). The field stays a text field: the server
+   * says what is wrong with a value, where the browser would block the form without a word.
+   */
+  function keyboard(control, mode) {
+    if (mode) { control.setAttribute("inputmode", mode); } else { control.removeAttribute("inputmode"); }
+  }
+
   // ---- A condition row follows its field ------------------------------------------------------
   function adjustCondition(row) {
     var field = $('[data-role="field"]', row).value;
@@ -32,7 +40,7 @@
     show($('[data-role="header"]', row), field === "Header");
     show(bool, isBool);
     show(text, !isBool);
-    text.type = field === "Size" ? "number" : "text";
+    keyboard(text, field === "Size" ? "decimal" : "");
     var unit = $('[data-role="unit"]', row);
     if (unit) { unit.hidden = field !== "Size"; }
 
@@ -63,17 +71,19 @@
     show(value, needsText);
     if (needsText) {
       value.placeholder = value.getAttribute(type === "ForwardTo" ? "data-placeholder-forward" : "data-placeholder-label") || "";
-      value.type = type === "ForwardTo" ? "email" : "text";
+      keyboard(value, type === "ForwardTo" ? "email" : "");
     }
   }
 
   // ---- Numbering and add / remove ---------------------------------------------------------------
+  // The names are Input.Conditions[n].Field; the ids are rule-condition-n-field. A row of the template carries __index__ for n.
   function renumber(list) {
-    $$("[data-rule-row]", list).forEach(function (row, index) {
-      $$("[name]", row).forEach(function (control) { control.name = control.name.replace(/\[(\d+|__index__)\]/, "[" + index + "]"); });
-    });
     var rows = $$("[data-rule-row]", list);
-    rows.forEach(function (row) { $("[data-rule-remove]", row).disabled = rows.length === 1; });   // a rule needs a row of each kind
+    rows.forEach(function (row, index) {
+      $$("[name]", row).forEach(function (control) { control.name = control.name.replace(/\[(\d+|__index__)\]/, "[" + index + "]"); });
+      $$("[id]", row).forEach(function (control) { control.id = control.id.replace(/^(rule-(?:condition|action)-)(\d+|__index__)-/, "$1" + index + "-"); });
+      $("[data-rule-remove]", row).disabled = rows.length === 1;   // a rule needs a row of each kind
+    });
   }
 
   function add(kind) {

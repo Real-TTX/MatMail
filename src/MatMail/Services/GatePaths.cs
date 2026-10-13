@@ -7,8 +7,8 @@ namespace MatMail.Services;
 /// </summary>
 public static class GatePaths
 {
-    private static readonly string[] StaticPrefixes = { "/css/", "/js/", "/icons/", "/brand/", "/favicon" };
+    private static readonly string[] StaticPrefixes = { "/matui/", "/css/", "/js/", "/icons/", "/brand/", "/favicon" };
 
-    /// <summary>The style sheets, scripts, icons, logos of a tenant and the favicon that every page needs to be drawn.</summary>
+    /// <summary>The toolkit, style sheets, scripts, icons, logos and accent of a tenant and the favicon that every page needs to be drawn.</summary>
     public static bool IsStatic(string path) => StaticPrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 }

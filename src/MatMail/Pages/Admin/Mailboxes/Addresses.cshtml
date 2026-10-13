@@ -3,51 +3,53 @@
 @{
     ViewData["Breadcrumb"] = "Administration / Mailboxes / Addresses";
     ViewData["Title"] = Model.MailboxName;
+    ViewData["Width"] = "narrow";
 }
 
 <partial name="_MailboxTabs" model='(Model.Id, "addresses")' />
 
-<p class="muted">@L["Mail for these addresses is delivered into this mailbox, and the mailbox may send as them. *@domain is a catch-all for the whole domain."]</p>
+@* The explanation of the tab stands under the tabs, not in the page head: the tab bar keeps its place when one moves from tab to tab. *@
+<p class="mat-muted">@L["Mail for these addresses is delivered into this mailbox, and the mailbox may send as them. *@domain is a catch-all for the whole domain."]</p>
 
-<mm-table item-count="Model.Aliases.Count" empty-text='@L["This mailbox has no address yet."]' empty-icon="at-sign">
-    <thead>
-        <tr>
-            <th>@L["Address"]</th>
-            <th class="hide-sm">@L["Sending"]</th>
-            <th class="hide-sm">@L["Sent through"]</th>
-            <th class="is-actions"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var alias in Model.Aliases)
-        {
-            <tr data-row-href="/Admin/Mailboxes/Address?mailboxId=@Model.Id&id=@alias.Id" tabindex="0">
-                <td>
-                    <span class="cell-title">@alias.Address</span>
-                    @if (alias.IsPrimary) { <mm-badge kind="info">@L["Primary"]</mm-badge> }
-                    @if (alias.IsCatchAll) { <mm-badge kind="warn">@L["Catch-all"]</mm-badge> }
-                </td>
-                <td class="hide-sm">@if (alias.CanSend) { <mm-badge kind="ok" icon="send">@L["May send"]</mm-badge> } else { <span class="muted">–</span> }</td>
-                <td class="hide-sm">@(alias.SendAccount?.Name ?? L["Default"].Value)</td>
-                <td class="is-actions">
-                    <span class="icon-actions">
-                        @if (!alias.IsPrimary && !alias.IsCatchAll)
-                        {
-                            <form method="post" asp-page-handler="MakePrimary" data-no-busy>
-                                <input type="hidden" name="aliasId" value="@alias.Id" />
-                                <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="icon-btn" title="@L["Make primary"]" aria-label="@L["Make primary"]"><mm-icon name="star" /></button>
-                            </form>
-                        }
-                        <a class="icon-btn" href="/Admin/Mailboxes/Address?mailboxId=@Model.Id&id=@alias.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
-                    </span>
-                </td>
+<mm-list>
+    <mm-table item-count="Model.Aliases.Count" empty-text='@L["This mailbox has no address yet."]' empty-icon="at-sign">
+        <thead>
+            <tr>
+                <th>@L["Address"]</th>
+                <th class="mat-hide-sm">@L["Sending"]</th>
+                <th class="mat-hide-sm">@L["Sent through"]</th>
+                <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
             </tr>
-        }
-    </tbody>
-</mm-table>
+        </thead>
+        <tbody>
+            @foreach (var alias in Model.Aliases)
+            {
+                <tr data-row-href="/Admin/Mailboxes/Address?mailboxId=@Model.Id&id=@alias.Id">
+                    <td>
+                        <div class="mat-table__name"><span><a href="/Admin/Mailboxes/Address?mailboxId=@Model.Id&id=@alias.Id">@alias.Address</a> @if (alias.IsPrimary) { <mm-badge kind="info">@L["Primary"]</mm-badge> } @if (alias.IsCatchAll) { <mm-badge kind="warn">@L["Catch-all"]</mm-badge> }</span></div>
+                    </td>
+                    <td class="mat-hide-sm">@if (alias.CanSend) { <mm-badge kind="ok">@L["May send"]</mm-badge> } else { <span class="mat-muted">–</span> }</td>
+                    <td class="mat-hide-sm">@(alias.SendAccount?.Name ?? L["Default"].Value)</td>
+                    <td class="mat-table__cell-actions">
+                        <div class="mat-table__actions">
+                            @if (!alias.IsPrimary && !alias.IsCatchAll)
+                            {
+                                <form method="post" asp-page-handler="MakePrimary" data-no-busy>
+                                    <input type="hidden" name="aliasId" value="@alias.Id" />
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-tip="@L["Make primary"]" aria-label="@L["Make primary"]"><mm-icon name="star" /></button>
+                                </form>
+                            }
+                            <a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Admin/Mailboxes/Address?mailboxId=@Model.Id&id=@alias.Id" data-tip="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </mm-table>
 
-<mm-list-actions>
-    <mm-button variant="primary" href="@($"/Admin/Mailboxes/Address?mailboxId={Model.Id}")" icon="plus">@L["Add address"]</mm-button>
-    <mm-button variant="secondary" href="/Admin/Mailboxes" icon="arrow-left">@L["Back"]</mm-button>
-</mm-list-actions>
+    <mm-list-actions>
+        <mm-button variant="primary" href="@($"/Admin/Mailboxes/Address?mailboxId={Model.Id}")" icon="plus">@L["Add address"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Mailboxes" icon="back">@L["Back"]</mm-button>
+    </mm-list-actions>
+</mm-list>

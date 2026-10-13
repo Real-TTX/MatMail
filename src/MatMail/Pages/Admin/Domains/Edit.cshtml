@@ -3,6 +3,10 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Domains / Edit domain" : "Administration / Domains / New domain";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New domain"].Value;
+    ViewData["Width"] = "narrow";
+
+    // An optional choice: its first row is "nothing" (the text of the placeholder), so that a mailbox that was chosen can be taken away again.
+    var mailboxChoices = Model.MailboxItems.Prepend(new SelectListItem(L["Unassigned (an administrator distributes it)"].Value, string.Empty)).ToList();
 }
 
 <mm-form>
@@ -16,30 +20,30 @@
         <mm-field asp-for="Input.Notes" kind="textarea" rows="2" label='@L["Notes"]' />
     </mm-form-section>
 
-    <mm-form-section title='@L["Unknown addresses"]' icon="alert-circle"
+    <mm-form-section title='@L["Unknown addresses"]' icon="alert"
                      description='@L["What happens to mail for an address of this domain that no mailbox has."]'>
-        <mm-picker asp-for="Input.CatchAllMailboxId" asp-items="Model.MailboxItems" label='@L["Deliver to"]'
+        <mm-picker asp-for="Input.CatchAllMailboxId" asp-items="mailboxChoices" label='@L["Deliver to"]'
                    placeholder='@L["Unassigned (an administrator distributes it)"]' />
     </mm-form-section>
 
     @if (Model.IsEdit)
     {
         <mm-form-section title='@L["DNS"]' icon="server" description='@L["Records your DNS provider needs for mail that arrives at this server directly."]'>
-            <dl class="kv">
-                <dt>MX</dt><dd class="mono">@Model.Input.Name → @Model.Hostname (@L["priority"] 10)</dd>
-                <dt>SPF (TXT)</dt><dd class="mono">v=spf1 mx ~all</dd>
+            <dl class="mat-kv">
+                <dt>MX</dt><dd class="mat-mono">@Model.Input.Name → @Model.Hostname (@L["priority"] 10)</dd>
+                <dt>SPF (TXT)</dt><dd class="mat-mono">v=spf1 mx ~all</dd>
             </dl>
-            <p class="form-help">@L["Not needed when the mail of this domain stays at your provider and is only fetched by a connected account."]</p>
+            <p class="mat-hint">@L["Not needed when the mail of this domain stays at your provider and is only fetched by a connected account."]</p>
         </mm-form-section>
     }
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Domains" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Domains" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this domain?"]'>@L["Delete"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this domain?"]' confirm-ok='@L["Delete"]'>@L["Delete"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

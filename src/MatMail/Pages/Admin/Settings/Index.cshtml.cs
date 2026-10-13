@@ -20,7 +20,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
     {
         new SelectListItem(l["System"].Value, "system"), new SelectListItem(l["Light"].Value, "light"), new SelectListItem(l["Dark"].Value, "dark"),
     };
-    public IReadOnlyList<SelectListItem> AccentItems => ThemeService.Accents.Select(a => new SelectListItem(a, a)).ToList();
+    public IReadOnlyList<SelectListItem> AccentItems => ThemeService.AccentChoices(l).Select(a => new SelectListItem(a.Label, a.Key)).ToList();
 
     public class InputModel
     {
@@ -60,7 +60,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         public string TimeZone { get; set; } = "Europe/Berlin";
         public string Culture { get; set; } = "en-US";
         public string ThemeMode { get; set; } = "system";
-        public string ThemeAccent { get; set; } = "blue";
+        public string ThemeAccent { get; set; } = "default";
     }
 
     public void OnGet() => Input = ToInput(AppConfigLoader.LoadFile(AppInfo.DataDir));
@@ -194,6 +194,6 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         c.Display.TimeZone = Input.TimeZone.Trim();
         c.Display.Culture = Input.Culture;
         c.Display.ThemeMode = ThemeService.Modes.Contains(Input.ThemeMode) ? Input.ThemeMode : "system";
-        c.Display.ThemeAccent = ThemeService.Accents.Contains(Input.ThemeAccent) ? Input.ThemeAccent : "blue";
+        c.Display.ThemeAccent = ThemeService.NormalizeAccent(Input.ThemeAccent) ?? "default";
     }
 }

@@ -5,6 +5,7 @@
     ViewData["Description"] = L["Sign-ins, mail traffic, synchronisation and delivery events. Old entries are removed automatically."].Value;
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search the log…"]' />
     <mm-toolbar-select name="Category" label='@L["Area"]' value="@Model.Category">
@@ -34,30 +35,29 @@
             <th>@L["When"]</th>
             <th>@L["Area"]</th>
             <th>@L["Event"]</th>
-            <th class="hide-sm">@L["Address"]</th>
+            <th class="mat-hide-sm">@L["Address"]</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var entry in Model.Paged.Rows)
         {
-            <tr title="@entry.Details">
-                <td class="nowrap cell-sub" title="@Fmt.DateTimeText(entry.CreateDate)">@Fmt.Ago(entry.CreateDate)</td>
+            <tr>
+                <td class="mat-mono mat-nowrap" title="@Fmt.DateTimeText(entry.CreateDate)">@Fmt.Ago(entry.CreateDate)</td>
+                <td><span class="mat-tag">@Model.CategoryLabel(entry.Category.ToString())</span></td>
                 <td>
-                    @switch (entry.Level)
-                    {
-                        case ActivityLevel.Error: <mm-badge kind="danger">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
-                        case ActivityLevel.Warning: <mm-badge kind="warn">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
-                        default: <mm-badge kind="muted">@Model.CategoryLabel(entry.Category.ToString())</mm-badge> break;
-                    }
+                    <div>
+                        @* Only what is not routine says its level, in a word (the colour alone would not tell). *@
+                        @if (entry.Level == ActivityLevel.Error) { <mm-badge kind="danger">@L["Error"]</mm-badge> }
+                        else if (entry.Level == ActivityLevel.Warning) { <mm-badge kind="warn">@L["Warning"]</mm-badge> }
+                        <span>@entry.Message</span>
+                        @if (!string.IsNullOrEmpty(entry.Details)) { <small class="mat-muted mat-d-block mm-pre-wrap">@entry.Details</small> }
+                    </div>
                 </td>
-                <td>
-                    <div>@entry.Message</div>
-                    @if (!string.IsNullOrEmpty(entry.Details)) { <div class="cell-sub log-details">@entry.Details</div> }
-                </td>
-                <td class="hide-sm mono">@entry.RemoteIp</td>
+                <td class="mat-hide-sm mat-mono">@entry.RemoteIp</td>
             </tr>
         }
     </tbody>
 </mm-table>
 
 <mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

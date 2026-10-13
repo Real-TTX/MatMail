@@ -59,7 +59,7 @@ branding.
   mailbox for the top level); **messages are dragged from the list onto a folder**, all the ticked
   ones at once – stars, drafts with auto-save, attachments, address suggestions, **live updates**
   when mail arrives
-- **Rules per mailbox** (*Account → Mail rules*): when a message arrives and fits – sender, recipient,
+- **Rules per mailbox** (*My account → Mail rules*): when a message arrives and fits – sender, recipient,
   subject, text, a header field, attachment, size – it is moved into a folder, marked as read,
   starred, labelled, sent to the trash, deleted or **forwarded** as a copy. They run before the
   message is stored, so it arrives where it belongs. Rules of shared mailboxes are for those who
@@ -71,7 +71,7 @@ branding.
   in the mailbox list of the administration (sortable) and per folder on the page of the mailbox
 - **Search like in Gmail**: `from:anna has:attachment newer_than:7d`, several operators at once,
   `OR`, `-` to leave out, brackets and quoted phrases; the operators work in German too (`von:`,
-  `hat:anhang`, `ist:ungelesen`). An **advanced search** panel builds the text for you. When a search
+  `hat:anhang`, `ist:ungelesen`). An **advanced search** dialog (the button beside the search field) builds the text for you. When a search
   (or a folder) has more hits than a page, **select all** offers to take *all* of them – and then
   mark them as read, move, archive or delete them in one go
 - **Shared mailboxes** and mailboxes **delegated** by others
@@ -165,10 +165,10 @@ button, quoted history is folded, and remote pictures stay blocked until you all
 
 | The advanced search | Select all that match |
 |---|---|
-| ![The advanced search panel under the search box](docs/images/mail-search.png) | ![All 93 hits of a search selected for one action](docs/images/mail-select-all.png) |
+| ![The advanced search dialog, opened from the search field](docs/images/mail-search.png) | ![All 93 hits of a search selected for one action](docs/images/mail-select-all.png) |
 
-`from:netcup has:attachment newer_than:7d` – typed into the search box or built with the panel
-beside it. The operators work in English and German (`von:`, `hat:anhang`, `ist:ungelesen`) and
+`from:netcup has:attachment newer_than:7d` – typed into the search field or built in the advanced
+search dialog (the button beside the field). The operators work in English and German (`von:`, `hat:anhang`, `ist:ungelesen`) and
 combine with `OR`, `-` and brackets. When a search (or a folder) has more hits than fit on a page,
 *select all* offers to take **all of them** – then mark them as read, move, archive or delete them in
 one go.
@@ -274,7 +274,8 @@ relay* may send without signing in: printers, scanners, internal servers.
 | ![Name, logo and accent colour of a tenant](docs/images/admin-branding.png) | ![The sign-in page at /t/eine-firma](docs/images/login-tenant.png) |
 
 Name, logo and accent colour per tenant, shown in the app, on the tenant's own sign-in page
-(`/t/<name>`) and as `{{Website}}` in signatures.
+(`/t/<name>`) and as `{{Website}}` in signatures. A user who chose an accent colour of their own
+keeps it.
 
 ### Sign in with the company directory
 
@@ -319,7 +320,7 @@ once, revocable, valid for IMAP and SMTP only.
 
 | The history | A schedule | A NAS as target |
 |---|---|---|
-| ![Backups with their history](docs/images/admin-backups.png) | ![A schedule: when, how many are kept, encrypted](docs/images/admin-backup-schedule.png) | ![A network share as target, with a connection test](docs/images/admin-backup-target.png) |
+| ![Backups with their history](docs/images/admin-backups.png) | ![A schedule: when, how many are kept, encrypted](docs/images/admin-backup-schedule.png) | ![A network share as target: server, share, folder and user](docs/images/admin-backup-target.png) |
 
 | Restore from the NAS | Before anything is replaced |
 |---|---|
@@ -347,7 +348,7 @@ permission for are shown.
 |---|---|---|
 | ![Appearance settings](docs/images/account-appearance.png) | ![The dark theme](docs/images/mail-dark.png) | ![The mail list on a phone](docs/images/mail-mobile.png) |
 
-Light, dark or system, seven accent colours, text size, density and time zone – per user. On a phone
+Light, dark or system, ten accent colours, text size, density and time zone – per user. On a phone
 the web client is a first-class app: dialogs and menus become full-screen sheets.
 
 ## Quick start
@@ -488,10 +489,11 @@ service:
 
 ### After the first sign-in
 
-*Administration*, at the bottom of the sidebar right above your account, opens the admin area –
-dashboard, mailboxes, domains, connected accounts, signatures, templates, unassigned mail, users,
-roles, directories, SMTP relay, queue, activity log, branding, security, server settings and tenants; everybody
-sees what their role allows. For production, look at **Administration → Security** first: it
+The menu switcher at the top of the menu (it says *Mail* at first) offers *Administration* and *My
+account* next to the mail client. *Administration* opens the admin area – dashboard, mailboxes,
+domains, connected accounts, signatures, templates, unassigned mail, users, roles, directories, SMTP
+relay, outgoing queue, mail transfers, activity log, branding, security, backups, server settings and
+tenants; everybody sees what their role allows. For production, look at **Administration → Security** first: it
 decides whether two-factor authentication is optional, mandatory for the administrators or
 mandatory for everybody in the tenant. Whoever administers several tenants switches between them
 in the account menu.
@@ -656,7 +658,8 @@ architecture and the project rules.
 ## How it is built
 
 - **.NET 10**, ASP.NET Core **Razor Pages** with TagHelper controls – no SPA framework; the web
-  client is plain JavaScript, no build step
+  client is plain JavaScript, no build step. The look comes from the design toolkit **MatUi** of the
+  Mat apps, copied into the project (nothing is loaded from the internet)
 - **PostgreSQL** (Npgsql / EF Core 10) for the logic and the mail, JSON for the configuration
 - **MailKit / MimeKit** towards the providers; the **IMAP and SMTP servers** of the gateway are
   written for MatMail

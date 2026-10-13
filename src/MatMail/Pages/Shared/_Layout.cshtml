@@ -1,15 +1,24 @@
 @inject CurrentUser CurrentUser
 @inject ThemeService Themes
 @inject BrandingService Branding
-@inject MatMail.Data.MatMailDbContext Db
-@using Microsoft.EntityFrameworkCore
+@inject TenantService TenantSvc
+@inject Toolkit Toolkit
+@inject ShellMenus Menus
+@using Microsoft.AspNetCore.Html
 @{
+    // A page fills these in: Title (else the last crumb), Breadcrumb ("Section / Page", every segment is translated; BreadcrumbLiteral: they are names),
+    // Description (one line under the title), ActiveHref (the menu item it belongs to when its address is not one of the menu), Width ("narrow" or
+    // "wide"), NoHeading (it draws its own head) and Area ("mail": the web client, which fills the whole area).
     var theme = Themes.Resolve();
     Brand brand = await Branding.GetAsync(CurrentUser.TenantId);
-    string accent = !theme.UserHasAccent && brand.AccentColor is not null ? "brand" : theme.Accent;
     string productName = brand.Name ?? "MatMail";
-    var area = ViewData["Area"] as string ?? "admin";   // admin | mail
-    var isMail = area == "mail";
+    string path = Context.Request.Path.Value ?? "/";
+    var isMail = ViewData["Area"] as string == "mail";
+
+    // The accent: the user's own choice wins, then the colour of the tenant, then the installation's default, then the colour of the app.
+    string? preset = theme.Accent == "default" ? null : theme.Accent;
+    string? accent = theme.UserHasAccent ? preset : brand.AccentColor is not null ? "custom" : preset;
+    string? brandColor = accent == "custom" ? brand.AccentColor : null;
 
     // Breadcrumbs are "Section / Page" strings; each segment is translated, the last one is the page. They mirror the URL, so
     // every crumb but the last can link back (only when both have the same number of segments).
@@ -17,287 +26,272 @@
     var literalCrumbs = ViewData["BreadcrumbLiteral"] is true;
     var crumbs = crumbText.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(s => literalCrumbs ? s : L[s].Value).ToList();
-    var pathParts = (Context.Request.Path.Value ?? "").Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
+    var pathParts = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList();
     var crumbsLinkable = pathParts.Count == crumbs.Count && crumbs.Count > 1;
 
-    var pageTitle = ViewData["Title"] as string ?? (crumbs.Count > 0 ? crumbs[^1] : "MatMail");
+    var pageTitle = ViewData["Title"] as string is { Length: > 0 } given && !string.IsNullOrWhiteSpace(given) ? given : (crumbs.Count > 0 ? crumbs[^1] : productName);
     var showHeading = ViewData["NoHeading"] is not true && !isMail;
     var pageDescription = ViewData["Description"] as string;
+    var width = ViewData["Width"] as string;
 
+    var menus = Menus.ForUser();
+    var current = ShellMenus.Current(menus, path);
+    var active = ViewData["ActiveHref"] as string ?? ShellMenus.ActiveHref(menus, path);
+    var hasSwitcher = menus.Count > 1;
+
+    var head = new HeadModel(pageTitle == productName ? productName : pageTitle + " · " + productName, productName, brandColor, isMail);
     var displayName = CurrentUser.DisplayName ?? CurrentUser.Username ?? "?";
-    var avatarLetter = displayName.Length > 0 ? displayName[..1].ToUpperInvariant() : "?";
+    var switchableTenants = await TenantSvc.ListSwitchableAsync();
+    var culture = global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
-    List<MatMail.Data.Tenant> switchableTenants = new();
-    if (CurrentUser.IsSystemAdmin)
+    IHtmlContent Badge(NavBadge badge, bool sum = false)
     {
-        switchableTenants = await Db.Tenants.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+        var text = badge.IsDot ? string.Empty : badge.Text;
+        var label = string.IsNullOrEmpty(badge.Label) ? string.Empty : (badge.IsDot ? badge.Label : " " + badge.Label);
+        return new HtmlString($"<span class=\"{badge.Classes(sum)}\">{Ui.Encode(text)}" + (label.Length == 0 ? string.Empty : $"<span class=\"mat-sr-only\">{Ui.Encode(label)}</span>") + "</span>");
     }
-
-    bool NavVisible(string? permission, bool systemOnly = false) => systemOnly ? CurrentUser.IsSystemAdmin : (permission is null || CurrentUser.Can(permission));
-    bool IsActive(string href) => href == "/Admin"
-        ? Context.Request.Path.Value?.TrimEnd('/').Equals("/Admin", StringComparison.OrdinalIgnoreCase) == true
-        : Context.Request.Path.StartsWithSegments(href, StringComparison.OrdinalIgnoreCase);
-}
-@functions {
-    private sealed record NavEntry(string Href, string Icon, string Text, string? Permission = null, bool SystemOnly = false);
-}
-@{
-    var navGroups = new (string Title, NavEntry[] Items)[]
-    {
-        ("", new[] { new NavEntry("/Admin", "dashboard", L["Dashboard"].Value) }),
-        (L["Mail"].Value, new[]
-        {
-            new NavEntry("/Admin/Mailboxes", "inbox", L["Mailboxes"].Value, Permissions.MailboxesManage),
-            new NavEntry("/Admin/Domains", "globe", L["Domains"].Value, Permissions.DomainsManage),
-            new NavEntry("/Admin/Accounts", "plug", L["Connected accounts"].Value, Permissions.AccountsManage),
-            new NavEntry("/Admin/Signatures", "pen-line", L["Signatures"].Value, Permissions.SignaturesManage),
-            new NavEntry("/Admin/Templates", "file-text", L["Templates"].Value, Permissions.SignaturesManage),
-            new NavEntry("/Admin/Unassigned", "alert-circle", L["Unassigned"].Value, Permissions.UnassignedManage),
-        }),
-        (L["People"].Value, new[]
-        {
-            new NavEntry("/Admin/Users", "users", L["Users"].Value, Permissions.UsersManage),
-            new NavEntry("/Admin/Roles", "shield", L["Roles"].Value, Permissions.RolesManage),
-            new NavEntry("/Admin/Directories", "server", L["Directories"].Value, Permissions.DirectoriesManage),
-        }),
-        (L["Delivery"].Value, new[]
-        {
-            new NavEntry("/Admin/Relay", "network", L["SMTP relay"].Value, Permissions.RelayManage),
-            new NavEntry("/Admin/Queue", "send", L["Outgoing queue"].Value, Permissions.QueueManage),
-            new NavEntry("/Admin/Transfers", "shuffle", L["Mail transfers"].Value, Permissions.LogsView),
-        }),
-        (L["System"].Value, new[]
-        {
-            new NavEntry("/Admin/Logs", "activity", L["Activity log"].Value, Permissions.LogsView),
-            new NavEntry("/Admin/Branding", "image", L["Branding"].Value, Permissions.BrandingManage),
-            new NavEntry("/Admin/Security", "lock", L["Security"].Value, Permissions.SecurityManage),
-            new NavEntry("/Admin/Backup", "archive", L["Backups"].Value, null, true),
-            new NavEntry("/Admin/Settings", "settings", L["Server settings"].Value, null, true),
-            new NavEntry("/Admin/Tenants", "building", L["Tenants"].Value, null, true),
-        }),
-    };
 }
 <!DOCTYPE html>
-<html lang="@(global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)" data-theme-mode="@theme.Mode" data-mode="@(theme.Mode == "dark" ? "dark" : "light")" data-accent="@accent" data-theme-source="@(theme.UserHasMode ? "user" : "default")" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-reading-pane="@theme.ReadingPane" data-conversations="@(theme.ConversationView ? "on" : "off")" data-time-zone="@theme.UserTimeZone">
+<html lang="@culture" data-app="matmail" data-theme="@(theme.UserHasMode || theme.Mode != "system" ? theme.Mode : null)" data-accent="@accent" data-text-size="@theme.TextSize" data-density="@theme.Density" data-previews="@(theme.ShowPreviews ? "on" : "off")" data-reading-pane="@theme.ReadingPane" data-conversations="@(theme.ConversationView ? "on" : "off")" data-time-zone="@theme.UserTimeZone" @Toolkit.LanguageAttributes(L)>
 <head>
-    <meta charset="utf-8" />
-    @* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>@(pageTitle == "MatMail" ? productName : $"{pageTitle} · {productName}")</title>
-    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/mail.css" asp-append-version="true" />
-    <link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
-    <partial name="_PwaHead" model="productName" />
-    <partial name="_ThemeHead" model="theme" />
-    <partial name="_BrandHead" model="brand" />
+    <partial name="_Head" model="head" />
     @await RenderSectionAsync("Head", required: false)
 </head>
 <body>
-    @Html.Raw(Icons.Sprite())
-    <div class="app-shell" data-area="@area">
-        <div class="app-shell__backdrop" id="sidebar-backdrop" hidden></div>
+    <a class="mat-skip" href="#main">@L["Skip to the content"]</a>
+    @Html.Raw(Toolkit.Sprite)
 
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar__brand">
-                @if (brand.LogoUrl is { } logoUrl)
-                {
-                    <img class="sidebar__brand-logo" src="@logoUrl" alt="@productName" />
-                }
-                else
-                {
-                    <img class="sidebar__brand-mark" src="~/icons/logo.svg" alt="" width="28" height="28" />
-                }
-                @if (!brand.HasLogo)
-                {
-                    <span class="sidebar__brand-text">@productName</span>
-                }
-                <button type="button" class="icon-btn sidebar__close" id="sidebar-close" aria-label="@L["Close"]"><mm-icon name="x" /></button>
-            </div>
-
-            @if (IsSectionDefined("Sidebar"))
-            {
-                @await RenderSectionAsync("Sidebar")
-            }
-            else
-            {
-                <nav class="sidebar__nav" aria-label="@L["Main navigation"]">
-                    @if (CurrentUser.CanAdminister)
+    <div class="mat-app" data-area="@(isMail ? "mail" : "page")">
+        <aside class="mat-nav" id="mat-nav">
+            <div class="mat-nav__brand">
+                <a href="/" aria-label="@productName">
+                    @if (brand.LogoUrl is { } logoUrl)
                     {
-                        @foreach (var group in navGroups)
-                        {
-                            var visible = group.Items.Where(i => NavVisible(i.Permission, i.SystemOnly) && (i.Href != "/Admin" || CurrentUser.CanAdminister)).ToList();
-                            if (visible.Count == 0)
-                            {
-                                continue;
-                            }
-
-                            if (!string.IsNullOrEmpty(group.Title))
-                            {
-                                <div class="nav-heading">@group.Title</div>
-                            }
-
-                            @foreach (var item in visible)
-                            {
-                                <a class="nav-item @(IsActive(item.Href) ? "is-active" : "")" href="@item.Href">
-                                    <mm-icon name="@item.Icon" class="nav-item__icon" />
-                                    <span>@item.Text</span>
-                                </a>
-                            }
-                        }
+                        <img class="mm-brand-logo" src="@logoUrl" alt="@productName" />
                     }
                     else
                     {
-                        <a class="nav-item @(Context.Request.Path.StartsWithSegments("/Account") ? "is-active" : "")" href="/Account">
-                            <mm-icon name="user" class="nav-item__icon" /><span>@L["My account"]</span>
-                        </a>
+                        <span class="mat-logo" aria-hidden="true">@Toolkit.Icon("mail")</span>
+                        <span class="mat-nav__name">@productName</span>
+                    }
+                </a>
+                <button type="button" class="mat-btn mat-btn--ghost mat-btn--icon mat-nav__close" data-nav-close aria-label="@L["Close"]">@Toolkit.Icon("x")</button>
+            </div>
+
+            @if (hasSwitcher)
+            {
+                <div class="mat-nav__switch">
+                    <button type="button" class="mat-switcher" data-menu-toggle="nav-switch-menu" data-menu-place="bottom" aria-haspopup="menu" aria-expanded="false">
+                        <span class="mat-switcher__icon">@Toolkit.Icon(current.Icon)</span>
+                        <span class="mat-switcher__text"><small>@L["Menu"]</small><span class="mat-switcher__name">@current.Title</span></span>
+                        @Toolkit.Icon("chevron-down", "mat-switcher__chev")
+                        <span class="mat-switcher__dot" hidden="@(!menus.Any(m => m != current && m.NeedsAttention))"></span>
+                    </button>
+                </div>
+            }
+
+            @foreach (var menu in menus)
+            {
+                <nav class="mat-nav__scroll" aria-label="@(hasSwitcher ? menu.Title : L["Main navigation"].Value)" data-nav-panel="@menu.Id" hidden="@(menu != current)">
+                    @if (menu.Custom && menu == current && IsSectionDefined("Sidebar"))
+                    {
+                        @* The mail client draws its own folders (mail-ui.js) *@
+                        @await RenderSectionAsync("Sidebar")
+                    }
+                    else
+                    {
+                        <ul class="mat-nav__list">
+                            @foreach (var group in menu.Groups)
+                            {
+                                if (group.Title is not null)
+                                {
+                                    <li class="mat-nav__group" role="presentation">@group.Title</li>
+                                }
+
+                                foreach (var item in group.Items)
+                                {
+                                    if (item.IsParent)
+                                    {
+                                        var hasActive = item.Contains(active);
+                                        var subId = $"nav-sub-{menu.Id}-{item.Key}";
+                                        var sum = item.SumOfChildren;
+                                        <li class="mat-nav__branch @(hasActive ? "is-open is-current" : "")">
+                                            <button type="button" class="mat-nav__item mat-nav__parent" aria-expanded="@(hasActive ? "true" : "false")" aria-controls="@subId" data-nav-branch="@item.Key">
+                                                @if (item.Icon is not null) { @Toolkit.Icon(item.Icon) }<span>@item.Title</span>
+                                                @if (item.Badge is not null) { @Badge(item.Badge) }
+                                                else if (sum is not null) { @Badge(sum, sum: true) }
+                                                @Toolkit.Icon("chevron-down", "mat-nav__chev")
+                                            </button>
+                                            <div class="mat-nav__sub" id="@subId">
+                                                <ul class="mat-nav__list">
+                                                    @foreach (var child in item.Children!)
+                                                    {
+                                                        var childActive = child.Href == active;
+                                                        <li>
+                                                            <a class="mat-nav__item mat-nav__item--sub @(childActive ? "is-active" : "")" href="@child.Href" aria-current="@(childActive ? "page" : null)">
+                                                                <span>@child.Title</span>
+                                                                @if (child.Badge is not null) { @Badge(child.Badge) }
+                                                            </a>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        var isActive = item.Href == active;
+                                        <li>
+                                            <a class="mat-nav__item @(isActive ? "is-active" : "")" href="@item.Href" aria-current="@(isActive ? "page" : null)">
+                                                @if (item.Icon is not null) { @Toolkit.Icon(item.Icon) }<span>@item.Title</span>
+                                                @if (item.Badge is not null) { @Badge(item.Badge) }
+                                            </a>
+                                        </li>
+                                    }
+                                }
+                            }
+                        </ul>
                     }
                 </nav>
             }
 
-            <div class="sidebar__footer">
-                @* The way to the other area sits right above the account: from the mail client to the administration, from every other page back to mail. *@
-                @{
-                    string? otherAreaHref = isMail ? (CurrentUser.CanAdminister ? "/Admin" : null) : (CurrentUser.Can(Permissions.MailUse) ? "/Mail" : null);
-                }
-                @if (otherAreaHref is not null)
-                {
-                    <a class="area-link" href="@otherAreaHref">
-                        <span class="area-link__icon"><mm-icon name="@(isMail ? "settings" : "mail")" /></span>
-                        <span>@(isMail ? L["Administration"] : L["Mail"])</span>
-                    </a>
-                }
-                <div class="dropdown dropdown--up" data-dropdown>
-                    <button type="button" class="account" data-dropdown-toggle aria-haspopup="menu" title="@L["Account"]">
-                        <span class="avatar" aria-hidden="true">@avatarLetter</span>
-                        <span class="account__body">
-                            <span class="account__name">@displayName</span>
-                            <span class="account__tenant">@(CurrentUser.TenantName ?? "")</span>
+            <div class="mat-nav__foot">
+                <div class="mat-nav__account">
+                    <button type="button" class="mat-user" data-menu-toggle="user-menu" aria-haspopup="menu" aria-expanded="false">
+                        <span class="mat-avatar" aria-hidden="true">@Ui.Initials(displayName)</span>
+                        <span class="mat-user__text">
+                            <span class="mat-user__name">@displayName</span>
+                            <span class="mat-user__role">@(CurrentUser.TenantName ?? "")</span>
                         </span>
-                        <mm-icon name="chevron-up" class="account__caret" />
+                        @Toolkit.Icon("chevron-up", "mat-user__chev")
                     </button>
-                    <div class="dropdown__menu" role="menu" hidden>
-                        <div class="dropdown__header">
-                            <span class="dropdown__title">@displayName</span>
-                            <button type="button" class="icon-btn dropdown__close" data-dropdown-close aria-label="@L["Close"]"><mm-icon name="x" /></button>
-                        </div>
-                        <a class="dropdown__item" href="/Account" role="menuitem"><mm-icon name="user" /><span>@L["My account"]</span></a>
-                        <a class="dropdown__item" href="/Account/Appearance" role="menuitem"><mm-icon name="sliders" /><span>@L["Appearance and language"]</span></a>
-                        <a class="dropdown__item" href="/Account/MailPrograms" role="menuitem"><mm-icon name="server" /><span>@L["IMAP / SMTP settings"]</span></a>
-                        @if (CurrentUser.Can(Permissions.MailUse))
-                        {
-                            <a class="dropdown__item" href="/Account/Rules" role="menuitem"><mm-icon name="filter" /><span>@L["Mail rules"]</span></a>
-                            @* Fetches every connected account that feeds the mailboxes of this user (app.js). *@
-                            <button type="button" class="dropdown__item" role="menuitem" data-sync-now data-dropdown-pick
-                                    data-t-busy='@L["Synchronising…"]' data-t-none='@L["No connected account delivers into your mailboxes."]'
-                                    data-t-done='@L["Synchronised: {0} new message(s)."]' data-t-nonew='@L["Synchronised: no new messages."]'
-                                    data-t-running='@L["{0} account(s) are still being fetched; the mail appears as soon as they are done."]'
-                                    data-t-failed='@L["{0} account(s) could not be synchronised."]' data-t-error='@L["The synchronisation could not be started."]'>
-                                <mm-icon name="refresh" /><span class="sync-now__label">@L["Synchronise now"]</span>
-                            </button>
-                        }
-                        @if (switchableTenants.Count > 1)
-                        {
-                            @* System administrators work in one tenant at a time; the list sits here, not in the crowded header of a phone. *@
-                            <div class="dropdown__divider"></div>
-                            <div class="dropdown__label">@L["Switch tenant"]</div>
-                            <div class="dropdown__scroll">
-                                @foreach (var tenant in switchableTenants)
-                                {
-                                    <form method="post" action="/Account/SwitchTenant" class="dropdown__form" data-no-busy>
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="tenantId" value="@tenant.Id" />
-                                        <input type="hidden" name="returnUrl" value="@(isMail ? "/Mail" : "/Admin")" />
-                                        <button type="submit" class="dropdown__item @(tenant.Id == CurrentUser.TenantId ? "is-active" : "")" role="menuitem">
-                                            <mm-icon name="@(tenant.Id == CurrentUser.TenantId ? "check" : "building")" /><span>@tenant.Name</span>
-                                        </button>
-                                    </form>
-                                }
-                            </div>
-                        }
-                        <div class="dropdown__divider"></div>
-                        <div class="dropdown__label">@L["Theme"]</div>
-                        <div class="segmented" data-theme-switch data-save-url="/Account/Appearance?handler=Mode">
-                            <button type="button" class="segmented__item @(theme.Mode == "system" ? "is-active" : "")" data-theme-mode="system" title="@L["System"]"><mm-icon name="monitor" /></button>
-                            <button type="button" class="segmented__item @(theme.Mode == "light" ? "is-active" : "")" data-theme-mode="light" title="@L["Light"]"><mm-icon name="sun" /></button>
-                            <button type="button" class="segmented__item @(theme.Mode == "dark" ? "is-active" : "")" data-theme-mode="dark" title="@L["Dark"]"><mm-icon name="moon" /></button>
-                        </div>
-                        <div class="dropdown__divider"></div>
-                        <form method="post" action="/Account/Logout" class="dropdown__form" data-no-busy>
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="dropdown__item dropdown__item--danger" role="menuitem"><mm-icon name="log-out" /><span>@L["Sign out"]</span></button>
-                        </form>
-                        <div class="dropdown__version">MatMail @AppInfo.Version</div>
-                    </div>
+                    <button type="button" class="mat-theme" data-theme-toggle data-theme-save-url="/Account/Appearance?handler=Mode" data-theme-state="@theme.Mode" aria-label="@L["Theme"]" title="@L["Theme"]" data-t-label="@L["Theme: {0}. Click for {1}."]" data-t-system="@L["System"]" data-t-light="@L["Light"]" data-t-dark="@L["Dark"]">
+                        <svg class="mat-icon" data-theme-icon="system" aria-hidden="true" focusable="false"><use href="#mat-i-monitor"></use></svg>
+                        <svg class="mat-icon" data-theme-icon="light" aria-hidden="true" focusable="false"><use href="#mat-i-sun"></use></svg>
+                        <svg class="mat-icon" data-theme-icon="dark" aria-hidden="true" focusable="false"><use href="#mat-i-moon"></use></svg>
+                    </button>
                 </div>
+                <div class="mat-nav__version">MatMail @AppInfo.Version</div>
             </div>
         </aside>
 
-        <div class="app-main">
-            <header class="app-header">
-                <button type="button" class="icon-btn hamburger" id="sidebar-toggle" aria-label="@L["Toggle navigation"]" aria-controls="sidebar" aria-expanded="false">
-                    <mm-icon name="menu" />
-                </button>
-                @if (IsSectionDefined("HeaderCenter"))
-                {
-                    @await RenderSectionAsync("HeaderCenter")
-                }
-                else
-                {
-                    <nav class="breadcrumb" aria-label="@L["Breadcrumb"]">
-                        @for (var i = 0; i < crumbs.Count; i++)
+        <div class="mat-main">
+            <header class="mat-topbar">
+                <button type="button" class="mat-burger" data-nav-toggle aria-label="@L["Toggle navigation"]" aria-controls="mat-nav" aria-expanded="false">@Toolkit.Icon("menu")</button>
+                <nav class="mat-crumbs" aria-label="@L["Breadcrumb"]">
+                    <ol>
+                        @if (crumbs.Count == 0)
                         {
-                            if (i > 0)
+                            <li aria-current="page">@productName</li>
+                        }
+                        else
+                        {
+                            for (var i = 0; i < crumbs.Count; i++)
                             {
-                                <span class="breadcrumb__sep" aria-hidden="true">/</span>
-                            }
-
-                            if (crumbsLinkable && i < crumbs.Count - 1)
-                            {
-                                <a class="breadcrumb__link" href="/@string.Join("/", pathParts.Take(i + 1))">@crumbs[i]</a>
-                            }
-                            else
-                            {
-                                <span class="@(i == crumbs.Count - 1 ? "breadcrumb__current" : "")">@crumbs[i]</span>
+                                if (crumbsLinkable && i < crumbs.Count - 1)
+                                {
+                                    <li><a href="/@string.Join("/", pathParts.Take(i + 1))">@crumbs[i]</a></li>
+                                }
+                                else if (i == crumbs.Count - 1)
+                                {
+                                    <li aria-current="page">@crumbs[i]</li>
+                                }
+                                else
+                                {
+                                    <li>@crumbs[i]</li>
+                                }
                             }
                         }
-                    </nav>
+                    </ol>
+                </nav>
+                @if (IsSectionDefined("HeaderCenter"))
+                {
+                    @* What belongs to the whole page and not to one place in it (the search of the mail client) stands at the right end of the bar (SHELL-17). *@
+                    <div class="mat-topbar__actions mm-topbar-tools">@await RenderSectionAsync("HeaderCenter")</div>
                 }
-
-                <div class="app-header__spacer"></div>
-
             </header>
 
-            <main class="app-content @(isMail ? "app-content--bleed" : "")">
+            <main class="mat-page @(width == "narrow" ? "mat-page--narrow" : width == "wide" ? "mat-page--wide" : "") @(isMail ? "mm-flush" : "")" id="main">
                 <partial name="_Notice" />
                 @if (showHeading)
                 {
-                    <div class="page-heading">
-                        <h1 class="page-heading__title">@pageTitle</h1>
-                        @if (!string.IsNullOrEmpty(pageDescription))
-                        {
-                            <p class="page-heading__description">@pageDescription</p>
-                        }
+                    <div class="mat-page__head">
+                        <div class="mat-page__title">
+                            <h1>@pageTitle</h1>
+                            @if (!string.IsNullOrEmpty(pageDescription))
+                            {
+                                <p class="mat-page__sub">@pageDescription</p>
+                            }
+                        </div>
                     </div>
                 }
+
                 @RenderBody()
             </main>
         </div>
     </div>
 
-    <dialog id="mm-confirm" class="dialog dialog--sm confirm">
-        <form method="dialog" class="confirm__inner" data-no-busy>
-            <p class="confirm__text"></p>
-            <div class="btn-row">
-                <button class="btn btn--primary confirm__ok" value="ok">@L["Confirm"]</button>
-                <button class="btn btn--secondary" value="cancel">@L["Cancel"]</button>
-            </div>
+    <div class="mat-menu" id="user-menu" role="menu" aria-label="@displayName" hidden>
+        <div class="mat-menu__head">
+            <span class="mat-avatar" aria-hidden="true">@Ui.Initials(displayName)</span>
+            <div><strong>@displayName</strong><small>@CurrentUser.Username@(string.IsNullOrEmpty(CurrentUser.TenantName) ? "" : " · " + CurrentUser.TenantName)</small></div>
+        </div>
+        <a class="mat-menu__item" role="menuitem" href="/Account">@Toolkit.Icon("user")<span>@L["My account"]</span></a>
+        <a class="mat-menu__item" role="menuitem" href="/Account/Appearance">@Toolkit.Icon("sliders")<span>@L["Appearance and language"]</span></a>
+        <a class="mat-menu__item" role="menuitem" href="/Account/MailPrograms">@Toolkit.Icon("server")<span>@L["IMAP / SMTP settings"]</span></a>
+        @if (CurrentUser.Can(Permissions.MailUse))
+        {
+            <a class="mat-menu__item" role="menuitem" href="/Account/Rules">@Toolkit.Icon("filter")<span>@L["Mail rules"]</span></a>
+            @* Fetches every connected account that feeds the mailboxes of this user (matmail.js). *@
+            <button type="button" class="mat-menu__item" role="menuitem" data-sync-now
+                    data-t-busy='@L["Synchronising…"]' data-t-none='@L["No connected account delivers into your mailboxes."]'
+                    data-t-done='@L["Synchronised: {0} new message(s)."]' data-t-nonew='@L["Synchronised: no new messages."]'
+                    data-t-running='@L["{0} account(s) are still being fetched; the mail appears as soon as they are done."]'
+                    data-t-failed='@L["{0} account(s) could not be synchronised."]' data-t-error='@L["The synchronisation could not be started."]'>
+                @Toolkit.Icon("refresh")<span class="mm-sync-label">@L["Synchronise now"]</span>
+            </button>
+        }
+        @if (switchableTenants.Count > 1)
+        {
+            @* System administrators work in one tenant at a time; the list sits here, not in the crowded bar of a phone. *@
+            <div class="mat-menu__sep" role="separator"></div>
+            <div class="mm-menu-label" role="presentation">@L["Switch tenant"]</div>
+            @foreach (var tenant in switchableTenants)
+            {
+                <form method="post" action="/Account/SwitchTenant" class="mm-menu-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tenantId" value="@tenant.Id" />
+                    <input type="hidden" name="returnUrl" value="@(isMail ? "/Mail" : "/Admin")" />
+                    <button type="submit" class="mat-menu__item" role="menuitemradio" aria-checked="@(tenant.Id == CurrentUser.TenantId ? "true" : "false")">
+                        @Toolkit.Icon("building")<span>@tenant.Name</span>@Toolkit.Icon("check", "mat-menu__check")
+                    </button>
+                </form>
+            }
+        }
+        <div class="mat-menu__sep" role="separator"></div>
+        <form method="post" action="/Account/Logout" class="mm-menu-form">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="mat-menu__item mat-menu__item--danger" role="menuitem">@Toolkit.Icon("logout")<span>@L["Sign out"]</span></button>
         </form>
-    </dialog>
+    </div>
 
-    <script src="~/js/app.js" asp-append-version="true"></script>
+    @if (hasSwitcher)
+    {
+        <div class="mat-menu" id="nav-switch-menu" role="menu" aria-label="@L["Menus"]" data-nav-scope="mat-nav" hidden>
+            @foreach (var menu in menus)
+            {
+                <button type="button" class="mat-menu__item" role="menuitemradio" aria-checked="@(menu == current ? "true" : "false")" data-nav-set="@menu.Id" data-nav-title="@menu.Title" @(menu.NeedsAttention ? Html.Raw("data-nav-attention") : null)>
+                    @Toolkit.Icon(menu.Icon)<span>@menu.Title</span>
+                    @if (menu.NeedsAttention) { <span class="mat-nav__badge mat-nav__badge--dot mat-nav__badge--warn"><span class="mat-sr-only">@L["needs attention"]</span></span> }
+                    @Toolkit.Icon("check", "mat-menu__check")
+                </button>
+            }
+        </div>
+    }
+
+    <script src="~/matui/matui.js" asp-append-version="true"></script>
+    <script src="~/js/matmail.js" asp-append-version="true"></script>
     <script src="~/js/pwa.js" asp-append-version="true" data-worker="/sw.js?v=@AppInfo.Version"></script>
-    <script src="~/js/picker.js" asp-append-version="true"></script>
     <script src="~/js/rte.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

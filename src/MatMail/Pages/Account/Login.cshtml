@@ -5,9 +5,12 @@
     ViewData["Title"] = L["Sign in"].Value;
 }
 
-<div class="auth-card">
-    <h1>@L["Sign in"]</h1>
-    <p class="auth-card__lead">@L["Use your login name or e-mail address and your password."]</p>
+<div class="mat-auth__card">
+    <partial name="_AuthBrand" />
+    <div class="mat-stack mat-stack--sm">
+        <h1>@L["Sign in"]</h1>
+        <p class="mat-muted">@L["Use your login name or e-mail address and your password."]</p>
+    </div>
 
     <mm-form>
         <input type="hidden" asp-for="ReturnUrl" />
@@ -16,7 +19,7 @@
         <mm-field asp-for="Input.Remember" kind="checkbox" label='@L["Stay signed in"]' />
 
         <mm-button-row>
-            <mm-button variant="primary" type="submit" icon="log-out">@L["Sign in"]</mm-button>
+            <mm-button variant="primary" type="submit" icon="login">@L["Sign in"]</mm-button>
         </mm-button-row>
     </mm-form>
 </div>

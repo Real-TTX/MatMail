@@ -2,91 +2,95 @@
 @model MatMail.Pages.Account.AppearanceModel
 @{
     ViewData["Breadcrumb"] = "Account / Appearance";
-    ViewData["Title"] = L["My account"].Value;
-    var accentColors = new Dictionary<string, string>
-    {
-        ["blue"] = "#1a73e8", ["green"] = "#188038", ["violet"] = "#7c3aed", ["teal"] = "#0f766e",
-        ["amber"] = "#b45309", ["rose"] = "#be123c", ["graphite"] = "#475569",
-    };
+    ViewData["Title"] = L["Appearance"].Value;
+    ViewData["Description"] = L["How MatMail looks for you. The choices follow you to every device you sign in on."].Value;
+    ViewData["Width"] = "narrow";
 }
 
-<partial name="_AccountTabs" model='"appearance"' />
+@section Head {
+    @if (Model.TenantColour is { } colour)
+    {
+        <link rel="stylesheet" href="/brand/accent.css?c=@colour.TrimStart('#')" />
+    }
+}
 
 <mm-form>
-    <mm-form-section title='@L["Appearance"]' icon="sliders">
-        <div class="form-row">
-            <label>@L["Theme"]</label>
-            <div class="segmented segmented--wide" data-appearance-mode>
+    <mm-form-section title='@L["Look"]' icon="palette">
+        <fieldset class="mat-field mat-fieldset">
+            <legend class="mat-legend">@L["Theme"]</legend>
+            <div class="mat-btn-group" role="radiogroup" aria-label="@L["Theme"]" data-live="data-theme">
                 @foreach (var mode in new[] { ("system", "monitor", L["System"].Value), ("light", "sun", L["Light"].Value), ("dark", "moon", L["Dark"].Value) })
                 {
-                    <label class="segmented__item @(Model.Input.Mode == mode.Item1 ? "is-active" : "")">
-                        <input type="radio" class="sr-only" name="Input.Mode" value="@mode.Item1" checked="@(Model.Input.Mode == mode.Item1)" />
-                        <mm-icon name="@mode.Item2" /><span>@mode.Item3</span>
-                    </label>
+                    <input type="radio" class="mat-btn-check" id="Input_Mode_@mode.Item1" name="Input.Mode" value="@mode.Item1" checked="@(Model.Input.Mode == mode.Item1)" />
+                    <label class="mat-btn mat-btn--secondary" for="Input_Mode_@mode.Item1"><mm-icon name="@mode.Item2" /><span>@mode.Item3</span></label>
                 }
             </div>
-        </div>
+        </fieldset>
 
-        <div class="form-row">
-            <label>@L["Accent colour"]</label>
-            <div class="swatches" data-appearance-accent>
-                @foreach (var accent in accentColors)
+        <fieldset class="mat-field mat-fieldset">
+            <legend class="mat-legend">@L["Accent colour"]</legend>
+            <div class="mat-choices mm-accents" data-live="data-accent">
+                @foreach (var accent in Model.AccentChoices)
                 {
-                    <label class="swatch @(Model.Input.Accent == accent.Key ? "is-active" : "")" title="@accent.Key">
-                        <input type="radio" class="sr-only" name="Input.Accent" value="@accent.Key" checked="@(Model.Input.Accent == accent.Key)" />
-                        <span class="swatch__dot" style="background:@accent.Value"></span>
+                    <label class="mat-choice">
+                        <input type="radio" id="Input_Accent_@accent.Key" name="Input.Accent" value="@accent.Key" checked="@(Model.Input.Accent == accent.Key)" />
+                        @if (accent.Key == "default")
+                        {
+                            <span class="mm-accent-dot" data-accent="@(Model.TenantColour is not null ? "custom" : Model.DefaultPreset)" data-app="@(Model.TenantColour is null && Model.DefaultPreset is null ? "matmail" : null)" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span class="mm-accent-dot" data-accent="@accent.Key" aria-hidden="true"></span>
+                        }
+                        <span class="mat-choice__text">@accent.Label</span>
                     </label>
                 }
             </div>
-        </div>
+        </fieldset>
 
-        <div class="form-row">
-            <label>@L["Text size"]</label>
-            <div class="segmented segmented--wide" data-appearance-attribute="data-text-size">
+        <fieldset class="mat-field mat-fieldset">
+            <legend class="mat-legend">@L["Text size"]</legend>
+            <div class="mat-btn-group" role="radiogroup" aria-label="@L["Text size"]" data-live="data-text-size">
                 @foreach (var size in new[] { ("small", L["Small"].Value), ("normal", L["Normal"].Value), ("large", L["Large"].Value) })
                 {
-                    <label class="segmented__item @(Model.Input.TextSize == size.Item1 ? "is-active" : "")">
-                        <input type="radio" class="sr-only" name="Input.TextSize" value="@size.Item1" checked="@(Model.Input.TextSize == size.Item1)" />
-                        <span>@size.Item2</span>
-                    </label>
+                    <input type="radio" class="mat-btn-check" id="Input_TextSize_@size.Item1" name="Input.TextSize" value="@size.Item1" checked="@(Model.Input.TextSize == size.Item1)" />
+                    <label class="mat-btn mat-btn--secondary" for="Input_TextSize_@size.Item1">@size.Item2</label>
                 }
             </div>
-        </div>
+        </fieldset>
 
-        <div class="form-row">
-            <label>@L["Density"]</label>
-            <div class="segmented segmented--wide" data-appearance-attribute="data-density">
+        <fieldset class="mat-field mat-fieldset">
+            <legend class="mat-legend">@L["Density"]</legend>
+            <div class="mat-btn-group" role="radiogroup" aria-label="@L["Density"]" data-live="data-density">
                 @foreach (var density in new[] { ("comfortable", L["Comfortable"].Value), ("compact", L["Compact"].Value) })
                 {
-                    <label class="segmented__item @(Model.Input.Density == density.Item1 ? "is-active" : "")">
-                        <input type="radio" class="sr-only" name="Input.Density" value="@density.Item1" checked="@(Model.Input.Density == density.Item1)" />
-                        <span>@density.Item2</span>
-                    </label>
+                    <input type="radio" class="mat-btn-check" id="Input_Density_@density.Item1" name="Input.Density" value="@density.Item1" checked="@(Model.Input.Density == density.Item1)" />
+                    <label class="mat-btn mat-btn--secondary" for="Input_Density_@density.Item1">@density.Item2</label>
                 }
             </div>
-            <p class="form-help">@L["Compact fits more rows on the screen."]</p>
-        </div>
+            <span class="mat-hint">@L["Compact fits more rows on the screen."]</span>
+        </fieldset>
+    </mm-form-section>
 
+    <mm-form-section title='@L["Language and time"]' icon="globe">
         <mm-field asp-for="Input.Culture" kind="select" label='@L["Language"]' asp-items="Model.Cultures" />
         <mm-picker asp-for="Input.TimeZone" asp-items="Model.TimeZones" label='@L["Time zone"]' placeholder='@L["Default (server for lists and logs, this device in the mail client)"]'
                    help='@L["Dates and times are shown in this time zone."]' />
-        <mm-field asp-for="Input.ShowPreviews" kind="checkbox" label='@L["Show the first words of a message in the list"]' />
     </mm-form-section>
 
     <mm-form-section title='@L["Mail"]' icon="mail">
-        <div class="form-row">
-            <label>@L["Reading pane"]</label>
-            <div class="segmented segmented--wide" data-appearance-attribute="data-reading-pane">
+        <fieldset class="mat-field mat-fieldset">
+            <legend class="mat-legend">@L["Reading pane"]</legend>
+            <div class="mat-btn-group" role="radiogroup" aria-label="@L["Reading pane"]">
                 @foreach (var pane in new[] { ("off", L["Off"].Value), ("right", L["Right of the list"].Value), ("below", L["Below the list"].Value) })
                 {
-                    <label class="segmented__item @(Model.Input.ReadingPane == pane.Item1 ? "is-active" : "")">
-                        <input type="radio" class="sr-only" name="Input.ReadingPane" value="@pane.Item1" checked="@(Model.Input.ReadingPane == pane.Item1)" />
-                        <span>@pane.Item2</span>
-                    </label>
+                    <input type="radio" class="mat-btn-check" id="Input_ReadingPane_@pane.Item1" name="Input.ReadingPane" value="@pane.Item1" checked="@(Model.Input.ReadingPane == pane.Item1)" />
+                    <label class="mat-btn mat-btn--secondary" for="Input_ReadingPane_@pane.Item1">@pane.Item2</label>
                 }
             </div>
-            <p class="form-help">@L["Off: a message opens in place of the list. On small screens it always does."]</p>
-        </div>
+            <span class="mat-hint">@L["Off: a message opens in place of the list. On small screens it always does."]</span>
+        </fieldset>
+        <mm-field asp-for="Input.ShowPreviews" kind="checkbox" label='@L["Show the first words of a message in the list"]' />
         <mm-field asp-for="Input.ConversationView" kind="checkbox" label='@L["Group messages into conversations"]'
                   help='@L["The list shows one row per conversation; opening it shows all its messages."]' />
     </mm-form-section>
@@ -95,36 +99,3 @@
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
     </mm-button-row>
 </mm-form>
-
-@section Scripts {
-    <script>
-        // Live preview of the choice before it is saved.
-        (function () {
-            var root = document.documentElement;
-            function dark(mode) { return mode === "dark" || (mode === "system" && matchMedia("(prefers-color-scheme: dark)").matches); }
-            document.querySelectorAll("[data-appearance-mode] input").forEach(function (input) {
-                input.addEventListener("change", function () {
-                    document.querySelectorAll("[data-appearance-mode] .segmented__item").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
-                    root.setAttribute("data-theme-mode", input.value);
-                    root.setAttribute("data-mode", dark(input.value) ? "dark" : "light");
-                });
-            });
-            // Text size and density: the attribute of <html> that the style sheet reacts to.
-            document.querySelectorAll("[data-appearance-attribute]").forEach(function (group) {
-                var attribute = group.getAttribute("data-appearance-attribute");
-                group.querySelectorAll("input").forEach(function (input) {
-                    input.addEventListener("change", function () {
-                        group.querySelectorAll(".segmented__item").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
-                        root.setAttribute(attribute, input.value);
-                    });
-                });
-            });
-            document.querySelectorAll("[data-appearance-accent] input").forEach(function (input) {
-                input.addEventListener("change", function () {
-                    document.querySelectorAll("[data-appearance-accent] .swatch").forEach(function (i) { i.classList.toggle("is-active", i.contains(input)); });
-                    root.setAttribute("data-accent", input.value);
-                });
-            });
-        })();
-    </script>
-}

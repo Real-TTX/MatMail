@@ -5,6 +5,7 @@
     ViewData["Description"] = L["Computers and devices in these networks may send mail through this server without signing in (smart host), e.g. printers, scanners and internal servers."].Value;
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search rules or networks…"]' />
     <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
@@ -24,22 +25,22 @@
         <tr>
             <th>@L["Rule"]</th>
             <th>@L["Network"]</th>
-            <th class="hide-sm">@L["Sender domains"]</th>
-            <th class="hide-sm">@L["Sent through"]</th>
+            <th class="mat-hide-sm">@L["Sender domains"]</th>
+            <th class="mat-hide-sm">@L["Sent through"]</th>
             <th>@L["Status"]</th>
-            <th class="is-actions"></th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var rule in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Relay/Edit?id=@rule.Id" tabindex="0">
-                <td class="cell-title">@rule.Name</td>
-                <td class="mono">@rule.Network</td>
-                <td class="hide-sm">@(rule.AllowedSenderDomains.Length == 0 ? L["Domains of the tenant"].Value : string.Join(", ", rule.AllowedSenderDomains))</td>
-                <td class="hide-sm">@(rule.SendAccount?.Name ?? L["Default"].Value)</td>
+            <tr data-row-href="/Admin/Relay/Edit?id=@rule.Id">
+                <td><div class="mat-table__name"><span><a href="/Admin/Relay/Edit?id=@rule.Id">@rule.Name</a></span></div></td>
+                <td class="mat-mono">@rule.Network</td>
+                <td class="mat-hide-sm">@(rule.AllowedSenderDomains.Length == 0 ? L["Domains of the tenant"].Value : string.Join(", ", rule.AllowedSenderDomains))</td>
+                <td class="mat-hide-sm">@(rule.SendAccount?.Name ?? L["Default"].Value)</td>
                 <td>@if (rule.IsEnabled) { <mm-badge kind="ok">@L["Enabled"]</mm-badge> } else { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</td>
-                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Relay/Edit?id=@rule.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+                <td class="mat-table__cell-actions"><div class="mat-table__actions"><a class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" href="/Admin/Relay/Edit?id=@rule.Id" data-tip="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></div></td>
             </tr>
         }
     </tbody>
@@ -50,12 +51,12 @@
 <mm-list-actions>
     <mm-button variant="primary" href="/Admin/Relay/Edit" icon="plus">@L["New relay rule"]</mm-button>
 </mm-list-actions>
+</mm-list>
 
-<section class="card relay-howto">
-    <h2 class="card__title"><mm-icon name="info" />@L["Settings for the device"]</h2>
-    <dl class="kv">
-        <dt>@L["SMTP server"]</dt><dd class="mono">@Model.Hostname</dd>
-        <dt>@L["Port"]</dt><dd class="mono">@Model.SmtpPorts</dd>
+<mm-card title='@L["Settings for the device"]' icon="info">
+    <dl class="mat-kv">
+        <dt>@L["SMTP server"]</dt><dd class="mat-mono">@Model.Hostname</dd>
+        <dt>@L["Port"]</dt><dd class="mat-mono">@Model.SmtpPorts</dd>
         <dt>@L["Sign-in"]</dt><dd>@L["none (the device’s network address is checked)"]</dd>
     </dl>
-</section>
+</mm-card>

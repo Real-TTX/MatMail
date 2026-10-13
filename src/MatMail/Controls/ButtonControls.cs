@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 namespace MatMail.Controls;
 
 /// <summary>
-/// The row of form actions, always in one line and always in this order: positive first (Save), then neutral (Back), then — pushed
-/// to the far side by an <c>mm-button-spacer</c> — destructive (Delete). On narrow screens the row wraps and the spacer vanishes.
+/// The row of form actions under the content (FORM-01, FORM-02): the toolkit puts the buttons in the order positive, neutral, the space, destructive,
+/// whatever order they are written in. On narrow screens the row wraps. Put an <c>mm-button-spacer</c> before the destructive button.
 /// </summary>
 [HtmlTargetElement("mm-button-row")]
 public sealed class ButtonRowTagHelper : TagHelper
@@ -14,7 +14,8 @@ public sealed class ButtonRowTagHelper : TagHelper
     {
         output.TagName = "div";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "btn-row");
+        string extra = output.Attributes.TryGetAttribute("class", out TagHelperAttribute? existing) ? " " + existing.Value : string.Empty;
+        output.Attributes.SetAttribute("class", "mat-btn-row" + extra);
     }
 }
 
@@ -26,13 +27,13 @@ public sealed class ButtonSpacerTagHelper : TagHelper
     {
         output.TagName = "span";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "btn-row__spacer");
+        output.Attributes.SetAttribute("class", "mat-btn-row__spacer");
     }
 }
 
 /// <summary>
-/// The row of actions that belong to a list (New …, Import …), placed directly below the table and aligned left. Delete-style
-/// actions are separated from the rest. Pagination is the only thing that may sit between the table and this row.
+/// The row of actions that belong to a list (New …, Import …), below the table and the pagination, aligned left (LIST-07); the toolkit keeps the order
+/// toolbar, table, pagination, actions whatever the source order is. Put the list in an <c>mm-list</c>.
 /// </summary>
 [HtmlTargetElement("mm-list-actions")]
 public sealed class ListActionsTagHelper : TagHelper
@@ -41,18 +42,19 @@ public sealed class ListActionsTagHelper : TagHelper
     {
         output.TagName = "div";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", "list-actions");
+        output.Attributes.SetAttribute("class", "mat-actions");
     }
 }
 
 /// <summary>
 /// A button or a link that looks like one. <c>variant</c>: primary | secondary | danger | ghost. <c>href</c> renders an anchor,
-/// otherwise a button; <c>handler</c> posts to a Razor page handler; <c>confirm</c> asks first (dialog in app.js);
-/// <c>icon</c> puts an icon in front of the text.
+/// otherwise a button; <c>handler</c> posts to a Razor page handler; <c>confirm</c> asks first, in a dialog of the toolkit (a destructive
+/// button asks with Cancel first and the red button last; <c>confirm-ok</c> names the confirming button); <c>icon</c> puts an icon in front of the text;
+/// <c>icon-only</c> makes a button of the icon alone (the text becomes its name and its tooltip, BUTTON-04).
 /// Usage: &lt;mm-button variant="primary" icon="save" type="submit"&gt;Save&lt;/mm-button&gt;
 /// </summary>
 [HtmlTargetElement("mm-button")]
-public sealed class ButtonTagHelper : TagHelper
+public sealed class ButtonTagHelper(Toolkit toolkit) : TagHelper
 {
     [HtmlAttributeName("variant")]
     public string Variant { get; set; } = "primary";
@@ -69,12 +71,26 @@ public sealed class ButtonTagHelper : TagHelper
     [HtmlAttributeName("confirm")]
     public string? Confirm { get; set; }
 
+    [HtmlAttributeName("confirm-ok")]
+    public string? ConfirmOk { get; set; }
+
     [HtmlAttributeName("icon")]
     public string? Icon { get; set; }
 
+    [HtmlAttributeName("icon-only")]
+    public bool IconOnly { get; set; }
+
+    [HtmlAttributeName("small")]
+    public bool Small { get; set; }
+
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
-        string css = $"btn btn--{Variant}";
+        string css = $"mat-btn mat-btn--{Variant}" + (IconOnly ? " mat-btn--icon" : string.Empty) + (Small ? " mat-btn--sm" : string.Empty);
+        if (output.Attributes.TryGetAttribute("class", out TagHelperAttribute? extra))
+        {
+            css += " " + extra.Value;
+        }
+
         TagHelperContent body = await output.GetChildContentAsync();
         output.TagMode = TagMode.StartTagAndEndTag;
 
@@ -99,11 +115,24 @@ public sealed class ButtonTagHelper : TagHelper
         if (!string.IsNullOrEmpty(Confirm))
         {
             output.Attributes.SetAttribute("data-confirm", Confirm);
+            if (!string.IsNullOrEmpty(ConfirmOk))
+            {
+                output.Attributes.SetAttribute("data-confirm-ok", ConfirmOk);
+            }
+        }
+
+        if (IconOnly)
+        {
+            string name = body.GetContent().Trim();
+            output.Attributes.SetAttribute("aria-label", name);
+            output.Attributes.SetAttribute("data-tip", name);
+            output.Content.SetHtmlContent(toolkit.IconMarkup(Icon ?? "help-circle"));
+            return;
         }
 
         if (!string.IsNullOrEmpty(Icon))
         {
-            output.Content.AppendHtml($"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#i-{HtmlEncoder.Default.Encode(Icon)}\"/></svg>");
+            output.Content.AppendHtml(toolkit.IconMarkup(Icon));
         }
 
         output.Content.AppendHtml("<span>");
@@ -112,9 +141,12 @@ public sealed class ButtonTagHelper : TagHelper
     }
 }
 
-/// <summary>A small status label. <c>kind</c>: ok | warn | danger | info | muted.</summary>
+/// <summary>
+/// A small label. A status is a pill with a dot and a word (TABLE-03, COLOR-04): <c>kind</c> ok | warn | danger | info | muted.
+/// With an <c>icon</c> it is a category (a tag), not a state.
+/// </summary>
 [HtmlTargetElement("mm-badge")]
-public sealed class BadgeTagHelper : TagHelper
+public sealed class BadgeTagHelper(Toolkit toolkit) : TagHelper
 {
     [HtmlAttributeName("kind")]
     public string Kind { get; set; } = "muted";
@@ -126,13 +158,18 @@ public sealed class BadgeTagHelper : TagHelper
     {
         output.TagName = "span";
         output.TagMode = TagMode.StartTagAndEndTag;
-        output.Attributes.SetAttribute("class", $"badge badge--{Kind}");
         TagHelperContent body = await output.GetChildContentAsync();
+
         if (!string.IsNullOrEmpty(Icon))
         {
-            output.Content.AppendHtml($"<svg class=\"icon\" aria-hidden=\"true\"><use href=\"#i-{HtmlEncoder.Default.Encode(Icon)}\"/></svg>");
+            output.Attributes.SetAttribute("class", "mat-tag");
+            output.Content.AppendHtml(toolkit.IconMarkup(Icon));
+            output.Content.AppendHtml(body);
+            return;
         }
 
+        string modifier = Kind switch { "ok" => " mat-pill--ok", "warn" => " mat-pill--warn", "danger" => " mat-pill--error", "info" => " mat-pill--info", _ => string.Empty };
+        output.Attributes.SetAttribute("class", "mat-pill" + modifier);
         output.Content.AppendHtml(body);
     }
 }

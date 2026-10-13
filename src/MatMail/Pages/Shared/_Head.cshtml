@@ -1,0 +1,35 @@
+@model MatMail.Controls.HeadModel
+@*
+    What goes into the <head> of every page (the layouts add the "Head" section of the page after it): the toolkit (the boot script applies the saved
+    theme before the first paint, so the page does not flash in the wrong colours), the few styles of this app (mm-*), the accent of a tenant and what
+    makes the pages an app on a phone. The status bar is "default" on purpose: the page starts below it and ends at the lower edge of the screen, and
+    it is light in the light theme and dark in the dark one. "black-translucent" lets the page run under the bar, but on iPhones with a Dynamic Island
+    that leaves a dead strip at the bottom (MatGate ran into it), and its white text is unreadable on a light header. iOS reads these tags when the app
+    is put on the home screen: an app installed earlier has to be removed and added again.
+*@
+<meta charset="utf-8" />
+@* No zoom: the pages are an app. (iPhones ignore this tag for pinching; pwa.js stops that gesture.) *@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="@MatMail.Controls.Ui.App.Accent" />
+<title>@Model.Title</title>
+<link rel="icon" type="image/svg+xml" href="~/icons/logo.svg" />
+<link rel="apple-touch-icon" sizes="180x180" href="~/icons/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="~/icons/icon-192.png" />
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+<meta name="application-name" content="@Model.ProductName" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="@Model.ProductName" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<script src="~/matui/matui.boot.js" asp-append-version="true"></script>
+<link rel="stylesheet" href="~/matui/matui.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/matmail.css" asp-append-version="true" />
+@if (Model.AccentColor is { } color)
+{
+    <link rel="stylesheet" href="/brand/accent.css?c=@color.TrimStart('#')" />
+}
+@if (Model.Mail)
+{
+    <link rel="stylesheet" href="~/css/mail.css" asp-append-version="true" />
+}

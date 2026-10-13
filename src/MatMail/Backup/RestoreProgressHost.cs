@@ -116,11 +116,12 @@ public sealed class RestoreProgressHost : IAsyncDisposable
         <meta name="color-scheme" content="light dark">
         <title>MatMail</title>
         <style>
-        :root { --bg:#f5f7fa; --card:#fff; --text:#1f2933; --muted:#616e7c; --accent:#2f6fed; --line:#d9e2ec; --bad:#c0392b; --good:#1e8e5a; }
-        @media (prefers-color-scheme: dark) { :root { --bg:#12161c; --card:#1b212b; --text:#e6ebf1; --muted:#9aa8b8; --line:#2b3441; } }
+        /* The colours of the toolkit (this page has no style sheet of its own to load: the program is restarting). */
+        :root { --bg:#f5f4f1; --card:#fff; --text:#1f1e1b; --muted:#5d5b55; --accent:#1a56db; --line:#dcdbd7; --bad:#b3203b; --good:#0b7a44; }
+        @media (prefers-color-scheme: dark) { :root { --bg:#151514; --card:#1e1e1c; --text:#ecebe6; --muted:#a8a69e; --line:#3a3a37; --accent:#6f9bf5; --bad:#ff9db0; --good:#5fd698; } }
         * { box-sizing: border-box; }
         body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:16px; }
-        main { width:100%; max-width:30rem; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px 28px 24px; box-shadow:0 8px 30px rgba(0,0,0,.08); }
+        main { width:100%; max-width:30rem; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:28px 28px 24px; }
         h1 { font-size:1.25rem; margin:0 0 6px; }
         p { margin:0 0 16px; color:var(--muted); }
         .bar { height:8px; border-radius:99px; background:var(--line); overflow:hidden; }

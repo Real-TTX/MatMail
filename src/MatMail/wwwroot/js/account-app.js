@@ -34,6 +34,11 @@
 
   function ownOnly() { return $("push-scope-own").checked; }
 
+  // What this device is doing stays in the line above the switch; the result of one action (a failure, the test) is a toast.
+  function say(message, tone) {
+    if (window.MatUi) { window.MatUi.toast(message, { tone: tone, timeout: tone === "danger" ? 9000 : undefined }); } else { text.textContent = message; }
+  }
+
   function render(state) {
     // On an iPhone Safari offers notifications only to an app on the home screen, so the hint for that comes before "not supported".
     var blocked = state.needsApp ? T("needsApp") : !state.supported || !state.secure ? T("notSupported") : !state.enabled ? T("serverOff") : state.permission === "denied" && !state.subscribed ? T("blocked") : "";
@@ -54,7 +59,7 @@
     text.textContent = T("working");
     var done = toggle.checked ? pwa.push.enable(ownOnly()) : pwa.push.disable();
     done.then(function () { location.reload(); }, function (error) {
-      refresh().then(function () { if (!error || !error.denied) { text.textContent = T("failed") + (error && error.message ? " " + error.message : ""); } });
+      refresh().then(function () { if (!error || !error.denied) { say(T("failed") + (error && error.message ? " " + error.message : ""), "danger"); } });
     });
   });
 
@@ -68,7 +73,7 @@
 
   test.addEventListener("click", function () {
     test.disabled = true;
-    pwa.push.test().then(function () { text.textContent = T("testSent"); }, function () { text.textContent = T("testFailed"); }).then(function () { test.disabled = false; });
+    pwa.push.test().then(function () { say(T("testSent"), "success"); }, function () { say(T("testFailed"), "danger"); }).then(function () { test.disabled = false; });
   });
 
   refresh();

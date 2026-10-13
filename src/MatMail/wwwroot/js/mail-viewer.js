@@ -54,7 +54,12 @@
     try { return frame.contentDocument; } catch (e) { return null; }
   }
 
-  function isDark() { return document.documentElement.getAttribute("data-mode") === "dark"; }
+  // The theme of the page: the attribute data-theme of <html> says "light" or "dark"; without it (or "system") the device decides.
+  var systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function isDark() {
+    var theme = document.documentElement.getAttribute("data-theme");
+    return theme === "dark" || (theme !== "light" && !!systemDark && systemDark.matches);
+  }
 
   /** Mails without colours of their own follow the dark theme; the ones with colours stay on a light page. */
   function applyTheme(viewer) {
@@ -70,10 +75,11 @@
     frames.forEach(function (viewer) { applyTheme(viewer); fit(viewer); });
   }
 
-  // The theme switch of the page changes data-mode; the open mail follows.
+  // The theme switch of the page changes data-theme (and the device its colour scheme); the open mail follows.
   if (window.MutationObserver) {
-    new MutationObserver(function () { frames.forEach(applyTheme); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-mode"] });
+    new MutationObserver(function () { frames.forEach(applyTheme); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
+  if (systemDark && systemDark.addEventListener) { systemDark.addEventListener("change", function () { frames.forEach(applyTheme); }); }
 
   // ---------------------------------------------------------------------------------------------
   // Size

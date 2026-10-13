@@ -1,4 +1,4 @@
-// MatMail web client – advanced search: the panel under the search box. It writes the query text (from:, to:, subject:, in:, …)
+// MatMail web client – advanced search: the dialog behind the options button of the search box. It writes the query text (from:, to:, subject:, in:, …)
 // and reads it back when it is opened again, so whatever the panel builds can also be typed in the box. The server understands
 // the text (Messaging/MailQuery.cs); the panel writes the English operators, which work in every language.
 (function () {
@@ -25,10 +25,8 @@
   var ATTACHMENT_WORDS = ["attachment", "attachments", "attach", "anhang", "anhänge", "anhaenge"];
 
   var ctx = null;        // { wrap, input, options, run } of the search box
-  var layer = null;
-  var panel = null;
+  var dialog = null;
   var fields = {};
-  var isOpen = false;
   var counter = 0;
 
   // ---------------------------------------------------------------------------------------------
@@ -217,7 +215,7 @@
   }
 
   // ---------------------------------------------------------------------------------------------
-  // The panel
+  // The dialog
   // ---------------------------------------------------------------------------------------------
   function folderOptions() {
     var options = [["", T("everywhereExceptJunk")], ["anywhere", T("everywhereAll")]];
@@ -225,80 +223,86 @@
     if (box) {
       box.folders.forEach(function (folder) {
         var value = folder.kind === "Custom" ? folder.path : FOLDER_WORDS[folder.kind];
-        if (value) { options.push([value, new Array((folder.depth || 0) + 1).join("  ") + App.folderLabel(folder)]); }
+        if (value) { options.push([value, new Array((folder.depth || 0) + 1).join("  ") + App.folderLabel(folder)]); }
       });
     }
     return options;
   }
 
-  function field(label, control, size) {
+  /** A field of the toolkit: the label above, the control under it; "full" spans both columns. */
+  function field(label, control, full) {
     var id = "search-field-" + (++counter);
     control.id = id;
-    return App.el("div", { class: "form-row search-panel__field" + (size ? " search-panel__field--" + size : "") }, [App.el("label", { for: id, text: label }), control]);
+    return App.el("div", { class: "mat-field" + (full ? " mat-field--full" : "") }, [App.el("label", { class: "mat-label", for: id, text: label }), control]);
   }
 
-  function textField(name, label) {
-    fields[name] = App.el("input", { type: "text", class: "form-control", autocomplete: "off", autocapitalize: "off", spellcheck: "false", enterkeyhint: "search" });
-    return field(label, fields[name], "wide");
+  function textField(name, label, full) {
+    fields[name] = App.el("input", { type: "text", class: "mat-input", autocomplete: "off", autocapitalize: "off", spellcheck: "false", enterkeyhint: "search" });
+    return field(label, fields[name], full);
   }
 
   function dateField(name, label) {
-    fields[name] = App.el("input", { type: "date", class: "form-control" });
+    fields[name] = App.el("input", { type: "date", class: "mat-input" });
     return field(label, fields[name]);
   }
 
   function sizeField(name, label) {
-    fields[name] = App.el("input", { type: "number", class: "form-control", min: "0", step: "any", inputmode: "decimal" });
+    fields[name] = App.el("input", { type: "number", class: "mat-input", min: "0", step: "any", inputmode: "decimal" });
     return field(label, fields[name]);
   }
 
   function checkField(name, label) {
     var id = "search-field-" + (++counter);
     fields[name] = App.el("input", { type: "checkbox", id: id });
-    return App.el("div", { class: "form-check" }, [fields[name], App.el("label", { for: id, text: label })]);
+    return App.el("label", { class: "mat-check", for: id }, [fields[name], App.el("span", { class: "mat-check__text", text: label })]);
   }
 
   function build() {
-    if (panel) { return; }
-    fields.folder = App.el("select", { class: "form-control" });
-    fields.within = App.el("select", { class: "form-control" });
+    if (dialog) { return; }
+    fields.folder = App.el("select", { class: "mat-select" });
+    fields.within = App.el("select", { class: "mat-select" });
 
-    var body = App.el("div", { class: "search-panel__body" }, [
-      textField("from", T("from")),
-      textField("to", T("to")),
-      textField("subject", T("subject")),
-      field(T("searchIn"), fields.folder, "wide"),
-      textField("words", T("hasWords")),
-      textField("without", T("notWords")),
-      field(T("dateWithin"), fields.within, "wide"),
-      dateField("after", T("receivedAfter")),
-      dateField("before", T("receivedBefore")),
-      sizeField("larger", T("largerThanMb")),
-      sizeField("smaller", T("smallerThanMb")),
-      App.el("div", { class: "search-panel__checks search-panel__field--full" }, [checkField("attachment", T("hasAttachment")), checkField("unread", T("unread")), checkField("starred", T("starred"))]),
-      App.el("p", { class: "form-help search-panel__field--full", text: T("searchTip") })
+    var body = App.el("div", { class: "mat-dialog__body mat-form" }, [
+      App.el("div", { class: "mat-form__grid" }, [
+        textField("from", T("from")),
+        textField("to", T("to")),
+        textField("subject", T("subject"), true),
+        textField("words", T("hasWords")),
+        textField("without", T("notWords")),
+        field(T("searchIn"), fields.folder),
+        field(T("dateWithin"), fields.within),
+        dateField("after", T("receivedAfter")),
+        dateField("before", T("receivedBefore")),
+        sizeField("larger", T("largerThanMb")),
+        sizeField("smaller", T("smallerThanMb")),
+        App.el("div", { class: "mat-field mat-field--full" }, [
+          App.el("div", { class: "mat-checks mat-checks--inline" }, [checkField("attachment", T("hasAttachment")), checkField("unread", T("unread")), checkField("starred", T("starred"))]),
+          App.el("span", { class: "mat-hint", text: T("searchTip") })
+        ])
+      ])
     ]);
 
-    var search = App.el("button", { type: "submit", class: "btn btn--primary", text: T("searchButton") });
-    var reset = App.el("button", { type: "button", class: "btn btn--secondary", text: T("reset") });
+    var search = App.el("button", { type: "submit", class: "mat-btn mat-btn--primary" }, [App.icon("search"), App.el("span", { text: T("searchButton") })]);
+    var cancel = App.el("button", { type: "button", class: "mat-btn mat-btn--secondary", "data-dialog-close": "", text: T("cancel") });
+    var reset = App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--end", text: T("reset") });
     reset.addEventListener("click", function () { write(parseQuery("")); fields.from.focus(); });
-    var footer = App.el("div", { class: "search-panel__footer" }, [search, reset]);
+    var foot = App.el("div", { class: "mat-dialog__foot" }, [App.el("div", { class: "mat-btn-row mat-btn-row--plain" }, [search, cancel, App.el("span", { class: "mat-btn-row__spacer" }), reset])]);
 
-    var form = App.el("form", { class: "search-panel__form", autocomplete: "off" }, [body, footer]);
+    var head = App.el("div", { class: "mat-dialog__head" }, [
+      App.icon("sliders"), App.el("h2", { class: "mat-dialog__title", id: "search-dialog-title", text: T("advancedSearch") }),
+      App.el("button", { type: "button", class: "mat-btn mat-btn--ghost mat-btn--icon mat-dialog__close", "data-dialog-close": "", "aria-label": T("close") }, [App.icon("x")])
+    ]);
+    var form = App.el("form", { class: "mat-dialog__form", autocomplete: "off", novalidate: "" }, [head, body, foot]);
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var query = composeQuery(read());
       ctx.input.value = query;
-      close(false);
+      close();
       ctx.run(query);
     });
 
-    var header = App.el("div", { class: "search-panel__header" }, [
-      App.el("span", { class: "search-panel__title", text: T("advancedSearch") }),
-      App.iconButton("x", T("close"), function () { close(true); })
-    ]);
-    panel = App.el("div", { class: "search-panel", role: "dialog", "aria-label": T("advancedSearch") }, [header, form]);
-    layer.appendChild(panel);
+    dialog = App.el("dialog", { class: "mat-dialog mat-dialog--lg", "aria-labelledby": "search-dialog-title", "data-static": "" }, [form]);
+    doc.body.appendChild(dialog);
   }
 
   /** The choices depend on the mailbox (its folders) and on the text (a period of its own, like 7d, is added to the presets). */
@@ -324,46 +328,23 @@
     ["attachment", "unread", "starred"].forEach(function (name) { fields[name].checked = v[name]; });
   }
 
-  /** Under the search box on a wide screen; phones get a full-screen sheet from the style sheet. */
-  function place() {
-    if (!window.matchMedia("(min-width: 721px)").matches) { panel.style.left = panel.style.top = panel.style.width = ""; return; }
-    var rect = ctx.wrap.getBoundingClientRect();
-    var width = Math.min(Math.max(rect.width, 640), window.innerWidth - 16);
-    panel.style.width = width + "px";
-    panel.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) + "px";
-    panel.style.top = (rect.bottom + 6) + "px";
-  }
-
   function show() {
     build();
     fillChoices();
     write(parseQuery(ctx.input.value));
-    layer.hidden = false;
-    isOpen = true;
-    ctx.options.setAttribute("aria-expanded", "true");
-    place();
+    window.MatUi.dialog.open(dialog, ctx.options);
     fields.from.focus();
   }
 
-  function close(refocus) {
-    if (!isOpen) { return; }
-    isOpen = false;
-    layer.hidden = true;
-    ctx.options.setAttribute("aria-expanded", "false");
-    if (refocus) { ctx.options.focus(); }
+  function close() {
+    if (dialog && dialog.open) { window.MatUi.dialog.close(dialog); }
   }
 
-  /** wrap: the search box, input: its text field, options: the button that opens the panel, run(text): starts the search. */
+  /** wrap: the search box, input: its text field, options: the button that opens the dialog, run(text): starts the search. */
   function attach(options) {
     ctx = options;
-    layer = doc.getElementById("mail-search-layer");
-    ctx.options.addEventListener("click", function () { if (isOpen) { close(true); } else { show(); } });
-    doc.addEventListener("mousedown", function (e) {
-      if (isOpen && !panel.contains(e.target) && !ctx.wrap.contains(e.target)) { close(false); }
-    }, true);
-    doc.addEventListener("keydown", function (e) { if (isOpen && e.key === "Escape") { e.stopPropagation(); close(true); } }, true);
-    window.addEventListener("resize", function () { if (isOpen) { place(); } });   // not "close": the keyboard of a phone resizes the page
+    ctx.options.addEventListener("click", show);
   }
 
-  App.search = { attach: attach, close: function () { close(false); }, compose: composeQuery, parse: parseQuery };
+  App.search = { attach: attach, close: close, compose: composeQuery, parse: parseQuery };
 })();

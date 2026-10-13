@@ -8,6 +8,7 @@
 
 <partial name="_BackupTabs" model='"plans"' />
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search schedules or targets…"]' />
     <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
@@ -28,28 +29,39 @@
         <tr>
             <th>@L["Schedule"]</th>
             <th>@L["When"]</th>
-            <th class="hide-sm">@L["Target"]</th>
-            <th class="hide-sm">@L["Keeps"]</th>
+            <th class="mat-hide-sm">@L["Target"]</th>
+            <th class="mat-hide-sm">@L["Keeps"]</th>
             <th>@L["Next run"]</th>
             <th>@L["Last run"]</th>
-            <th class="is-actions"></th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var plan in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Backup/Plan?id=@plan.Id" tabindex="0">
-                <td class="cell-title">@plan.Name@if (plan.Encrypt) { <mm-icon name="lock" class="cell-icon" /> }</td>
-                <td>@Model.Schedule(plan)</td>
-                <td class="hide-sm">@plan.Target?.Name</td>
-                <td class="hide-sm cell-sub">@Model.Keeps(plan)</td>
-                <td class="nowrap">@if (!plan.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> } else { @Fmt.DateTimeText(plan.NextRunDate) }</td>
-                <td class="nowrap">
-                    @if (plan.LastStatus == BackupRunStatus.Failed) { <mm-badge kind="danger" icon="alert-circle">@L["Failed"]</mm-badge> }
-                    else if (plan.LastStatus == BackupRunStatus.Succeeded) { <mm-badge kind="ok" icon="check-circle">@Fmt.Ago(plan.LastRunDate)</mm-badge> }
-                    else { <span class="muted">–</span> }
+            <tr data-row-href="/Admin/Backup/Plan?id=@plan.Id">
+                <td>
+                    <div class="mat-table__name"><span><a href="/Admin/Backup/Plan?id=@plan.Id">@plan.Name</a>@if (plan.Encrypt) { <span class="mat-muted" role="img" aria-label="@L["Encrypted"]" data-tip="@L["Encrypted"]"> <mm-icon name="lock" /></span> }</span></div>
                 </td>
-                <td class="is-actions"><span class="icon-actions"><a class="icon-btn" href="/Admin/Backup/Plan?id=@plan.Id" title="@L["Edit"]" aria-label="@L["Edit"]"><mm-icon name="edit" /></a></span></td>
+                <td>@Model.Schedule(plan)</td>
+                <td class="mat-hide-sm">@plan.Target?.Name</td>
+                <td class="mat-hide-sm mat-muted">@Model.Keeps(plan)</td>
+                <td class="mat-mono mat-nowrap">
+                    @if (!plan.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> } else { <span>@Fmt.DateTimeText(plan.NextRunDate)</span> }
+                </td>
+                <td>
+                    <div>
+                        @if (plan.LastStatus == BackupRunStatus.Failed) { <mm-badge kind="danger">@L["Failed"]</mm-badge> }
+                        else if (plan.LastStatus == BackupRunStatus.Succeeded) { <mm-badge kind="ok">@L["Succeeded"]</mm-badge> }
+                        else { <span class="mat-muted">–</span> }
+                        @if (plan.LastStatus is not null) { <small class="mat-muted mat-mono mat-d-block">@Fmt.Ago(plan.LastRunDate)</small> }
+                    </div>
+                </td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions">
+                        <mm-button variant="ghost" href='@($"/Admin/Backup/Plan?id={plan.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
+                    </div>
+                </td>
             </tr>
         }
     </tbody>
@@ -60,3 +72,4 @@
 <mm-list-actions>
     <mm-button variant="primary" href="/Admin/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
 </mm-list-actions>
+</mm-list>

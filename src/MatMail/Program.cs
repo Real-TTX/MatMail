@@ -3,6 +3,7 @@ using MatMail;
 using MatMail.Api;
 using MatMail.Backup;
 using MatMail.Configuration;
+using MatMail.Controls;
 using MatMail.Data;
 using MatMail.Directories;
 using MatMail.MailServer.Imap;
@@ -69,6 +70,8 @@ builder.WebHost.ConfigureMatMailWebServer(config, certificates);
 // ---------------------------------------------------------------------------------------------
 builder.Services.AddSingleton(certificates);
 builder.Services.AddMatMailServices(config);
+builder.Services.AddSingleton<Toolkit>();   // the icon sprites of the pages (wwwroot/matui)
+builder.Services.AddScoped<ShellMenus>();   // the menus of the shell
 builder.Services.AddMailSync();
 builder.Services.AddImapServer();
 builder.Services.AddSmtpServer();
@@ -262,6 +265,20 @@ app.MapGet("/brand/{token:guid}", async (Guid token, HttpContext http, BrandingS
     http.Response.Headers.XContentTypeOptions = "nosniff";
     http.Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
     return Results.Bytes(logo.Value.Bytes, logo.Value.ContentType);
+}).AllowAnonymous();
+
+// The accent colour of a tenant as the custom accent of the toolkit (<html data-accent="custom">). The colour is in the address, so the answer never changes.
+app.MapGet("/brand/accent.css", (string? c, HttpContext http) =>
+{
+    string? color = BrandingService.NormalizeColor(c is null ? null : "#" + c.TrimStart('#'));
+    if (color is null)
+    {
+        return Results.NotFound();
+    }
+
+    http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+    http.Response.Headers.XContentTypeOptions = "nosniff";
+    return Results.Text($":root {{ --mat-custom-accent: {color}; --mat-custom-on-accent: {BrandingService.TextOn(color)}; }}\n", "text/css");
 }).AllowAnonymous();
 
 // The web app manifest. The link in the layouts asks with the cookies, so a signed-in person gets the name of their tenant and the

@@ -3,6 +3,7 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Signatures / Edit signature" : "Administration / Signatures / New signature";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New signature"].Value;
+    ViewData["Width"] = "narrow";
 }
 
 <mm-form>
@@ -10,7 +11,7 @@
 
     <mm-form-section title='@L["Signature"]' icon="pen-line">
         <mm-field asp-for="Input.Name" label='@L["Name"]' autofocus="autofocus" />
-        <div class="form-grid">
+        <div class="mat-form__grid">
             <mm-field asp-for="Input.Kind" kind="select" label='@L["Type"]' asp-items="Model.KindItems"
                       help='@L["A signature is offered in the mail client. A footer is appended by the server to every outgoing message in its scope and cannot be removed by the sender."]' />
             <mm-field asp-for="Input.Scope" kind="select" label='@L["Applies to"]' asp-items="Model.ScopeItems" />
@@ -31,11 +32,11 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Signatures" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Signatures" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this signature?"]'>@L["Delete"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this signature?"]' confirm-ok='@L["Delete"]'>@L["Delete"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

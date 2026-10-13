@@ -2,18 +2,16 @@
 @model MatMail.Pages.Admin.Transfers.IndexModel
 @{
     ViewData["Breadcrumb"] = "Administration / Mail transfers";
-    ViewData["Description"] = L["What came into the server, what went out and what moved between mailboxes, with the way it took and how it ended."].Value;
+    ViewData["Description"] = L["What came into the server, what went out and what moved between mailboxes, with the way it took and how it ended."].Value
+        + (Model.LogIsOff ? string.Empty : " " + string.Format(L["Lines are kept for {0} days."].Value, Model.KeptDays) + (Model.ShowsSubjects ? string.Empty : " " + L["Subjects are not recorded."].Value));
 }
 
 @if (Model.LogIsOff)
 {
-    <div class="notice notice--info"><mm-icon name="info" class="notice__icon" /><span class="notice__text">@L["The mail transfer log is switched off. Set how many days it is kept under Server settings (0 turns it off)."]</span></div>
-}
-else
-{
-    <p class="muted">@string.Format(L["Lines are kept for {0} days."].Value, Model.KeptDays) @if (!Model.ShowsSubjects) { <span>@L["Subjects are not recorded."]</span> }</p>
+    <mm-alert kind="info">@L["The mail transfer log is switched off. Set how many days it is kept under Server settings (0 turns it off)."]</mm-alert>
 }
 
+<mm-list>
 <mm-toolbar count="Model.Paged.Total">
     <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search address, subject, server…"]' />
     <mm-toolbar-select name="Direction" label='@L["Direction"]' value="@Model.Direction">
@@ -52,28 +50,27 @@ else
             <th>@L["When"]</th>
             <th>@L["Direction"]</th>
             <th>@L["Message"]</th>
-            <th class="hide-sm">@L["Way"]</th>
-            <th class="hide-sm">@L["Size"]</th>
+            <th class="mat-hide-sm">@L["Way"]</th>
+            <th class="mat-hide-sm mat-num">@L["Size"]</th>
             <th>@L["Status"]</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var transfer in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Transfers/Details?id=@transfer.Id" tabindex="0">
-                <td class="nowrap cell-sub" title="@Fmt.DateTimeText(transfer.CreateDate)">@Fmt.Ago(transfer.CreateDate)</td>
-                <td class="nowrap"><mm-icon name="@Model.Labels.DirectionIcon(transfer.Direction)" /> @Model.Labels.Direction(transfer.Direction)</td>
+            <tr data-row-href="/Admin/Transfers/Details?id=@transfer.Id">
+                <td class="mat-mono mat-nowrap" title="@Fmt.DateTimeText(transfer.CreateDate)">@Fmt.Ago(transfer.CreateDate)</td>
+                <td class="mat-nowrap"><mm-icon name="@Model.Labels.DirectionIcon(transfer.Direction)" /> @Model.Labels.Direction(transfer.Direction)</td>
                 <td>
-                    <div class="cell-title">@(string.IsNullOrWhiteSpace(transfer.Subject) ? (Model.ShowsSubjects ? L["(no subject)"].Value : "–") : transfer.Subject)</div>
-                    <div class="cell-sub">
-                        @(string.IsNullOrEmpty(transfer.Sender) ? "<>" : transfer.Sender) → @transfer.Recipients@if (transfer.RecipientCount > 1 && transfer.Recipients.Length >= 2000) { <span> …</span> }
+                    <div class="mat-table__name"><span><a href="/Admin/Transfers/Details?id=@transfer.Id">@(string.IsNullOrWhiteSpace(transfer.Subject) ? (Model.ShowsSubjects ? L["(no subject)"].Value : "–") : transfer.Subject)</a><small>@(string.IsNullOrEmpty(transfer.Sender) ? "<>" : transfer.Sender) → @transfer.Recipients@if (transfer.RecipientCount > 1 && transfer.Recipients.Length >= 2000) { <span> …</span> }</small></span></div>
+                </td>
+                <td class="mat-hide-sm">
+                    <div>
+                        <span>@Model.Labels.Channel(transfer.Channel)</span>
+                        @if (!string.IsNullOrEmpty(transfer.Peer) || !string.IsNullOrEmpty(transfer.RemoteIp)) { <small class="mat-muted mat-mono mat-d-block">@string.Join(" · ", new[] { transfer.Peer, transfer.RemoteIp }.Where(s => !string.IsNullOrEmpty(s)))</small> }
                     </div>
                 </td>
-                <td class="hide-sm">
-                    <div>@Model.Labels.Channel(transfer.Channel)</div>
-                    @if (!string.IsNullOrEmpty(transfer.Peer) || !string.IsNullOrEmpty(transfer.RemoteIp)) { <div class="cell-sub mono">@string.Join(" · ", new[] { transfer.Peer, transfer.RemoteIp }.Where(s => !string.IsNullOrEmpty(s)))</div> }
-                </td>
-                <td class="hide-sm nowrap">@(transfer.SizeBytes == 0 ? "–" : Fmt.Size(transfer.SizeBytes))</td>
+                <td class="mat-hide-sm mat-num mat-nowrap">@(transfer.SizeBytes == 0 ? "–" : Fmt.Size(transfer.SizeBytes))</td>
                 <td><mm-badge kind="@MatMail.Pages.Admin.Transfers.TransferLabels.StatusKind(transfer.Status)">@Model.Labels.Status(transfer.Status)</mm-badge></td>
             </tr>
         }
@@ -81,3 +78,4 @@ else
 </mm-table>
 
 <mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

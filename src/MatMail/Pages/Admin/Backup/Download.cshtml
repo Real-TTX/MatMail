@@ -4,34 +4,35 @@
     ViewData["Breadcrumb"] = "Administration / Backups / Download";
     ViewData["Title"] = L["Download a backup"].Value;
     ViewData["Description"] = L["Makes a complete backup now – database and files – and offers it for download. Use it to keep a copy somewhere else, or to move to another server."].Value;
+    ViewData["Width"] = "narrow";
 }
 
 <script type="application/json" id="backup-i18n">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Texts))</script>
 
 @if (Model.Token is Guid token)
 {
-    <section class="card" id="backup-download" data-status-url="@Url.Page("/Admin/Backup/Download", "Status", new { token })">
-        <h2 class="card__title"><mm-icon name="archive" />@L["The backup"]</h2>
-        <div class="progress" id="backup-download-progress"><div class="progress__bar"></div></div>
-        <p class="muted" id="backup-download-text">@L["Getting ready …"]</p>
-        <div class="btn-row btn-row--tight">
-            <a class="btn btn--primary" id="backup-download-link" href="@Url.Page("/Admin/Backup/Download", "File", new { token })" hidden><mm-icon name="download" /><span>@L["Download"]</span></a>
-            <a class="btn btn--secondary" href="/Admin/Backup"><mm-icon name="arrow-left" /><span>@L["Back"]</span></a>
-        </div>
-        <p class="muted">@L["The file stays on the server for an hour."]</p>
-    </section>
+    @* The backup is made on the server; backup.js shows how far it is and unhides the link when the file is ready. *@
+    <mm-card id="backup-download" title='@L["The backup"]' icon="archive" data-status-url="@Url.Page("/Admin/Backup/Download", "Status", new { token })">
+        <div class="mat-meter mat-meter--indeterminate" id="backup-download-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]"><div class="mat-meter__fill"></div></div>
+        <p class="mat-muted" id="backup-download-text">@L["Getting ready …"]</p>
+        <mm-list-actions>
+            <mm-button variant="primary" id="backup-download-link" href='@Url.Page("/Admin/Backup/Download", "File", new { token })' icon="download" hidden="hidden">@L["Download"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Backup" icon="back">@L["Back"]</mm-button>
+        </mm-list-actions>
+        <p class="mat-muted">@L["The file stays on the server for an hour."]</p>
+    </mm-card>
 }
 else
 {
     <mm-form>
-        <mm-form-section title='@L["Protection"]' icon="lock">
+        <mm-form-section title='@L["Protection"]' icon="lock" columns="2">
             <mm-field asp-for="Input.Passphrase" kind="password" label='@L["Passphrase (optional)"]' autocomplete="new-password" reveal="true"
                       help='@string.Format(L["Encrypts the backup. At least {0} characters. Without it the backup cannot be opened – keep it somewhere safe."].Value, DownloadModel.MinPassphraseLength)' />
             <mm-field asp-for="Input.PassphraseRepeat" kind="password" label='@L["Passphrase once more"]' autocomplete="new-password" />
         </mm-form-section>
         <mm-button-row>
             <mm-button variant="primary" type="submit" handler="Start" icon="download">@L["Make the backup"]</mm-button>
-            <mm-button variant="secondary" href="/Admin/Backup" icon="arrow-left">@L["Back"]</mm-button>
+            <mm-button variant="secondary" href="/Admin/Backup" icon="back">@L["Back"]</mm-button>
         </mm-button-row>
     </mm-form>
 }

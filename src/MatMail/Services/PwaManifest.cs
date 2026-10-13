@@ -3,11 +3,11 @@ namespace MatMail.Services;
 /// <summary>The manifest of the web app: what a phone or a desktop reads when MatMail is put on the home screen or installed like an app.</summary>
 public static class PwaManifest
 {
-    /// <summary>The colour of the header in the light theme (<c>--color-bg</c>): the bar of the browser and the start screen of the app have it.</summary>
-    public const string LightColour = "#f4f6fb";
+    /// <summary>The colour of the top bar in the light theme (<c>--mat-glass</c> of the toolkit): the bar of the browser and the start screen of the app have it.</summary>
+    public const string LightColour = "#f5f4f1";
 
     /// <summary>The same in the dark theme.</summary>
-    public const string DarkColour = "#0f131c";
+    public const string DarkColour = "#151514";
 
     /// <summary>
     /// The manifest as a document. <c>standalone</c> and not <c>fullscreen</c>: an iPhone cannot do fullscreen and then shows the page with

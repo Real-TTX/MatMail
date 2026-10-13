@@ -10,6 +10,12 @@
 
   function t(key, fallback) { return texts[key] || fallback || key; }
 
+  // A text that tells what is going on is muted; one that tells what went wrong has the tone of an error.
+  function tone(element, failed) {
+    element.classList.toggle('mat-muted', !failed);
+    element.classList.toggle('mat-text-danger', failed);
+  }
+
   function size(bytes) {
     var units = ['B', 'KB', 'MB', 'GB', 'TB'];
     var value = bytes, unit = 0;
@@ -24,15 +30,20 @@
     return text;
   }
 
+  // The bar is a meter of the toolkit: the share is the custom property --mat-meter of its fill (a bar without a known total is the indeterminate one).
   function setProgress(bar, activity) {
     if (!bar) { return; }
     var fill = bar.firstElementChild;
     if (activity && activity.total > 0) {
-      bar.classList.remove('progress--busy');
-      fill.style.width = Math.max(3, Math.round(100 * activity.done / activity.total)) + '%';
+      var percent = Math.max(3, Math.round(100 * activity.done / activity.total));
+      bar.classList.remove('mat-meter--indeterminate');
+      bar.setAttribute('aria-valuenow', String(percent));
+      fill.setAttribute('data-value', String(percent));
+      fill.style.setProperty('--mat-meter', percent + '%');
     } else {
-      bar.classList.add('progress--busy');
-      fill.style.width = '';
+      bar.classList.add('mat-meter--indeterminate');
+      bar.removeAttribute('aria-valuenow');
+      fill.style.removeProperty('--mat-meter');
     }
   }
 
@@ -50,7 +61,6 @@
     var statusUrl = box.getAttribute('data-status-url');
     var bar = document.getElementById('backup-progress');
     var line = document.getElementById('backup-activity-text');
-    var title = document.getElementById('backup-activity-title');
 
     var tick = function () {
       getJson(statusUrl).then(function (state) {
@@ -62,7 +72,6 @@
         }
         running = true;
         box.hidden = false;
-        title.textContent = t('running', 'A backup is running');
         line.textContent = stageText(activity);
         setProgress(bar, activity);
       }).catch(function () { /* the server is busy: ask again */ }).then(function () {
@@ -108,7 +117,7 @@
         }
         if (p.state === 'Failed') {
           prepText.textContent = (t('failed') + ' ' + (p.message || '')).trim();
-          prepText.classList.add('is-danger');
+          tone(prepText, true);
           prepBar.hidden = true;
           var back = document.getElementById('restore-back');
           if (back) { back.hidden = false; }
@@ -128,7 +137,7 @@
   if (upload) {
     var fileInput = upload.querySelector('input[type=file]');
     var button = upload.querySelector('button[data-upload]');
-    var uploadBar = upload.querySelector('.progress');
+    var uploadBar = upload.querySelector('.mat-meter');
     var uploadText = upload.querySelector('[data-upload-text]');
     var token = document.querySelector('input[name=__RequestVerificationToken]');
 
@@ -138,6 +147,7 @@
       button.disabled = true;
       fileInput.disabled = true;
       uploadBar.hidden = false;
+      tone(uploadText, false);
       uploadText.textContent = t('uploading');
 
       var xhr = new XMLHttpRequest();
@@ -155,12 +165,14 @@
           var result = JSON.parse(xhr.responseText);
           location.href = upload.getAttribute('data-next') + '?upload=' + encodeURIComponent(result.id);
         } else {
+          tone(uploadText, true);
           uploadText.textContent = t('uploadFailed') + ' ' + (xhr.responseText || xhr.status);
           button.disabled = false;
           fileInput.disabled = false;
         }
       };
       xhr.onerror = function () {
+        tone(uploadText, true);
         uploadText.textContent = t('uploadFailed');
         button.disabled = false;
         fileInput.disabled = false;
@@ -189,7 +201,7 @@
         if (d && d.state === 'Failed') {
           downloadBar.hidden = true;
           downloadText.textContent = d.message || t('failed');
-          downloadText.classList.add('is-danger');
+          tone(downloadText, true);
           return;
         }
         if (state.activity) {
@@ -201,4 +213,9 @@
     };
     again();
   }
+
+  // ---- A choice that opens its list at once (the target on the restore page): the form is sent when the choice changes.
+  Array.prototype.forEach.call(document.querySelectorAll('select[data-autosubmit]'), function (select) {
+    select.addEventListener('change', function () { if (select.form) { select.form.submit(); } });
+  });
 }());

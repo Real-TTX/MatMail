@@ -47,7 +47,7 @@ self.addEventListener("message", (event) => {
 });
 
 function isAsset(url) {
-  return /^\/(css|js|icons)\//.test(url.pathname);
+  return /^\/(css|js|icons|matui)\//.test(url.pathname);
 }
 
 self.addEventListener("fetch", (event) => {
@@ -113,10 +113,10 @@ function offlinePage() {
   const html = "<!doctype html><html lang=\"" + (german ? "de" : "en") + "\"><head><meta charset=\"utf-8\">"
     + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover\">"
     + "<meta name=\"color-scheme\" content=\"light dark\"><title>" + title + "</title>"
-    + "<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font:16px/1.5 system-ui,-apple-system,sans-serif;background:#f4f6fb;color:#1b2130;text-align:center}"
-    + "@media (prefers-color-scheme:dark){body{background:#0f131c;color:#e6e9f2}}"
+    + "<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font:16px/1.5 system-ui,-apple-system,sans-serif;background:#f5f4f1;color:#1f1e1b;text-align:center}"
+    + "@media (prefers-color-scheme:dark){body{background:#151514;color:#ecebe6}}"
     + "main{max-width:26rem}h1{font-size:1.3rem;margin:0 0 .5rem}p{margin:0 0 1.2rem;opacity:.8}"
-    + "button{font:inherit;padding:.6rem 1.4rem;border:0;border-radius:999px;background:#1a73e8;color:#fff;cursor:pointer}</style></head>"
+    + "button{font:inherit;padding:.6rem 1.4rem;border:0;border-radius:6px;background:#1a56db;color:#fff;cursor:pointer}</style></head>"
     + "<body><main><h1>" + title + "</h1><p>" + text + "</p><button onclick=\"location.reload()\">" + retry + "</button></main></body></html>";
   return new Response(html, { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }

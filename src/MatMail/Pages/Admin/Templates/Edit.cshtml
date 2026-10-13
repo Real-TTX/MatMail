@@ -3,6 +3,7 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Templates / Edit template" : "Administration / Templates / New template";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New template"].Value;
+    ViewData["Width"] = "narrow";
 }
 
 <mm-form>
@@ -17,7 +18,7 @@
     </mm-form-section>
 
     <mm-form-section title='@L["Which messages"]' icon="sliders">
-        <div class="form-grid">
+        <div class="mat-form__grid">
             <mm-field asp-for="Input.Scope" kind="select" label='@L["Applies to"]' asp-items="Model.ScopeItems" help='@L["The sender: everybody of the tenant, one mailbox or one user. A more specific template wins."]' />
             <mm-field asp-for="Input.Priority" kind="number" label='@L["Order of use"]' min="0" max="10000"
                       help='@L["Of several templates that fit, the lowest number is used."]' />
@@ -38,11 +39,11 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Templates" icon="arrow-left">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Admin/Templates" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)
         {
-            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this template?"]'>@L["Delete"]</mm-button>
+            <mm-button variant="danger" type="submit" handler="Delete" icon="trash" confirm='@L["Delete this template?"]' confirm-ok='@L["Delete"]'>@L["Delete"]</mm-button>
         }
     </mm-button-row>
 </mm-form>

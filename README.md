@@ -67,7 +67,7 @@ branding.
 - **Mailbox info and storage limit**: every mailbox has a menu (the three dots at its name, or the
   right mouse button) with *Info* – whose it is, its addresses, your access and what it takes up, as
   a bar against its limit and by folder. An administrator can give a mailbox a **storage limit**; a
-  full mailbox takes no new mail until something is deleted. The use is also shown below the folders,
+  full mailbox takes no new mail until something is deleted. The use is also shown
   in the mailbox list of the administration (sortable) and per folder on the page of the mailbox
 - **Search like in Gmail**: `from:anna has:attachment newer_than:7d`, several operators at once,
   `OR`, `-` to leave out, brackets and quoted phrases; the operators work in German too (`von:`,

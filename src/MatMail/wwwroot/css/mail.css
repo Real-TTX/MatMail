@@ -81,7 +81,7 @@ html[data-density="compact"] .mail-app { --mail-row-height: 2.15rem; }
 .folder-group__head:hover .folder-group__more, .folder-group__more:focus-visible { opacity: 1; }
 .folder-group__head.is-drop, .folder-item.is-drop { background: var(--mat-accent-soft-strong); outline: 2px dashed var(--mat-accent); outline-offset: -2px; }
 @media (hover: none) { .folder-group__more, .folder-item__more { opacity: 1; } }
-.folder-group__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-group__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The depth of a folder (a property of the element, set by the script) moves it to the right; the fold arrow sits in the gutter. */
 .folder-item { padding-left: calc(var(--mat-space-3) + var(--mm-depth, 0) * var(--mat-space-4) + 1.1rem); padding-right: var(--mat-space-2); border: 0; background: transparent; font: inherit; font-weight: 500; text-align: left; cursor: pointer; }
 .folder-item:hover { background: var(--mat-surface-3); }
@@ -100,11 +100,6 @@ html[data-density="compact"] .mail-app { --mail-row-height: 2.15rem; }
 .folder-item--outbox:hover .folder-item__count { display: inline-grid; }
 /* What is dragged out of the list when it is more than one message. */
 .drag-ghost { position: fixed; top: -200px; left: -200px; padding: var(--mat-space-2) var(--mat-space-3); border-radius: var(--mat-radius-pill); background: var(--mat-accent); color: var(--mat-on-accent); font-size: var(--mat-fs-sm); font-weight: 650; white-space: nowrap; }
-
-/* What a mailbox takes up on the server. */
-.folder-usage { display: flex; align-items: center; gap: var(--mat-space-2); margin-top: var(--mat-space-1); padding: var(--mat-space-1) var(--mat-space-3); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); }
-.folder-usage .mat-icon { font-size: .95rem; }
-.folder-usage-bar { margin: 0 var(--mat-space-3) var(--mat-space-1); }
 
 /* ---- Info dialog of a mailbox ---- */
 .mail-dialog__title { display: flex; flex-direction: column; min-width: 0; flex: 1; }

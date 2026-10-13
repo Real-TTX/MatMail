@@ -30,9 +30,9 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
         return menus;
     }
 
-    /// <summary>The mail client: on its own page the sidebar shows the folders, anywhere else a link into it.</summary>
+    /// <summary>The mail client: on its own page the sidebar shows the folders; choosing the menu opens that page, so the link is only for a page of the area that has no sidebar.</summary>
     private NavSet Mail()
-        => new(MailId, l["Mail"].Value, "mail", [new(null, [new(l["Open mail"].Value, "/Mail", "inbox")])], Custom: true, Paths: ["/Mail"]);
+        => new(MailId, l["Mail"].Value, "mail", [new(null, [new(l["Open mail"].Value, "/Mail", "inbox")])], Custom: true, Paths: ["/Mail"], Href: "/Mail");
 
     private NavSet Admin()
     {
@@ -70,7 +70,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             ("/Admin/Backup", "archive", l["Backups"].Value, null, true),
             ("/Admin/Settings", "settings", l["Server settings"].Value, null, true),
             ("/Admin/Tenants", "building", l["Tenants"].Value, null, true));
-        return new NavSet(AdminId, l["Administration"].Value, "settings", groups);
+        return new NavSet(AdminId, l["Administration"].Value, "settings", groups, Href: "/Admin");
     }
 
     private NavSet Account()
@@ -90,7 +90,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
 
         items.Add(new NavItem(l["Appearance"].Value, "/Account/Appearance", "sliders"));
         items.Add(new NavItem(l["App"].Value, "/Account/App", "smartphone"));
-        return new NavSet(AccountId, l["My account"].Value, "user", [new(null, items)], Paths: ["/Account"]);
+        return new NavSet(AccountId, l["My account"].Value, "user", [new(null, items)], Paths: ["/Account"], Href: "/Account");
     }
 
     /// <summary>

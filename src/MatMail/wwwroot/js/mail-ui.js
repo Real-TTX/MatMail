@@ -143,6 +143,7 @@
 
     var sameList = S.mailboxId === mailbox.id && S.folderId === (folder ? folder.id : 0) && S.page === h.page && S.query === h.q;
     if (!sameList) { S.allMatching = false; }
+    if (S.mailboxId && S.mailboxId !== mailbox.id && !isUnfolded(mailbox)) { localStorage.setItem("matmail-collapsed-" + mailbox.id, "0"); }   // going into a folded mailbox opens it
     S.mailboxId = mailbox.id;
     S.folderId = folder ? folder.id : 0;
     S.page = h.page;
@@ -278,19 +279,20 @@
     }
     App.boot.mailboxes.forEach(function (box, index) {
       var group = App.el("div", { class: "folder-group" });
-      var collapsedKey = "matmail-collapsed-" + box.id;
-      var hasSelection = box.id === S.mailboxId;
-      var collapsed = !box.isOwn && !hasSelection && localStorage.getItem(collapsedKey) !== "0";
+      var collapsed = !isUnfolded(box);
 
       // The mailbox is the top of its tree, the parent of its folders: its menu (the three dots, or the right button) has the info,
-      // and a folder that is dropped on it goes to the top level.
+      // and a folder that is dropped on it goes to the top level. Every mailbox folds: the own one, the shared ones and the unassigned mail.
+      // A folded mailbox says how much is unread in its inbox.
       var head = App.el("div", { class: "folder-group__head" });
+      var unread = collapsed ? box.folders.reduce(function (sum, f) { return sum + (f.kind === "Inbox" ? f.unread : 0); }, 0) : 0;
       var heading = App.el("button", { type: "button", class: "folder-group__title", "aria-expanded": String(!collapsed) }, [
-        box.isOwn ? null : App.icon(collapsed ? "chevron-right" : "chevron-down"),   // the own mailbox is always open
+        App.icon(collapsed ? "chevron-right" : "chevron-down"),
         App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert" : "user"),
-        App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name })
+        App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name }),
+        unread ? App.el("span", { class: "mat-nav__badge", text: String(unread) }) : null
       ]);
-      heading.addEventListener("click", function () { if (box.isOwn) { return; } localStorage.setItem(collapsedKey, collapsed ? "0" : "1"); renderFolders(); });
+      heading.addEventListener("click", function () { localStorage.setItem("matmail-collapsed-" + box.id, collapsed ? "0" : "1"); renderFolders(); });
       head.appendChild(heading);
       var boxMore = App.iconButton("more-vertical", T("more"), function (e) { e.preventDefault(); e.stopPropagation(); mailboxMenu(boxMore, box); }, "folder-group__more");
       head.appendChild(boxMore);
@@ -314,15 +316,6 @@
           var add = App.el("button", { type: "button", class: "mat-nav__item folder-item folder-item--add" }, [App.icon("plus"), App.el("span", { text: T("newFolder") })]);
           add.addEventListener("click", function () { createFolder(box, null); });
           group.appendChild(add);
-        }
-
-        // What the mailbox takes up on the server (what stays at the provider with live access is not counted).
-        var usage = usageText(box);
-        if (usage) {
-          group.appendChild(App.el("div", { class: "folder-usage", title: usage.title }, [App.icon("hard-drive"), App.el("span", { text: usage.text })]));
-          if (usage.percent !== null) {
-            group.appendChild(meter(Math.max(usage.percent, box.usedBytes ? 1 : 0), usage.state, T("storage"), "folder-usage-bar", true));
-          }
         }
       }
 
@@ -355,14 +348,13 @@
     renderFolders();
   }
 
-  function usageText(box) {
-    if (!box.messageCount && !box.usedBytes && !box.quotaBytes) { return null; }
-    var title = T("storageMessages").replace("{0}", Number(box.messageCount).toLocaleString());
-    if (box.remoteBytes) { title += " · " + T("storageRemote").replace("{0}", App.formatSize(box.remoteBytes)); }
-    // With a limit the line says how much of it is used, and a bar shows it.
-    var text = box.quotaBytes ? T("storageOf").replace("{0}", App.formatSize(box.usedBytes)).replace("{1}", App.formatSize(box.quotaBytes)) : T("storageUsed").replace("{0}", App.formatSize(box.usedBytes));
-    var level = box.quotaBytes ? usageLevel(box.usedBytes, box.quotaBytes) : null;
-    return { text: text, title: title, percent: level ? level.percent : null, state: level ? level.state : "" };
+  /**
+   * Whether the folders of a mailbox are shown in the sidebar: what the user chose (kept in this browser), else the own mailbox and the one that is
+   * open are, the others are folded.
+   */
+  function isUnfolded(box) {
+    var saved = localStorage.getItem("matmail-collapsed-" + box.id);
+    return saved === "0" ? true : saved === "1" ? false : box.isOwn || box.id === S.mailboxId;
   }
 
   /** How much of a limit is used, in whole percent (100 only when it is reached), and the state that colours the bar: warn from 75 %, high from 90 %, full. */

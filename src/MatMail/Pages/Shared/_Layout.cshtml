@@ -90,7 +90,8 @@
                 </div>
             }
 
-            @foreach (var menu in menus)
+            @* A menu with a start page has a panel only while it is the current one: choosing it in the switcher loads its page *@
+            @foreach (var menu in menus.Where(m => m == current || !m.HasStartPage))
             {
                 <nav class="mat-nav__scroll" aria-label="@(hasSwitcher ? menu.Title : L["Main navigation"].Value)" data-nav-panel="@menu.Id" hidden="@(menu != current)">
                     @if (menu.Custom && menu == current && IsSectionDefined("Sidebar"))
@@ -280,11 +281,12 @@
         <div class="mat-menu" id="nav-switch-menu" role="menu" aria-label="@L["Menus"]" data-nav-scope="mat-nav" hidden>
             @foreach (var menu in menus)
             {
-                <button type="button" class="mat-menu__item" role="menuitemradio" aria-checked="@(menu == current ? "true" : "false")" data-nav-set="@menu.Id" data-nav-title="@menu.Title" @(menu.NeedsAttention ? Html.Raw("data-nav-attention") : null)>
+                @* A menu with a start page is a link: the page that loads draws its own menu (a button would only swap the items) *@
+                <a class="mat-menu__item" href="@menu.Href" role="menuitemradio" aria-checked="@(menu == current ? "true" : "false")" data-nav-set="@menu.Id" data-nav-title="@menu.Title" @(menu.NeedsAttention ? Html.Raw("data-nav-attention") : null)>
                     @Toolkit.Icon(menu.Icon)<span>@menu.Title</span>
                     @if (menu.NeedsAttention) { <span class="mat-nav__badge mat-nav__badge--dot mat-nav__badge--warn"><span class="mat-sr-only">@L["needs attention"]</span></span> }
                     @Toolkit.Icon("check", "mat-menu__check")
-                </button>
+                </a>
             }
         </div>
     }

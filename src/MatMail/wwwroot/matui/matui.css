@@ -1,4 +1,4 @@
-/* MatUi local-20261012 (7d0d5ec978) - bundled from matui.tokens.css, matui.base.css, matui.shell.css, matui.controls.css, matui.forms.css, matui.pickers.css, matui.lists.css, matui.dialogs.css, matui.layout.css, matui.apps.css */
+/* MatUi 0.1.0 (13bcb6f665) - build local-20261013 - bundled from matui.tokens.css, matui.base.css, matui.shell.css, matui.controls.css, matui.forms.css, matui.pickers.css, matui.lists.css, matui.dialogs.css, matui.layout.css, matui.apps.css */
 /* ==========================================================================
    MatUi · tokens
    The single source of the look of every Mat app. Components use only these custom properties, never a raw colour.
@@ -10,6 +10,7 @@
    - An app sets ONE colour: `--mat-app-accent` (see matui.apps.css, on <html data-app="...">). Everything else (hover,
      tint, text colour, ring) is derived from it, in both modes. The derived accent tokens are declared for
      `:root` AND `[data-app]`, so a preview inside a page (<div data-app="matcad">) gets its own accent.
+   - Colour schemes (`data-scheme` on <html>, opt-in) are at the END of this file: they change surfaces only, never an accent token.
    ========================================================================== */
 
 :root {
@@ -33,6 +34,7 @@
   --mat-text: #1f1e1b;                     /* Primary text. */
   --mat-text-muted: #5d5b55;               /* Secondary text, labels, hints (AA on every surface). */
   --mat-text-faint: #85827a;               /* Placeholders and disabled text only. Never for information. */
+  --mat-accent-text-keep: 100%;            /* Share of the accent that its text colour keeps, the rest is --mat-text: a colour scheme lowers it where its surfaces need darker links. */
 
   /* ---- Status ---- */
   --mat-danger: #d92d4a;                   /* Errors and destructive actions. */
@@ -131,7 +133,7 @@
   --mat-accent-active: color-mix(in oklab, var(--mat-accent) 74%, black); /* Primary button pressed. */
   --mat-accent-soft: color-mix(in srgb, var(--mat-accent) 11%, transparent); /* Tint: hover of ghost items, selected row. */
   --mat-accent-soft-strong: color-mix(in srgb, var(--mat-accent) 19%, transparent); /* Stronger tint: active menu item. */
-  --mat-accent-text: var(--mat-app-accent-text, color-mix(in oklab, var(--mat-accent) 78%, black)); /* Accent as text or link on a surface (AA). */
+  --mat-accent-text: color-mix(in oklab, var(--mat-app-accent-text, color-mix(in oklab, var(--mat-accent) 78%, black)) var(--mat-accent-text-keep, 100%), var(--mat-text)); /* Accent as text or link on a surface (AA). */
   --mat-on-accent: var(--mat-app-on-accent, #ffffff); /* Text on --mat-accent. */
   --mat-focus-ring: 0 0 0 3px color-mix(in srgb, var(--mat-accent) 42%, transparent); /* Keyboard focus ring. */
   --mat-selection: color-mix(in srgb, var(--mat-accent) 28%, transparent); /* Text selection. */
@@ -192,7 +194,7 @@
   --mat-accent-active: color-mix(in oklab, var(--mat-accent) 76%, white);
   --mat-accent-soft: color-mix(in srgb, var(--mat-accent) 16%, transparent);
   --mat-accent-soft-strong: color-mix(in srgb, var(--mat-accent) 26%, transparent);
-  --mat-accent-text: color-mix(in oklab, var(--mat-accent) 78%, white);
+  --mat-accent-text: color-mix(in oklab, color-mix(in oklab, var(--mat-accent) 78%, white) var(--mat-accent-text-keep, 100%), var(--mat-text));
   --mat-on-accent: #0b1020;
   --mat-focus-ring: 0 0 0 3px color-mix(in srgb, var(--mat-accent) 50%, transparent);
   --mat-selection: color-mix(in srgb, var(--mat-accent) 36%, transparent);
@@ -241,10 +243,186 @@
     --mat-accent-active: color-mix(in oklab, var(--mat-accent) 76%, white);
     --mat-accent-soft: color-mix(in srgb, var(--mat-accent) 16%, transparent);
     --mat-accent-soft-strong: color-mix(in srgb, var(--mat-accent) 26%, transparent);
-    --mat-accent-text: color-mix(in oklab, var(--mat-accent) 78%, white);
+    --mat-accent-text: color-mix(in oklab, color-mix(in oklab, var(--mat-accent) 78%, white) var(--mat-accent-text-keep, 100%), var(--mat-text));
     --mat-on-accent: #0b1020;
     --mat-focus-ring: 0 0 0 3px color-mix(in srgb, var(--mat-accent) 50%, transparent);
     --mat-selection: color-mix(in srgb, var(--mat-accent) 36%, transparent);
+  }
+}
+
+/* ==========================================================================
+   Colour schemes (COLOR-09). Opt-in: <html data-scheme="paper|contrast|oled">. Absent, "standard" or any other value is the look above.
+   - A scheme changes SURFACES only: the backgrounds, the lines, the text colours, the status texts where AA needs it, the shadows, the dim layer and the
+     scrollbar. It never sets an accent token, so every combination of scheme, mode, accent and app works without a rule of its own. Where its surfaces need
+     darker links it lowers --mat-accent-text-keep, the share of the accent that the colour of a link keeps (the rest is --mat-text).
+   - Written like the dark set: the light values are the scheme on its own (also while the system is light), the dark values are written TWICE (explicit and
+     system) and a unit test keeps the two identical. A scheme sets the same tokens in light and in dark, so its light values never show through in dark.
+   - oled has no light values on purpose: in light mode it is the standard look.
+   - The selectors start with :root[data-scheme=...] so that they are not read as the dark values of the base tokens (:root[data-theme="dark"]).
+   ========================================================================== */
+
+/* ---- Scheme paper: warm, slightly yellowed surfaces ---- */
+:root[data-scheme="paper"] {
+  --mat-bg: #f3eee3;
+  --mat-bg-2: #ebe5d6;
+  --mat-surface: #fcf9f2;
+  --mat-surface-2: #f7f3ea;
+  --mat-surface-3: #f1ebdf;
+  --mat-glass: #f3eee3;
+  --mat-nav-bg: #ece6d8;
+  --mat-border: rgba(90, 60, 10, .19);
+  --mat-border-strong: rgba(90, 60, 10, .36);
+  --mat-text: #2b2620;
+  --mat-text-muted: #675d4f;
+  --mat-text-faint: #8c8170;
+  --mat-success-text: #0a7340;
+  --mat-accent-text-keep: 75%;
+}
+
+:root[data-scheme="paper"][data-theme="dark"] {
+  --mat-bg: #1b1814;
+  --mat-bg-2: #1f1c17;
+  --mat-surface: #23201a;
+  --mat-surface-2: #28251f;
+  --mat-surface-3: #2c2821;
+  --mat-glass: #1b1814;
+  --mat-nav-bg: #161310;
+  --mat-border: rgba(255, 240, 214, .10);
+  --mat-border-strong: rgba(255, 240, 214, .22);
+  --mat-text: #ece4d6;
+  --mat-text-muted: #ab9f8b;
+  --mat-text-faint: #7f7565;
+  --mat-success-text: #72efbb;
+  --mat-accent-text-keep: 85%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-scheme="paper"]:not([data-theme="light"]):not([data-theme="dark"]) {
+    --mat-bg: #1b1814;
+    --mat-bg-2: #1f1c17;
+    --mat-surface: #23201a;
+    --mat-surface-2: #28251f;
+    --mat-surface-3: #2c2821;
+    --mat-glass: #1b1814;
+    --mat-nav-bg: #161310;
+    --mat-border: rgba(255, 240, 214, .10);
+    --mat-border-strong: rgba(255, 240, 214, .22);
+    --mat-text: #ece4d6;
+    --mat-text-muted: #ab9f8b;
+    --mat-text-faint: #7f7565;
+    --mat-success-text: #72efbb;
+    --mat-accent-text-keep: 85%;
+  }
+}
+
+/* ---- Scheme contrast: pure white and pure black, strong lines instead of shadows, near-black and near-white muted text ---- */
+:root[data-scheme="contrast"] {
+  --mat-bg: #ffffff;
+  --mat-bg-2: #f2f2f2;
+  --mat-surface: #ffffff;
+  --mat-surface-2: #f5f5f5;
+  --mat-surface-3: #ebebeb;
+  --mat-glass: #ffffff;
+  --mat-nav-bg: #ffffff;
+  --mat-overlay: rgba(0, 0, 0, .7);
+  --mat-border: #5c5c5c;
+  --mat-border-strong: #1f1f1f;
+  --mat-text: #000000;
+  --mat-text-muted: #333333;
+  --mat-text-faint: #595959;
+  --mat-danger-text: #8f0f26;
+  --mat-success-text: #07592f;
+  --mat-warning-text: #6e4000;
+  --mat-info-text: #0f3f9a;
+  --mat-shadow-1: none;
+  --mat-shadow-2: 0 0 0 1px #1f1f1f;
+  --mat-shadow-3: 0 0 0 1px #1f1f1f;
+  --mat-scroll-thumb: rgba(0, 0, 0, .6);
+  --mat-accent-text-keep: 90%;
+}
+
+:root[data-scheme="contrast"][data-theme="dark"] {
+  --mat-bg: #000000;
+  --mat-bg-2: #0d0d0d;
+  --mat-surface: #000000;
+  --mat-surface-2: #0f0f0f;
+  --mat-surface-3: #1c1c1c;
+  --mat-glass: #000000;
+  --mat-nav-bg: #000000;
+  --mat-overlay: rgba(0, 0, 0, .8);
+  --mat-border: #9a9a9a;
+  --mat-border-strong: #e6e6e6;
+  --mat-text: #ffffff;
+  --mat-text-muted: #d6d6d6;
+  --mat-text-faint: #b0b0b0;
+  --mat-danger-text: #ffc2cc;
+  --mat-success-text: #9ff7cf;
+  --mat-warning-text: #ffe08a;
+  --mat-info-text: #c9daff;
+  --mat-shadow-1: none;
+  --mat-shadow-2: 0 0 0 1px #e6e6e6;
+  --mat-shadow-3: 0 0 0 1px #e6e6e6;
+  --mat-scroll-thumb: rgba(255, 255, 255, .6);
+  --mat-accent-text-keep: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-scheme="contrast"]:not([data-theme="light"]):not([data-theme="dark"]) {
+    --mat-bg: #000000;
+    --mat-bg-2: #0d0d0d;
+    --mat-surface: #000000;
+    --mat-surface-2: #0f0f0f;
+    --mat-surface-3: #1c1c1c;
+    --mat-glass: #000000;
+    --mat-nav-bg: #000000;
+    --mat-overlay: rgba(0, 0, 0, .8);
+    --mat-border: #9a9a9a;
+    --mat-border-strong: #e6e6e6;
+    --mat-text: #ffffff;
+    --mat-text-muted: #d6d6d6;
+    --mat-text-faint: #b0b0b0;
+    --mat-danger-text: #ffc2cc;
+    --mat-success-text: #9ff7cf;
+    --mat-warning-text: #ffe08a;
+    --mat-info-text: #c9daff;
+    --mat-shadow-1: none;
+    --mat-shadow-2: 0 0 0 1px #e6e6e6;
+    --mat-shadow-3: 0 0 0 1px #e6e6e6;
+    --mat-scroll-thumb: rgba(255, 255, 255, .6);
+    --mat-accent-text-keep: 100%;
+  }
+}
+
+/* ---- Scheme oled: dark mode only. A black page and menu, near-black surfaces (in light mode the standard look) ---- */
+:root[data-scheme="oled"][data-theme="dark"] {
+  --mat-bg: #000000;
+  --mat-bg-2: #050505;
+  --mat-surface: #0a0a0a;
+  --mat-surface-2: #101010;
+  --mat-surface-3: #161616;
+  --mat-glass: #000000;
+  --mat-nav-bg: #000000;
+  --mat-border: rgba(255, 255, 255, .12);
+  --mat-border-strong: rgba(255, 255, 255, .26);
+  --mat-text: #e8e8e8;
+  --mat-text-muted: #9c9c9c;
+  --mat-text-faint: #6b6b6b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-scheme="oled"]:not([data-theme="light"]):not([data-theme="dark"]) {
+    --mat-bg: #000000;
+    --mat-bg-2: #050505;
+    --mat-surface: #0a0a0a;
+    --mat-surface-2: #101010;
+    --mat-surface-3: #161616;
+    --mat-glass: #000000;
+    --mat-nav-bg: #000000;
+    --mat-border: rgba(255, 255, 255, .12);
+    --mat-border-strong: rgba(255, 255, 255, .26);
+    --mat-text: #e8e8e8;
+    --mat-text-muted: #9c9c9c;
+    --mat-text-faint: #6b6b6b;
   }
 }
 
@@ -388,6 +566,7 @@ kbd {
      - the menu is on the LEFT, the logo ABOVE it
      - at the bottom of the menu: the 3-state theme button, the user (click = context menu), and below that the version
      - the menu scrolls SEPARATELY from the content on the right
+     - a main action may be the first item of the menu, filled with the accent (SHELL-19); the switcher of several menus sits under the logo or at the end of the menu (SHELL-15)
      - the content always has a BREADCRUMB above it
      - on a phone the menu is a drawer
    ========================================================================== */
@@ -481,6 +660,25 @@ kbd {
 /* Keyboard focus: inside the menu the ring is drawn inward (the submenu clips what is outside its box). */
 .mat-nav__item:focus-visible, .mat-switcher:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mat-accent) 70%, transparent); border-radius: var(--mat-radius); }
 
+/* ---- A main action (SHELL-19): the first item of the menu, filled with the accent, for the one thing the app is mostly used for ---- */
+.mat-nav__item--primary {
+  min-height: var(--mat-control-h-lg);
+  margin-bottom: var(--mat-space-2);
+  background: var(--mat-accent);
+  color: var(--mat-on-accent);
+  font-weight: 620;
+}
+.mat-nav__item--primary .mat-icon { color: inherit; }
+.mat-nav__item--primary:hover { background: var(--mat-accent-hover); }
+.mat-nav__item--primary:active { background: var(--mat-accent-active); }
+/* On its own page it stays filled, a step darker, like the current item of the menu (SHELL-02). */
+.mat-nav__item--primary.is-active,
+.mat-nav__item--primary[aria-current="page"] { background: var(--mat-accent-active); font-weight: 650; }
+.mat-nav__item--primary.is-active .mat-icon,
+.mat-nav__item--primary[aria-current="page"] .mat-icon { color: inherit; }
+/* The ring of the other items is the accent; on an item that is filled with it the ring has the colour of the text. */
+.mat-nav__item--primary:focus-visible { box-shadow: inset 0 0 0 2px var(--mat-on-accent); }
+
 /* ---- Badges in the menu (SHELL-14): a count at the right end of the item, or a dot for "something new" ---- */
 .mat-nav__badge {
   margin-left: auto;
@@ -534,6 +732,8 @@ button.mat-nav__item:hover { background: var(--mat-surface-3); }
 
 /* ---- More than one menu (SHELL-15): the switcher under the logo; only the current menu's items are shown ---- */
 .mat-nav__switch { flex: none; padding: 0 var(--mat-space-3) var(--mat-space-2); }
+/* At the end of the menu, directly above the foot: for an app whose menu starts with a main action (SHELL-19). Its popup opens upwards (data-menu-place="top"). */
+.mat-nav__switch--end { padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-3); }
 .mat-switcher {
   position: relative;
   width: 100%;
@@ -708,6 +908,8 @@ button.mat-nav__item:hover { background: var(--mat-surface-3); }
   margin-right: calc(var(--mat-space-2) * -1);
 }
 .mat-topbar__actions .mat-btn { position: relative; }
+/* A main action of the app (scan, add) is highlighted: a filled accent button instead of a ghost one. A filled button needs room around it and lines up with the edge of the content. */
+.mat-topbar__actions:has(> .mat-btn--primary) { gap: var(--mat-space-2); margin-right: 0; }
 .mat-topbar__badge {
   position: absolute; top: 3px; right: 3px;
   min-width: 16px; height: 16px;
@@ -930,6 +1132,8 @@ html.mat-lock { overflow: hidden; }
 }
 .mat-card__head { display: flex; align-items: center; gap: var(--mat-space-3); padding: var(--mat-space-4) var(--mat-space-6); border-bottom: 1px solid var(--mat-border); }
 .mat-card__head .mat-icon { font-size: 1.2rem; color: var(--mat-accent-text); }
+.mat-card__head .mat-check { align-items: center; min-height: 0; } /* the check of a selectable card sits on the line of the title */
+.mat-card__head .mat-check input { margin: 0; }
 .mat-card__title { font-size: var(--mat-fs-lg); font-weight: 650; }
 .mat-card__sub { color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
 .mat-card__body { padding: var(--mat-space-6); }
@@ -970,6 +1174,12 @@ a.mat-card:hover, .mat-card--link:hover { border-color: var(--mat-text-faint); b
 @keyframes mat-pulse { 50% { opacity: .25; } }
 
 .mat-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: var(--mat-radius-xs); background: var(--mat-surface-3); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-weight: 600; }
+
+/* A colour a user chose is a mark next to the name (COLOR-10): data-colour="#rrggbb" on a tag, a dot or an icon, which matui.js writes into --mat-swatch (and marks is-coloured). The text of a tag
+   stays muted and readable whatever the colour; a thin ring in the colour of the text keeps a white dot visible in light mode and a black one in dark mode. Without a valid colour: the neutral look. */
+.mat-dot { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--mat-swatch, var(--mat-text-faint)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-text) 35%, transparent); }
+.mat-tag[data-colour].is-coloured::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--mat-swatch); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-text) 35%, transparent); }
+.mat-icon[data-colour] { color: var(--mat-swatch); }
 
 .mat-chips { display: flex; flex-wrap: wrap; gap: var(--mat-space-2); }
 .mat-chip {
@@ -1043,6 +1253,8 @@ a.mat-card:hover, .mat-card--link:hover { border-color: var(--mat-text-faint); b
   white-space: pre; overflow-x: auto; tab-size: 2;
 }
 .mat-code[data-copy] { padding-right: 52px; cursor: pointer; }
+/* the code inside a block is not an inline code: its padding would only push the first line to the right */
+.mat-code code { padding: 0; background: none; border-radius: 0; }
 /* The parts of highlighted code. They use the colours of the status texts, which are readable on the grey of the block in both modes. */
 .mat-code__tag, .mat-code__kw { color: var(--mat-info-text); }
 .mat-code__attr, .mat-code__num { color: var(--mat-warning-text); }
@@ -1282,6 +1494,56 @@ input[type="file"].mat-input { padding: 6px; }
 .mat-input-group > * + * { margin-left: -1px; }
 .mat-input-addon { display: inline-flex; align-items: center; padding: 0 var(--mat-space-3); background: var(--mat-surface-3); border: 1px solid var(--mat-border-strong); color: var(--mat-text-muted); font-size: var(--mat-fs-sm); white-space: nowrap; }
 
+/* ---- Number stepper (FORM-20): a number field with a button for less and one for more ----
+   Without the script it is the native number field. The script adds the buttons and marks the wrapper .is-ready, which is what hides the spinners of the browser and
+   squares the corners of the field. The size is the one of the input inside it (mat-input--sm, mat-input--lg). mat-stepper--stacked: two small arrows at the right
+   of the field (a mouse); on a touch screen they would be too small to hit (MOBILE-04), so it is drawn like the default there. */
+.mat-stepper { --mat-stepper-h: var(--mat-control-h); --mat-stepper-end: var(--mat-stepper-h); position: relative; display: flex; align-items: stretch; width: 100%; }
+.mat-stepper:has(> .mat-input--sm) { --mat-stepper-h: var(--mat-control-h-sm); font-size: var(--mat-fs-sm); }
+.mat-stepper:has(> .mat-input--lg) { --mat-stepper-h: var(--mat-control-h-lg); font-size: var(--mat-fs-lg); }
+.mat-stepper.is-ready > .mat-input { flex: 1 1 auto; min-width: 0; border-radius: 0; text-align: center; font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.mat-stepper.is-ready > .mat-input::-webkit-inner-spin-button, .mat-stepper.is-ready > .mat-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.mat-stepper.is-ready > .mat-input:focus { position: relative; z-index: 1; }
+.mat-stepper__btn {
+  position: relative; flex: none; display: grid; place-items: center;
+  width: var(--mat-stepper-h); min-height: var(--mat-stepper-h); margin: 0; padding: 0;
+  border: 1px solid var(--mat-border-strong); background: var(--mat-surface); color: var(--mat-text-muted);
+  font: inherit; cursor: pointer; user-select: none; touch-action: manipulation;
+  transition: background var(--mat-dur-fast) var(--mat-ease), color var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-stepper__btn:hover { background: var(--mat-surface-3); color: var(--mat-text); }
+.mat-stepper__btn:active { background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); }
+.mat-stepper__btn:focus-visible { z-index: 1; border-color: var(--mat-accent); }
+.mat-stepper__btn--dec { margin-right: -1px; border-radius: var(--mat-radius) 0 0 var(--mat-radius); }
+.mat-stepper__btn--inc { margin-left: -1px; border-radius: 0 var(--mat-radius) var(--mat-radius) 0; }
+.mat-stepper__arrow { display: none; }
+/* a button that cannot go further is dimmed, not disabled: the focus stays on it */
+.mat-stepper__btn[aria-disabled="true"], .mat-stepper__btn:disabled { color: var(--mat-text-faint); cursor: not-allowed; }
+.mat-stepper__btn[aria-disabled="true"]:hover, .mat-stepper__btn[aria-disabled="true"]:active { background: var(--mat-surface); color: var(--mat-text-faint); }
+.mat-stepper:has(> .mat-input[readonly]) .mat-stepper__btn[aria-disabled="true"] { background: var(--mat-surface-2); }
+.mat-stepper:has(> .mat-input:disabled) .mat-stepper__btn, .mat-stepper__btn:disabled { background: var(--mat-surface-3); color: var(--mat-text-faint); cursor: not-allowed; }
+.mat-field.is-invalid .mat-stepper__btn { border-color: var(--mat-danger); }
+.mat-field.is-valid .mat-stepper__btn { border-color: var(--mat-success); }
+/* the unit sits at the right end of the field, in front of the button; the field keeps room for it on both sides so that the number stays in the middle */
+.mat-stepper__unit { position: absolute; top: 0; bottom: 0; right: calc(var(--mat-stepper-end) + var(--mat-space-3)); display: flex; align-items: center; color: var(--mat-text-muted); white-space: nowrap; pointer-events: none; }
+.mat-stepper[data-unit].is-ready > .mat-input { padding-inline: calc(var(--mat-stepper-unit, 0ch) + var(--mat-space-4)); }
+@media (pointer: fine) {
+  .mat-stepper--stacked { --mat-stepper-end: calc(var(--mat-stepper-h) * .8); display: block; }
+  .mat-stepper--stacked.is-ready > .mat-input { text-align: left; padding-inline: var(--mat-space-3) calc(var(--mat-stepper-end) + var(--mat-space-2)); }
+  .mat-stepper--stacked[data-unit].is-ready > .mat-input { padding-inline: var(--mat-space-3) calc(var(--mat-stepper-end) + var(--mat-stepper-unit, 0ch) + var(--mat-space-4)); }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn {
+    position: absolute; z-index: 2; right: 1px; width: calc(var(--mat-stepper-end) - 1px); height: calc(50% - 1px); min-height: 0; margin: 0;
+    border: 0 solid var(--mat-border); border-left-width: 1px; border-radius: 0; background: transparent;
+  }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn:hover { background: var(--mat-surface-3); }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn:active { background: var(--mat-accent-soft-strong); }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn[aria-disabled="true"], .mat-stepper.mat-stepper--stacked .mat-stepper__btn:disabled { background: transparent; }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn--inc { top: 1px; border-top-right-radius: calc(var(--mat-radius) - 1px); }
+  .mat-stepper.mat-stepper--stacked .mat-stepper__btn--dec { bottom: 1px; border-top-width: 1px; border-bottom-right-radius: calc(var(--mat-radius) - 1px); }
+  .mat-stepper--stacked .mat-stepper__sign { display: none; }
+  .mat-stepper--stacked .mat-stepper__arrow { display: inline-flex; font-size: .85em; }
+}
+
 /* Checkbox and radio use the browser control in the accent colour; the switch is its own. */
 .mat-check { display: flex; align-items: flex-start; gap: var(--mat-space-3); min-height: var(--mat-control-h-sm); cursor: pointer; }
 .mat-check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--mat-accent); flex: none; cursor: pointer; }
@@ -1341,6 +1603,63 @@ input[type="file"].mat-input { padding: 6px; }
 .mat-alert__list { margin: var(--mat-space-1) 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 2px; }
 .mat-alert__list a { color: inherit; text-decoration: underline; }
 [data-validation-summary][hidden] { display: none; }
+
+/* ---- Code input (FORM-19): one box per character of a code (an authenticator or SMS code, a PIN, a recovery code) ----
+   .mat-otp[data-otp] wraps the real input (.mat-otp__input), which is what is validated, posted and reset. Without the script it is a plain text field in the look of
+   a code; matui.js hides it (.is-ready) and draws the boxes in .mat-otp__boxes (one .mat-otp__box each, .mat-otp__sep between groups) and a line for what was refused.
+   The boxes are as high as a control (a touch screen gets the taller one from the tokens), keep 16 px type or more (a phone does not zoom into them) and shrink in width
+   so that a code of any length fits the screen; they never make the page scroll sideways. */
+.mat-otp { --mat-otp-w: 2.75rem; --mat-otp-h: var(--mat-control-h-lg); --mat-otp-fs: var(--mat-fs-xl); position: relative; display: block; min-width: 0; max-width: 100%; }
+.mat-otp--sm { --mat-otp-w: 2.25rem; --mat-otp-h: var(--mat-control-h); --mat-otp-fs: 1rem; }
+.mat-otp--lg { --mat-otp-w: 3.5rem; --mat-otp-h: 4rem; --mat-otp-fs: var(--mat-fs-2xl); }
+.mat-otp__input {
+  display: block; width: 100%; max-width: 16rem; min-height: var(--mat-otp-h); padding: 0 var(--mat-space-3);
+  background: var(--mat-surface); color: var(--mat-text);
+  border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius);
+  font-family: var(--mat-mono); font-size: var(--mat-otp-fs); font-weight: 600; letter-spacing: .3em; text-align: center;
+  transition: border-color var(--mat-dur-fast) var(--mat-ease), box-shadow var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-otp__input:hover { border-color: color-mix(in srgb, var(--mat-accent) 40%, var(--mat-border-strong)); }
+.mat-otp__input:focus { border-color: var(--mat-accent); box-shadow: var(--mat-focus-ring); outline: none; }
+.mat-otp__input:disabled { background: var(--mat-surface-3); color: var(--mat-text-muted); cursor: not-allowed; }
+.mat-otp__input[readonly] { background: var(--mat-surface-2); }
+.mat-otp--center .mat-otp__input { margin-inline: auto; }
+/* with the script the real input lies over the boxes, invisible, so that a message of the browser points at the right place; whoever focuses it lands on a box */
+.mat-otp.is-ready > .mat-otp__input { position: absolute; inset: 0; width: 100%; max-width: none; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+
+.mat-otp__boxes { display: flex; align-items: center; gap: var(--mat-space-2); max-width: 100%; }
+.mat-otp--center .mat-otp__boxes { justify-content: center; }
+.mat-otp__box {
+  flex: 0 1 var(--mat-otp-w); width: var(--mat-otp-w); min-width: 0; height: var(--mat-otp-h); margin: 0; padding: 0;
+  background: var(--mat-surface); color: var(--mat-text);
+  border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius);
+  font-family: var(--mat-mono); font-size: var(--mat-otp-fs); font-weight: 600; line-height: 1; text-align: center;
+  caret-color: var(--mat-accent);
+  transition: border-color var(--mat-dur-fast) var(--mat-ease), box-shadow var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-otp__box:hover { border-color: color-mix(in srgb, var(--mat-accent) 40%, var(--mat-border-strong)); }
+.mat-otp__box:focus { border-color: var(--mat-accent); box-shadow: var(--mat-focus-ring); outline: none; }
+.mat-otp__box:disabled { background: var(--mat-surface-3); color: var(--mat-text-muted); cursor: not-allowed; }
+.mat-otp__box[readonly] { background: var(--mat-surface-2); }
+/* a dot box is a password field: the reveal button and the key of the browser would sit on top of the dot */
+.mat-otp__box::-ms-reveal, .mat-otp__box::-ms-clear { display: none; }
+.mat-otp__box::-webkit-credentials-auto-fill-button, .mat-otp__box::-webkit-contacts-auto-fill-button { visibility: hidden; pointer-events: none; position: absolute; right: 0; }
+/* between the groups: a gap, or a dash when the groups are written 4-4 */
+.mat-otp__sep { flex: none; align-self: stretch; display: flex; align-items: center; justify-content: center; width: var(--mat-space-3); }
+.mat-otp__sep--dash { width: 1.25rem; }
+.mat-otp__sep--dash::before { content: ""; width: .5rem; height: 2px; border-radius: 1px; background: var(--mat-text-muted); }
+.mat-otp__status { margin: var(--mat-space-1) 0 0; font-size: var(--mat-fs-sm); color: var(--mat-text-muted); }
+@media (max-width: 640px) {
+  .mat-otp__boxes { gap: var(--mat-space-1); }
+  .mat-otp__sep { width: var(--mat-space-2); }
+  .mat-otp__sep--dash { width: 1rem; }
+  .mat-otp__sep--dash::before { width: .375rem; }
+  .mat-otp--lg { --mat-otp-h: 3.5rem; }
+}
+/* the message at the field and the border in the colour of the meaning (FORM-03) */
+.mat-field.is-invalid .mat-otp__input, .mat-field.is-invalid .mat-otp__box, .mat-otp.is-invalid .mat-otp__box { border-color: var(--mat-danger); }
+.mat-field.is-invalid .mat-otp__input:focus, .mat-field.is-invalid .mat-otp__box:focus, .mat-otp.is-invalid .mat-otp__box:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-danger) 35%, transparent); }
+.mat-field.is-valid .mat-otp__input, .mat-field.is-valid .mat-otp__box { border-color: var(--mat-success); }
 
 /* ---- Floating labels: the label sits in the field and moves up when the field has focus or a value ----
    The input comes first, the label after it, and the input has placeholder=" " (a space) so that :placeholder-shown knows whether it is empty. */
@@ -1479,6 +1798,87 @@ input[type="file"].mat-input { padding: 6px; }
 .mat-switch--bare { gap: 0; flex: none; }
 
 /* ==========================================================================
+   Slider and range slider (FORM-17)
+   A native range input in a wrapper (.mat-slider), or two of them (.mat-slider--range, from and to). Without the script they are the native controls, the two
+   of a range slider one under the other. With it (.is-ready) the inputs stay in place but invisible, and the script draws one track, a thumb per input with
+   a target of 44 px, a bubble with the value, the marks and the labels, and moves the thumbs itself. The script sets --mat-slider-from, --mat-slider-to
+   (the filled part, in percent) and, per thumb, --mat-slider-at. Sizes: --sm (a compact control: 36 px), the default (44 px) and --lg.
+   ========================================================================== */
+.mat-slider {
+  --mat-slider-knob: 20px; --mat-slider-track: 6px; --mat-slider-hit: 44px;
+  --mat-slider-from: 0%; --mat-slider-to: 0%;
+  position: relative; display: block; isolation: isolate;
+  width: 100%; min-width: 0;
+}
+.mat-slider--sm { --mat-slider-knob: 16px; --mat-slider-track: 4px; --mat-slider-hit: 36px; }
+.mat-slider--lg { --mat-slider-knob: 26px; --mat-slider-track: 8px; --mat-slider-hit: 52px; }
+
+/* ---- Without the script: the native control, in the look of the toolkit (the filled part needs the script, except in Firefox) ---- */
+.mat-slider__input { display: block; width: 100%; height: var(--mat-slider-hit); margin: 0; background: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.mat-slider__input::-webkit-slider-runnable-track { height: var(--mat-slider-track); border-radius: var(--mat-radius-pill); background: var(--mat-surface-3); box-shadow: inset 0 0 0 1px var(--mat-border); }
+.mat-slider__input::-moz-range-track { height: var(--mat-slider-track); border-radius: var(--mat-radius-pill); background: var(--mat-surface-3); box-shadow: inset 0 0 0 1px var(--mat-border); }
+.mat-slider__input::-moz-range-progress { height: var(--mat-slider-track); border-radius: var(--mat-radius-pill); background: var(--mat-accent); }
+.mat-slider__input::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; box-sizing: border-box; width: var(--mat-slider-knob); height: var(--mat-slider-knob); margin-top: calc((var(--mat-slider-track) - var(--mat-slider-knob)) / 2); border-radius: 50%; background: var(--mat-thumb); border: 2px solid var(--mat-accent); box-shadow: var(--mat-shadow-1); }
+.mat-slider__input::-moz-range-thumb { box-sizing: border-box; width: var(--mat-slider-knob); height: var(--mat-slider-knob); border-radius: 50%; background: var(--mat-thumb); border: 2px solid var(--mat-accent); box-shadow: var(--mat-shadow-1); }
+.mat-slider__input:focus-visible { outline: none; }
+.mat-slider__input:focus-visible::-webkit-slider-thumb { box-shadow: var(--mat-focus-ring); }
+.mat-slider__input:focus-visible::-moz-range-thumb { box-shadow: var(--mat-focus-ring); }
+.mat-slider__input:disabled { cursor: not-allowed; }
+.mat-slider--range:not(.is-ready) { display: flex; flex-direction: column; gap: var(--mat-space-1); }
+
+/* ---- With the script: the inputs are invisible (not hidden: they keep the focus, the keyboard and the screen reader) and lie over the slider ---- */
+.mat-slider.is-ready .mat-slider__input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.mat-slider.is-ready[data-bubble="always"] { padding-top: 20px; }
+
+/* The rail is as wide as the way the centre of a thumb goes; a press on it is handled by the script (touch-action: the page can still be scrolled up and down). */
+.mat-slider__rail { position: relative; height: var(--mat-slider-hit); margin-inline: calc(var(--mat-slider-knob) / 2); cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.mat-slider__track { position: absolute; inset-inline: 0; top: 50%; height: var(--mat-slider-track); transform: translateY(-50%); border-radius: var(--mat-radius-pill); background: var(--mat-surface-3); box-shadow: inset 0 0 0 1px var(--mat-border); }
+.mat-slider__fill { position: absolute; top: 0; bottom: 0; left: var(--mat-slider-from); right: calc(100% - var(--mat-slider-to)); border-radius: var(--mat-radius-pill); background: var(--mat-accent); }
+
+/* The thumb is the target (as wide as it is high: 44 px); the knob that is seen is smaller. */
+.mat-slider__thumb { position: absolute; top: 50%; left: var(--mat-slider-at, 0%); z-index: 1; width: var(--mat-slider-hit); height: var(--mat-slider-hit); transform: translate(-50%, -50%); }
+.mat-slider__thumb.is-top { z-index: 2; }
+.mat-slider__thumb::before {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  box-sizing: border-box; width: var(--mat-slider-knob); height: var(--mat-slider-knob); margin: calc(var(--mat-slider-knob) / -2) 0 0 calc(var(--mat-slider-knob) / -2);
+  border-radius: 50%; background: var(--mat-thumb); border: 2px solid var(--mat-accent); box-shadow: var(--mat-shadow-1);
+}
+.mat-slider__thumb.is-key::before, .mat-slider__thumb.is-drag::before { box-shadow: var(--mat-focus-ring); }
+
+/* The bubble shows the value above the thumb while it is dragged or has the focus, or always (data-bubble="always"); two near thumbs share one (is-merged). */
+.mat-slider__bubble {
+  position: absolute; left: 50%; bottom: calc(50% + var(--mat-slider-knob) / 2 + 6px);
+  transform: translateX(calc(-50% + var(--mat-slider-shift, 0px)));
+  min-width: 2.25em; padding: 3px var(--mat-space-2); border-radius: var(--mat-radius-xs);
+  background: var(--mat-text); color: var(--mat-bg);
+  font-size: var(--mat-fs-xs); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; text-align: center; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-slider__thumb.is-focus > .mat-slider__bubble, .mat-slider__thumb.is-drag > .mat-slider__bubble, .mat-slider[data-bubble="always"] .mat-slider__bubble { opacity: 1; }
+.mat-slider.is-merged .mat-slider__thumb--from > .mat-slider__bubble { opacity: 0; }
+
+/* Marks under the track (the ones inside the filled part in the accent colour) and the labels: under every few marks, or the minimum and the maximum at the ends. */
+.mat-slider__ticks { position: absolute; inset: 0; pointer-events: none; }
+.mat-slider__tick { position: absolute; top: calc(50% + var(--mat-slider-track) / 2 + 4px); left: var(--mat-slider-at); width: 2px; height: 6px; margin-left: -1px; border-radius: 1px; background: var(--mat-border-strong); }
+.mat-slider__tick.is-on { background: var(--mat-accent); }
+.mat-slider__scale { position: relative; height: 1.25rem; margin: -6px calc(var(--mat-slider-knob) / 2) 0; font-size: var(--mat-fs-xs); color: var(--mat-text-muted); font-variant-numeric: tabular-nums; pointer-events: none; }
+.mat-slider__end, .mat-slider__tick-label { position: absolute; top: 0; white-space: nowrap; }
+.mat-slider__end--min { left: calc(var(--mat-slider-knob) / -2); }
+.mat-slider__end--max { right: calc(var(--mat-slider-knob) / -2); }
+.mat-slider__tick-label { left: var(--mat-slider-at); transform: translateX(-50%); }
+
+/* Disabled: every input of the slider is (a fieldset can disable them as well). */
+.mat-slider:not(:has(.mat-slider__input:enabled)) { opacity: .5; }
+.mat-slider:not(:has(.mat-slider__input:enabled)) .mat-slider__rail { cursor: not-allowed; }
+
+/* Forced colours (a high-contrast mode): backgrounds are dropped there, so the filled part and the bubble get what they need from the system colours. */
+@media (forced-colors: active) {
+  .mat-slider__fill { background: Highlight; }
+  .mat-slider__track, .mat-slider__bubble { border: 1px solid CanvasText; }
+}
+
+/* ==========================================================================
    MatUi · pickers (FORM-15)
    A picker is a field that is filled in a panel: a select with pictures, descriptions and tags, a date or a period, a time or a time range,
    a colour. The input inside (.mat-picker__input) holds the value that is posted; matui.js adds the button that shows it and the panel.
@@ -1516,9 +1916,11 @@ input[type="file"].mat-input { padding: 6px; }
   min-width: 280px; max-width: min(96vw, 720px); max-height: calc(100dvh - 16px);
   background: var(--mat-surface); color: var(--mat-text);
   border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius-lg); box-shadow: var(--mat-shadow-3);
-  animation: mat-menu-in var(--mat-dur) var(--mat-ease);
+  /* the panel only fades in: a panel that also moves and grows (as a menu does) looks as if it first appeared at the wrong place and then slid into its own */
+  animation: mat-picker-in var(--mat-dur-fast) var(--mat-ease);
   transform-origin: top left;
 }
+@keyframes mat-picker-in { from { opacity: 0; } }
 .mat-picker__panel[hidden] { display: none; }
 .mat-picker__head { display: none; align-items: center; gap: var(--mat-space-3); padding: var(--mat-space-3) var(--mat-space-3) var(--mat-space-3) var(--mat-space-4); border-bottom: 1px solid var(--mat-border); flex: none; }
 .mat-picker__heading { flex: 1 1 auto; min-width: 0; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1576,6 +1978,20 @@ input[type="file"].mat-input { padding: 6px; }
 /* Several choices: a box in front of every option, filled when it is chosen. */
 .mat-picker--multiple .mat-picker__check { order: -1; visibility: visible; width: 20px; height: 20px; border: 1.5px solid var(--mat-border-strong); border-radius: var(--mat-radius-xs); background: var(--mat-surface); color: transparent; }
 .mat-picker--multiple .mat-picker__option[aria-selected="true"] .mat-picker__check { background: var(--mat-accent); border-color: var(--mat-accent); color: var(--mat-on-accent); }
+/* "Select all" (data-select-all): the first row above the list, with the box in three states (all, some or none of the options that are shown are chosen). */
+.mat-picker__all {
+  display: flex; align-items: center; gap: var(--mat-space-3);
+  margin: var(--mat-space-2) var(--mat-space-2) 0; padding: var(--mat-space-2) var(--mat-space-3);
+  border: 0; border-radius: var(--mat-radius-sm); background: transparent; color: var(--mat-text);
+  font: inherit; font-weight: 650; text-align: left; cursor: pointer;
+}
+.mat-picker__all[hidden] { display: none; }
+.mat-picker__all:hover, .mat-picker__all:focus-visible { background: var(--mat-surface-3); outline: none; }
+.mat-picker__all:focus-visible { box-shadow: var(--mat-focus-ring); }
+.mat-picker__all + .mat-picker__options { margin-top: var(--mat-space-2); border-top: 1px solid var(--mat-border); }
+.mat-picker__all[aria-checked="true"] .mat-picker__check, .mat-picker__all[aria-checked="mixed"] .mat-picker__check { background: var(--mat-accent); border-color: var(--mat-accent); color: var(--mat-on-accent); }
+.mat-picker__all[aria-checked="mixed"] .mat-picker__check > .mat-icon { display: none; }
+.mat-picker__all[aria-checked="mixed"] .mat-picker__check::after { content: ""; width: 10px; height: 2px; border-radius: 1px; background: currentColor; }
 .mat-picker__empty { padding: var(--mat-space-5) var(--mat-space-4); text-align: center; color: var(--mat-text-muted); }
 .mat-picker__empty[hidden] { display: none; }
 @media (max-width: 640px) {
@@ -1583,10 +1999,33 @@ input[type="file"].mat-input { padding: 6px; }
   .mat-picker__panel--list .mat-picker__body { padding: 0; }
   .mat-picker__options { max-height: none; flex: 1 1 auto; padding: var(--mat-space-3); }
   .mat-picker__option { padding: var(--mat-space-3); }
+  .mat-picker__all { margin: var(--mat-space-3) var(--mat-space-3) 0; padding: var(--mat-space-3); }
   .mat-picker__img { width: 52px; height: 52px; }
   .mat-picker__search { padding: var(--mat-space-3) var(--mat-space-3) 0; }
   .mat-picker__search > .mat-icon { left: calc(var(--mat-space-3) + var(--mat-space-3)); top: calc(var(--mat-space-3) + (var(--mat-control-h) - 1.25em) / 2); }
 }
+
+/* ---- Select: create what is missing, and suggestions (FORM-16) ---- */
+/* "Create <text>" is the first row of the list, a suggested name another: the plus where a picture would be, the words in the colour of a link. While the request runs the row is busy
+   (aria-busy) and a ring turns where the plus was. A message under the search field says why it did not work. */
+.mat-picker__create, .mat-picker__option--new { color: var(--mat-accent-text); }
+.mat-picker__create .mat-picker__name, .mat-picker__option--new .mat-picker__name { font-weight: 650; }
+.mat-picker__create[hidden] { display: none; }
+.mat-picker__plus { flex: none; display: grid; place-items: center; width: 22px; height: 22px; }
+.mat-picker__option.is-busy { cursor: progress; opacity: .75; }
+.mat-picker__option.is-busy .mat-picker__plus > .mat-icon { display: none; }
+.mat-picker__option.is-busy .mat-picker__plus::after { content: ""; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: mat-spin .7s linear infinite; }
+.mat-picker__create-msg { margin: 0; padding: var(--mat-space-1) var(--mat-space-4) var(--mat-space-2); color: var(--mat-danger-text); }
+.mat-picker__create-msg[hidden] { display: none; }
+/* Suggestions: a group with its heading above the whole list, which has the heading "All". The closed button counts them in the colour of a link. */
+.mat-picker__group { display: flex; flex-direction: column; gap: 2px; }
+.mat-picker__group[hidden] { display: none; }
+.mat-picker__group-head { padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-1); font-size: var(--mat-fs-sm); font-weight: 650; color: var(--mat-text-muted); }
+.mat-picker__group-head--all { margin-top: var(--mat-space-2); }
+.mat-picker__group-head[hidden] { display: none; }
+.mat-picker__value.is-suggest { color: var(--mat-accent-text); }
+/* An option with a colour (data-colour, COLOR-10) has the dot before its name; the closed field shows it too. */
+.mat-picker__option[data-colour].is-coloured::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--mat-swatch); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-text) 35%, transparent); }
 
 /* ---- Calendar: a date, a period ---- */
 .mat-cal { display: flex; flex-direction: column; gap: var(--mat-space-3); min-width: 0; }
@@ -1615,6 +2054,7 @@ input[type="file"].mat-input { padding: 6px; }
 @media (max-width: 640px) {
   .mat-cal__month { min-width: 0; }
   .mat-cal__day { height: 44px; }
+  .mat-cal .mat-cal__pick { min-height: 20rem; }
 }
 
 /* ---- Time: columns of hours and minutes, and a field to type in ---- */
@@ -1702,10 +2142,92 @@ input[type="file"].mat-input { padding: 6px; }
   .mat-picker__panel.mat-picker__panel--suggest {
     inset: auto; width: auto; height: auto; max-height: min(50dvh, 320px); padding: 0;
     border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius-lg); box-shadow: var(--mat-shadow-3);
-    animation: mat-menu-in var(--mat-dur) var(--mat-ease);
+    animation: mat-picker-in var(--mat-dur-fast) var(--mat-ease);
   }
   .mat-picker__panel--suggest .mat-picker__options { max-height: min(50dvh, 320px); padding: var(--mat-space-2); }
 }
+
+/* ---- The month grid, shared by the date picker, the calendar and the appointment picker (FORM-18) ----
+   A day can carry dots (events, free appointments), a day that cannot be chosen is dimmed (and struck through, or absent), the title of the month is a button that
+   leads to the choice of a month and then of a year, and a column of week numbers can stand in front of the rows. */
+.mat-cal__day { position: relative; }
+.mat-cal__marks { position: absolute; left: 0; right: 0; bottom: 4px; display: flex; justify-content: center; gap: 2px; pointer-events: none; }
+.mat-cal__mark { width: 4px; height: 4px; border-radius: 50%; background: var(--mat-accent); }
+.mat-cal__day.is-selected .mat-cal__mark { background: currentColor; }
+/* what cannot be chosen says so in a second way besides its colour (COLOR-04): a line through the number */
+.mat-cal__day.is-unavailable { text-decoration: line-through; }
+.mat-cal__day.is-absent { visibility: hidden; }
+.mat-cal__grid--weeks { grid-template-columns: 2.25rem repeat(7, minmax(0, 1fr)); }
+.mat-cal__wk { display: grid; place-items: center; font-size: var(--mat-fs-xs); color: var(--mat-text-muted); font-variant-numeric: tabular-nums; }
+.mat-cal__title--button {
+  flex: 0 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: var(--mat-space-1);
+  min-height: var(--mat-control-h-sm); padding: 0 var(--mat-space-2);
+  border: 0; border-radius: var(--mat-radius-sm); background: transparent; color: inherit; font: inherit; font-weight: 650; cursor: pointer;
+}
+.mat-cal__title--button:hover { background: var(--mat-surface-3); }
+.mat-cal__title--button:focus-visible { outline: none; box-shadow: var(--mat-focus-ring); }
+.mat-cal__title--button > .mat-icon { flex: none; color: var(--mat-text-muted); }
+.mat-cal__pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(48px, 1fr); gap: var(--mat-space-2); min-height: 17rem; padding-top: var(--mat-space-2); }
+.mat-cal__cell {
+  min-width: 0; padding: 0; border: 1.5px solid transparent; border-radius: var(--mat-radius-sm);
+  background: transparent; color: var(--mat-text); font: inherit; font-variant-numeric: tabular-nums; text-transform: capitalize; cursor: pointer;
+}
+.mat-cal__cell:hover:not(:disabled) { background: var(--mat-accent-soft-strong); }
+.mat-cal__cell:focus-visible { outline: none; box-shadow: var(--mat-focus-ring); }
+.mat-cal__cell.is-today { border-color: var(--mat-accent); }
+.mat-cal__cell.is-current { background: var(--mat-accent-soft-strong); font-weight: 650; }
+.mat-cal__cell:disabled { color: var(--mat-text-faint); cursor: not-allowed; }
+
+/* ---- Calendar: always shown (data-calendar) ----
+   A surface with a line around it, like a card. The real input is not drawn; it lies over the calendar so that a browser message points at it. */
+.mat-calendar { position: relative; display: block; width: 100%; max-width: 22.5rem; padding: var(--mat-space-3); background: var(--mat-surface); border: 1px solid var(--mat-border); border-radius: var(--mat-radius-lg); }
+.mat-calendar[data-months="2"] { max-width: 40rem; }
+.mat-calendar__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.mat-calendar .mat-cal__months { flex-wrap: wrap; }
+.mat-calendar[data-months="2"] .mat-cal__month { min-width: min(252px, 100%); }
+.mat-field.is-invalid .mat-calendar { border-color: var(--mat-danger); }
+.mat-calendar__agenda { display: flex; flex-direction: column; gap: var(--mat-space-2); margin-top: var(--mat-space-3); padding-top: var(--mat-space-3); border-top: 1px solid var(--mat-border); }
+.mat-calendar__agenda-title { margin: 0; font-weight: 650; }
+.mat-calendar__events { display: flex; flex-direction: column; gap: var(--mat-space-1); margin: 0; padding: 0; list-style: none; }
+.mat-calendar__event { display: flex; align-items: baseline; gap: var(--mat-space-3); padding: var(--mat-space-2) var(--mat-space-3); border-radius: var(--mat-radius-sm); background: var(--mat-surface-2); }
+.mat-calendar__time { flex: none; min-width: 5.5rem; font-size: var(--mat-fs-sm); font-variant-numeric: tabular-nums; color: var(--mat-text-muted); }
+.mat-calendar__what { min-width: 0; overflow-wrap: anywhere; }
+.mat-calendar__none { margin: 0; font-size: var(--mat-fs-sm); color: var(--mat-text-muted); }
+
+/* ---- Appointment picker: a month, then the times of the chosen day (data-picker="slot") ----
+   Side by side on a wide screen (the times scroll inside their column, so that the panel keeps its height when another day is chosen), one below the other on a phone. */
+@media (min-width: 641px) {
+  .mat-picker__panel--slots { width: min(96vw, 42rem); }
+}
+.mat-picker__panel--slots .mat-picker__foot { flex-wrap: wrap; }
+.mat-slots { display: grid; gap: var(--mat-space-5); min-width: 0; }
+.mat-slots__cal, .mat-slots__day { min-width: 0; }
+@media (min-width: 641px) {
+  .mat-slots { grid-template-columns: 19rem minmax(0, 1fr); gap: var(--mat-space-6); }
+  .mat-slots__day { position: relative; }
+  .mat-slots__scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+}
+.mat-slots__status { display: flex; align-items: center; gap: var(--mat-space-2); flex-wrap: wrap; }
+.mat-slots__heading { margin: 0; font-weight: 650; }
+.mat-slots__hint { margin: 2px 0 0; font-size: var(--mat-fs-sm); color: var(--mat-text-muted); }
+.mat-slots__empty { display: flex; align-items: center; gap: var(--mat-space-2); margin: var(--mat-space-3) 0 0; color: var(--mat-text-muted); }
+.mat-slots__group-title { margin: var(--mat-space-4) 0 var(--mat-space-2); font-size: var(--mat-fs-sm); font-weight: 600; color: var(--mat-text-muted); }
+.mat-slots__heading + .mat-slots__list, .mat-slots__hint + .mat-slots__list { margin-top: var(--mat-space-3); }
+.mat-slots__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.25rem, 1fr)); gap: var(--mat-space-2); }
+.mat-slot {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: var(--mat-control-h); padding: 0 var(--mat-space-2);
+  border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius); background: var(--mat-surface); color: var(--mat-text);
+  font: inherit; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.mat-slot:hover:not(:disabled) { background: var(--mat-accent-soft-strong); border-color: var(--mat-accent); }
+.mat-slot:focus-visible { outline: none; box-shadow: var(--mat-focus-ring); }
+.mat-slot[aria-pressed="true"], .mat-slot[aria-pressed="true"]:hover { background: var(--mat-accent); border-color: var(--mat-accent); color: var(--mat-on-accent); font-weight: 650; }
+/* a taken time is dashed, struck through and says "Taken": not a colour alone (COLOR-04) */
+.mat-slot:disabled { background: var(--mat-surface-2); border-style: dashed; border-color: var(--mat-border); color: var(--mat-text-faint); cursor: not-allowed; }
+.mat-slot:disabled .mat-slot__time { text-decoration: line-through; }
+.mat-slot__note { font-size: var(--mat-fs-xs); line-height: 1.1; color: var(--mat-text-muted); }
+.mat-slots__summary { flex: 1 1 100%; margin: 0; font-weight: 650; }
+.mat-slots__summary.is-empty { font-weight: 400; color: var(--mat-text-muted); }
 
 /* ==========================================================================
    MatUi · lists
@@ -1781,6 +2303,7 @@ input[type="file"].mat-input { padding: 6px; }
 .mat-table--zebra tbody tr:nth-child(even):hover { background: var(--mat-surface-3); }
 .mat-table__name { display: flex; align-items: center; gap: var(--mat-space-3); min-width: 0; font-weight: 600; }
 .mat-table__name small { display: block; color: var(--mat-text-muted); font-weight: 400; }
+.mat-table__name .mat-muted { font-weight: 400; } /* a part of the name that the group already says: .example.org after app */
 .mat-table__actions { display: flex; justify-content: flex-end; gap: var(--mat-space-1); }
 .mat-table td.mat-table__cell-actions { width: 1%; white-space: nowrap; }
 
@@ -1798,6 +2321,50 @@ input[type="file"].mat-input { padding: 6px; }
   /* The check of a selectable row is the first thing of its card, without a label (it has an accessible name of its own). */
   .mat-table td.mat-table__select { width: 100%; justify-content: flex-start; }
   .mat-table td.mat-table__select::before { content: none; }
+}
+
+/* ---- Groups in a table (LIST-16): rows under a heading that opens and closes. The items hang on a line below the heading, and the action that adds one
+   is the last row of the group. A group is a <tbody class="mat-group">; its first row is the heading (.mat-group__head), the rows after it are items
+   (.mat-group__item), the last may be the add row (.mat-group__add). The script (data-groups on the table) opens and closes a group and remembers the choice;
+   without it every group stays open. ---- */
+.mat-group { --mat-group-x: 1.375rem; --mat-group-line: var(--mat-border-strong); }
+.mat-group__head > .mat-group__cell { padding: 0; background: var(--mat-surface-2); }
+.mat-group__bar { display: flex; align-items: center; gap: var(--mat-space-2); min-height: var(--mat-control-h); padding-right: var(--mat-space-3); }
+.mat-group__toggle {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--mat-space-3);
+  min-height: var(--mat-control-h); padding: var(--mat-space-1) var(--mat-space-4);
+  border: 0; border-radius: 0; background: transparent; color: var(--mat-text);
+  font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+  transition: background var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-group__toggle:hover { background: var(--mat-accent-soft); }
+.mat-group__toggle:focus-visible { box-shadow: inset 0 0 0 2px var(--mat-accent); border-radius: 0; }
+.mat-group__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-group__chev { flex: none; color: var(--mat-text-muted); transition: transform var(--mat-dur) var(--mat-ease); }
+.mat-group.is-collapsed .mat-group__chev { transform: rotate(-90deg); }
+.mat-group__actions { display: flex; align-items: center; gap: var(--mat-space-1); flex: none; }
+.mat-group.is-collapsed > tr:not(.mat-group__head) { display: none; }
+/* The line: one short stroke from the heading down the rows, a branch to each item, and the last row ends it. */
+.mat-group__item > td:first-child, .mat-group__add > td:first-child { position: relative; padding-left: calc(var(--mat-group-x) + var(--mat-space-6)); }
+.mat-group__item > td:first-child::before, .mat-group__add > td:first-child::before,
+.mat-group__item > td:first-child::after, .mat-group__add > td:first-child::after { content: ""; position: absolute; left: var(--mat-group-x); pointer-events: none; }
+.mat-group__item > td:first-child::before, .mat-group__add > td:first-child::before { top: -1px; bottom: 0; border-left: 1px solid var(--mat-group-line); }
+.mat-group > tr:last-child > td:first-child::before { bottom: 50%; }
+.mat-group__item > td:first-child::after, .mat-group__add > td:first-child::after { top: 50%; width: var(--mat-space-4); border-top: 1px solid var(--mat-group-line); }
+.mat-group__add > .mat-group__cell { color: var(--mat-text-muted); }
+.mat-group__add > .mat-group__cell > .mat-btn { margin-left: calc(var(--mat-space-3) * -1); }
+@media (max-width: 720px) {
+  /* A row is a card here: no line, the heading is a bar over its cards, and the add row is a card with its button. */
+  .mat-table .mat-group__head { padding: 0; }
+  .mat-table tbody.mat-group:not(:first-of-type) > tr.mat-group__head { border-top: 1px solid var(--mat-border); }
+  .mat-group__head > .mat-group__cell { display: block; }
+  .mat-group__item > td:first-child, .mat-group__add > td:first-child { padding-left: 0; }
+  /* the ::before that drew the line is the label of the cell again (when it has one), the ::after is not needed */
+  .mat-group__item > td:first-child::before, .mat-group__add > td:first-child::before { position: static; border: 0; content: none; }
+  .mat-group__item > td:first-child[data-label]:not([data-label=""])::before { content: attr(data-label); }
+  .mat-group__item > td:first-child::after, .mat-group__add > td:first-child::after { content: none; }
+  .mat-group__add > .mat-group__cell { justify-content: flex-start; text-align: left; }
+  .mat-group__add > .mat-group__cell > .mat-btn { margin-left: 0; }
 }
 
 /* ---- Pagination: directly under the table, nothing between ---- */
@@ -1939,6 +2506,9 @@ th[aria-sort="descending"] .mat-icon { transform: rotate(180deg); }
 .mat-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-3); padding: var(--mat-space-2) var(--mat-space-4); min-height: var(--mat-control-h-lg); background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); border-radius: var(--mat-radius); }
 .mat-bulk[hidden] { display: none; }
 .mat-bulk__count { margin-right: auto; font-weight: 600; }
+/* An item that is not a table row (a card, the row of a list: data-select-item) is marked like a row when its check is ticked: a tint behind the whole item and the accent
+   colour for its line, like a ticked .mat-choice, never a bar at one side (COLOR-08). A .mat-tile has its own mark (above). */
+[data-select-item].is-selected { background: var(--mat-accent-soft); border-color: var(--mat-accent); }
 
 /* ---- Pills and vertical tabs; tabs that fill the width ---- */
 .mat-tabs--pills { gap: var(--mat-space-2); border-bottom: 0; }
@@ -1955,6 +2525,173 @@ th[aria-sort="descending"] .mat-icon { transform: rotate(180deg); }
 .mat-popover { max-width: min(92vw, 20rem); padding: var(--mat-space-4); }
 .mat-popover__title { font-weight: 650; margin-bottom: var(--mat-space-1); }
 .mat-popover p { color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+
+/* ---- Lists of rows (LIST-15): the list, its rows and what goes into a row ----
+   <ul class="mat-itemlist"> of <li class="mat-item">. A row is .mat-item__main (a link, a button, a label or plain text) with a lead (an avatar, an icon tile, a thumbnail or a check), a body
+   (a title and the lines under it) and an end (a note, a count, a value and the arrow). What else has to be pressed (a switch, a button, the handle) is .mat-item__aside beside it, never inside
+   a link. Without the script it is a list: the lines, the states and the links work, and the actions of a row stand at its end as buttons. With data-itemlist the script adds sliding actions,
+   reordering, a filter and the selection of rows. --mat-item-lead is the width of the lead and --mat-item-inset where the lines between the rows begin. */
+.mat-itemlist {
+  --mat-item-pad: var(--mat-space-4);
+  --mat-item-gap: var(--mat-space-3);
+  --mat-item-lead: 40px;
+  --mat-item-h: max(44px, var(--mat-control-h-lg));
+  --mat-item-inset: 0px;
+  --mat-item-line: var(--mat-border);
+  list-style: none; min-width: 0; margin: 0; padding: 0;
+  background: var(--mat-surface);
+  border-block: 1px solid var(--mat-border);
+}
+/* the grouped card; clip (not hidden) keeps the sticky dividers working, because it makes no scroll container */
+.mat-itemlist--inset { border: 1px solid var(--mat-border); border-radius: var(--mat-radius-lg); overflow: hidden; overflow: clip; }
+.mat-itemlist--lines-inset { --mat-item-inset: calc(var(--mat-item-pad) + var(--mat-item-lead) + var(--mat-item-gap)); }
+.mat-itemlist--lines-none { --mat-item-line: transparent; }
+.mat-itemlist--lead-lg { --mat-item-lead: 56px; }
+.mat-itemlist--compact { --mat-item-h: 40px; }
+.mat-itemlist--compact .mat-item__main { padding-block: var(--mat-space-1); }
+.mat-itemlist--scroll { max-height: 22rem; overflow-y: auto; overscroll-behavior: contain; }
+.mat-itemlist__group { list-style: none; }
+.mat-itemlist__group[hidden] { display: none; }
+.mat-itemlist__items { list-style: none; margin: 0; padding: 0; }
+/* the header of a whole list (a heading above it) and the dividers inside it; a divider can stay at the top while its rows pass */
+.mat-itemlist__header { margin: 0; padding: 0 var(--mat-space-4) var(--mat-space-2); color: var(--mat-text-muted); font-size: var(--mat-fs-sm); font-weight: 600; line-height: var(--mat-lh-tight); }
+.mat-itemlist__divider {
+  display: flex; align-items: center; gap: var(--mat-space-2);
+  min-height: var(--mat-control-h-sm);
+  margin: 0; padding: var(--mat-space-1) var(--mat-item-pad);
+  list-style: none;
+  background: var(--mat-surface-2); color: var(--mat-text-muted);
+  border-bottom: 1px solid var(--mat-border);
+  font-size: var(--mat-fs-sm); font-weight: 600; line-height: var(--mat-lh-tight);
+}
+.mat-itemlist__group ~ .mat-itemlist__group > .mat-itemlist__divider, .mat-item ~ .mat-itemlist__divider { border-top: 1px solid var(--mat-border); }
+/* a divider that holds a row (the select-all check of a list) has the row of a row: the check is where the checks of the rows are */
+.mat-itemlist__divider:has(> .mat-item__main) { padding: 0; }
+.mat-itemlist__divider > .mat-item__main { min-height: var(--mat-control-h); padding-block: 0; }
+.mat-itemlist__divider .mat-item__title { color: inherit; font-weight: inherit; }
+.mat-itemlist--sticky .mat-itemlist__divider { position: sticky; top: var(--mat-itemlist-top, 0px); z-index: 1; }
+.mat-itemlist__empty { list-style: none; padding: var(--mat-space-6) var(--mat-item-pad); color: var(--mat-text-muted); text-align: center; }
+.mat-itemlist__empty[hidden] { display: none; }
+.mat-itemlist__empty:has(> .mat-empty) { padding: 0; }
+
+/* a row: the line under it is drawn by the row, from the begin of the text when the list says so */
+.mat-item { position: relative; display: flex; align-items: stretch; min-width: 0; list-style: none; }
+.mat-item[hidden] { display: none; }
+.mat-item::after { content: ""; position: absolute; left: var(--mat-item-inset); right: 0; bottom: 0; height: 1px; background: var(--mat-item-line); pointer-events: none; }
+.mat-item:last-child::after, .mat-item:has(+ .mat-itemlist__divider)::after, .mat-item.is-dragging::after, .mat-item.is-picked::after { content: none; }
+.mat-item__row { display: flex; flex: 1 1 auto; align-items: center; min-width: 0; }
+.mat-item__main {
+  position: relative;
+  display: flex; flex: 1 1 auto; align-items: center; gap: var(--mat-item-gap);
+  min-width: 0; min-height: var(--mat-item-h);
+  margin: 0; padding: var(--mat-space-2) var(--mat-item-pad);
+  border: 0; border-radius: 0; background: transparent;
+  color: inherit; font: inherit; text-align: left; text-decoration: none;
+}
+.mat-item--top .mat-item__main { align-items: flex-start; }
+/* pressed, hover and focus: a little of the text colour over whatever is behind (a selected row keeps its tint), and a ring inside the row, which nothing clips */
+a.mat-item__main, button.mat-item__main, label.mat-item__main { cursor: pointer; transition: background var(--mat-dur-fast) var(--mat-ease); }
+a.mat-item__main:hover, button.mat-item__main:hover, label.mat-item__main:hover { background: color-mix(in srgb, var(--mat-text) 5%, transparent); text-decoration: none; }
+a.mat-item__main:active, button.mat-item__main:active, label.mat-item__main:active { background: color-mix(in srgb, var(--mat-text) 9%, transparent); }
+.mat-item__main:focus-visible, .mat-item__main:has(:focus-visible), .mat-item--field:focus-within { border-radius: 0; box-shadow: inset 0 0 0 2px var(--mat-accent); }
+.mat-item.is-disabled .mat-item__main, .mat-item__main[aria-disabled="true"] { opacity: .55; pointer-events: none; cursor: not-allowed; }
+/* selected: a tint behind the whole row, a stronger title and the accent on the icon (COLOR-08); the tint is on the row, so a hover and a slide go over it */
+.mat-item.is-selected, .mat-item:has(.mat-item__main[aria-current="true"]), .mat-item:has(.mat-item__main[aria-current="page"]), .mat-itemlist--choices .mat-item:has(.mat-item__check:checked) { background: var(--mat-accent-soft-strong); }
+.mat-item.is-selected .mat-item__title, .mat-item__main[aria-current="true"] .mat-item__title, .mat-item__main[aria-current="page"] .mat-item__title, .mat-itemlist--choices .mat-item:has(.mat-item__check:checked) .mat-item__title { font-weight: 650; }
+.mat-item.is-selected .mat-item__lead > .mat-icon, .mat-item.is-selected .mat-item__end > .mat-icon, .mat-item__main[aria-current="true"] .mat-item__lead > .mat-icon, .mat-item__main[aria-current="page"] .mat-item__lead > .mat-icon { color: var(--mat-accent-text); }
+
+/* the lead: an avatar, an icon, a tile with an icon, a thumbnail or a check */
+.mat-item__lead { display: flex; flex: none; align-items: center; justify-content: center; min-width: var(--mat-item-lead); color: var(--mat-text-muted); }
+.mat-item__lead > .mat-icon { font-size: 1.35rem; }
+.mat-item__lead > .mat-avatar { width: var(--mat-item-lead); height: var(--mat-item-lead); font-size: var(--mat-fs-md); }
+.mat-item__thumb { display: grid; flex: none; place-items: center; width: var(--mat-item-lead); height: var(--mat-item-lead); overflow: hidden; border-radius: var(--mat-radius); background: var(--mat-surface-3); color: var(--mat-text-muted); font-size: 1.35rem; }
+.mat-item__thumb > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mat-item__tile { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--mat-radius); background: var(--mat-surface-3); color: var(--mat-text-muted); font-size: 1.1rem; }
+.mat-item__tile--accent { background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); }
+.mat-item__tile--ok { background: var(--mat-success-bg); color: var(--mat-success-text); }
+.mat-item__tile--warn { background: var(--mat-warning-bg); color: var(--mat-warning-text); }
+.mat-item__tile--error { background: var(--mat-danger-bg); color: var(--mat-danger-text); }
+.mat-item__tile--info { background: var(--mat-info-bg); color: var(--mat-info-text); }
+.mat-item__check { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--mat-accent); cursor: pointer; }
+.mat-item__check:focus-visible { box-shadow: none; }
+
+/* the body: a title and the lines under it, each on one line unless the row says wrap or the line is clamped */
+.mat-item__body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; }
+.mat-item__title { overflow: hidden; color: var(--mat-text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.mat-item__text { overflow: hidden; color: var(--mat-text-muted); font-size: var(--mat-fs-sm); line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.mat-item__text--clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; white-space: normal; }
+.mat-item--wrap .mat-item__title, .mat-item--wrap .mat-item__text { overflow: visible; white-space: normal; }
+/* what a state shows besides its colour (COLOR-04): unread is bold with a dot, done is struck through */
+.mat-item.is-unread .mat-item__title { font-weight: 700; }
+.mat-item.is-unread .mat-item__title + .mat-item__text { color: var(--mat-text); }
+.mat-item__dot { position: absolute; left: 4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--mat-accent); }
+.mat-item--top .mat-item__dot { top: 19px; margin-top: 0; }
+.mat-item.is-done .mat-item__title, .mat-itemlist--tasks .mat-item__main:has(.mat-item__check:checked) .mat-item__title { color: var(--mat-text-muted); font-weight: 500; text-decoration: line-through; }
+
+/* the end: a note, a count, a pill, a value, and the arrow of a row that opens something */
+.mat-item__end { display: flex; flex: none; align-items: center; gap: var(--mat-space-2); margin-left: var(--mat-space-2); color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+.mat-item__note { color: var(--mat-text-muted); font-size: var(--mat-fs-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mat-item__note--strong { color: var(--mat-text); font-weight: 600; }
+.mat-item__chevron { flex: none; color: var(--mat-text-muted); font-size: 1.1rem; }
+.mat-item__aside { display: flex; flex: none; align-items: center; gap: var(--mat-space-1); padding-right: var(--mat-item-pad); }
+.mat-item__aside:has(> .mat-btn--icon, > .mat-item__handle) { padding-right: var(--mat-space-2); }
+
+/* a row with a field in it: the label above the value, or beside it from 480 px */
+.mat-item__label { display: block; color: var(--mat-text-muted); font-size: var(--mat-fs-sm); font-weight: 600; }
+.mat-item__input { display: block; width: 100%; min-height: 1.6em; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--mat-text); font: inherit; outline: none; }
+.mat-item__input::placeholder { color: var(--mat-text-faint); }
+select.mat-item__input { width: calc(100% + 4px); margin-left: -4px; cursor: pointer; }
+.mat-item__input:focus-visible { box-shadow: none; }
+@media (min-width: 480px) {
+  .mat-item--inline .mat-item__body { flex-direction: row; align-items: center; gap: var(--mat-item-gap); }
+  .mat-item--inline .mat-item__label { flex: 0 0 7rem; color: var(--mat-text); font-size: var(--mat-fs-md); }
+}
+
+/* sliding actions: the options stand at the sides of the row and the row slides by --mat-item-x, which the script sets; the list clips what lies outside.
+   They are out of the tab order while hidden (the script also makes them inert). */
+.mat-item__options { display: flex; flex: none; align-items: stretch; }
+.mat-item__option {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 76px; min-height: var(--mat-item-h); padding: 0 var(--mat-space-4);
+  border: 0; border-radius: 0; background: var(--mat-surface-3); color: var(--mat-text);
+  font: inherit; font-size: var(--mat-fs-xs); font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.mat-item__option .mat-icon { font-size: 1.3rem; }
+.mat-item__option:hover { background: var(--mat-border-strong); text-decoration: none; }
+.mat-item__option:focus-visible { border-radius: 0; box-shadow: inset 0 0 0 2px var(--mat-text); }
+.mat-item__option--accent { background: var(--mat-accent); color: var(--mat-on-accent); }
+.mat-item__option--accent:hover { background: var(--mat-accent-hover); }
+.mat-item__option--accent:focus-visible { box-shadow: inset 0 0 0 2px var(--mat-on-accent); }
+.mat-item__option--danger { background: var(--mat-danger); color: var(--mat-on-danger); }
+.mat-item__option--danger:hover { background: color-mix(in oklab, var(--mat-danger) 86%, black); }
+.mat-item__option--danger:focus-visible { box-shadow: inset 0 0 0 2px var(--mat-on-danger); }
+.mat-item__more[aria-expanded="true"] { background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); }
+.mat-itemlist.is-ready .mat-item--sliding { overflow: hidden; overflow: clip; }
+.mat-itemlist.is-ready .mat-item--sliding > .mat-item__row {
+  position: relative;
+  transform: translateX(var(--mat-item-x, 0px));
+  transition: transform var(--mat-dur) var(--mat-ease);
+  touch-action: pan-y; user-select: none;
+}
+.mat-itemlist.is-ready .mat-item--sliding.is-swiping > .mat-item__row { transition: none; }
+.mat-itemlist.is-ready .mat-item--sliding .mat-item__options { position: absolute; top: 0; bottom: 0; visibility: hidden; transition: visibility 0s linear var(--mat-dur); }
+.mat-itemlist.is-ready .mat-item--sliding .mat-item__options--start { right: 100%; }
+.mat-itemlist.is-ready .mat-item--sliding .mat-item__options--end { left: 100%; }
+.mat-itemlist.is-ready .mat-item--sliding.is-swiping .mat-item__options, .mat-itemlist.is-ready .mat-item--sliding.is-open .mat-item__options { visibility: visible; transition-delay: 0s; }
+
+/* reordering: the handle, the row that is held (it floats, so it has the shadow of what floats) and the rows that make room */
+.mat-item__handle { display: grid; flex: none; place-items: center; width: var(--mat-control-h); height: var(--mat-control-h); padding: 0; border: 0; border-radius: var(--mat-radius); background: transparent; color: var(--mat-text-muted); cursor: grab; touch-action: none; }
+.mat-item__handle:hover { background: var(--mat-surface-3); color: var(--mat-text); }
+.mat-item__handle[aria-pressed="true"] { background: var(--mat-accent-soft-strong); color: var(--mat-accent-text); }
+.mat-itemlist.is-reordering { user-select: none; }
+.mat-itemlist.is-reordering .mat-item { transform: translateY(var(--mat-item-dy, 0px)); transition: transform var(--mat-dur) var(--mat-ease); }
+.mat-itemlist.is-reordering .mat-item.is-dragging { transition: none; }
+.mat-item.is-dragging, .mat-item.is-picked { z-index: 2; border-radius: var(--mat-radius); background: var(--mat-surface); box-shadow: var(--mat-shadow-2); }
+.mat-item.is-dragging .mat-item__handle { cursor: grabbing; }
+.mat-itemlist.is-reordering .mat-item__handle::after, .mat-item.is-picked .mat-item__handle::after { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mat-itemlist.is-ready .mat-item--sliding > .mat-item__row, .mat-itemlist.is-reordering .mat-item, .mat-itemlist.is-ready .mat-item--sliding .mat-item__options { transition: none; }
+}
 
 /* ---- Carousel (LIST-13): a strip of slides that scrolls and snaps; the script adds the bar below it ----
    Without the script it is a strip you scroll. --mat-carousel-per-view is how many slides fit (--2 and --3 from 600 and 900 px); the gap is part of the width of a slide. */
@@ -1986,6 +2723,220 @@ th[aria-sort="descending"] .mat-icon { transform: rotate(180deg); }
 .mat-carousel__dot[aria-current="true"]::before { width: 22px; border-radius: var(--mat-radius-pill); background: var(--mat-accent); }
 .mat-carousel__bar .mat-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .mat-carousel__dot::before { transition: none; } }
+
+/* ---- Schedule (LIST-14): events one below another in five views (agenda, day, week, month, year); the script draws it all ----
+   The layout follows the width of the schedule itself (is-wide from 640 px, is-narrow below), not of the window. The place of a block in the hours, a bar in the
+   columns and the number of columns are set by the script as --mat-sch-* properties (no inline style in the markup). An event is tinted by its tone and always
+   has an icon or a text as well (COLOR-04); the tone is a tint with a line all around, never a bar at one side (COLOR-08). */
+.mat-schedule {
+  --mat-schedule-hour: 3rem;             /* the height of one hour in the time grid */
+  --mat-schedule-gutter: 3.5rem;         /* the column of the hours */
+  --mat-schedule-max-h: 38rem;           /* what the agenda, the day and the week grow to before they scroll inside */
+  position: relative; display: flex; flex-direction: column; gap: var(--mat-space-3); min-width: 0;
+}
+@media (pointer: coarse) { .mat-schedule { --mat-schedule-hour: 3.5rem; } }
+.mat-schedule.is-narrow[data-view="day"] { --mat-schedule-hour: 5.5rem; }
+
+/* the bar: Today and the two arrows, the title (it opens the jump to a month or year) and the views */
+.mat-schedule__bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-2) var(--mat-space-3); }
+.mat-schedule__nav { display: flex; align-items: center; gap: var(--mat-space-1); }
+.mat-schedule__nav .mat-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.mat-schedule__period {
+  display: inline-flex; align-items: center; gap: var(--mat-space-1); flex: 1 1 12rem; min-width: 0;
+  min-height: var(--mat-control-h); padding: 0 var(--mat-space-2);
+  border: 0; border-radius: var(--mat-radius); background: transparent; color: var(--mat-text);
+  font-size: var(--mat-fs-md); font-weight: 650; text-align: left; cursor: pointer;
+}
+.mat-schedule__period:hover { background: var(--mat-surface-3); }
+.mat-schedule__period .mat-icon { color: var(--mat-text-muted); }
+.mat-schedule__period[aria-expanded="true"] .mat-icon { transform: rotate(180deg); }
+.mat-schedule__periodtext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-schedule__busy { display: inline-flex; }
+.mat-schedule__busy[hidden] { display: none; }
+.mat-schedule__views { flex: none; }
+.mat-schedule.is-wide .mat-schedule__views { margin-left: auto; }
+.mat-schedule.is-narrow .mat-schedule__period { order: -1; flex-basis: 100%; font-size: var(--mat-fs-lg); }
+.mat-schedule.is-narrow .mat-schedule__busy { position: absolute; top: var(--mat-space-3); right: var(--mat-space-3); }
+.mat-schedule.is-narrow .mat-schedule__nav { flex: 1 1 auto; }
+.mat-schedule.is-narrow .mat-schedule__prev { margin-left: auto; }
+.mat-schedule.is-narrow .mat-schedule__views { display: flex; flex: 1 1 100%; }
+.mat-schedule.is-narrow .mat-schedule__views > .mat-btn { flex: 1 1 0; min-width: 0; padding-inline: var(--mat-space-1); font-size: var(--mat-fs-sm); }
+.mat-schedule.is-narrow .mat-schedule__periodtext { white-space: normal; }
+
+/* the jump: a year with its twelve months, under the title */
+.mat-schedule__jump {
+  position: absolute; z-index: var(--mat-z-menu); top: calc(var(--mat-control-h) + var(--mat-space-2)); left: clamp(0px, var(--mat-sch-left, 0px), max(0px, calc(100% - 21rem)));
+  width: min(100%, 21rem); padding: var(--mat-space-3);
+  background: var(--mat-surface); border: 1px solid var(--mat-border-strong); border-radius: var(--mat-radius-lg); box-shadow: var(--mat-shadow-2);
+}
+.mat-schedule__jump[hidden] { display: none; }
+.mat-schedule__jumphead { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--mat-space-2); }
+.mat-schedule__jumpyear { font-size: var(--mat-fs-lg); }
+.mat-schedule__jumpmonths { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--mat-space-1); }
+.mat-schedule__jumpmonths .mat-btn { min-height: var(--mat-control-h); padding-inline: var(--mat-space-1); }
+.mat-schedule__jump .mat-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+
+/* the body: a surface with a line; agenda, day and week scroll inside it (the headings stay), month and year have their own height */
+.mat-schedule__body {
+  position: relative; min-width: 0; overflow: hidden;
+  background: var(--mat-surface); border: 1px solid var(--mat-border); border-radius: var(--mat-radius-lg);
+  touch-action: pan-y pinch-zoom;
+}
+.mat-schedule__body:focus-visible { border-radius: var(--mat-radius-lg); }
+.mat-schedule__body.is-scroll { max-height: var(--mat-schedule-max-h); overflow-y: auto; }
+.mat-schedule.is-loading .mat-schedule__body { opacity: .55; }
+/* a page slides in from the side it was turned to; the content moves, not the body, so that the page never gets wider */
+.mat-schedule__body.is-from-next > * { animation: mat-schedule-next var(--mat-dur) var(--mat-ease); }
+.mat-schedule__body.is-from-prev > * { animation: mat-schedule-prev var(--mat-dur) var(--mat-ease); }
+@keyframes mat-schedule-next { from { opacity: 0; transform: translateX(1.5rem); } }
+@keyframes mat-schedule-prev { from { opacity: 0; transform: translateX(-1.5rem); } }
+
+/* an event: a link or a button with a tint by its tone and a line all around */
+.mat-schedule__event {
+  --mat-sch-bg: var(--mat-surface-2); --mat-sch-line: var(--mat-border-strong); --mat-sch-ink: var(--mat-text-muted);
+  position: relative; display: flex; min-width: 0; margin: 0;
+  background: var(--mat-sch-bg); border: 1px solid var(--mat-sch-line); border-radius: var(--mat-radius);
+  color: var(--mat-text); font: inherit; text-align: left; text-decoration: none; cursor: pointer;
+  transition: border-color var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-schedule__event:hover { border-color: var(--mat-text-faint); text-decoration: none; }
+.mat-schedule__event--accent { --mat-sch-bg: color-mix(in srgb, var(--mat-accent) 16%, var(--mat-surface)); --mat-sch-line: color-mix(in srgb, var(--mat-accent) 45%, transparent); --mat-sch-ink: var(--mat-accent-text); }
+.mat-schedule__event--ok { --mat-sch-bg: color-mix(in srgb, var(--mat-success) 14%, var(--mat-surface)); --mat-sch-line: color-mix(in srgb, var(--mat-success) 45%, transparent); --mat-sch-ink: var(--mat-success-text); }
+.mat-schedule__event--warn { --mat-sch-bg: color-mix(in srgb, var(--mat-warning) 16%, var(--mat-surface)); --mat-sch-line: color-mix(in srgb, var(--mat-warning) 45%, transparent); --mat-sch-ink: var(--mat-warning-text); }
+.mat-schedule__event--error { --mat-sch-bg: color-mix(in srgb, var(--mat-danger) 12%, var(--mat-surface)); --mat-sch-line: color-mix(in srgb, var(--mat-danger) 45%, transparent); --mat-sch-ink: var(--mat-danger-text); }
+.mat-schedule__event--info { --mat-sch-bg: color-mix(in srgb, var(--mat-info) 12%, var(--mat-surface)); --mat-sch-line: color-mix(in srgb, var(--mat-info) 45%, transparent); --mat-sch-ink: var(--mat-info-text); }
+.mat-schedule__mark { display: inline-flex; margin-right: var(--mat-space-1); color: var(--mat-sch-ink); vertical-align: -.1em; }
+.mat-schedule__title { min-width: 0; font-weight: 600; }
+.mat-schedule__meta { min-width: 0; color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+.mat-schedule__time { color: var(--mat-text-muted); font-variant-numeric: tabular-nums; }
+
+/* Agenda: the days one below another, each under a heading that stays at the top while its events pass */
+.mat-schedule__day + .mat-schedule__day { border-top: 1px solid var(--mat-border); }
+.mat-schedule__dayhead {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--mat-space-2);
+  min-height: 2.5rem; padding: var(--mat-space-1) var(--mat-space-4);
+  background: var(--mat-surface-2); border-bottom: 1px solid var(--mat-border);
+  font-size: var(--mat-fs-sm); font-weight: 650;
+}
+.mat-schedule__day.is-today > .mat-schedule__dayhead { background: color-mix(in srgb, var(--mat-accent) 16%, var(--mat-surface-2)); color: var(--mat-accent-text); }
+.mat-schedule__kw, .mat-schedule__count { margin-left: auto; color: var(--mat-text-muted); font-weight: 500; }
+.mat-schedule__items { list-style: none; display: flex; flex-direction: column; gap: var(--mat-space-2); padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-3); }
+.mat-schedule__none { margin: 0; padding: var(--mat-space-3) var(--mat-space-4); color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+.mat-schedule__empty { padding: var(--mat-space-8) var(--mat-space-4); }
+.mat-schedule__event--row { flex-wrap: wrap; align-items: center; gap: var(--mat-space-2) var(--mat-space-3); width: 100%; min-height: var(--mat-control-h); padding: var(--mat-space-2) var(--mat-space-3); }
+.mat-schedule__when { display: flex; flex: 0 0 5rem; flex-direction: column; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.mat-schedule__from { font-weight: 650; }
+.mat-schedule__to { color: var(--mat-text-muted); font-size: var(--mat-fs-xs); }
+.mat-schedule__what { display: flex; flex: 1 1 9rem; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.mat-schedule__event--row .mat-schedule__meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-schedule__event--row .mat-pill { margin-left: auto; }
+/* narrow: the time on the left, the title under it on the right and the status under the title */
+.mat-schedule.is-narrow .mat-schedule__event--row { display: grid; grid-template-columns: 4.25rem minmax(0, 1fr); align-items: start; gap: var(--mat-space-1) var(--mat-space-3); }
+.mat-schedule.is-narrow .mat-schedule__event--row .mat-pill { grid-column: 2; justify-self: start; margin-left: 0; }
+
+/* Day and week: a time grid. The top (the days and the bars of the events that last all day or longer) stays; the blocks stand side by side where they overlap. */
+.mat-schedule__top { position: sticky; top: 0; z-index: 4; background: var(--mat-surface); border-bottom: 1px solid var(--mat-border); }
+.mat-schedule__head, .mat-schedule__band { display: grid; grid-template-columns: var(--mat-schedule-gutter) repeat(var(--mat-sch-cols, 1), minmax(0, 1fr)); }
+.mat-schedule__corner { display: grid; place-items: center; color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-weight: 600; }
+.mat-schedule__colhead { margin: 0; min-height: var(--mat-control-h-lg); border-left: 1px solid var(--mat-border); font-size: var(--mat-fs-sm); }
+.mat-schedule__colhead, .mat-schedule__dayopen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.mat-schedule__dayopen { width: 100%; min-height: inherit; padding: var(--mat-space-1) 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.mat-schedule__dayopen:hover { background: var(--mat-surface-3); }
+.mat-schedule__dow { color: var(--mat-text-muted); font-weight: 600; }
+.mat-schedule__dnum { display: inline-grid; place-items: center; min-width: 1.75rem; height: 1.75rem; border-radius: var(--mat-radius-pill); font-size: var(--mat-fs-md); font-weight: 650; }
+.mat-schedule__colhead.is-today .mat-schedule__dnum, .mat-schedule__cell.is-today .mat-schedule__dnum { background: var(--mat-accent); color: var(--mat-on-accent); }
+.mat-schedule__band { gap: 2px; padding: 2px 0 var(--mat-space-1); border-top: 1px solid var(--mat-border); }
+.mat-schedule__bandlabel { grid-column: 1; grid-row: 1; align-self: start; overflow: hidden; padding: var(--mat-space-1) var(--mat-space-1) 0 var(--mat-space-2); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); text-overflow: ellipsis; }
+.mat-schedule__event--bar { grid-column: var(--mat-sch-c1) / var(--mat-sch-c2); grid-row: var(--mat-sch-lane); align-items: center; gap: var(--mat-space-2); min-height: var(--mat-control-h-sm); padding: 0 var(--mat-space-2); border-radius: var(--mat-radius-sm); font-size: var(--mat-fs-xs); overflow: hidden; white-space: nowrap; }
+.mat-schedule__event--bar .mat-schedule__title { overflow: hidden; text-overflow: ellipsis; }
+.mat-schedule__event--bar.is-before { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.mat-schedule__event--bar.is-after { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.mat-schedule__tbody { display: grid; grid-template-columns: var(--mat-schedule-gutter) minmax(0, 1fr); }
+.mat-schedule__hour { height: var(--mat-schedule-hour); padding: 2px var(--mat-space-2) 0 0; color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-variant-numeric: tabular-nums; text-align: right; }
+.mat-schedule__cols { position: relative; display: grid; grid-template-columns: repeat(var(--mat-sch-cols, 1), minmax(0, 1fr)); }
+.mat-schedule__lines { position: absolute; inset: 0; pointer-events: none; }
+.mat-schedule__lines > div { height: var(--mat-schedule-hour); border-top: 1px solid var(--mat-border); }
+.mat-schedule__col { position: relative; height: calc(var(--mat-sch-hours) * var(--mat-schedule-hour)); border-left: 1px solid var(--mat-border); }
+.mat-schedule__col.is-today { background: color-mix(in srgb, var(--mat-accent) 6%, transparent); }
+.mat-schedule__event--block {
+  position: absolute; z-index: 1; flex-direction: column; overflow: hidden;
+  top: calc(var(--mat-sch-top) * var(--mat-schedule-hour) + 1px); height: calc(var(--mat-sch-len) * var(--mat-schedule-hour) - 2px);
+  left: calc(100% * var(--mat-sch-lane) / var(--mat-sch-lanes) + 1px); width: calc(100% / var(--mat-sch-lanes) - 2px);
+  padding: 2px var(--mat-space-2); border-radius: var(--mat-radius-sm); font-size: var(--mat-fs-xs); line-height: 1.3;
+}
+.mat-schedule__event--block > * { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--mat-fs-xs); }
+/* half an hour is room for one line: the title and, when there is room, the time after it */
+.mat-schedule__event--block.is-short { flex-direction: row; align-items: center; gap: var(--mat-space-2); padding-block: 0; }
+.mat-schedule__event--block.is-short > .mat-schedule__title { flex: 0 1 auto; min-width: 0; }
+.mat-schedule__event--block.is-short > .mat-schedule__time { flex: 0 100 auto; min-width: 0; }
+.mat-schedule__event--block.is-short > .mat-schedule__meta { display: none; }
+/* the line of the time now, in the column of today */
+.mat-schedule__now { position: absolute; z-index: 2; left: 0; right: 0; top: calc(var(--mat-sch-top) * var(--mat-schedule-hour)); height: 2px; margin-top: -1px; background: var(--mat-accent); pointer-events: none; }
+.mat-schedule__now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--mat-accent); }
+
+/* Month: a grid of weeks. Wide: the events are in the cells. Narrow: a day shows dots, and the chosen day is listed under the grid. */
+.mat-schedule__mgrid { display: flex; flex-direction: column; }
+.mat-schedule__row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.mat-schedule__mgrid.is-numbered .mat-schedule__row { grid-template-columns: 2.5rem repeat(7, minmax(0, 1fr)); }
+.mat-schedule__row + .mat-schedule__row { border-top: 1px solid var(--mat-border); }
+.mat-schedule__row--head { background: var(--mat-surface-2); }
+.mat-schedule__wd, .mat-schedule__wk { display: grid; place-items: center; padding: var(--mat-space-2) var(--mat-space-1); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-weight: 600; }
+.mat-schedule__row:not(.mat-schedule__row--head) .mat-schedule__wk { background: var(--mat-surface-2); }
+.mat-schedule__cell { min-width: 0; border-left: 1px solid var(--mat-border); }
+.mat-schedule__row > .mat-schedule__cell:first-child { border-left: 0; }
+.mat-schedule__cell.is-outside { background: var(--mat-surface-2); }
+.mat-schedule__cell.is-outside .mat-schedule__dnum, .mat-schedule__cell.is-outside .mat-schedule__daynum { color: var(--mat-text-muted); font-weight: 500; }
+.mat-schedule__cell.is-selected { background: var(--mat-accent-soft); }
+.mat-schedule__cell.is-off { opacity: .45; }
+.mat-schedule.is-wide .mat-schedule__cell { display: flex; flex-direction: column; gap: 2px; min-height: 6.5rem; padding: var(--mat-space-1); }
+.mat-schedule__daynum { display: grid; place-items: center; align-self: flex-start; min-width: 1.75rem; height: 1.75rem; padding: 0 var(--mat-space-1); border: 0; border-radius: var(--mat-radius-pill); background: transparent; color: var(--mat-text); font-size: var(--mat-fs-sm); font-weight: 600; cursor: pointer; }
+.mat-schedule__daynum:hover { background: var(--mat-surface-3); }
+.mat-schedule__cell.is-today .mat-schedule__daynum { background: var(--mat-accent); color: var(--mat-on-accent); }
+.mat-schedule__chips { list-style: none; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mat-schedule__chips > li { min-width: 0; }
+.mat-schedule__gap { min-height: 1.5rem; }
+.mat-schedule__event--chip { align-items: center; gap: 4px; width: 100%; min-height: 1.5rem; padding: 0 var(--mat-space-1); border-radius: var(--mat-radius-sm); font-size: var(--mat-fs-xs); overflow: hidden; white-space: nowrap; }
+.mat-schedule__event--chip .mat-schedule__title { overflow: hidden; text-overflow: ellipsis; font-size: var(--mat-fs-xs); }
+.mat-schedule__event--chip .mat-schedule__time { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); flex: none; font-size: var(--mat-fs-xs); }
+/* the time is drawn before the title only where a cell is wide enough for both (a week row of 780 px is cells of about 105 px); a screen reader has it always */
+.mat-schedule__row { container-type: inline-size; }
+@container (min-width: 780px) { .mat-schedule__event--chip .mat-schedule__time { position: static; width: auto; height: auto; overflow: visible; clip: auto; } }
+/* a bar over the cells it covers: as wide as they are, with the paddings and the lines between them (2 x 4 px and 1 px), and over the cells that come after it */
+.mat-schedule__event--chip[data-sch-span] { --mat-sch-more: 0px; z-index: 1; width: calc(var(--mat-sch-span) * 100% + (var(--mat-sch-span) - 1) * (var(--mat-space-1) * 2 + 1px) + var(--mat-sch-more)); }
+.mat-schedule__event--chip.is-before { --mat-sch-more: var(--mat-space-1); margin-left: calc(var(--mat-space-1) * -1); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.mat-schedule__event--chip.is-after { --mat-sch-more: var(--mat-space-1); border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.mat-schedule__event--chip.is-before.is-after { --mat-sch-more: calc(var(--mat-space-1) * 2); }
+.mat-schedule__more { min-height: 1.5rem; padding: 0 var(--mat-space-1); border: 0; border-radius: var(--mat-radius-sm); background: transparent; color: var(--mat-accent-text); font-size: var(--mat-fs-xs); font-weight: 650; cursor: pointer; }
+.mat-schedule__more:hover { background: var(--mat-surface-3); }
+.mat-schedule__daybtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 2.75rem; padding: var(--mat-space-1) 0; border: 0; background: transparent; color: var(--mat-text); cursor: pointer; }
+.mat-schedule__cell.is-selected .mat-schedule__dnum { font-weight: 800; }
+.mat-schedule__dots { display: flex; justify-content: center; gap: 3px; height: 6px; }
+.mat-schedule__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mat-text-faint); }
+.mat-schedule__dot--accent { background: var(--mat-accent); }
+.mat-schedule__dot--ok { background: var(--mat-success); }
+.mat-schedule__dot--warn { background: var(--mat-warning); }
+.mat-schedule__dot--error { background: var(--mat-danger); }
+.mat-schedule__dot--info { background: var(--mat-info); }
+.mat-schedule__daylist { border-top: 1px solid var(--mat-border); }
+.mat-schedule__daylist .mat-schedule__dayhead { border-top: 0; }
+
+/* Year: twelve small months; a day is tinted by how many events it has, a month opens the month view */
+.mat-schedule__year { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: var(--mat-space-3); padding: var(--mat-space-3); }
+.mat-schedule__month { min-width: 0; padding: var(--mat-space-2); border: 1px solid var(--mat-border); border-radius: var(--mat-radius-lg); background: var(--mat-surface); cursor: pointer; }
+.mat-schedule__month:hover { border-color: var(--mat-text-faint); }
+.mat-schedule__month.is-off { opacity: .45; cursor: not-allowed; }
+.mat-schedule__monthhead { margin: 0; font-size: var(--mat-fs-md); }
+.mat-schedule__monthname { display: block; width: 100%; min-height: var(--mat-control-h); padding: 0 var(--mat-space-1); border: 0; border-radius: var(--mat-radius-sm); background: transparent; color: var(--mat-text); font-weight: 650; text-align: left; cursor: pointer; }
+.mat-schedule__mini { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; font-size: var(--mat-fs-xs); font-variant-numeric: tabular-nums; text-align: center; }
+.mat-schedule__mwd { color: var(--mat-text-muted); font-weight: 600; }
+.mat-schedule__d { display: grid; place-items: center; aspect-ratio: 1; border-radius: var(--mat-radius-xs); }
+.mat-schedule__d.is-l1 { background: var(--mat-accent-soft); }
+.mat-schedule__d.is-l2 { background: var(--mat-accent-soft-strong); font-weight: 650; }
+.mat-schedule__d.is-l3 { background: var(--mat-accent); color: var(--mat-on-accent); font-weight: 700; }
+.mat-schedule__d.is-today { box-shadow: inset 0 0 0 2px var(--mat-text); font-weight: 700; }
+.mat-schedule__hint { margin: 0; padding: var(--mat-space-2) var(--mat-space-4) var(--mat-space-3); color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
+@media (prefers-reduced-motion: reduce) { .mat-schedule__body.is-from-next > *, .mat-schedule__body.is-from-prev > * { animation: none; } .mat-schedule__event { transition: none; } }
 
 /* ==========================================================================
    MatUi · dialogs

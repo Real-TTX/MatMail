@@ -284,6 +284,17 @@ public partial class ToolkitTests
         }
     }
 
+    [Fact]
+    public void Every_menu_has_a_start_page_that_one_of_its_own_pages_is()
+    {
+        foreach (NavSet menu in ShellMenusOfASystemAdministrator())
+        {
+            Assert.True(menu.HasStartPage, $"menu {menu.Id} has no start page");   // the switcher loads it, so the entry is a link
+            Assert.Contains(menu.Pages, page => page.Href == menu.Href);
+            Assert.True(menu.Contains(menu.Href), $"{menu.Href} does not belong to the menu {menu.Id}");
+        }
+    }
+
     private static IReadOnlyList<NavSet> Menus() =>
     [
         new("mail", "Mail", "mail", [new(null, [new("Open mail", "/Mail", "inbox")])], Custom: true, Paths: ["/Mail"]),

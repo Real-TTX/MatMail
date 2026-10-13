@@ -554,6 +554,7 @@
   <data name="Has the words" xml:space="preserve"><value>Enthält die Wörter</value></data>
   <data name="Header field" xml:space="preserve"><value>Header-Feld</value></data>
   <data name="Header field, e.g. List-Id" xml:space="preserve"><value>Header-Feld, z. B. List-Id</value></data>
+  <data name="Hide folders" xml:space="preserve"><value>Ordner ausblenden</value></data>
   <data name="Hide subfolders" xml:space="preserve"><value>Unterordner ausblenden</value></data>
   <data name="Hold the outgoing mail that was waiting when the backup was made" xml:space="preserve"><value>Ausgehende E-Mails anhalten, die beim Erstellen des Backups warteten</value></data>
   <data name="Horizontal line" xml:space="preserve"><value>Horizontale Linie</value></data>
@@ -1140,6 +1141,7 @@
   <data name="Shared mailboxes that were given to you appear below the folder “Shared”. To send as a shared address, choose it as the sender; the right to send must have been granted for the mailbox." xml:space="preserve"><value>Gemeinsame Postfächer, die Ihnen zugewiesen wurden, erscheinen unter dem Ordner „Shared“. Um mit einer gemeinsamen Adresse zu senden, wählen Sie sie als Absender; dafür muss am Postfach das Senderecht vergeben sein.</value></data>
   <data name="Shares of {0}: {1}" xml:space="preserve"><value>Freigaben von {0}: {1}</value></data>
   <data name="Show" xml:space="preserve"><value>Anzeigen</value></data>
+  <data name="Show folders" xml:space="preserve"><value>Ordner anzeigen</value></data>
   <data name="Show original" xml:space="preserve"><value>Original anzeigen</value></data>
   <data name="Show password" xml:space="preserve"><value>Passwort anzeigen</value></data>
   <data name="Show pictures" xml:space="preserve"><value>Bilder anzeigen</value></data>

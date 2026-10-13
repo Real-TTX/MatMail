@@ -286,13 +286,16 @@
       // A folded mailbox says how much is unread in its inbox.
       var head = App.el("div", { class: "folder-group__head" });
       var unread = collapsed ? box.folders.reduce(function (sum, f) { return sum + (f.kind === "Inbox" ? f.unread : 0); }, 0) : 0;
-      var heading = App.el("button", { type: "button", class: "folder-group__title", "aria-expanded": String(!collapsed) }, [
-        App.icon(collapsed ? "chevron-right" : "chevron-down"),
+      var boxName = box.isOwn ? T("myMailbox") : box.name;
+      var toggleBox = function () { localStorage.setItem("matmail-collapsed-" + box.id, collapsed ? "0" : "1"); renderFolders(); };
+      head.appendChild(foldToggle(collapsed, collapsed ? T("foldersShow") : T("foldersHide"), boxName, toggleBox));
+      // The name is a target as well (the mouse folds with it); the button before it is the one for the keyboard and for screen readers.
+      var heading = App.el("button", { type: "button", class: "folder-group__title", tabindex: "-1" }, [
         App.icon(box.type === "Shared" ? "users" : box.type === "Unassigned" ? "alert" : "user"),
-        App.el("span", { class: "folder-group__name", text: box.isOwn ? T("myMailbox") : box.name }),
+        App.el("span", { class: "folder-group__name", text: boxName }),
         unread ? App.el("span", { class: "mat-nav__badge", text: String(unread) }) : null
       ]);
-      heading.addEventListener("click", function () { localStorage.setItem("matmail-collapsed-" + box.id, collapsed ? "0" : "1"); renderFolders(); });
+      heading.addEventListener("click", toggleBox);
       head.appendChild(heading);
       // The gear at the right end of the heading (the group action of the toolkit, SHELL-02) opens the menu of the mailbox: the new folder is in it, not an entry below the folders.
       var boxMore = App.el("button", { type: "button", class: "mat-nav__group-action", "aria-haspopup": "menu", "aria-label": T("mailboxActions"), title: T("mailboxActions") }, [App.icon("settings")]);
@@ -346,6 +349,16 @@
   }
 
   /**
+   * The button that folds a mailbox or a folder with subfolders: the same button in both places, in the same column, with the same tooltip. It sits in a gutter of its own
+   * and does not cover the icon. <name> is the mailbox or the folder, for screen readers.
+   */
+  function foldToggle(folded, label, name, onClick) {
+    var button = App.el("button", { type: "button", class: "fold-toggle", "data-tip": label, "aria-label": label + ": " + name, "aria-expanded": String(!folded) }, [App.icon(folded ? "chevron-right" : "chevron-down")]);
+    button.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); onClick(); });
+    return button;
+  }
+
+  /**
    * Whether the folders of a mailbox are shown in the sidebar: what the user chose (kept in this browser), else the own mailbox and the one that is
    * open are, the others are folded.
    */
@@ -378,8 +391,7 @@
 
     node.style.setProperty("--mm-depth", String(folder.depth));   // the gutter on the left holds the fold arrow of folders with subfolders
     if (tree.hasChildren) {
-      var fold = App.iconButton(tree.folded ? "chevron-right" : "chevron-down", tree.folded ? T("expand") : T("collapse"), function (e) { e.preventDefault(); e.stopPropagation(); setFolded(folder, !tree.folded); }, "folder-item__fold");
-      node.appendChild(fold);
+      node.appendChild(foldToggle(tree.folded, tree.folded ? T("subfoldersShow") : T("subfoldersHide"), labelText, function () { setFolded(folder, !tree.folded); }));
     }
 
     var more = App.iconButton("more-vertical", T("more"), function (e) { e.preventDefault(); e.stopPropagation(); folderMenu(more, box, folder); }, "folder-item__more");

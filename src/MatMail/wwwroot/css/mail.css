@@ -77,10 +77,8 @@ html[data-density="compact"] .mail-app { --mail-row-height: 2.15rem; }
   cursor: pointer;
 }
 .folder-group__title:hover { background: var(--mat-surface-3); color: var(--mat-text); }
-.folder-group__more { flex: none; opacity: 0; }
-.folder-group__head:hover .folder-group__more, .folder-group__more:focus-visible { opacity: 1; }
 .folder-group__head.is-drop, .folder-item.is-drop { background: var(--mat-accent-soft-strong); outline: 2px dashed var(--mat-accent); outline-offset: -2px; }
-@media (hover: none) { .folder-group__more, .folder-item__more { opacity: 1; } }
+@media (hover: none) { .folder-item__more { opacity: 1; } }
 .folder-group__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The depth of a folder (a property of the element, set by the script) moves it to the right; the fold arrow sits in the gutter. */
 .folder-item { padding-left: calc(var(--mat-space-3) + var(--mm-depth, 0) * var(--mat-space-4) + 1.1rem); padding-right: var(--mat-space-2); border: 0; background: transparent; font: inherit; font-weight: 500; text-align: left; cursor: pointer; }
@@ -91,7 +89,6 @@ html[data-density="compact"] .mail-app { --mail-row-height: 2.15rem; }
 .folder-item__more { margin: -2px -4px -2px 0; opacity: 0; }
 .folder-item:hover .folder-item__more, .folder-item__more:focus-visible { opacity: 1; }
 .folder-item:hover .folder-item__count { display: none; }
-.folder-item--add { color: var(--mat-text-muted); font-size: var(--mat-fs-sm); }
 .folder-item__fold { position: absolute; top: 50%; left: calc(var(--mm-depth, 0) * var(--mat-space-4) + 2px); transform: translateY(-50%); opacity: .6; }
 .folder-item__fold .mat-icon { font-size: .9rem; }
 .folder-item:hover .folder-item__fold, .folder-item__fold:focus-visible { opacity: 1; }

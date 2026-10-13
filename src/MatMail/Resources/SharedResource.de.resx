@@ -684,6 +684,7 @@
   <data name="Mail: leave it empty and mail that nobody claims waits in Unassigned; with a mailbox here, such mail goes to its inbox instead. Backup and migration: the mailbox that receives the copies." xml:space="preserve"><value>Mail: Lassen Sie es leer, dann wartet Post, die niemand beansprucht, in „Unverteilt“; mit einem Postfach hier landet solche Post stattdessen in dessen Posteingang. Backup und Migration: das Postfach, das die Kopien erhält.</value></data>
   <data name="Mail: the mail is fetched and distributed to the mailboxes by recipient address. The account can also be used to send." xml:space="preserve"><value>E-Mail: Die Nachrichten werden abgeholt und anhand der Empfängeradresse auf die Postfächer verteilt. Das Konto kann auch zum Senden verwendet werden.</value></data>
   <data name="Mailbox" xml:space="preserve"><value>Postfach</value></data>
+  <data name="Mailbox actions" xml:space="preserve"><value>Postfach-Aktionen</value></data>
   <data name="Mailbox info" xml:space="preserve"><value>Postfach-Info</value></data>
   <data name="Mailbox rule" xml:space="preserve"><value>Postfachregel</value></data>
   <data name="Mailboxes" xml:space="preserve"><value>Postfächer</value></data>

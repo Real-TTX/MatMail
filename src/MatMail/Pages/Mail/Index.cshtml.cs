@@ -22,6 +22,7 @@ public class IndexModel(IStringLocalizer<SharedResource> l) : PageModel
             ["trash"] = l["Trash"],
             ["myMailbox"] = l["My mailbox"],
             ["newFolder"] = l["New folder"],
+            ["mailboxActions"] = l["Mailbox actions"],
             ["folderName"] = l["Folder name"],
             ["renameFolder"] = l["Rename folder"],
             ["deleteFolder"] = l["Delete folder"],

@@ -1,4 +1,4 @@
-/* MatUi 0.1.0 (d6c748138e) - build local-20261013 - bundled from matui.tokens.css, matui.base.css, matui.shell.css, matui.controls.css, matui.forms.css, matui.pickers.css, matui.lists.css, matui.dialogs.css, matui.layout.css, matui.apps.css */
+/* MatUi 0.1.0 (22013355f3) - build local-20261013 - bundled from matui.tokens.css, matui.base.css, matui.shell.css, matui.controls.css, matui.forms.css, matui.pickers.css, matui.lists.css, matui.dialogs.css, matui.layout.css, matui.apps.css */
 /* ==========================================================================
    MatUi · tokens
    The single source of the look of every Mat app. Components use only these custom properties, never a raw colour.
@@ -637,6 +637,21 @@ kbd {
   font-weight: 600;
   color: var(--mat-text-muted);
 }
+/* A group heading with one small icon action at its right end (SHELL-02): the title takes the room, the action is a compact square that adds no height to the row
+   (a touch screen gets 44 px by a negative margin, the row stays as it is). */
+.mat-nav__group--action { display: flex; align-items: center; gap: var(--mat-space-2); padding-right: var(--mat-space-1); }
+.mat-nav__group-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mat-nav__group-action {
+  flex: none; display: inline-grid; place-items: center;
+  width: 1.75rem; height: 1.75rem; margin-block: -.25rem;
+  padding: 0; border: 0; border-radius: var(--mat-radius-sm);
+  background: transparent; color: var(--mat-text-muted); cursor: pointer; text-decoration: none;
+  transition: background var(--mat-dur-fast) var(--mat-ease), color var(--mat-dur-fast) var(--mat-ease);
+}
+.mat-nav__group-action .mat-icon { font-size: 1.1rem; }
+.mat-nav__group-action:hover, .mat-nav__group-action[aria-expanded="true"] { background: var(--mat-surface-3); color: var(--mat-text); text-decoration: none; }
+.mat-nav__group-action:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mat-accent) 70%, transparent); }
+@media (pointer: coarse) { .mat-nav__group-action { width: 2.75rem; height: 2.75rem; margin-block: -.75rem; } }
 .mat-nav__item {
   position: relative;
   display: flex;

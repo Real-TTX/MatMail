@@ -294,7 +294,9 @@
       ]);
       heading.addEventListener("click", function () { localStorage.setItem("matmail-collapsed-" + box.id, collapsed ? "0" : "1"); renderFolders(); });
       head.appendChild(heading);
-      var boxMore = App.iconButton("more-vertical", T("more"), function (e) { e.preventDefault(); e.stopPropagation(); mailboxMenu(boxMore, box); }, "folder-group__more");
+      // The gear at the right end of the heading (the group action of the toolkit, SHELL-02) opens the menu of the mailbox: the new folder is in it, not an entry below the folders.
+      var boxMore = App.el("button", { type: "button", class: "mat-nav__group-action", "aria-haspopup": "menu", "aria-label": T("mailboxActions"), title: T("mailboxActions") }, [App.icon("settings")]);
+      boxMore.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); mailboxMenu(boxMore, box); });
       head.appendChild(boxMore);
       head.addEventListener("contextmenu", function (e) { e.preventDefault(); mailboxMenu(head, box); });
       makeRootTarget(head, box);
@@ -312,11 +314,6 @@
           group.appendChild(folderItem(box, folder, { hasChildren: below.length > 0, folded: folded, hiddenUnread: folded ? below.reduce(function (sum, f) { return sum + f.unread; }, 0) : 0 }));
           if (folded) { hideBelow = folder.depth; }
         });
-        if (box.canManage && box.type !== "Unassigned") {
-          var add = App.el("button", { type: "button", class: "mat-nav__item folder-item folder-item--add" }, [App.icon("plus"), App.el("span", { text: T("newFolder") })]);
-          add.addEventListener("click", function () { createFolder(box, null); });
-          group.appendChild(add);
-        }
       }
 
       els.folders.appendChild(group);
@@ -512,9 +509,11 @@
     return candidate.id === folder.id || subtreeOf(box, index).some(function (f) { return f.id === candidate.id; });
   }
 
-  /** The menu of a mailbox (the three dots and the right button on its heading). */
+  /** The menu of a mailbox (the gear and the right button on its heading): a new folder for those who manage it, and what the mailbox is. */
   function mailboxMenu(anchor, box) {
-    var items = [{ label: T("mailboxInfo"), icon: "info", onClick: function () { showMailboxInfo(box); } }];
+    var items = [];
+    if (box.canManage && box.type !== "Unassigned") { items.push({ label: T("newFolder"), icon: "folder-plus", onClick: function () { createFolder(box, null); } }); }
+    items.push({ label: T("mailboxInfo"), icon: "info", onClick: function () { showMailboxInfo(box); } });
     App.showMenu(anchor, items, { title: box.isOwn ? T("myMailbox") : box.name });
   }
 

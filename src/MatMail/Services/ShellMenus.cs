@@ -21,12 +21,12 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             menus.Add(Mail());
         }
 
+        menus.Add(Account());
         if (user.CanAdminister)
         {
-            menus.Add(Admin());
+            menus.Add(Admin());   // last: below the tenants in the popup of the switcher
         }
 
-        menus.Add(Account());
         return menus;
     }
 
@@ -70,7 +70,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             ("/Admin/Backup", "archive", l["Backups"].Value, null, true),
             ("/Admin/Settings", "settings", l["Server settings"].Value, null, true),
             ("/Admin/Tenants", "building", l["Tenants"].Value, null, true));
-        return new NavSet(AdminId, l["Administration"].Value, "settings", groups, Href: "/Admin");
+        return new NavSet(AdminId, l["Administration"].Value, "settings", groups, Href: "/Admin", Last: true);
     }
 
     private NavSet Account()

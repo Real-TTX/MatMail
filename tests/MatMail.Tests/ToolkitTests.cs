@@ -270,7 +270,8 @@ public partial class ToolkitTests
         Toolkit toolkit = LoadToolkit();
         IReadOnlyList<NavSet> menus = ShellMenusOfASystemAdministrator();
 
-        Assert.Equal(["mail", "admin", "account"], menus.Select(m => m.Id));
+        Assert.Equal(["mail", "account", "admin"], menus.Select(m => m.Id));   // the administration is last: below the tenants in the popup of the switcher
+        Assert.Equal(["admin"], menus.Where(m => m.Last).Select(m => m.Id));
         foreach (NavSet menu in menus)
         {
             Assert.True(toolkit.HasIcon(menu.Icon), $"menu {menu.Id}: icon {menu.Icon}");

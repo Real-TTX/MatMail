@@ -24,7 +24,6 @@ html[data-density="compact"] .mat-table th { padding-top: var(--mat-space-2); pa
 .mm-topbar-tools { flex: 1 1 auto; justify-content: flex-end; min-width: 0; margin-right: 0; }
 
 /* The user menu: a heading for the tenants and forms whose button looks like every other menu item. */
-.mm-menu-label { padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-1); color: var(--mat-text-muted); font-size: var(--mat-fs-xs); font-weight: 600; }
 .mm-menu-form { display: block; margin: 0; }
 .mm-menu-form > .mat-menu__item { width: 100%; }
 

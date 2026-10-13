@@ -62,9 +62,10 @@ public sealed record NavGroup(string? Title, IReadOnlyList<NavItem> Items);
 /// One menu of the app (SHELL-15). The switcher under the logo shows one at a time; with a single menu there is no switcher.
 /// <see cref="Custom"/> is a menu whose panel the page draws itself (the folders of the mail client): it names the pages it belongs to by <see cref="Paths"/>.
 /// With a <see cref="Href"/> choosing the menu in the switcher loads that page (its start page) instead of swapping the items: every menu of MatMail is an
-/// area with pages of its own, so the page that loads draws its own menu and the other pages carry no hidden copy of it.
+/// area with pages of its own, so the page that loads draws its own menu and the other pages carry no hidden copy of it. A menu that is <see cref="Last"/> (the
+/// administration) stands at the end of the popup, below the tenants.
 /// </summary>
-public sealed record NavSet(string Id, string Title, string Icon, IReadOnlyList<NavGroup> Groups, bool Custom = false, IReadOnlyList<string>? Paths = null, string? Href = null)
+public sealed record NavSet(string Id, string Title, string Icon, IReadOnlyList<NavGroup> Groups, bool Custom = false, IReadOnlyList<string>? Paths = null, string? Href = null, bool Last = false)
 {
     public bool HasStartPage => Href is not null;
 

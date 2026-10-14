@@ -120,7 +120,7 @@ public sealed partial class MailBodyRenderer
         "body{background:#fff}"
         + ".mm-print-bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;padding:8px 18px;background:#f1f3f4;border-bottom:1px solid #dadce0}"
         + ".mm-print-bar button{font:inherit;padding:6px 16px;border:1px solid #c3cadb;border-radius:6px;background:#fff;color:#202124;cursor:pointer}"
-        + ".mm-print-bar button:first-child{background:#1a56db;border-color:#1a56db;color:#fff}"
+        + ".mm-print-bar button:first-child{background:#475569;border-color:#475569;color:#fff}"
         + ".mm-print-head{padding:16px 18px 6px;border-bottom:1px solid #dadce0}"
         + ".mm-print-head h1{margin:0 0 8px;font-size:20px;line-height:1.3;font-weight:600}"
         + ".mm-print-head table{border-collapse:collapse;font-size:13px;margin-bottom:8px}"

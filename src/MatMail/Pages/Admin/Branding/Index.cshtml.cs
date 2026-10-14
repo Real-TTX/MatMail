@@ -26,7 +26,7 @@ public class IndexModel(BrandingService branding, CurrentUser currentUser, Activ
         public string? Website { get; set; }
 
         /// <summary>"#rrggbb"; only used when <see cref="UseAccent"/> is on.</summary>
-        public string AccentColor { get; set; } = "#1a56db";
+        public string AccentColor { get; set; } = "#475569";
         public bool UseAccent { get; set; }
         public bool RemoveLogo { get; set; }
     }
@@ -92,7 +92,7 @@ public class IndexModel(BrandingService branding, CurrentUser currentUser, Activ
             BrandName = Current.Name,
             Slug = Current.Slug,
             Website = Current.Website,
-            AccentColor = Current.AccentColor ?? "#1a56db",
+            AccentColor = Current.AccentColor ?? "#475569",
             UseAccent = Current.AccentColor is not null,
         };
     }

@@ -112,6 +112,6 @@ public static class Ui
         public const string Tagline = "Mail gateway and web mail client";
 
         /// <summary>The accent as the toolkit registry has it; it colours the bar of the browser. A unit test compares it with <c>matui.css</c>.</summary>
-        public const string Accent = "#1a56db";
+        public const string Accent = "#475569";
     }
 }

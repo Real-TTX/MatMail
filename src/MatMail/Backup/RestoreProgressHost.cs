@@ -117,7 +117,7 @@ public sealed class RestoreProgressHost : IAsyncDisposable
         <title>MatMail</title>
         <style>
         /* The colours of the toolkit (this page has no style sheet of its own to load: the program is restarting). */
-        :root { --bg:#f5f4f1; --card:#fff; --text:#1f1e1b; --muted:#5d5b55; --accent:#1a56db; --line:#dcdbd7; --bad:#b3203b; --good:#0b7a44; }
+        :root { --bg:#f5f4f1; --card:#fff; --text:#1f1e1b; --muted:#5d5b55; --accent:#475569; --line:#dcdbd7; --bad:#b3203b; --good:#0b7a44; }
         @media (prefers-color-scheme: dark) { :root { --bg:#151514; --card:#1e1e1c; --text:#ecebe6; --muted:#a8a69e; --line:#3a3a37; --accent:#6f9bf5; --bad:#ff9db0; --good:#5fd698; } }
         * { box-sizing: border-box; }
         body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg); color:var(--text); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:16px; }

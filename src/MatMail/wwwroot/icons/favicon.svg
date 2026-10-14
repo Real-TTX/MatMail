@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>MatMail</title>
+  <rect class="bg" width="64" height="64" rx="14" fill="#1a56db"/>
+  <g id="art">
+    <path d="M13 49V17l19 19 19-19v32" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

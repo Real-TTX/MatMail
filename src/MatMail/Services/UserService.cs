@@ -52,6 +52,10 @@ public sealed class UserService
         _cache = cache;
     }
 
+    /// <summary>A user of any tenant by id, or null. Not tracked.</summary>
+    public Task<User?> FindAsync(long id, CancellationToken cancel = default)
+        => _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, cancel);
+
     public async Task<(User? User, string? Error)> CreateAsync(UserInput input, long? tenantId = null)
     {
         long tenant = tenantId ?? _current.TenantId ?? throw new InvalidOperationException("No tenant to create the user in.");

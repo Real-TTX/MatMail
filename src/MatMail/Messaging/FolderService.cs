@@ -111,6 +111,17 @@ public sealed class FolderService
     public Task<MailFolder?> FindByKindAsync(long mailboxId, FolderKind kind, CancellationToken cancel = default)
         => _db.MailFolders.AsNoTracking().FirstOrDefaultAsync(f => f.MailboxId == mailboxId && f.Kind == kind, cancel);
 
+    /// <summary>The kind of a folder (inbox, trash, ...). The folder must exist.</summary>
+    public Task<FolderKind> GetKindAsync(long folderId, CancellationToken cancel = default)
+        => _db.MailFolders.AsNoTracking().Where(f => f.Id == folderId).Select(f => f.Kind).FirstAsync(cancel);
+
+    /// <summary>The ids of the trash folders of these mailboxes.</summary>
+    public async Task<long[]> GetTrashIdsAsync(IEnumerable<long> mailboxIds, CancellationToken cancel = default)
+    {
+        long[] mailboxes = mailboxIds.Distinct().ToArray();
+        return await _db.MailFolders.AsNoTracking().Where(f => f.Kind == FolderKind.Trash && mailboxes.Contains(f.MailboxId)).Select(f => f.Id).ToArrayAsync(cancel);
+    }
+
     /// <summary>The folder with this path ("INBOX", "Archive/2025"; case-insensitive), or null.</summary>
     public async Task<FolderInfo?> FindByPathAsync(long mailboxId, string path, CancellationToken cancel = default)
     {

@@ -136,6 +136,15 @@ public sealed class MailboxService
         return null;
     }
 
+    /// <summary>The addresses of a mailbox, the primary one first.</summary>
+    public Task<List<string>> GetAddressesAsync(long mailboxId, CancellationToken cancel = default)
+        => _db.MailboxAliases.AsNoTracking().Where(a => a.MailboxId == mailboxId)
+            .OrderByDescending(a => a.IsPrimary).ThenBy(a => a.Address).Select(a => a.Address).ToListAsync(cancel);
+
+    /// <summary>The display name of the person who owns a personal mailbox (of any tenant), or null.</summary>
+    public Task<string?> GetOwnerNameAsync(long ownerUserId, CancellationToken cancel = default)
+        => _db.Users.IgnoreQueryFilters().AsNoTracking().Where(u => u.Id == ownerUserId).Select(u => u.DisplayName).FirstOrDefaultAsync(cancel);
+
     /// <summary>What a user may do in a mailbox: the owner manages it, otherwise the delegated level (null = no access).</summary>
     public async Task<MailboxAccess?> GetAccessAsync(long userId, long mailboxId)
     {

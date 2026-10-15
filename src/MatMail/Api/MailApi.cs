@@ -8,7 +8,6 @@ using MatMail.Push;
 using MatMail.Services;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using MimeKit;
 
@@ -119,7 +118,7 @@ public static class MailApi
 
     /// <summary>A notification to one device of the person, to see that it works.</summary>
     private static async Task<IResult> PushTest(
-        PushEndpointRequest request, PushService push, CurrentUser current, IPushSender sender, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
+        PushEndpointRequest request, PushService push, CurrentUser current, IPushSender sender, IStringLocalizer<SharedResource> l, CancellationToken cancel)
     {
         PushSubscription? device = string.IsNullOrEmpty(request.Endpoint) || current.UserId is not long userId ? null : await push.FindAsync(userId, request.Endpoint, cancel);
         if (device is null)
@@ -129,7 +128,7 @@ public static class MailApi
 
         byte[] message = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { title = l["Notifications are on"].Value, body = l["New mail will show up here."].Value, url = "/Mail", tag = "test" });
         PushOutcome outcome = await sender.SendAsync(device, message, new PushOptions(TtlSeconds: 60, Urgency: "high"), cancel);
-        await PushService.RecordOutcomesAsync(db, new Dictionary<long, PushOutcome> { [device.Id] = outcome }, PushNotifier.MaxFailures, cancel);
+        await push.RecordOutcomeAsync(device.Id, outcome, cancel);
         return outcome == PushOutcome.Delivered ? Results.NoContent() : new Failure("The notification could not be sent. Turn notifications off and on again.");
     }
 
@@ -156,7 +155,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> Bootstrap(
-        MailAccessService access, MailStore store, FolderService folders, MailboxUsageService usage, SignatureService signatures, CurrentUser current, AppConfig config, MatMailDbContext db, IStringLocalizer<SharedResource> l, BrandingService branding, CancellationToken cancel)
+        MailAccessService access, MailStore store, FolderService folders, MailboxUsageService usage, SignatureService signatures, CurrentUser current, AppConfig config, UserService users, IStringLocalizer<SharedResource> l, BrandingService branding, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -192,7 +191,7 @@ public static class MailApi
         var identityDtos = identities.Select(i => new IdentityDto(
             i.Alias.Address, i.IsOwn ? i.Alias.Address : $"{i.Mailbox.Name} <{i.Alias.Address}>", i.Mailbox.Id, i.Alias.IsPrimary, i.IsOwn)).ToList();
 
-        User? self = await db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.UserId, cancel);
+        User? self = await users.FindAsync(user.UserId, cancel);
         string tenantName = current.TenantName ?? string.Empty;
         string? website = (await branding.GetAsync(user.TenantId, cancel)).Website;
         var signatureDtos = new List<SignatureDto>();
@@ -219,7 +218,7 @@ public static class MailApi
 
     /// <summary>The info dialog of a mailbox: for anybody who may read it (the addresses are the ones they could send as or already see).</summary>
     internal static async Task<IResult> MailboxInfo(
-        long mailboxId, MailAccessService access, MailboxUsageService usage, MatMailDbContext db, IStringLocalizer<SharedResource> l, CancellationToken cancel)
+        long mailboxId, MailAccessService access, MailboxUsageService usage, MailboxService mailboxes, IStringLocalizer<SharedResource> l, CancellationToken cancel)
     {
         (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
         if (user is null)
@@ -233,10 +232,9 @@ public static class MailApi
             return Results.NotFound();
         }
 
-        List<string> addresses = await db.MailboxAliases.AsNoTracking().Where(a => a.MailboxId == mailboxId)
-            .OrderByDescending(a => a.IsPrimary).ThenBy(a => a.Address).Select(a => a.Address).ToListAsync(cancel);
+        List<string> addresses = await mailboxes.GetAddressesAsync(mailboxId, cancel);
         string? owner = box.Mailbox.Type == MailboxType.Personal && box.Mailbox.OwnerUserId is long ownerId
-            ? await db.Users.IgnoreQueryFilters().AsNoTracking().Where(u => u.Id == ownerId).Select(u => u.DisplayName).FirstOrDefaultAsync(cancel)
+            ? await mailboxes.GetOwnerNameAsync(ownerId, cancel)
             : null;
         MailboxUsage used = await usage.GetAsync(mailboxId, cancel);
         IReadOnlyList<FolderUsage> folders = await usage.GetFoldersAsync(mailboxId, cancel);
@@ -275,7 +273,7 @@ public static class MailApi
     // ---------------------------------------------------------------------------------------------------------------
 
     private static async Task<IResult> ListMessages(
-        long mailboxId, long? folderId, string? q, int? page, int? pageSize, bool? conversations, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+        long mailboxId, long? folderId, string? q, int? page, int? pageSize, bool? conversations, MailAccessService access, MailListService lists, CancellationToken cancel)
     {
         (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
         if (user is null)
@@ -283,17 +281,10 @@ public static class MailApi
             return error!;
         }
 
-        MailQuery query = MailQuery.Parse(mailboxId, folderId, q);
-        await query.ResolveFoldersAsync(db, cancel);
-        int size = Math.Clamp(pageSize ?? 50, 10, 100);
-        IQueryable<MailMessage> filtered = query.Apply(db.MailMessages.AsNoTracking(), db);
-
-        // Conversations are for the lists of a folder; a search and the drafts (which open for writing, not for reading) stay lists of single messages.
-        if (conversations == true && folderId is long conversationFolder && string.IsNullOrWhiteSpace(q)
-            && await db.MailFolders.AsNoTracking().AnyAsync(f => f.Id == conversationFolder && f.MailboxId == mailboxId && f.Kind != FolderKind.Drafts, cancel))
+        MessageListPage list = await lists.ListAsync(mailboxId, folderId, q, page, pageSize, conversations, cancel);
+        if (list.Conversations is { } conversationPage)
         {
-            ConversationPage conversationPage = await MailConversations.ListAsync(filtered, page, size, cancel);
-            return Results.Ok(new MessageListDto(conversationPage.Total, conversationPage.Page, size, conversationPage.Rows.Select(r => new MessageListItemDto(
+            return Results.Ok(new MessageListDto(conversationPage.Total, conversationPage.Page, list.Size, conversationPage.Rows.Select(r => new MessageListItemDto(
                 r.Id, r.FolderId, r.Uid, r.Subject, r.FromName, r.FromAddress, r.ToSummary, r.Preview, r.ReceivedDate,
                 r.IsRead, r.IsStarred, r.HasAttachments, false, r.IsAnswered, r.IsForwarded, r.FolderKind.ToString())
             {
@@ -303,28 +294,21 @@ public static class MailApi
             }).ToList()));
         }
 
-        int total = await filtered.CountAsync(cancel);
-        int pageNumber = Math.Clamp(page ?? 1, 1, Math.Max(1, (int)Math.Ceiling(total / (double)size)));
-
-        List<MessageListItemDto> items = await filtered
-            .Skip((pageNumber - 1) * size)
-            .Take(size)
-            .Select(m => new MessageListItemDto(
-                m.Id, m.FolderId, m.Uid, m.Subject, m.FromName, m.FromAddress, m.ToSummary, m.Preview, m.ReceivedDate,
-                m.IsRead, m.IsStarred, m.HasAttachments, m.IsDraft, m.IsAnswered, m.IsForwarded, m.Folder!.Kind.ToString()))
-            .ToListAsync(cancel);
-        return Results.Ok(new MessageListDto(total, pageNumber, size, items));
+        List<MessageListItemDto> items = list.Messages.Select(m => new MessageListItemDto(
+            m.Id, m.FolderId, m.Uid, m.Subject, m.FromName, m.FromAddress, m.ToSummary, m.Preview, m.ReceivedDate,
+            m.IsRead, m.IsStarred, m.HasAttachments, m.IsDraft, m.IsAnswered, m.IsForwarded, m.FolderKind.ToString())).ToList();
+        return Results.Ok(new MessageListDto(list.Total, list.Page, list.Size, items));
     }
 
     /// <summary>The most messages that "select everything that matches" takes along; the newest come first.</summary>
-    public const int MaxBulk = 10_000;
+    public const int MaxBulk = MailListService.MaxBulk;
 
     /// <summary>
     /// Every message the list of this request would show over all its pages (the newest <see cref="MaxBulk"/> at most), for "select all that
     /// match": the client then changes them in chunks through the usual calls, which check the rights again.
     /// </summary>
     private static async Task<IResult> ListMessageIds(
-        long mailboxId, long? folderId, string? q, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+        long mailboxId, long? folderId, string? q, MailAccessService access, MailListService lists, CancellationToken cancel)
     {
         (MailUser? user, IResult? error) = await RequireMailboxAsync(access, mailboxId, MailboxAccess.Read, cancel);
         if (user is null)
@@ -332,18 +316,14 @@ public static class MailApi
             return error!;
         }
 
-        MailQuery query = MailQuery.Parse(mailboxId, folderId, q);
-        await query.ResolveFoldersAsync(db, cancel);
-        IQueryable<MailMessage> filtered = query.Apply(db.MailMessages.AsNoTracking(), db);
-        int total = await filtered.CountAsync(cancel);
-        var rows = await filtered.Select(m => new { m.Id, m.FolderId }).Take(MaxBulk).ToListAsync(cancel);
-        return Results.Ok(new MessageIdsDto(total, rows.Select(r => r.Id).ToArray(), rows.Select(r => r.FolderId).ToArray(), total > rows.Count));
+        MatchingMessageIds ids = await lists.ListIdsAsync(mailboxId, folderId, q, cancel);
+        return Results.Ok(new MessageIdsDto(ids.Total, ids.Ids, ids.FolderIds, ids.Capped));
     }
 
     private static async Task<IResult> GetMessage(
-        long id, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, CancellationToken cancel)
+        long id, MailAccessService access, MailStore store, FolderService folders, MailBodyRenderer renderer, CancellationToken cancel)
     {
-        (MailUser? user, MailMessage? message, MailboxAccess accessLevel, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (MailUser? user, MailMessage? message, MailboxAccess accessLevel, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -355,7 +335,7 @@ public static class MailApi
             return Results.NotFound();
         }
 
-        string folderKind = await db.MailFolders.AsNoTracking().Where(f => f.Id == message.FolderId).Select(f => f.Kind.ToString()).FirstAsync(cancel);
+        string folderKind = (await folders.GetKindAsync(message.FolderId, cancel)).ToString();
         return Results.Ok(DetailOf(
             mime, renderer, $"/api/mail/messages/{id}", id, message.FolderId, message.MailboxId, folderKind, message.ReceivedDate, message.IsRead, message.IsStarred, message.IsDraft,
             accessLevel >= MailboxAccess.Edit, accessLevel >= MailboxAccess.Send, message.EnvelopeRecipients, message.SizeBytes));
@@ -546,25 +526,24 @@ public static class MailApi
     }
 
     /// <summary>The messages of the conversation that a message belongs to, oldest first (see <see cref="MailConversations.ThreadAsync"/>).</summary>
-    private static async Task<IResult> GetThread(long id, MailAccessService access, MatMailDbContext db, CancellationToken cancel)
+    private static async Task<IResult> GetThread(long id, MailAccessService access, MailStore store, MailListService lists, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
         }
 
-        FolderKind folderKind = await db.MailFolders.AsNoTracking().Where(f => f.Id == message.FolderId).Select(f => f.Kind).FirstAsync(cancel);
-        IReadOnlyList<ThreadMessage> thread = await MailConversations.ThreadAsync(db, message, folderKind, cancel);
+        IReadOnlyList<ThreadMessage> thread = await lists.GetThreadAsync(message, cancel);
         return Results.Ok(thread.Select(t => new ThreadMessageDto(
             t.Id, t.FolderId, t.FolderKind.ToString(), t.Subject, t.FromName, t.FromAddress, t.ToSummary, t.Preview, t.ReceivedDate, t.IsRead, t.IsStarred, t.HasAttachments)).ToList());
     }
 
     /// <summary>The message text as a self-contained HTML document for a sandboxed iframe (no scripts, restricted resources).</summary>
     private static async Task<IResult> GetBody(
-        long id, bool? images, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, HttpContext http, CancellationToken cancel)
+        long id, bool? images, MailAccessService access, MailStore store, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -593,10 +572,10 @@ public static class MailApi
     /// nonce, that opens the print dialog; the body is the same sanitised HTML as in the reader and cannot run anything.
     /// </summary>
     private static async Task<IResult> GetPrint(
-        long id, bool? images, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, Fmt fmt, IStringLocalizer<SharedResource> l,
+        long id, bool? images, MailAccessService access, MailStore store, MailBodyRenderer renderer, Fmt fmt, IStringLocalizer<SharedResource> l,
         HttpContext http, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -636,9 +615,9 @@ public static class MailApi
     }
 
     private static async Task<IResult> GetAttachment(
-        long id, int index, bool? inline, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, HttpContext http, CancellationToken cancel)
+        long id, int index, bool? inline, MailAccessService access, MailStore store, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -655,9 +634,9 @@ public static class MailApi
     }
 
     private static async Task<IResult> GetInlinePart(
-        long id, string cid, MailAccessService access, MailStore store, MailBodyRenderer renderer, MatMailDbContext db, HttpContext http, CancellationToken cancel)
+        long id, string cid, MailAccessService access, MailStore store, MailBodyRenderer renderer, HttpContext http, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -668,9 +647,9 @@ public static class MailApi
         return part is null ? Results.NotFound() : await SendEntityAsync(http, part, MailBodyRenderer.FileNameOf(part, 1), inline: true, cancel);
     }
 
-    private static async Task<IResult> GetRaw(long id, MailAccessService access, MailStore store, MatMailDbContext db, CancellationToken cancel)
+    private static async Task<IResult> GetRaw(long id, MailAccessService access, MailStore store, CancellationToken cancel)
     {
-        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, db, id, MailboxAccess.Read, cancel);
+        (_, MailMessage? message, _, IResult? error) = await RequireMessageAsync(access, store, id, MailboxAccess.Read, cancel);
         if (message is null)
         {
             return error!;
@@ -684,9 +663,9 @@ public static class MailApi
     // Changes
     // ---------------------------------------------------------------------------------------------------------------
 
-    private static async Task<IResult> ChangeFlags(FlagsRequest request, MailAccessService access, MailStore store, MatMailDbContext db, CancellationToken cancel)
+    private static async Task<IResult> ChangeFlags(FlagsRequest request, MailAccessService access, MailStore store, CancellationToken cancel)
     {
-        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, db, request.Ids, MailboxAccess.Edit, cancel);
+        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, store, request.Ids, MailboxAccess.Edit, cancel);
         if (user is null)
         {
             return error!;
@@ -696,9 +675,9 @@ public static class MailApi
         return Results.Ok(new ChangeResult(changed, await CountsOfAsync(store, messages.Select(m => m.FolderId), cancel)));
     }
 
-    internal static async Task<IResult> MoveMessages(MoveRequest request, MailAccessService access, MailStore store, MailboxQuotaService quota, MatMailDbContext db, CancellationToken cancel)
+    internal static async Task<IResult> MoveMessages(MoveRequest request, MailAccessService access, MailStore store, MailboxQuotaService quota, CancellationToken cancel)
     {
-        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, db, request.Ids, MailboxAccess.Edit, cancel);
+        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, store, request.Ids, MailboxAccess.Edit, cancel);
         if (user is null)
         {
             return error!;
@@ -721,9 +700,9 @@ public static class MailApi
         return Results.Ok(new ChangeResult(moved.Count, await CountsOfAsync(store, messages.Select(m => m.FolderId).Append(target.Id), cancel)));
     }
 
-    private static async Task<IResult> DeleteMessages(DeleteRequest request, MailAccessService access, MailStore store, MatMailDbContext db, CancellationToken cancel)
+    private static async Task<IResult> DeleteMessages(DeleteRequest request, MailAccessService access, MailStore store, FolderService folders, CancellationToken cancel)
     {
-        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, db, request.Ids, MailboxAccess.Edit, cancel);
+        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, store, request.Ids, MailboxAccess.Edit, cancel);
         if (user is null)
         {
             return error!;
@@ -731,13 +710,13 @@ public static class MailApi
 
         long[] folderIds = messages.Select(m => m.FolderId).Distinct().ToArray();
         int affected = await store.DeleteAsync(messages.Select(m => m.Id), request.Permanent, cancel);
-        long[] trashIds = await db.MailFolders.AsNoTracking().Where(f => f.Kind == FolderKind.Trash && messages.Select(m => m.MailboxId).Contains(f.MailboxId)).Select(f => f.Id).ToArrayAsync(cancel);
+        long[] trashIds = await folders.GetTrashIdsAsync(messages.Select(m => m.MailboxId), cancel);
         return Results.Ok(new ChangeResult(affected, await CountsOfAsync(store, folderIds.Concat(trashIds), cancel)));
     }
 
-    private static async Task<IResult> MarkSpam(SpamRequest request, MailAccessService access, MailStore store, FolderService folders, MatMailDbContext db, CancellationToken cancel)
+    private static async Task<IResult> MarkSpam(SpamRequest request, MailAccessService access, MailStore store, FolderService folders, CancellationToken cancel)
     {
-        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, db, request.Ids, MailboxAccess.Edit, cancel);
+        (MailUser? user, List<MailMessage> messages, IResult? error) = await AllowedMessagesAsync(access, store, request.Ids, MailboxAccess.Edit, cancel);
         if (user is null)
         {
             return error!;
@@ -1053,7 +1032,7 @@ public static class MailApi
     }
 
     private static async Task<(MailUser? User, MailMessage? Message, MailboxAccess Access, IResult? Error)> RequireMessageAsync(
-        MailAccessService access, MatMailDbContext db, long id, MailboxAccess minimum, CancellationToken cancel)
+        MailAccessService access, MailStore store, long id, MailboxAccess minimum, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -1061,7 +1040,7 @@ public static class MailApi
             return (null, null, default, Results.Unauthorized());
         }
 
-        MailMessage? message = await db.MailMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id, cancel);
+        MailMessage? message = await store.FindAsync(id, cancel);
         MailboxAccess? level = message is null ? null : await access.GetAccessAsync(user, message.MailboxId, cancel);
         return message is null || level is null || level < minimum
             ? (null, null, default, Results.NotFound())
@@ -1070,7 +1049,7 @@ public static class MailApi
 
     /// <summary>The messages of the request the user may change (others are silently left out).</summary>
     private static async Task<(MailUser? User, List<MailMessage> Messages, IResult? Error)> AllowedMessagesAsync(
-        MailAccessService access, MatMailDbContext db, long[] ids, MailboxAccess minimum, CancellationToken cancel)
+        MailAccessService access, MailStore store, long[] ids, MailboxAccess minimum, CancellationToken cancel)
     {
         MailUser? user = access.GetCurrentUser();
         if (user is null)
@@ -1079,7 +1058,7 @@ public static class MailApi
         }
 
         long[] wanted = ids.Distinct().Take(1000).ToArray();
-        List<MailMessage> messages = await db.MailMessages.AsNoTracking().Where(m => wanted.Contains(m.Id)).ToListAsync(cancel);
+        List<MailMessage> messages = await store.FindManyAsync(wanted, cancel);
         var allowed = new List<MailMessage>();
         foreach (IGrouping<long, MailMessage> mailbox in messages.GroupBy(m => m.MailboxId))
         {

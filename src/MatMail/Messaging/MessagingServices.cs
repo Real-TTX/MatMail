@@ -16,6 +16,7 @@ public static class MessagingServices
         services.AddScoped<MailStore>();
         services.AddScoped<FolderService>();
         services.AddScoped<MailboxUsageService>();
+        services.AddScoped<MailListService>();
         services.AddScoped<MailboxQuotaService>();
         services.AddScoped<MailAccessService>();
         services.AddScoped<MailRuleEngine>();

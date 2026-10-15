@@ -87,6 +87,10 @@ public sealed class PushService(MatMailDbContext db, PushKeys keys, AppConfig co
     public async Task<bool> RemoveAsync(long userId, long id, CancellationToken cancel)
         => await db.PushSubscriptions.Where(s => s.UserId == userId && s.Id == id).ExecuteDeleteAsync(cancel) > 0;
 
+    /// <summary>What the push service answered for one device (see <see cref="RecordOutcomesAsync"/>).</summary>
+    public Task RecordOutcomeAsync(long deviceId, PushOutcome outcome, CancellationToken cancel)
+        => RecordOutcomesAsync(db, new Dictionary<long, PushOutcome> { [deviceId] = outcome }, PushNotifier.MaxFailures, cancel);
+
     /// <summary>What the push services answered: a success clears the failures, a vanished subscription goes, a failing one goes after a while.</summary>
     public static async Task RecordOutcomesAsync(MatMailDbContext db, IReadOnlyDictionary<long, PushOutcome> outcomes, int maxFailures, CancellationToken cancel)
     {

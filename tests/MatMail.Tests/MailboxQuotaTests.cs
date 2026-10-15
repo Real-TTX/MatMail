@@ -416,12 +416,12 @@ public class MailboxQuotaWebTests : IAsyncLifetime
     private static Task<IResult> MoveAsync(IServiceScope scope, long messageId, long folderId)
         => MailApi.MoveMessages(
             new MoveRequest(new[] { messageId }, folderId), scope.ServiceProvider.GetRequiredService<MailAccessService>(), scope.ServiceProvider.GetRequiredService<MailStore>(),
-            scope.ServiceProvider.GetRequiredService<MailboxQuotaService>(), scope.ServiceProvider.GetRequiredService<MatMailDbContext>(), CancellationToken.None);
+            scope.ServiceProvider.GetRequiredService<MailboxQuotaService>(), CancellationToken.None);
 
     private Task<IResult> InfoAsync(IServiceScope scope, long mailboxId)
         => MailApi.MailboxInfo(
             mailboxId, scope.ServiceProvider.GetRequiredService<MailAccessService>(), scope.ServiceProvider.GetRequiredService<MailboxUsageService>(),
-            scope.ServiceProvider.GetRequiredService<MatMailDbContext>(), scope.ServiceProvider.GetRequiredService<IStringLocalizer<SharedResource>>(), CancellationToken.None);
+            scope.ServiceProvider.GetRequiredService<MailboxService>(), scope.ServiceProvider.GetRequiredService<IStringLocalizer<SharedResource>>(), CancellationToken.None);
 
     // ----- moving messages -------------------------------------------------------------------------------------------
 

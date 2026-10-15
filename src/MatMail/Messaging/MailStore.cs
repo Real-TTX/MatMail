@@ -130,6 +130,14 @@ public sealed class MailStore
     // Reading
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>A message by id, or null. Not tracked; whether the user may see it is the caller's business (<see cref="MailAccessService"/>).</summary>
+    public Task<MailMessage?> FindAsync(long messageId, CancellationToken cancel = default)
+        => _db.MailMessages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == messageId, cancel);
+
+    /// <summary>The messages with these ids that exist. Not tracked.</summary>
+    public Task<List<MailMessage>> FindManyAsync(long[] messageIds, CancellationToken cancel = default)
+        => _db.MailMessages.AsNoTracking().Where(m => messageIds.Contains(m.Id)).ToListAsync(cancel);
+
     /// <summary>The raw message. For messages that are only referenced (live access) the provider is asked.</summary>
     public async Task<byte[]?> GetRawAsync(long messageId, CancellationToken cancel = default)
     {

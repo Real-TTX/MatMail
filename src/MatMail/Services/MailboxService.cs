@@ -33,6 +33,15 @@ public sealed class MailboxService
     public async Task<Mailbox> CreateMailboxAsync(string name, MailboxType type, long? ownerUserId, long? tenantId = null)
     {
         long tenant = tenantId ?? _current.TenantId ?? throw new InvalidOperationException("No tenant to create the mailbox in.");
+
+        // The owner belongs to the tenant: it is their home tenant or they are a member of it (docs/concept-tenant-memberships.md).
+        if (ownerUserId is long owner
+            && !await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == owner && u.TenantId == tenant)
+            && !await _db.TenantMemberships.IgnoreQueryFilters().AnyAsync(m => m.UserId == owner && m.TenantId == tenant))
+        {
+            throw new InvalidOperationException("The owner of a mailbox has to belong to its tenant.");
+        }
+
         var mailbox = new Mailbox { TenantId = tenant, Name = name.Trim(), Type = type, OwnerUserId = ownerUserId };
         _db.Mailboxes.Add(mailbox);
         await _db.SaveChangesAsync();

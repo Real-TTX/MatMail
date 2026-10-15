@@ -48,6 +48,7 @@ public static class ServiceRegistration
         services.AddScoped<SessionCookieEvents>();
         services.AddScoped<TenantService>();
         services.AddScoped<UserService>();
+        services.AddScoped<MembershipService>();
         services.AddScoped<MailboxService>();
         services.AddScoped<SetupService>();
 

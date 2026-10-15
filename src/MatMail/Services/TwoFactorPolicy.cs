@@ -53,8 +53,10 @@ public sealed class TwoFactorPolicy
     {
         bool enabled = await _db.UserTotps.AnyAsync(t => t.UserId == user.Id && t.ConfirmedDate != null, cancel);
         TwoFactorMode mode = await GetModeAsync(user.TenantId, cancel);
+        // The status of the account: the home tenant and the roles held there (what IMAP and SMTP follow); a tenant someone is only a
+        // member of binds them while they work in it, which the session decides (SignInService).
         var roles = await _db.UserRoles.IgnoreQueryFilters()
-            .Where(ur => ur.UserId == user.Id)
+            .Where(ur => ur.UserId == user.Id && ur.Role!.TenantId == user.TenantId)
             .Select(ur => new { ur.Role!.Permissions, ur.Role.RequiresTwoFactor })
             .ToListAsync(cancel);
 

@@ -155,3 +155,40 @@ public class UserRole : AuditedEntity
     public long RoleId { get; set; }
     public Role? Role { get; set; }
 }
+
+/// <summary>
+/// The person belongs to this tenant in addition to the one that created them (<see cref="User.TenantId"/>, the home tenant, which has no row
+/// here). A row is an active membership and exists only because the person accepted an invitation. The roles of a membership are
+/// <see cref="UserRole"/> rows of roles of this tenant.
+/// </summary>
+public class TenantMembership : AuditedEntity, ITenantEntity
+{
+    /// <summary>The tenant that is joined.</summary>
+    public long TenantId { get; set; }
+
+    public long UserId { get; set; }
+    public User? User { get; set; }
+}
+
+/// <summary>
+/// An administrator of a tenant asks somebody to join. Kept by <see cref="Identifier"/> and not by user, so it exists whether or not the
+/// person does and the administrator learns nothing about who is on the server. The inviter is <see cref="AuditedEntity.CreateUserId"/>.
+/// </summary>
+public class TenantInvitation : AuditedEntity, ITenantEntity
+{
+    /// <summary>The inviting tenant.</summary>
+    public long TenantId { get; set; }
+
+    /// <summary>A login name or an address, lower case, as the administrator typed it.</summary>
+    public string Identifier { get; set; } = string.Empty;
+
+    /// <summary>Roles of the inviting tenant that the person gets when they accept (those that still exist then).</summary>
+    public long[] RoleIds { get; set; } = Array.Empty<long>();
+
+    public DateTime ExpiresDate { get; set; }
+    public InvitationState State { get; set; } = InvitationState.Open;
+    public DateTime? ClosedDate { get; set; }
+
+    /// <summary>Who accepted or declined; empty while the invitation is open.</summary>
+    public long? UserId { get; set; }
+}

@@ -33,6 +33,8 @@ public class MatMailDbContext : DbContext
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
+    public DbSet<TenantInvitation> TenantInvitations => Set<TenantInvitation>();
     public DbSet<Domain> Domains => Set<Domain>();
     public DbSet<Mailbox> Mailboxes => Set<Mailbox>();
     public DbSet<MailboxAlias> MailboxAliases => Set<MailboxAlias>();
@@ -220,6 +222,19 @@ public class MatMailDbContext : DbContext
         {
             e.HasIndex(x => new { x.UserId, x.RoleId }).IsUnique();
             e.HasOne(x => x.Role).WithMany().HasForeignKey(x => x.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<TenantMembership>(e =>
+        {
+            e.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
+            e.HasIndex(x => x.UserId);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<TenantInvitation>(e =>
+        {
+            e.HasIndex(x => new { x.TenantId, x.Identifier, x.State });
+            e.Property(x => x.Identifier).HasMaxLength(320);
         });
     }
 

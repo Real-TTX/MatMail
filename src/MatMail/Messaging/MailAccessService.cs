@@ -121,8 +121,9 @@ public sealed class MailAccessService
 
     private async Task<MailUser> LoadUserAsync(User user)
     {
+        // Mail programs work in the home tenant only, with the roles the person holds there (a membership elsewhere gives nothing here).
         List<string[]> permissions = await _db.UserRoles.IgnoreQueryFilters()
-            .Where(ur => ur.UserId == user.Id)
+            .Where(ur => ur.UserId == user.Id && ur.Role!.TenantId == user.TenantId)
             .Select(ur => ur.Role!.Permissions)
             .ToListAsync();
         return new MailUser(

@@ -133,6 +133,15 @@ public enum TwoFactorMode
     Everyone,
 }
 
+/// <summary>Where an invitation to join a tenant stands. An open one that is past its date counts as expired.</summary>
+public enum InvitationState
+{
+    Open,
+    Accepted,
+    Declined,
+    Revoked,
+}
+
 public enum ActivityCategory
 {
     System,

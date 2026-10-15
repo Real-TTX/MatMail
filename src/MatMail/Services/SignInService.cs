@@ -386,24 +386,32 @@ public sealed class SignInService
             return null;
         }
 
-        // Only system administrators may work in a tenant other than their own.
-        long tenantId = user.IsSystemAdmin ? session.TenantId : user.TenantId;
+        // System administrators work in any tenant; everybody else in their home tenant or in one they are a member of (the session
+        // asks for a tenant, this decides, and a membership that ended or a tenant that was switched off sends them home).
+        long tenantId = user.IsSystemAdmin ? session.TenantId : await ResolveActiveTenantAsync(user, session.TenantId);
         Tenant? tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
         if (tenant is null || (!tenant.IsActive && !user.IsSystemAdmin))
         {
             return null;
         }
 
+        // The permissions are those of the roles of the tenant the user works in; the roles of the home tenant also count for the
+        // second factor (it is their account), a system administrator holds everything anyway.
+        bool outside = tenant.Id != user.TenantId && !user.IsSystemAdmin;
         var roles = await _db.UserRoles.IgnoreQueryFilters()
-            .Where(ur => ur.UserId == user.Id)
-            .Select(ur => new { ur.Role!.Permissions, ur.Role.RequiresTwoFactor })
+            .Where(ur => ur.UserId == user.Id && (ur.Role!.TenantId == user.TenantId || ur.Role.TenantId == tenant.Id))
+            .Select(ur => new { ur.Role!.TenantId, ur.Role.Permissions, ur.Role.RequiresTwoFactor })
             .ToListAsync();
-        string[] permissions = roles.SelectMany(r => r.Permissions).Distinct(StringComparer.Ordinal).ToArray();
+        var homeRoles = roles.Where(r => r.TenantId == user.TenantId).ToList();
+        var activeRoles = outside ? roles.Where(r => r.TenantId == tenant.Id).ToList() : homeRoles;
+        string[] permissions = activeRoles.SelectMany(r => r.Permissions).Distinct(StringComparer.Ordinal).ToArray();
 
-        // The policy of the tenant the user belongs to, not the one a system administrator is working in right now.
-        TwoFactorMode twoFactorMode = tenant.Id == user.TenantId ? tenant.TwoFactorMode : await _twoFactor.GetModeAsync(user.TenantId);
+        // The policy of the tenant the user belongs to binds them everywhere, the one of a tenant they are a member of while they work
+        // there; a system administrator follows that of their own tenant, not the one they are working in right now.
+        TwoFactorMode homeMode = tenant.Id == user.TenantId ? tenant.TwoFactorMode : await _twoFactor.GetModeAsync(user.TenantId);
         bool twoFactorEnabled = await _db.UserTotps.AnyAsync(t => t.UserId == user.Id && t.ConfirmedDate != null);
-        bool twoFactorRequired = TwoFactorPolicy.IsRequired(twoFactorMode, user.IsSystemAdmin, permissions, roles.Any(r => r.RequiresTwoFactor));
+        bool twoFactorRequired = TwoFactorPolicy.IsRequired(homeMode, user.IsSystemAdmin, homeRoles.SelectMany(r => r.Permissions), homeRoles.Any(r => r.RequiresTwoFactor))
+            || (outside && TwoFactorPolicy.IsRequired(tenant.TwoFactorMode, false, permissions, activeRoles.Any(r => r.RequiresTwoFactor)));
 
         if (touch && session.LastSeenDate < now - TouchInterval)
         {
@@ -467,16 +475,16 @@ public sealed class SignInService
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }
 
-    /// <summary>System administrators switch the tenant they are working in.</summary>
+    /// <summary>
+    /// Switches the tenant a session works in: system administrators into any tenant, everybody else into their home tenant or a tenant
+    /// they are a member of (and that is switched on). This is the one place that decides; the answer is false for anything else.
+    /// </summary>
     public async Task<bool> SwitchTenantAsync(Guid token, long tenantId)
     {
         UserSession? session = await _db.UserSessions.FirstOrDefaultAsync(s => s.Token == token);
-        if (session is null || !await _db.Users.IgnoreQueryFilters().AnyAsync(u => u.Id == session.UserId && u.IsSystemAdmin))
-        {
-            return false;
-        }
-
-        if (!await _db.Tenants.AnyAsync(t => t.Id == tenantId))
+        User? user = session is null ? null : await _db.Users.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(u => u.Id == session.UserId);
+        Tenant? target = user is null ? null : await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId);
+        if (session is null || user is null || target is null || !await MayEnterAsync(user, target))
         {
             return false;
         }
@@ -484,8 +492,21 @@ public sealed class SignInService
         session.TenantId = tenantId;
         await _db.SaveChangesAsync();
         _cache.Invalidate(token);
+        await _log.InfoAsync(ActivityCategory.Auth, $"'{user.LoginName}' switched to the tenant '{target.Name}'.", tenantId: tenantId, userId: user.Id);
         return true;
     }
+
+    /// <summary>The tenant a session really works in: the one it asks for if the user may enter it, else their home tenant.</summary>
+    private async Task<long> ResolveActiveTenantAsync(User user, long requested)
+        => requested == user.TenantId || !await _db.Tenants.AnyAsync(t => t.Id == requested && t.IsActive) || !await IsMemberAsync(user.Id, requested)
+            ? user.TenantId
+            : requested;
+
+    private async Task<bool> MayEnterAsync(User user, Tenant target)
+        => user.IsSystemAdmin || target.Id == user.TenantId || (target.IsActive && await IsMemberAsync(user.Id, target.Id));
+
+    private Task<bool> IsMemberAsync(long userId, long tenantId)
+        => _db.TenantMemberships.IgnoreQueryFilters().AnyAsync(m => m.TenantId == tenantId && m.UserId == userId);
 
     private static void AddIfSet(List<Claim> claims, string type, string? value)
     {

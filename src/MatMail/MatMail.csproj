@@ -26,6 +26,11 @@
     <!-- Draws the QR code of the authenticator app set-up as SVG (pure managed, no external service) -->
     <PackageReference Include="QRCoder" Version="1.*" />
     <PackageReference Include="SMBLibrary" Version="1.5.7.1" />
+    <!-- MatPlatform (the copy in MatPlatform/): the bearer tokens of MatIdentity on /api and the sign-in through MatIdentity -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.13" />
+    <!-- Newer than what the two above bring along (10.0.12 has known vulnerabilities). -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>

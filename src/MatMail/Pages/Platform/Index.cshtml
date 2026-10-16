@@ -1,0 +1,43 @@
+@page "/Platform"
+@model MatMail.Pages.Platform.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Platform";
+    ViewData["Title"] = L["Platform"].Value;
+    ViewData["Description"] = L["The whole installation: every tenant and what is in it. The lists in the menu show everything of all tenants at once; a row opens in its tenant."].Value;
+    string openLabel = L["Open the administration of this tenant"].Value;
+}
+
+<mm-table item-count="Model.Rows.Count" empty-text='@L["No tenants yet."]' empty-icon="building">
+    <thead>
+        <tr>
+            <th>@L["Tenant"]</th>
+            <th class="mat-num">@L["Users"]</th>
+            <th class="mat-num mat-hide-sm">@L["Members"]</th>
+            <th class="mat-num mat-hide-sm">@L["Mailboxes"]</th>
+            <th class="mat-num mat-hide-sm">@L["Domains"]</th>
+            <th>@L["Connected accounts"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tenant in Model.Rows)
+        {
+            <tr data-row-submit>
+                <td>
+                    <div class="mat-table__name"><span><partial name="_OpenInTenant" model='new OpenInTenant(tenant.Id, "/Admin", tenant.Name)' />@if (!tenant.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</span></div>
+                </td>
+                <td class="mat-num">@tenant.Users</td>
+                <td class="mat-num mat-hide-sm">@tenant.Members</td>
+                <td class="mat-num mat-hide-sm">@tenant.Mailboxes</td>
+                <td class="mat-num mat-hide-sm">@tenant.Domains</td>
+                <td>
+                    <span>@tenant.Accounts</span>
+                    @if (tenant.AccountErrors > 0) { <mm-badge kind="danger">@L["{0} failing", tenant.AccountErrors]</mm-badge> }
+                </td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions"><partial name="_OpenInTenant" model='new OpenInTenant(tenant.Id, "/Admin", openLabel, OpenInTenant.OpenIcon)' /></div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>

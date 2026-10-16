@@ -27,17 +27,28 @@
   // ---- Rows that open their detail page (the title in the row is the link; the row is a bigger target) ----------
   function initRowLinks() {
     doc.addEventListener("click", function (e) {
-      var row = e.target.closest("tr[data-row-href]");
+      var row = e.target.closest("tr[data-row-href], tr[data-row-submit]");
       if (!row || e.target.closest("a, button, input, select, label, form")) { return; }
       var selection = window.getSelection && window.getSelection().toString();
       if (selection) { return; }
-      window.location.href = row.getAttribute("data-row-href");
+      openRow(row);
     });
     doc.addEventListener("keydown", function (e) {
       if (e.key !== "Enter") { return; }
-      var row = e.target.closest && e.target.closest("tr[data-row-href]");
-      if (row && e.target === row) { window.location.href = row.getAttribute("data-row-href"); }
+      var row = e.target.closest && e.target.closest("tr[data-row-href], tr[data-row-submit]");
+      if (row && e.target === row) { openRow(row); }
     });
+  }
+
+  // A row opens its page (data-row-href) or, when opening has to change something first (the platform lists switch into the tenant
+  // of the row), submits the form it holds (data-row-submit, form[data-row-form]).
+  function openRow(row) {
+    if (row.hasAttribute("data-row-submit")) {
+      var form = row.querySelector("form[data-row-form]");
+      if (form) { form.requestSubmit(); }
+      return;
+    }
+    window.location.href = row.getAttribute("data-row-href");
   }
 
   // ---- A submit that is on its way: the button shows it and cannot be pressed twice -----------------

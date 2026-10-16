@@ -11,6 +11,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
 {
     public const string MailId = "mail";
     public const string AdminId = "admin";
+    public const string PlatformId = "platform";
     public const string AccountId = "account";
 
     public IReadOnlyList<NavSet> ForUser()
@@ -25,6 +26,11 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
         if (user.CanAdminister)
         {
             menus.Add(Admin());   // last: below the tenants in the popup of the switcher
+        }
+
+        if (user.IsSystemAdmin)
+        {
+            menus.Add(Platform());   // the whole installation, below the administration of one tenant
         }
 
         return menus;
@@ -66,12 +72,33 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
         Group(l["System"].Value,
             ("/Admin/Logs", "activity", l["Activity log"].Value, Permissions.LogsView, false),
             ("/Admin/Branding", "image", l["Branding"].Value, Permissions.BrandingManage, false),
-            ("/Admin/Security", "lock", l["Security"].Value, Permissions.SecurityManage, false),
-            ("/Admin/Backup", "archive", l["Backups"].Value, null, true),
-            ("/Admin/Settings", "settings", l["Server settings"].Value, null, true),
-            ("/Admin/Tenants", "building", l["Tenants"].Value, null, true));
+            ("/Admin/Security", "lock", l["Security"].Value, Permissions.SecurityManage, false));
         return new NavSet(AdminId, l["Administration"].Value, "settings", groups, Href: "/Admin", Last: true);
     }
+
+    /// <summary>
+    /// What belongs to the whole installation and not to one tenant, for system administrators only: the tenants, one list of everything
+    /// across all of them (a row opens in its tenant) and the server itself. The addresses of the tenants, the server settings and the
+    /// backups are the old ones under /Admin; the menu of a page follows from its address.
+    /// </summary>
+    private NavSet Platform()
+        => new(PlatformId, l["Platform"].Value, "server",
+        [
+            new(null, [new(l["Overview"].Value, "/Platform", "dashboard")]),
+            new(l["All tenants"].Value,
+            [
+                new(l["Tenants"].Value, "/Admin/Tenants", "building"),
+                new(l["Connected accounts"].Value, "/Platform/Accounts", "plug"),
+                new(l["Mailboxes"].Value, "/Platform/Mailboxes", "inbox"),
+                new(l["Domains"].Value, "/Platform/Domains", "globe"),
+                new(l["Users"].Value, "/Platform/Users", "users"),
+            ]),
+            new(l["Server"].Value,
+            [
+                new(l["Server settings"].Value, "/Admin/Settings", "settings"),
+                new(l["Backups"].Value, "/Admin/Backup", "archive"),
+            ]),
+        ], Href: "/Platform", Last: true);
 
     private NavSet Account()
     {
@@ -95,11 +122,11 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
 
     /// <summary>
     /// The page of the menus that belongs to <paramref name="path"/>: an address that is the same, or the longest one the path continues
-    /// (<c>/Admin/Mailboxes/Edit</c> belongs to <c>/Admin/Mailboxes</c>). The roots (<c>/Admin</c>, <c>/Account</c>) are only themselves.
+    /// (<c>/Admin/Mailboxes/Edit</c> belongs to <c>/Admin/Mailboxes</c>). The roots (<c>/Admin</c>, <c>/Account</c>, <c>/Platform</c>) are only themselves.
     /// </summary>
     public static string? ActiveHref(IEnumerable<NavSet> sets, string path)
         => sets.SelectMany(s => s.Pages).Select(i => i.Href!)
-            .Where(h => path.Equals(h, StringComparison.OrdinalIgnoreCase) || (h is not ("/Admin" or "/Account") && path.StartsWith(h + "/", StringComparison.OrdinalIgnoreCase)))
+            .Where(h => path.Equals(h, StringComparison.OrdinalIgnoreCase) || (h is not ("/Admin" or "/Account" or "/Platform") && path.StartsWith(h + "/", StringComparison.OrdinalIgnoreCase)))
             .OrderByDescending(h => h.Length)
             .FirstOrDefault();
 
@@ -110,6 +137,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
         NavSet? hit = active is null ? null : menus.FirstOrDefault(m => m.Contains(active));
         hit ??= menus.FirstOrDefault(m => m.Contains(path));
         hit ??= menus.FirstOrDefault(m => path.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase) && m.Id == AdminId);
+        hit ??= menus.FirstOrDefault(m => path.StartsWith("/Platform", StringComparison.OrdinalIgnoreCase) && m.Id == PlatformId);
         hit ??= menus.FirstOrDefault(m => path.StartsWith("/Account", StringComparison.OrdinalIgnoreCase) && m.Id == AccountId);
         return hit ?? menus[0];
     }

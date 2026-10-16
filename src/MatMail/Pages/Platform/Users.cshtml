@@ -1,0 +1,73 @@
+@page "/Platform/Users"
+@model MatMail.Pages.Platform.UsersModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Users";
+    ViewData["Title"] = L["Users of all tenants"].Value;
+    ViewData["Description"] = L["Everybody who can sign in, with the tenant they belong to and the tenants they are a member of besides. A row opens in the tenant they belong to."].Value;
+    string openLabel = L["Open in its tenant"].Value;
+}
+
+<mm-list>
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, login or address…"]' />
+    <mm-toolbar-select name="TenantId" label='@L["Tenant"]' value="@Model.TenantId?.ToString()">
+        <option value="">@L["All tenants"]</option>
+        @foreach (var tenant in Model.Tenants) { <option value="@tenant.Id">@tenant.Name</option> }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+        <option value="locked">@L["Locked"]</option>
+        <option value="admins">@L["System administrators"]</option>
+        <option value="members">@L["Members of other tenants"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="login_desc">@L["Last sign-in"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No users match."]' empty-icon="users">
+    <thead>
+        <tr>
+            <th>@L["User"]</th>
+            <th>@L["Tenant"]</th>
+            <th class="mat-hide-sm">@L["Also a member of"]</th>
+            <th class="mat-hide-sm">@L["Last sign-in"]</th>
+            <th>@L["Status"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Paged.Rows)
+        {
+            string target = "/Admin/Users/Edit?id=" + user.Id;
+            <tr data-row-submit>
+                <td>
+                    <div class="mat-table__name"><span><partial name="_OpenInTenant" model="new OpenInTenant(user.TenantId, target, user.DisplayName)" /> @if (user.IsSystemAdmin) { <mm-badge kind="info" icon="shield">@L["System administrator"]</mm-badge> }<small>@user.LoginName</small></span></div>
+                </td>
+                <td>@Model.TenantName(user.TenantId)</td>
+                <td class="mat-hide-sm">@if (user.Memberships == 0) { <span class="mat-muted">–</span> } else { <span>@L["{0} more tenants", user.Memberships]</span> }</td>
+                <td class="mat-hide-sm">@Fmt.Ago(user.LastLoginDate)</td>
+                <td>
+                    <div class="mat-row">
+                        @if (!user.IsActive) { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }
+                        else if (user.BlockedByDirectory) { <mm-badge kind="warn">@L["Blocked by the directory"]</mm-badge> }
+                        else if (user.LockedUntilDate > DateTime.UtcNow) { <mm-badge kind="warn">@L["Locked"]</mm-badge> }
+                        else { <mm-badge kind="ok">@L["Active"]</mm-badge> }
+                        @if (user.TwoFactor) { <mm-badge kind="info" icon="smartphone">2FA</mm-badge> }
+                    </div>
+                </td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions"><partial name="_OpenInTenant" model='new OpenInTenant(user.TenantId, target, openLabel, OpenInTenant.OpenIcon)' /></div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

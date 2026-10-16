@@ -1,0 +1,89 @@
+@page "/Platform/Mailboxes"
+@model MatMail.Pages.Platform.MailboxesModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Mailboxes";
+    ViewData["Title"] = L["Mailboxes of all tenants"].Value;
+    ViewData["Description"] = L["Every mailbox of every tenant with its addresses and how full it is. A row opens in its tenant."].Value;
+    string openLabel = L["Open in its tenant"].Value;
+}
+
+<mm-list>
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search name, address or owner…"]' />
+    <mm-toolbar-select name="TenantId" label='@L["Tenant"]' value="@Model.TenantId?.ToString()">
+        <option value="">@L["All tenants"]</option>
+        @foreach (var tenant in Model.Tenants) { <option value="@tenant.Id">@tenant.Name</option> }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Type" label='@L["Type"]' value="@Model.Type">
+        <option value="">@L["All types"]</option>
+        <option value="Personal">@L["Personal"]</option>
+        <option value="Shared">@L["Public folder"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+        <option value="full">@L["Full"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="size_desc">@L["Largest first"]</option>
+        <option value="created_desc">@L["Newest first"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No mailboxes match."]' empty-icon="inbox">
+    <thead>
+        <tr>
+            <th>@L["Mailbox"]</th>
+            <th>@L["Tenant"]</th>
+            <th class="mat-hide-sm">@L["Type"]</th>
+            <th>@L["Addresses"]</th>
+            <th class="mat-num mat-hide-sm">@L["Messages"]</th>
+            <th class="mat-num mat-hide-sm">@L["Storage"]</th>
+            <th>@L["Status"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var mailbox in Model.Paged.Rows)
+        {
+            string target = "/Admin/Mailboxes/Edit?id=" + mailbox.Id;
+            <tr data-row-submit>
+                <td>
+                    <div class="mat-table__name"><span><partial name="_OpenInTenant" model="new OpenInTenant(mailbox.TenantId, target, mailbox.Name)" />@if (mailbox.OwnerName is not null) { <small>@mailbox.OwnerName</small> }</span></div>
+                </td>
+                <td>@Model.TenantName(mailbox.TenantId)</td>
+                <td class="mat-hide-sm">
+                    @if (mailbox.Type == MailboxType.Shared) { <mm-badge kind="info" icon="users">@L["Public folder"]</mm-badge> }
+                    else { <mm-badge kind="muted" icon="user">@L["Personal"]</mm-badge> }
+                </td>
+                <td>
+                    @if (mailbox.PrimaryAddress is null) { <span class="mat-muted">–</span> }
+                    else { <span>@mailbox.PrimaryAddress @if (mailbox.AddressCount > 1) { <span class="mat-muted">+@(mailbox.AddressCount - 1)</span> }</span> }
+                </td>
+                <td class="mat-num mat-hide-sm">@mailbox.MessageCount</td>
+                <td class="mat-num mat-hide-sm">
+                    @if (mailbox.QuotaBytes is long quota)
+                    {
+                        int percent = Fmt.Percent(mailbox.UsedBytes, quota);
+                        string state = Fmt.UsageState(mailbox.UsedBytes, quota);
+                        <div class="mat-stack mat-stack--sm">
+                            <span class="mat-nowrap">@Fmt.Size(mailbox.UsedBytes) <span class="mat-muted">/ @Fmt.Size(quota)</span></span>
+                            <mm-meter percent="@percent" state="@state" label='@L["Storage"]' small="true" />
+                        </div>
+                    }
+                    else { <span class="mat-nowrap">@(mailbox.UsedBytes == 0 ? "–" : Fmt.Size(mailbox.UsedBytes))</span> }
+                </td>
+                <td>@if (mailbox.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions"><partial name="_OpenInTenant" model='new OpenInTenant(mailbox.TenantId, target, openLabel, OpenInTenant.OpenIcon)' /></div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

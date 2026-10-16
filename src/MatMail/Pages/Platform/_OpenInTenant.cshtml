@@ -1,0 +1,15 @@
+@model MatMail.Pages.Platform.OpenInTenant
+@* The tenant is switched by a POST of the session, then the page is opened (SwitchTenant takes a local return address only). A click on the row submits it (data-row-form). *@
+<form method="post" action="/Account/SwitchTenant" class="mm-open-form" data-no-busy data-row-form>
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="tenantId" value="@Model.TenantId" />
+    <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+    @if (Model.Icon is null)
+    {
+        <button type="submit" class="mm-linkbutton">@Model.Text</button>
+    }
+    else
+    {
+        <button type="submit" class="mat-btn mat-btn--ghost mat-btn--icon mat-btn--sm" data-tip="@Model.Text" aria-label="@Model.Text"><mm-icon name="@Model.Icon" /></button>
+    }
+</form>

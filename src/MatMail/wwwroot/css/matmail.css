@@ -16,6 +16,15 @@ html[data-density="compact"] .mat-table th { padding-top: var(--mat-space-2); pa
 .mm-brand-logo { display: block; max-width: 100%; max-height: 40px; width: auto; height: auto; object-fit: contain; }
 .mm-brand-logo--auth { max-height: 56px; }
 
+/* A button that looks like the link of a row title (the platform lists switch the tenant by a POST before they open a page). */
+.mm-open-form { display: inline; margin: 0; }
+.mm-linkbutton { background: none; border: 0; padding: 0; font: inherit; color: var(--mat-accent-text); cursor: pointer; text-align: left; }
+.mm-linkbutton:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mm-linkbutton:focus-visible { outline: none; box-shadow: var(--mat-focus-ring); border-radius: var(--mat-radius-xs); }
+
+/* Where an administrative page applies: to the tenant the person works in, or to the whole installation (the platform). */
+.mm-scope { margin-left: auto; white-space: nowrap; }
+
 /* The mail client fills the whole content area: no page padding, no scrolling of the page itself (the panes scroll). */
 .mat-app[data-area="mail"] .mat-main { overflow: hidden; }
 .mat-page.mm-flush { flex: 1 1 auto; min-height: 0; max-width: none; gap: 0; padding: 0; }

@@ -1,0 +1,61 @@
+@page "/Platform/Domains"
+@model MatMail.Pages.Platform.DomainsModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Domains";
+    ViewData["Title"] = L["Domains of all tenants"].Value;
+    ViewData["Description"] = L["Every domain of every tenant and the tenant it belongs to (a domain exists once on the server). A row opens in its tenant."].Value;
+    string openLabel = L["Open in its tenant"].Value;
+}
+
+<mm-list>
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search domains…"]' />
+    <mm-toolbar-select name="TenantId" label='@L["Tenant"]' value="@Model.TenantId?.ToString()">
+        <option value="">@L["All tenants"]</option>
+        @foreach (var tenant in Model.Tenants) { <option value="@tenant.Id">@tenant.Name</option> }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="active">@L["Active"]</option>
+        <option value="inactive">@L["Inactive"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="name_asc">@L["Name (A–Z)"]</option>
+        <option value="name_desc">@L["Name (Z–A)"]</option>
+        <option value="addresses_desc">@L["Most addresses"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["No domains yet."]' empty-icon="globe">
+    <thead>
+        <tr>
+            <th>@L["Domain"]</th>
+            <th>@L["Tenant"]</th>
+            <th class="mat-num mat-hide-sm">@L["Addresses"]</th>
+            <th class="mat-hide-sm">@L["Unknown addresses"]</th>
+            <th>@L["Status"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var domain in Model.Paged.Rows)
+        {
+            string target = "/Admin/Domains/Edit?id=" + domain.Id;
+            <tr data-row-submit>
+                <td>
+                    <div class="mat-table__name"><span><partial name="_OpenInTenant" model="new OpenInTenant(domain.TenantId, target, domain.Name)" />@if (!string.IsNullOrEmpty(domain.Notes)) { <small>@domain.Notes</small> }</span></div>
+                </td>
+                <td>@Model.TenantName(domain.TenantId)</td>
+                <td class="mat-num mat-hide-sm">@domain.Addresses</td>
+                <td class="mat-hide-sm">@(domain.CatchAllMailbox is null ? L["Go to “Unassigned”"].Value : domain.CatchAllMailbox)</td>
+                <td>@if (domain.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions"><partial name="_OpenInTenant" model='new OpenInTenant(domain.TenantId, target, openLabel, OpenInTenant.OpenIcon)' /></div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

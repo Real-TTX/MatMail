@@ -214,6 +214,14 @@
                         }
                     </ol>
                 </nav>
+                @if (current.Id == ShellMenus.PlatformId)
+                {
+                    <span class="mm-scope"><mm-badge kind="info" icon="server">@L["Platform: all tenants"]</mm-badge></span>
+                }
+                else if (current.Id == ShellMenus.AdminId && !string.IsNullOrEmpty(CurrentUser.TenantName))
+                {
+                    <span class="mm-scope"><mm-badge kind="muted" icon="building">@L["Tenant"]: @CurrentUser.TenantName</mm-badge></span>
+                }
                 @if (IsSectionDefined("HeaderCenter"))
                 {
                     @* What belongs to the whole page and not to one place in it (the search of the mail client) stands at the right end of the bar (SHELL-17). *@

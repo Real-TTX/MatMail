@@ -218,6 +218,9 @@ public partial class ToolkitTests
     [InlineData("/admin/mailboxes/addresses", "/Admin/Mailboxes")]
     [InlineData("/Admin", "/Admin")]
     [InlineData("/Admin/Backup/Plans", "/Admin/Backup")]
+    [InlineData("/Admin/Tenants/Edit", "/Admin/Tenants")]
+    [InlineData("/Platform", "/Platform")]
+    [InlineData("/Platform/Accounts", "/Platform/Accounts")]
     [InlineData("/Account/Rules/Edit", "/Account/Rules")]
     [InlineData("/Account", "/Account")]
     [InlineData("/Nowhere", null)]
@@ -227,7 +230,11 @@ public partial class ToolkitTests
     [Theory]
     [InlineData("/Mail", "mail")]
     [InlineData("/Admin/Users/Edit", "admin")]
-    [InlineData("/Admin/Backup/Plan", "admin")]
+    [InlineData("/Admin/Backup/Plan", "platform")]
+    [InlineData("/Admin/Tenants/Edit", "platform")]
+    [InlineData("/Admin/Settings", "platform")]
+    [InlineData("/Platform", "platform")]
+    [InlineData("/Platform/Users", "platform")]
     [InlineData("/Account/Security", "account")]
     [InlineData("/Account/Rules/Edit", "account")]
     [InlineData("/", "mail")]
@@ -270,8 +277,8 @@ public partial class ToolkitTests
         Toolkit toolkit = LoadToolkit();
         IReadOnlyList<NavSet> menus = ShellMenusOfASystemAdministrator();
 
-        Assert.Equal(["mail", "account", "admin"], menus.Select(m => m.Id));   // the administration is last: below the tenants in the popup of the switcher
-        Assert.Equal(["admin"], menus.Where(m => m.Last).Select(m => m.Id));
+        Assert.Equal(["mail", "account", "admin", "platform"], menus.Select(m => m.Id));   // the administration of a tenant and the platform come last: below the tenants in the popup of the switcher
+        Assert.Equal(["admin", "platform"], menus.Where(m => m.Last).Select(m => m.Id));
         foreach (NavSet menu in menus)
         {
             Assert.True(toolkit.HasIcon(menu.Icon), $"menu {menu.Id}: icon {menu.Icon}");
@@ -296,10 +303,43 @@ public partial class ToolkitTests
         }
     }
 
+    [Fact]
+    public void The_icon_of_the_button_that_opens_a_row_in_its_tenant_exists()
+        => Assert.True(LoadToolkit().HasIcon(MatMail.Pages.Platform.OpenInTenant.OpenIcon));
+
+    [Fact]
+    public void The_platform_is_for_system_administrators_and_holds_what_belongs_to_the_whole_installation()
+    {
+        IReadOnlyList<NavSet> menus = ShellMenusOfASystemAdministrator();
+        string[] platform = menus.Single(m => m.Id == "platform").Pages.Select(p => p.Href!).ToArray();
+        string[] administration = menus.Single(m => m.Id == "admin").Pages.Select(p => p.Href!).ToArray();
+
+        foreach (string wholeInstallation in new[] { "/Admin/Tenants", "/Admin/Settings", "/Admin/Backup", "/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users" })
+        {
+            Assert.Contains(wholeInstallation, platform);
+            Assert.DoesNotContain(wholeInstallation, administration);
+        }
+
+        // somebody who administers a tenant has the administration and nothing of the platform
+        var principal = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(
+            [new System.Security.Claims.Claim(AppClaims.Permission, Permissions.UsersManage), new System.Security.Claims.Claim(AppClaims.Permission, Permissions.MailUse)], "test"));
+        var accessor = new Microsoft.AspNetCore.Http.HttpContextAccessor { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext { User = principal } };
+        IReadOnlyList<NavSet> ofATenantAdministrator = new ShellMenus(new CurrentUser(accessor), new EchoLocalizer()).ForUser();
+        Assert.Equal(["mail", "account", "admin"], ofATenantAdministrator.Select(m => m.Id));
+
+        // and the folder of the platform is closed to everybody else, like the pages that moved there
+        string program = File.ReadAllText(Path.Combine(Source, "Program.cs"));
+        foreach (string folder in new[] { "/Platform", "/Admin/Tenants", "/Admin/Settings", "/Admin/Backup" })
+        {
+            Assert.Contains($"AuthorizeFolder(\"{folder}\", Permissions.SystemAdminPolicy)", program);
+        }
+    }
+
     private static IReadOnlyList<NavSet> Menus() =>
     [
         new("mail", "Mail", "mail", [new(null, [new("Open mail", "/Mail", "inbox")])], Custom: true, Paths: ["/Mail"]),
-        new("admin", "Administration", "settings", [new(null, [new("Dashboard", "/Admin", "dashboard")]), new("Mail", [new("Mailboxes", "/Admin/Mailboxes", "inbox"), new("Backups", "/Admin/Backup", "archive")])]),
+        new("admin", "Administration", "settings", [new(null, [new("Dashboard", "/Admin", "dashboard")]), new("Mail", [new("Mailboxes", "/Admin/Mailboxes", "inbox")])]),
+        new("platform", "Platform", "server", [new(null, [new("Overview", "/Platform", "dashboard")]), new("All tenants", [new("Tenants", "/Admin/Tenants", "building"), new("Users", "/Platform/Users", "users"), new("Accounts", "/Platform/Accounts", "plug")]), new("Server", [new("Server settings", "/Admin/Settings", "settings"), new("Backups", "/Admin/Backup", "archive")])]),
         new("account", "My account", "user", [new(null, [new("Profile", "/Account", "user"), new("Mail rules", "/Account/Rules", "filter")])], Paths: ["/Account"]),
     ];
 

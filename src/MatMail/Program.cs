@@ -160,6 +160,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AllowAnonymousToPage("/Account/Language");
 
         // One line per admin area: who may open it.
+        options.Conventions.AuthorizeFolder("/Platform", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Tenants", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Settings", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Backup", Permissions.SystemAdminPolicy);

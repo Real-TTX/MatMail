@@ -61,7 +61,7 @@ public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, 
         }
 
         ticket.Clear(HttpContext);
-        await signIn.SignInAsync(outcome.User, pending.Remember);
+        await signIn.SignInAsync(outcome.User, pending.Remember, pending.IdentityToken);
 
         if (outcome.Result.UsedRecoveryCode)
         {

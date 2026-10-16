@@ -88,6 +88,25 @@ public sealed class OutboundQueue
         return changed > 0;
     }
 
+    /// <summary>
+    /// Everything that waits for its next attempt and everything that was given up on is tried again now (the platform's "send now").
+    /// Returns how many messages that are; what is being sent right now is left alone.
+    /// </summary>
+    public async Task<int> RetryAllAsync(CancellationToken cancel = default)
+    {
+        int changed = await _db.OutboundMessages
+            .Where(o => o.Status == OutboundStatus.Failed || o.Status == OutboundStatus.Pending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(o => o.Status, OutboundStatus.Pending)
+                .SetProperty(o => o.NextAttemptDate, DateTime.UtcNow), cancel);
+        if (changed > 0)
+        {
+            _signal.Notify();
+        }
+
+        return changed;
+    }
+
     public async Task<bool> CancelAsync(long id, CancellationToken cancel = default)
         => await _db.OutboundMessages.Where(o => o.Id == id && o.Status == OutboundStatus.Pending)
                .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OutboundStatus.Cancelled), cancel) > 0;

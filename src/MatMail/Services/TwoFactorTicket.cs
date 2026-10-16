@@ -6,7 +6,8 @@ namespace MatMail.Services;
 
 /// <summary>The first step of a web sign-in that waits for the code: who passed the password, and what the sign-in is meant to do afterwards.</summary>
 /// <param name="TenantSlug">The tenant sign-in page the person came from (/t/name), so the second step looks the same.</param>
-public sealed record PendingSignIn(long UserId, bool Remember, string? ReturnUrl, string? TenantSlug);
+/// <param name="IdentityToken">The first step was the sign-in through MatIdentity: its ID token, for the session (the sign-out there needs it).</param>
+public sealed record PendingSignIn(long UserId, bool Remember, string? ReturnUrl, string? TenantSlug, string? IdentityToken = null);
 
 /// <summary>
 /// The proof that a password was right, carried from the password page to the page that asks for the code. A cookie that only the
@@ -32,7 +33,15 @@ public sealed class TwoFactorTicket
         // What the address bar sent along is not allowed to make the cookie too big for the browser.
         PendingSignIn bounded = pending with { ReturnUrl = Bounded(pending.ReturnUrl, 1000), TenantSlug = Bounded(pending.TenantSlug, 64) };
         string value = _protector.Protect(JsonSerializer.Serialize(bounded), lifetime);
-        http.Response.Cookies.Append(CookieName, value, Options(http, lifetime));
+        // After MatIdentity the browser arrives through a redirect chain that started at another site: a Strict cookie would not be sent
+        // to the code page, so that ticket is Lax (it still opens nothing but the code page).
+        CookieOptions options = Options(http, lifetime);
+        if (pending.IdentityToken is not null)
+        {
+            options.SameSite = SameSiteMode.Lax;
+        }
+
+        http.Response.Cookies.Append(CookieName, value, options);
     }
 
     private static string? Bounded(string? text, int maxLength) => text is { Length: > 0 } && text.Length <= maxLength ? text : null;

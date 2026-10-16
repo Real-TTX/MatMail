@@ -51,6 +51,8 @@ public static class ServiceRegistration
         services.AddScoped<MembershipService>();
         services.AddScoped<MailboxService>();
         services.AddScoped<SetupService>();
+        services.AddScoped<ExternalSignInService>();
+        services.AddScoped<InstanceOverviewService>();
 
         services.AddMessaging();
         services.AddPushNotifications();

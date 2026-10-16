@@ -123,6 +123,10 @@ public class MatMailDbContext : DbContext
             e.Property(x => x.DirectoryUid).HasMaxLength(100);
             e.HasIndex(x => new { x.DirectoryId, x.DirectoryUid });
 
+            // One user per person of MatIdentity (rows without a subject are left alone by the index: NULLs are distinct).
+            e.Property(x => x.ExternalSubject).HasMaxLength(200);
+            e.HasIndex(x => x.ExternalSubject).IsUnique();
+
             // A directory that is deleted leaves its people as local users (an administrator gives them a password).
             e.HasOne(x => x.DirectoryConnection).WithMany().HasForeignKey(x => x.DirectoryId).OnDelete(DeleteBehavior.SetNull);
 

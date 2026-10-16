@@ -108,6 +108,13 @@ public class User : AuditedEntity, ITenantEntity
     /// </summary>
     public DateTime? DirectoryDisabledDate { get; set; }
 
+    /// <summary>
+    /// The claim <c>sub</c> of the person at MatIdentity (the sign-in of the Mat platform, on when <c>MATIDENTITY_AUTHORITY</c> is set): the person
+    /// is found by it at every sign-in there. Null: never signed in through MatIdentity. Only the web sign-in uses it; IMAP and SMTP keep
+    /// taking the password or an app password of this user.
+    /// </summary>
+    public string? ExternalSubject { get; set; }
+
     public DateTime? LastLoginDate { get; set; }
     public int FailedLoginCount { get; set; }
     public DateTime? LockedUntilDate { get; set; }
@@ -131,6 +138,9 @@ public class UserSession : AuditedEntity
     public DateTime LastSeenDate { get; set; }
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
+
+    /// <summary>The ID token of a sign-in through MatIdentity: the sign-out ends the session there too with it (<c>id_token_hint</c>). Null for every other sign-in.</summary>
+    public string? IdentityToken { get; set; }
 }
 
 /// <summary>A named set of permissions inside a tenant (see <see cref="MatMail.Services.Permissions"/>).</summary>

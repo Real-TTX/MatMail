@@ -317,7 +317,8 @@ public sealed class SignInService
     }
 
     /// <summary>Creates the session row and the cookie for an already verified user.</summary>
-    public async Task SignInAsync(User user, bool persistent = true)
+    /// <param name="identityToken">After a sign-in through MatIdentity: its ID token, kept with the session for the sign-out there.</param>
+    public async Task SignInAsync(User user, bool persistent = true, string? identityToken = null)
     {
         HttpContext http = _http.HttpContext ?? throw new InvalidOperationException("No active HttpContext.");
         DateTime now = DateTime.UtcNow;
@@ -332,6 +333,7 @@ public sealed class SignInService
             LastSeenDate = now,
             IpAddress = http.ClientAddress(),
             UserAgent = userAgent.Length == 0 ? null : userAgent[..Math.Min(userAgent.Length, 512)],
+            IdentityToken = string.IsNullOrEmpty(identityToken) ? null : identityToken,
             CreateUserId = user.Id,
         };
 
@@ -346,18 +348,26 @@ public sealed class SignInService
             BuildPrincipal(snapshot, session.Token),
             new AuthenticationProperties { IsPersistent = persistent, ExpiresUtc = session.ExpiresDate });
 
-        await _log.InfoAsync(ActivityCategory.Auth, $"'{user.LoginName}' signed in.", tenantId: user.TenantId, userId: user.Id, remoteIp: session.IpAddress);
+        string how = session.IdentityToken is null ? string.Empty : " through MatIdentity";
+        await _log.InfoAsync(ActivityCategory.Auth, $"'{user.LoginName}' signed in{how}.", tenantId: user.TenantId, userId: user.Id, remoteIp: session.IpAddress);
     }
 
-    public async Task SignOutAsync()
+    /// <summary>
+    /// Ends the session of this request (the row and the cookie). Returns the ID token of MatIdentity when the session came from a sign-in
+    /// there, so that the sign-out page can end the session at MatIdentity as well; null otherwise.
+    /// </summary>
+    public async Task<string?> SignOutAsync()
     {
         HttpContext http = _http.HttpContext ?? throw new InvalidOperationException("No active HttpContext.");
+        string? identityToken = null;
         if (Guid.TryParse(http.User.FindFirstValue(AppClaims.SessionToken), out Guid token))
         {
+            identityToken = await _db.UserSessions.Where(s => s.Token == token).Select(s => s.IdentityToken).FirstOrDefaultAsync();
             await RevokeAsync(token);
         }
 
         await http.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return identityToken;
     }
 
     /// <summary>Deletes a session; the cookie that carries its token stops working immediately.</summary>

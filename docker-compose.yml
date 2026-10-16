@@ -13,6 +13,13 @@ services:
       - "993:993"     # IMAPS
     volumes:
       - matmail-data:/data
+    # The Mat platform (docs: "The Mat platform" in the README). None of these is needed; Mattiverse sets them when it installs MatMail.
+    # environment:
+    #   MAT_API_KEY: ""                    # the key of /api/* (Mattiverse sets it)
+    #   MATIDENTITY_AUTHORITY: ""          # https://id.example.com: sign-in through MatIdentity
+    #   MATIDENTITY_CLIENT_ID: "matmail"
+    #   MATIDENTITY_CLIENT_SECRET: ""
+    #   MATIDENTITY_INTERNAL_URL: ""       # http://matidentity:2300 inside Docker
 
   db:
     image: postgres:17

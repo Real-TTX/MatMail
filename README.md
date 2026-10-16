@@ -382,6 +382,13 @@ services:
       - "993:993"     # IMAPS
     volumes:
       - matmail-data:/data
+    # The Mat platform (docs: "The Mat platform" in the README). None of these is needed; Mattiverse sets them when it installs MatMail.
+    # environment:
+    #   MAT_API_KEY: ""                    # the key of /api/* (Mattiverse sets it)
+    #   MATIDENTITY_AUTHORITY: ""          # https://id.example.com: sign-in through MatIdentity
+    #   MATIDENTITY_CLIENT_ID: "matmail"
+    #   MATIDENTITY_CLIENT_SECRET: ""
+    #   MATIDENTITY_INTERNAL_URL: ""       # http://matidentity:2300 inside Docker
 
   db:
     image: postgres:17
@@ -486,6 +493,11 @@ service:
 | `MATMAIL_RESTORE_FROM`, `MATMAIL_RESTORE_PASSPHRASE` | – | restore this backup file when the installation is still empty (see below) |
 | `MATMAIL_ADMIN_USER`, `MATMAIL_ADMIN_PASSWORD` | – | create the first tenant and administrator unattended |
 | `MATMAIL_DATA` | `/data` | data directory |
+| `MAT_API_KEY` | – | the key of the platform API (`X-Api-Key` on `/api/state`, `/api/configure`, `/api/actions`); without it only a token of MatIdentity is accepted. Mattiverse sets it |
+| `MATIDENTITY_AUTHORITY` | – | the address of MatIdentity (`https://id.example.com`): set = the web sign-in goes through MatIdentity, see *The Mat platform* below |
+| `MATIDENTITY_CLIENT_ID` | `matmail` | the client of MatMail in MatIdentity (also the audience of the tokens `/api` accepts) |
+| `MATIDENTITY_CLIENT_SECRET` | – | its secret |
+| `MATIDENTITY_INTERNAL_URL` | – | where MatMail reaches MatIdentity from inside Docker (`http://matidentity:2300`); the browser keeps using `MATIDENTITY_AUTHORITY` |
 
 ### After the first sign-in
 
@@ -508,6 +520,33 @@ in the account menu.
 - **A lost second factor:** an administrator resets it on the user's page (*People → Users*). If the
   only administrator lost the phone and the recovery codes:
   `DELETE FROM "UserTotp" WHERE "UserId" = (SELECT "Id" FROM "User" WHERE "LoginName" = '…');`
+
+### The Mat platform: Mattiverse and MatIdentity
+
+MatMail speaks the platform contract of the Mat apps (MatDesign `docs/PLATFORM.md`, through the shared package MatPlatform in
+`src/MatMail/MatPlatform`, a copy that is never edited here). Mattiverse uses it to show MatMail, watch it and set up the basics without
+knowing it beforehand; nothing of it is needed to run MatMail on its own. It looks at the **installation**, never at one tenant.
+
+| Endpoint | Access | What it is |
+|---|---|---|
+| `GET /api` | anonymous | the description: pages *Overview* and *Settings*, the tiles, fields and actions below, the roles (`de`/`en` after `Accept-Language`) |
+| `GET /api/health` | anonymous | `ok` / `degraded` / `down` with the checks `database`, `setup` (no administrator yet), `accounts` (a connected account fails), `backup` (the last scheduled backup failed); 200, or 503 for `down`. The container health check asks it |
+| `GET /api/state`, `/api/state/{key}` | key or token | the tiles: tenants, users, mailboxes, domains, messages, storage used, outgoing mail waiting and given up, unassigned mail, connected accounts and those with errors, last received, last sent, last backup |
+| `GET`/`PUT /api/configure` | key or token | nine server settings of `app.json` (the same as *Server settings*, they apply after a restart): host name, language, time zone, largest message, largest upload, direct delivery, emptying trash and junk, the days of the transfer log |
+| `POST /api/actions/fetchMail`, `/retryQueue` | key or token | fetch all connected accounts now; send everything waiting or given up in the outgoing queue again |
+
+The key is `MAT_API_KEY` in the header `X-Api-Key`; with MatIdentity configured, an access token of MatIdentity for the audience
+`matmail` works too. Changes through the API are written to the activity log with the caller.
+
+**Sign-in through MatIdentity.** With `MATIDENTITY_AUTHORITY` set, the sign-in page goes straight on to MatIdentity (OpenID Connect,
+code with PKCE; redirect address `/signin-oidc`, signed-out address `/signout-callback-oidc`), and the sign-out ends the session there
+too. The local form stays at `/Account/Login?local=1` (the way in when MatIdentity is down). A person is found by the claim `sub`; at the
+first sign-in the one user whose login name, contact address or personal mailbox address is the person's e-mail address is linked, else
+a new user is made in the first tenant (no mailbox: an administrator gives one). When MatIdentity decides the role, the claim `role` is
+followed at every sign-in: `admin` = system administrator, `tenant-admin` = the role *Administrator* of the user's tenant, `user` = the
+role *User*. Two-factor authentication of MatMail still asks for the code. **Mail programs are not affected:** IMAP and SMTP sign in with
+the user's password or an app password exactly as before (a user made by MatIdentity has no password anybody knows: for mail
+programs, and for app passwords, an administrator gives it one). Without the variable nothing changes.
 
 ### Directories in detail
 

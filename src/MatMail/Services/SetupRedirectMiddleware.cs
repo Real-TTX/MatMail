@@ -61,6 +61,13 @@ public sealed class SetupRedirectMiddleware
             return false;
         }
 
+        // The platform contract (/api, /api/health, /api/state, …) answers before the set-up too: Mattiverse watches a fresh installation, and a
+        // database that is down must not turn the health into a redirect. The API of the web client (/api/mail) is not part of it.
+        if (IsPlatform(path))
+        {
+            return true;
+        }
+
         return value.StartsWith("/css", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/js", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/icons", StringComparison.OrdinalIgnoreCase)
@@ -69,4 +76,9 @@ public sealed class SetupRedirectMiddleware
             || value.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase)
             || Path.HasExtension(value);
     }
+
+    /// <summary>An address of the platform contract: <c>/api</c> itself or one of <see cref="MatPlatform.MatPlatformEndpoints.Paths"/> and below.</summary>
+    public static bool IsPlatform(PathString path)
+        => path.Equals("/api", StringComparison.OrdinalIgnoreCase)
+           || MatPlatform.MatPlatformEndpoints.Paths.Any(p => path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase));
 }

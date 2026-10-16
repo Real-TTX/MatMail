@@ -9,17 +9,43 @@
     <partial name="_AuthBrand" />
     <div class="mat-stack mat-stack--sm">
         <h1>@L["Sign in"]</h1>
-        <p class="mat-muted">@L["Use your login name or e-mail address and your password."]</p>
+        @if (Model.ShowLocalForm)
+        {
+            <p class="mat-muted">@L["Use your login name or e-mail address and your password."]</p>
+        }
+        else
+        {
+            <p class="mat-muted">@L["This server signs you in through MatIdentity."]</p>
+        }
     </div>
 
-    <mm-form>
-        <input type="hidden" asp-for="ReturnUrl" />
-        <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" autofocus="autofocus" />
-        <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="current-password" reveal="true" />
-        <mm-field asp-for="Input.Remember" kind="checkbox" label='@L["Stay signed in"]' />
+    @if (Model.SsoError)
+    {
+        <mm-alert kind="warn" id="login-sso-error">@L["The sign-in through MatIdentity did not work. You can sign in here with your login name and password, or try MatIdentity again."]</mm-alert>
+    }
 
+    @if (Model.ShowLocalForm)
+    {
+        <mm-form id="login-form">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <mm-field asp-for="Input.LoginName" label='@L["Login name"]' autocomplete="username" autofocus="autofocus" />
+            <mm-field asp-for="Input.Password" kind="password" label='@L["Password"]' autocomplete="current-password" reveal="true" />
+            <mm-field asp-for="Input.Remember" kind="checkbox" label='@L["Stay signed in"]' />
+
+            <mm-button-row>
+                <mm-button variant="primary" type="submit" icon="login">@L["Sign in"]</mm-button>
+            </mm-button-row>
+        </mm-form>
+    }
+
+    @if (Model.IdentityEnabled)
+    {
         <mm-button-row>
-            <mm-button variant="primary" type="submit" icon="login">@L["Sign in"]</mm-button>
+            <mm-button variant="@(Model.ShowLocalForm ? "secondary" : "primary")" href="@Model.IdentitySignInUrl" icon="key">@L["Sign in with MatIdentity"]</mm-button>
+            @if (!Model.ShowLocalForm)
+            {
+                <mm-button variant="secondary" href="@Model.LocalSignInUrl" icon="user">@L["Sign in with a password"]</mm-button>
+            }
         </mm-button-row>
-    </mm-form>
+    }
 </div>

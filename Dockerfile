@@ -45,7 +45,8 @@ EXPOSE 9933 25 587 465 143 993
 COPY --from=build /app/publish .
 USER $APP_UID
 
-# The app checks itself (http or https as configured), so the image needs no extra tools.
+# The app checks itself: --healthcheck asks /api/health, the health of the Mat platform contract (200 for ok and degraded, 503 for down),
+# over http or https as configured, so the image needs no curl.
 HEALTHCHECK --interval=30s --timeout=8s --start-period=40s --retries=3 \
     CMD ["dotnet", "MatMail.dll", "--healthcheck"]
 

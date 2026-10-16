@@ -711,6 +711,7 @@
   <data name="Mark all as read" xml:space="preserve"><value>Alle als gelesen markieren</value></data>
   <data name="Mark as read" xml:space="preserve"><value>Als gelesen markieren</value></data>
   <data name="Mark as unread" xml:space="preserve"><value>Als ungelesen markieren</value></data>
+  <data name="MatIdentity sent no usable subject." xml:space="preserve"><value>MatIdentity hat keine verwendbare Kennung (sub) geschickt.</value></data>
   <data name="MatMail can run like an app on your phone or computer: it opens in a window of its own, it still opens without a connection (what you write is kept and sent as soon as you are back online) and it can tell you when mail arrives." xml:space="preserve"><value>MatMail läuft auf Telefon oder Computer wie eine App: in einem eigenen Fenster, es öffnet sich auch ohne Verbindung (was Sie schreiben, wird aufbewahrt und gesendet, sobald Sie wieder online sind) und es kann Ihnen Bescheid geben, wenn Mail ankommt.</value></data>
   <data name="MatMail connects to the share itself (SMB 2.0.2 to 3.0.2, port 445, signed and encrypted when the server asks for it): nothing has to be mounted." xml:space="preserve"><value>MatMail verbindet sich selbst mit der Freigabe (SMB 2.0.2 bis 3.0.2, Port 445, signiert und verschlüsselt, wenn der Server es verlangt): Es muss nichts eingebunden werden.</value></data>
   <data name="MatMail restarts now and restores the backup. This page leaves for the progress page by itself. If nothing happens for a minute, start MatMail again (a container needs a restart policy such as “unless-stopped”)." xml:space="preserve"><value>MatMail startet jetzt neu und stellt das Backup wieder her. Diese Seite wechselt von selbst zur Fortschrittsseite. Passiert eine Minute lang nichts, starten Sie MatMail erneut (ein Container braucht eine Neustart-Richtlinie wie „unless-stopped“).</value></data>
@@ -1151,6 +1152,8 @@
   <data name="Show the subject of a message in the mail transfer log" xml:space="preserve"><value>Betreff einer Nachricht im Mail-Transferprotokoll anzeigen</value></data>
   <data name="Show trimmed content" xml:space="preserve"><value>Ausgeblendeten Inhalt anzeigen</value></data>
   <data name="Sign in" xml:space="preserve"><value>Anmelden</value></data>
+  <data name="Sign in with a password" xml:space="preserve"><value>Mit Passwort anmelden</value></data>
+  <data name="Sign in with MatIdentity" xml:space="preserve"><value>Mit MatIdentity anmelden</value></data>
   <data name="Sign out" xml:space="preserve"><value>Abmelden</value></data>
   <data name="Sign out all other sessions" xml:space="preserve"><value>Alle anderen Sitzungen abmelden</value></data>
   <data name="Sign out all other sessions?" xml:space="preserve"><value>Alle anderen Sitzungen abmelden?</value></data>
@@ -1393,6 +1396,7 @@
   <data name="The set-up has to be started again." xml:space="preserve"><value>Die Einrichtung muss neu gestartet werden.</value></data>
   <data name="The settings were saved. Ports and server switches apply after a restart of the container." xml:space="preserve"><value>Die Einstellungen wurden gespeichert. Ports und Server-Schalter gelten nach einem Neustart des Containers.</value></data>
   <data name="The sign-in name may only contain lower-case letters, digits and hyphens (3 to 40 characters)." xml:space="preserve"><value>Der Anmeldename darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten (3 bis 40 Zeichen).</value></data>
+  <data name="The sign-in through MatIdentity did not work. You can sign in here with your login name and password, or try MatIdentity again." xml:space="preserve"><value>Die Anmeldung über MatIdentity hat nicht geklappt. Sie können sich hier mit Anmeldename und Passwort anmelden oder MatIdentity noch einmal versuchen.</value></data>
   <data name="The sign-in took too long. Please start again." xml:space="preserve"><value>Die Anmeldung hat zu lange gedauert. Bitte beginnen Sie von vorn.</value></data>
   <data name="The signature is too large; use smaller pictures." xml:space="preserve"><value>Die Signatur ist zu groß; verwenden Sie kleinere Bilder.</value></data>
   <data name="The signature was created." xml:space="preserve"><value>Die Signatur wurde angelegt.</value></data>
@@ -1427,6 +1431,7 @@
   <data name="The uploaded file" xml:space="preserve"><value>Die hochgeladene Datei</value></data>
   <data name="The uploaded file is not there any more. Upload it again." xml:space="preserve"><value>Die hochgeladene Datei ist nicht mehr da. Laden Sie sie erneut hoch.</value></data>
   <data name="The user does not exist." xml:space="preserve"><value>Der Benutzer existiert nicht.</value></data>
+  <data name="The user is disabled." xml:space="preserve"><value>Der Benutzer ist deaktiviert.</value></data>
   <data name="The user must choose a new password at the next sign-in" xml:space="preserve"><value>Der Benutzer muss bei der nächsten Anmeldung ein neues Passwort wählen</value></data>
   <data name="The user name is required." xml:space="preserve"><value>Der Benutzername ist erforderlich.</value></data>
   <data name="The user was created." xml:space="preserve"><value>Der Benutzer wurde angelegt.</value></data>
@@ -1467,6 +1472,7 @@
   <data name="This name is reserved for a system folder." xml:space="preserve"><value>Dieser Name ist für einen Systemordner reserviert.</value></data>
   <data name="This page does not exist." xml:space="preserve"><value>Diese Seite gibt es nicht.</value></data>
   <data name="This role is still assigned to users." xml:space="preserve"><value>Diese Rolle ist noch Benutzern zugewiesen.</value></data>
+  <data name="This server signs you in through MatIdentity." xml:space="preserve"><value>Dieser Server meldet Sie über MatIdentity an.</value></data>
   <data name="This server uses a self-signed certificate: your mail program asks once whether to trust it. An administrator can install a certificate of a trusted authority under Server settings." xml:space="preserve"><value>Dieser Server verwendet ein selbstsigniertes Zertifikat: Ihr Mailprogramm fragt einmalig, ob es ihm vertrauen soll. Ein Administrator kann unter Servereinstellungen ein Zertifikat einer vertrauenswürdigen Stelle installieren.</value></data>
   <data name="This session" xml:space="preserve"><value>Diese Sitzung</value></data>
   <data name="This sign-in name is already taken." xml:space="preserve"><value>Dieser Anmeldename ist bereits vergeben.</value></data>

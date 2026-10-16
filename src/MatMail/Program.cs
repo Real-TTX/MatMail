@@ -10,9 +10,12 @@ using MatMail.MailServer.Imap;
 using MatMail.MailServer.Smtp;
 using MatMail.MailSync;
 using MatMail.Messaging;
+using MatMail.Platform;
 using MatMail.Push;
 using MatMail.Services;
+using MatPlatform;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -80,6 +83,13 @@ builder.Services.AddHostedService<PushNotifier>();
 builder.Services.AddHostedService<BackupScheduler>();
 builder.Services.AddHostedService<DirectorySyncService>();
 
+// The Mat platform contract (MatDesign docs/PLATFORM.md): /api, /api/health, /api/state, /api/configure, /api/actions, with MAT_API_KEY and the optional
+// MATIDENTITY_* variables. The package MatPlatform (a copy in MatPlatform/) serves the endpoints; MailPlatform describes MatMail and supplies the values.
+// Without MATIDENTITY_AUTHORITY nothing about the sign-in changes.
+MatPlatformSettings platform = builder.AddMatPlatform<MailPlatform>(
+    MailPlatform.Describe,
+    options => options.DefaultLanguage = config.Display.Culture.StartsWith("de", StringComparison.OrdinalIgnoreCase) ? "de" : "en");
+
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDir, "keys")))
     .SetApplicationName("MatMail");
@@ -104,7 +114,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
         options.ExpireTimeSpan = SignInService.SessionLifetime;
         options.EventsType = typeof(SessionCookieEvents);
+    })
+    // Sign-in through MatIdentity, only when MATIDENTITY_AUTHORITY is set: the person gets MatMail's own session (MailIdentityUsers).
+    .AddMatIdentitySignIn<MailIdentityUsers>(platform, options =>
+    {
+        options.CookieScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
     });
+
+// A user with two-factor authentication enters the code after MatIdentity too (no session without it).
+builder.Services.PostConfigure<OpenIdConnectOptions>(MatIdentitySignIn.Scheme, MailIdentityUsers.SendToSecondStep);
 
 // API calls answer 401/403 instead of redirecting to the login page.
 builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme, options =>
@@ -237,6 +257,7 @@ app.UseStatusCodePagesWithReExecute("/Error", "?code={0}");
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();   // the anonymous endpoints of the platform (/api, /api/health) are rate limited
 app.UseAuthentication();
 app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 app.UseMiddleware<SetupRedirectMiddleware>();
@@ -296,6 +317,7 @@ app.MapGet("/t/{slug}", (string slug) => Results.Redirect("/Account/Login?t=" + 
 
 app.MapRazorPages();
 app.MapMailApi();
+app.MapMatPlatform();
 await app.RunAsync();
 return 0;
 

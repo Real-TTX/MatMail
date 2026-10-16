@@ -43,6 +43,16 @@ public sealed class RestoreProgressHost : IAsyncDisposable
             var host = new RestoreProgressHost(app, certificates);
             app.MapGet("/restore-status", () => Results.Json(host.Snapshot(), JsonSerializerOptions.Web));
             app.MapGet("/healthz", () => Results.Json(new { status = "restoring" }));
+
+            // The health of the platform contract (the container health check asks it): degraded, not down, so the container is left alone.
+            app.MapGet("/api/health", () => Results.Json(new
+            {
+                status = "degraded",
+                app = MatMail.Platform.MailPlatform.AppId,
+                version = AppInfo.Version,
+                time = DateTimeOffset.Now,
+                checks = new[] { new { name = "restore", status = "degraded", message = "A backup is being restored." } },
+            }, JsonSerializerOptions.Web));
             app.MapFallback(context =>
             {
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;

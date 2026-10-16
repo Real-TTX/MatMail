@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MatMail.Configuration;
+using MatMail.Controls;
 using MatMail.Data;
 using MatMail.MailSync;
 using MatMail.Messaging;
@@ -27,7 +28,7 @@ public sealed class MailPlatform(
     public const string AppId = "matmail";
 
     /// <summary>Graphite, the accent of MatMail (MatDesign's AppRegistry, <c>Ui.App.Accent</c>).</summary>
-    public const string Accent = "#475569";
+    public const string Accent = Ui.App.Accent;
 
     public const int MaxSizeMb = 2048;
     public const int MaxRetentionDays = 3650;

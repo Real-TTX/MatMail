@@ -8,6 +8,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="GitHubActionsTestLogger" Version="3.0.5" />
+    <!-- The whole app in memory for the platform contract and the sign-in through MatIdentity (PlatformWebTests) -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="MsgKit" Version="3.0.5" />
     <PackageReference Include="xunit" Version="2.9.3" />

@@ -1,9 +1,10 @@
-// MatPlatform 1.0.0 – a copy from MatDesign, do not edit here
+// MatPlatform 1.3.0 – a copy from MatDesign, do not edit here
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ namespace MatPlatform;
 
 /// <summary>A person MatIdentity has signed in, as the app gets it to find or create its local user.</summary>
 /// <param name="Subject">The claim <c>sub</c>: the stable id of the person; match the local user by it first.</param>
-/// <param name="Email">The claim <c>email</c>: link an existing local user with this address at the first sign-in.</param>
+/// <param name="Email">The claim <c>email</c>: an existing local user with this address is linked only after its password (<see cref="MatIdentitySignInResult.LinkRequired"/>).</param>
 /// <param name="Name">The claim <c>name</c>.</param>
 /// <param name="PreferredUserName">The claim <c>preferred_username</c>.</param>
 /// <param name="Role">The role claim (<see cref="MatIdentitySignInOptions.RoleClaim"/>): one of the app's roles when MatIdentity decides the role, null when the app does.</param>
@@ -25,16 +26,32 @@ public sealed record MatIdentityPerson(string Subject, string? Email, string? Na
 /// <summary>What the app answers to a person MatIdentity signed in.</summary>
 public sealed record MatIdentitySignInResult(bool Succeeded, string? Error = null)
 {
+    /// <summary>The key of the local account the person has to prove before it is linked (<see cref="LinkRequired"/>), else null.</summary>
+    public string? LinkAccount { get; init; }
+
     public static MatIdentitySignInResult Success() => new(true);
 
     public static MatIdentitySignInResult Refused(string error) => new(false, error);
+
+    /// <summary>
+    /// No local user has the person's <c>sub</c>, but one unlinked, active account matches by its e-mail (or user name). The address in the app proves
+    /// nothing, so the account is not linked and no second one is created: the package keeps a <see cref="MatIdentityPendingLink"/> to
+    /// <paramref name="account"/> (the app's key of it) and sends the browser to the local sign-in (<c>LoginPath?local=1&amp;link=1</c>). The app links the
+    /// account after its password there (<see cref="MatIdentityPendingLink.TakeFor"/>).
+    /// </summary>
+    public static MatIdentitySignInResult LinkRequired(string account)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(account);
+        return new(false) { LinkAccount = account };
+    }
 }
 
 /// <summary>The app's side of the sign-in through MatIdentity.</summary>
 public interface IMatIdentityUsers
 {
     /// <summary>
-    /// Finds the local user by <see cref="MatIdentityPerson.Subject"/> (else links the one with the same e-mail, else creates one), follows
+    /// Finds the local user by <see cref="MatIdentityPerson.Subject"/> (else, when one unlinked account has the same e-mail, answers
+    /// <see cref="MatIdentitySignInResult.LinkRequired"/>: it is linked only after its password; else creates one), follows
     /// <see cref="MatIdentityPerson.Role"/> when it is set, and signs the user in with the app's own cookie or session (keeping
     /// <see cref="MatIdentityPerson.IdToken"/> for the sign-out), writing it to the activity log. Refused: the person lands on the access-denied page.
     /// </summary>
@@ -47,7 +64,10 @@ public sealed class MatIdentitySignInOptions
     /// <summary>The app's own cookie scheme: the OpenID Connect handler needs a scheme that can sign in (the app signs in itself in <see cref="IMatIdentityUsers"/>).</summary>
     public string CookieScheme { get; set; } = CookieAuthenticationDefaults.AuthenticationScheme;
 
-    /// <summary>The app's sign-in page (with <c>?local=1</c> the local form, with <c>?signedOut=1</c> no automatic sign-in, <c>?ssoError=1</c> a message).</summary>
+    /// <summary>
+    /// The app's sign-in page (with <c>?local=1</c> the local form, with <c>?signedOut=1</c> no automatic sign-in, <c>?ssoError=1</c> a message,
+    /// <c>?link=1</c> the text of a <see cref="MatIdentityPendingLink"/>: sign in once with the password of the account to link it, or cancel).
+    /// </summary>
     public string LoginPath { get; set; } = "/Account/Login";
 
     /// <summary>Where the browser lands after the sign-out at MatIdentity; default: the sign-in page with <c>?signedOut=1</c>.</summary>
@@ -55,6 +75,9 @@ public sealed class MatIdentitySignInOptions
 
     /// <summary>Where a failed sign-in at MatIdentity ends; default: the local form with <c>?local=1&amp;ssoError=1</c>.</summary>
     public string? FailedRedirect { get; set; }
+
+    /// <summary>Where a person ends whose account has to be linked first (<see cref="MatIdentitySignInResult.LinkRequired"/>); default: the local form with <c>?local=1&amp;link=1</c>.</summary>
+    public string? LinkRedirect { get; set; }
 
     /// <summary>Where a person ends whom <see cref="IMatIdentityUsers"/> refused.</summary>
     public string AccessDeniedPath { get; set; } = "/AccessDenied";
@@ -65,9 +88,17 @@ public sealed class MatIdentitySignInOptions
     /// <summary>The scopes asked for.</summary>
     public IList<string> Scopes { get; } = ["openid", "profile", "email", "roles", "offline_access"];
 
+    /// <summary>
+    /// Behind a TLS-terminating proxy (Matcad) the scheme of a request comes from <c>X-Forwarded-Proto</c> (<see cref="MatForwardedProto"/>): only the
+    /// scheme, never the client address or the host. Default on; off when the app's own ForwardedHeaders policy must be the only one.
+    /// </summary>
+    public bool TrustForwardedProto { get; set; } = true;
+
     internal string SignedOutTarget => SignedOutRedirect ?? LoginPath + "?signedOut=1";
 
     internal string FailedTarget => FailedRedirect ?? LoginPath + "?local=1&ssoError=1";
+
+    internal string LinkTarget => LinkRedirect ?? LoginPath + "?local=1&link=1";
 }
 
 /// <summary>
@@ -103,11 +134,19 @@ public static class MatIdentitySignIn
         var signIn = new MatIdentitySignInOptions();
         configure?.Invoke(signIn);
         builder.Services.AddSingleton(signIn);
+        // The pending link (MatIdentityPendingLink) is protected with the app's keys.
+        builder.Services.AddDataProtection();
         builder.Services.AddScoped<IMatIdentityUsers, TUsers>();
 
         if (!settings.IdentityEnabled)
         {
             return builder;
+        }
+
+        if (signIn.TrustForwardedProto)
+        {
+            // Behind Matcad the app speaks http: without the browser's scheme the redirect_uri is http and the correlation cookies are not Secure.
+            builder.Services.AddTransient<IStartupFilter, MatForwardedProtoStartupFilter>();
         }
 
         var authority = new Uri(settings.Authority!);
@@ -238,21 +277,44 @@ public static class MatIdentitySignIn
             context.Properties?.GetTokenValue("id_token") ?? http.Items[IdTokenItem] as string,
             principal);
 
+        var target = await CompleteSignInAsync(http, person, context.ReturnUri);
+        context.HandleResponse();
+        context.Response.Redirect(target);
+    }
+
+    /// <summary>
+    /// What the callback (<see cref="CallbackPath"/>) does once MatIdentity has signed the person in: hands the person to the app's
+    /// <see cref="IMatIdentityUsers"/> and answers where the browser goes: <paramref name="returnUrl"/> (when local) or <c>/</c>, the access-denied page
+    /// for a refusal, or the local sign-in (<c>?local=1&amp;link=1</c>) with a <see cref="MatIdentityPendingLink"/> stored when the app answered
+    /// <see cref="MatIdentitySignInResult.LinkRequired"/>. Public so that an app's tests can run the whole sign-in without a MatIdentity.
+    /// </summary>
+    public static async Task<string> CompleteSignInAsync(HttpContext http, MatIdentityPerson person, string? returnUrl = null)
+    {
+        ArgumentNullException.ThrowIfNull(http);
+        ArgumentNullException.ThrowIfNull(person);
+
+        var signIn = http.RequestServices.GetService<MatIdentitySignInOptions>() ?? new MatIdentitySignInOptions();
         var result = await http.RequestServices.GetRequiredService<IMatIdentityUsers>().SignInAsync(person, http, http.RequestAborted);
 
-        context.HandleResponse();
+        if (result.LinkAccount is { } account)
+        {
+            // Not linked by the address alone: the person proves the account with its password first.
+            MatIdentityPendingLink.Store(http, person, account);
+            Logger(http).LogInformation("{Subject} signed in through MatIdentity; the matching account has to be linked by its password first", person.Subject);
+            return signIn.LinkTarget;
+        }
+
+        // Whatever was pending in this browser is settled by this sign-in.
+        MatIdentityPendingLink.Clear(http);
 
         if (!result.Succeeded)
         {
             Logger(http).LogWarning("Sign-in through MatIdentity refused for {Subject}: {Error}", person.Subject, result.Error);
-            context.Response.Redirect(signIn.AccessDeniedPath);
-            return;
+            return signIn.AccessDeniedPath;
         }
 
         Logger(http).LogInformation("{Subject} signed in through MatIdentity", person.Subject);
-
-        var returnUrl = context.ReturnUri;
-        context.Response.Redirect(!string.IsNullOrEmpty(returnUrl) && IsLocal(returnUrl) ? returnUrl : "/");
+        return !string.IsNullOrEmpty(returnUrl) && IsLocal(returnUrl) ? returnUrl : "/";
     }
 
     private static ILogger Logger(HttpContext http)

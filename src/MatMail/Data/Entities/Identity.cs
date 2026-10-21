@@ -141,6 +141,12 @@ public class UserSession : AuditedEntity
 
     /// <summary>The ID token of a sign-in through MatIdentity: the sign-out ends the session there too with it (<c>id_token_hint</c>). Null for every other sign-in.</summary>
     public string? IdentityToken { get; set; }
+
+    /// <summary>
+    /// The session at MatIdentity this session came from (its claim <c>sid</c>): a back-channel logout that names it ends this session
+    /// (<c>IdentitySessionService</c>). Null for every other sign-in, and when MatIdentity sent none.
+    /// </summary>
+    public string? IdentitySessionId { get; set; }
 }
 
 /// <summary>A named set of permissions inside a tenant (see <see cref="MatMail.Services.Permissions"/>).</summary>

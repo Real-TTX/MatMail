@@ -35,6 +35,11 @@ public class PlatformFactory : WebApplicationFactory<Program>
     public const string AdminUser = "admin";
     public const string AdminPassword = "Admin-Passw0rd!";
 
+    /// <summary>The signing key of the stand-in MatIdentity (in its fixed OpenID configuration): what the tests sign logout tokens with.</summary>
+    public static readonly Microsoft.IdentityModel.Tokens.SigningCredentials SigningCredentials = new(
+        new Microsoft.IdentityModel.Tokens.RsaSecurityKey(System.Security.Cryptography.RSA.Create(2048)) { KeyId = "matidentity-test" },
+        Microsoft.IdentityModel.Tokens.SecurityAlgorithms.RsaSha256);
+
     private readonly string _data = Path.Combine(Path.GetTempPath(), "matmail-platform-" + Guid.NewGuid().ToString("N"));
     private readonly string _database = "matmail_p_" + Guid.NewGuid().ToString("N")[..12];
     private readonly string? _authority;
@@ -94,6 +99,7 @@ public class PlatformFactory : WebApplicationFactory<Program>
                 TokenEndpoint = _authority + "/connect/token",
                 EndSessionEndpoint = _authority + "/connect/logout",
             };
+            configuration.SigningKeys.Add(SigningCredentials.Key);   // the key of MatIdentity: logout tokens of the back-channel logout
 
             builder.ConfigureTestServices(services =>
             {

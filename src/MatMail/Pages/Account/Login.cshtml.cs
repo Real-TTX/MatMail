@@ -126,8 +126,8 @@ public class LoginModel(
         }
 
         // A pending link of MatIdentity counts for exactly the account that matched; it is gone either way.
-        string? identityToken = await identityUsers.LinkPendingAsync(HttpContext, result.User!, HttpContext.RequestAborted);
-        await signIn.SignInAsync(result.User!, Input.Remember, identityToken);
+        MatIdentityPendingLink? link = await identityUsers.LinkPendingAsync(HttpContext, result.User!, HttpContext.RequestAborted);
+        await signIn.SignInAsync(result.User!, Input.Remember, link?.IdToken, link?.SessionId);
 
         // Bound to two-factor authentication without having set it up: straight to the set-up (the rest of the site is closed to them anyway).
         return result.TwoFactor is { SetupRequired: true } ? Redirect(TwoFactorSetupMiddleware.SecurityPath) : LocalRedirect(SafeReturnUrl());

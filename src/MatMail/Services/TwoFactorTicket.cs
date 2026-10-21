@@ -7,7 +7,9 @@ namespace MatMail.Services;
 /// <summary>The first step of a web sign-in that waits for the code: who passed the password, and what the sign-in is meant to do afterwards.</summary>
 /// <param name="TenantSlug">The tenant sign-in page the person came from (/t/name), so the second step looks the same.</param>
 /// <param name="IdentityToken">The first step was the sign-in through MatIdentity: its ID token, for the session (the sign-out there needs it).</param>
-public sealed record PendingSignIn(long UserId, bool Remember, string? ReturnUrl, string? TenantSlug, string? IdentityToken = null);
+/// <param name="IdentitySessionId">The first step was the sign-in through MatIdentity: its session (<c>sid</c>), for the session and for a back-channel logout that comes before the code.</param>
+/// <param name="IssuedUtc">After MatIdentity: when the first step happened (a back-channel logout of every session of the user after it ends the ticket too).</param>
+public sealed record PendingSignIn(long UserId, bool Remember, string? ReturnUrl, string? TenantSlug, string? IdentityToken = null, string? IdentitySessionId = null, DateTime? IssuedUtc = null);
 
 /// <summary>
 /// The proof that a password was right, carried from the password page to the page that asks for the code. A cookie that only the
@@ -31,7 +33,12 @@ public sealed class TwoFactorTicket
     internal void Issue(HttpContext http, PendingSignIn pending, TimeSpan lifetime)
     {
         // What the address bar sent along is not allowed to make the cookie too big for the browser.
-        PendingSignIn bounded = pending with { ReturnUrl = Bounded(pending.ReturnUrl, 1000), TenantSlug = Bounded(pending.TenantSlug, 64) };
+        PendingSignIn bounded = pending with
+        {
+            ReturnUrl = Bounded(pending.ReturnUrl, 1000),
+            TenantSlug = Bounded(pending.TenantSlug, 64),
+            IdentitySessionId = Bounded(pending.IdentitySessionId, IdentitySessionService.MaxSessionIdLength),
+        };
         string value = _protector.Protect(JsonSerializer.Serialize(bounded), lifetime);
         // After MatIdentity the browser arrives through a redirect chain that started at another site: a Strict cookie would not be sent
         // to the code page, so that ticket is Lax (it still opens nothing but the code page).

@@ -539,8 +539,10 @@ The key is `MAT_API_KEY` in the header `X-Api-Key`; with MatIdentity configured,
 `matmail` works too. Changes through the API are written to the activity log with the caller.
 
 **Sign-in through MatIdentity.** With `MATIDENTITY_AUTHORITY` set, the sign-in page goes straight on to MatIdentity (OpenID Connect,
-code with PKCE; redirect address `/signin-oidc`, signed-out address `/signout-callback-oidc`), and the sign-out ends the session there
-too. The local form stays at `/Account/Login?local=1` (the way in when MatIdentity is down). A person is found by the claim `sub`. When
+code with PKCE; redirect address `/signin-oidc`, signed-out address `/signout-callback-oidc`, back-channel logout address
+`/signout-backchannel`), and the sign-out ends the session there too. The other way round as well: when the person signs out at MatIdentity, or
+an administrator ends their sessions there, MatIdentity posts a signed logout token to `/signout-backchannel` and MatMail ends the sessions
+that started with that session of MatIdentity (or, without one named, every session of the user); the next click there is on the sign-in page. The local form stays at `/Account/Login?local=1` (the way in when MatIdentity is down). A person is found by the claim `sub`. When
 there is none yet and one user's login name, contact address or personal mailbox address is the person's e-mail address, that account
 is **not** entered on the strength of the address (anybody could have typed it into their own profile): the browser goes to the local form
 (`?local=1&link=1`), which says so, and the account is connected with MatIdentity only after one sign-in **to that account** with its

@@ -14,7 +14,12 @@ namespace MatMail.Platform;
 /// MatMail's rule is that no session comes into being without it, so a ticket is issued and the browser goes to /Account/TwoFactor
 /// (<see cref="SendToSecondStep"/>). Mail programs are not affected: IMAP and SMTP keep using the user's password or app passwords.
 /// </summary>
-public sealed class MailIdentityUsers(ExternalSignInService external, SignInService signIn, TwoFactorPolicy twoFactor, TwoFactorTicket ticket) : IMatIdentityUsers
+public sealed class MailIdentityUsers(
+    ExternalSignInService external,
+    SignInService signIn,
+    TwoFactorPolicy twoFactor,
+    TwoFactorTicket ticket,
+    IdentitySessionService identitySessions) : IMatIdentityUsers, IMatIdentitySessions
 {
     /// <summary>Set in <see cref="HttpContext.Items"/> when the code is still to come.</summary>
     public const string SecondStepItem = "matmail:matidentity-second-step";
@@ -44,12 +49,12 @@ public sealed class MailIdentityUsers(ExternalSignInService external, SignInServ
         {
             // An empty token still marks the ticket as one that comes from MatIdentity (it has to be Lax to survive the redirect chain).
             string? returnUrl = http.Items[ReturnUrlItem] as string;
-            ticket.Issue(http, new PendingSignIn(user.Id, true, returnUrl, null, person.IdToken ?? string.Empty));
+            ticket.Issue(http, new PendingSignIn(user.Id, true, returnUrl, null, person.IdToken ?? string.Empty, person.SessionId, DateTime.UtcNow));
             http.Items[SecondStepItem] = true;
             return MatIdentitySignInResult.Success();
         }
 
-        await signIn.SignInAsync(user, true, person.IdToken);
+        await signIn.SignInAsync(user, true, person.IdToken, person.SessionId);
         await signIn.CompleteSignInAsync(user.Id, DateTime.UtcNow);
         return MatIdentitySignInResult.Success();
     }
@@ -57,10 +62,11 @@ public sealed class MailIdentityUsers(ExternalSignInService external, SignInServ
     /// <summary>
     /// After a local sign-in that is complete (the password, and the code when the user has a second factor), right before the session is made:
     /// links the user with the person of MatIdentity whose link is pending in this browser (<see cref="MatIdentityPendingLink"/>), when it was made
-    /// for exactly this user; another user links nothing, and the pending link is gone either way. Returns the ID token to keep with the session
-    /// (null: nothing was linked).
+    /// for exactly this user; another user links nothing, and the pending link is gone either way. Returns the link, whose ID token and session
+    /// (<c>sid</c>) the session keeps (null: nothing was linked; the session is a plain local one also when the session of MatIdentity it came
+    /// from has ended meanwhile).
     /// </summary>
-    public async Task<string?> LinkPendingAsync(HttpContext http, User user, CancellationToken ct)
+    public async Task<MatIdentityPendingLink?> LinkPendingAsync(HttpContext http, User user, CancellationToken ct)
     {
         MatIdentityPendingLink? link = MatIdentityPendingLink.TakeFor(http, AccountKey(user.Id));
         if (link is null)
@@ -73,8 +79,14 @@ public sealed class MailIdentityUsers(ExternalSignInService external, SignInServ
             new ExternalPerson(link.Subject, link.Email, link.Name, link.PreferredUserName, link.Role),
             http.ClientAddress(),
             ct);
-        return linked.Succeeded ? link.IdToken : null;
+        return linked.Succeeded && !identitySessions.HasEnded(link.SessionId, user.Id, null) ? link : null;
     }
+
+    /// <summary>
+    /// The back-channel logout of MatIdentity (MatPlatform 1.4.0, <c>POST /signout-backchannel</c>): the sessions of the person end here too
+    /// (<see cref="IdentitySessionService.EndSessionsAsync"/>: with a <c>sid</c> those that started with it, with the subject alone all of the user).
+    /// </summary>
+    public Task EndSessionsAsync(string? subject, string? sessionId, CancellationToken ct) => identitySessions.EndSessionsAsync(subject, sessionId, ct);
 
     /// <summary>The key of a user in a <see cref="MatIdentityPendingLink"/>.</summary>
     public static string AccountKey(long userId) => userId.ToString(CultureInfo.InvariantCulture);

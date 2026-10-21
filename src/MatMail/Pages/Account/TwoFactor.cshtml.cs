@@ -1,5 +1,6 @@
 using MatMail.Platform;
 using MatMail.Services;
+using MatPlatform;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
@@ -10,7 +11,7 @@ namespace MatMail.Pages.Account;
 /// The second step of the sign-in: after a right password, the code of the authenticator app (or a recovery code). The page opens
 /// with the ticket the password page handed out; without it there is nothing to do here.
 /// </summary>
-public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, SignInService signIn, MailIdentityUsers identityUsers, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
+public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, SignInService signIn, MailIdentityUsers identityUsers, IdentitySessionService identitySessions, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -48,6 +49,13 @@ public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, 
             return StartOver();
         }
 
+        // Signed out at MatIdentity (back-channel logout) while the code was still to come: this ticket makes no session any more.
+        if (pending.IdentityToken is not null && identitySessions.HasEnded(pending.IdentitySessionId, pending.UserId, pending.IssuedUtc))
+        {
+            ticket.Clear(HttpContext);
+            return StartOver();
+        }
+
         SecondStepOutcome outcome = await twoFactor.VerifyLoginAsync(pending.UserId, Input.Code, HttpContext.ClientAddress(), HttpContext.RequestAborted);
         if (outcome.User is null)
         {
@@ -64,8 +72,12 @@ public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, 
         ticket.Clear(HttpContext);
 
         // Password and code are right: now a pending link of MatIdentity to exactly this account is made (never before the code).
-        string? linkedToken = await identityUsers.LinkPendingAsync(HttpContext, outcome.User, HttpContext.RequestAborted);
-        await signIn.SignInAsync(outcome.User, pending.Remember, linkedToken ?? pending.IdentityToken);
+        MatIdentityPendingLink? link = await identityUsers.LinkPendingAsync(HttpContext, outcome.User, HttpContext.RequestAborted);
+        await signIn.SignInAsync(
+            outcome.User,
+            pending.Remember,
+            link is null ? pending.IdentityToken : link.IdToken,
+            link is null ? pending.IdentitySessionId : link.SessionId);
 
         if (outcome.Result.UsedRecoveryCode)
         {

@@ -167,6 +167,8 @@ public class MatMailDbContext : DbContext
             e.HasIndex(x => x.Token).IsUnique();
             e.HasIndex(x => x.UserId);
             e.HasIndex(x => x.ExpiresDate);
+            e.HasIndex(x => x.IdentitySessionId);
+            e.Property(x => x.IdentitySessionId).HasMaxLength(200);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 

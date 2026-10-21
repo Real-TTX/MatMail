@@ -2377,6 +2377,10 @@ namespace MatMail.Migrations
                     b.Property<DateTime>("ExpiresDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("IdentitySessionId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("IdentityToken")
                         .HasColumnType("text");
 
@@ -2407,6 +2411,8 @@ namespace MatMail.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ExpiresDate");
+
+                    b.HasIndex("IdentitySessionId");
 
                     b.HasIndex("Token")
                         .IsUnique();

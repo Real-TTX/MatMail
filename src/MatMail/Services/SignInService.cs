@@ -318,7 +318,8 @@ public sealed class SignInService
 
     /// <summary>Creates the session row and the cookie for an already verified user.</summary>
     /// <param name="identityToken">After a sign-in through MatIdentity: its ID token, kept with the session for the sign-out there.</param>
-    public async Task SignInAsync(User user, bool persistent = true, string? identityToken = null)
+    /// <param name="identitySessionId">After a sign-in through MatIdentity: its session (the claim <c>sid</c>), so that a back-channel logout can end this session.</param>
+    public async Task SignInAsync(User user, bool persistent = true, string? identityToken = null, string? identitySessionId = null)
     {
         HttpContext http = _http.HttpContext ?? throw new InvalidOperationException("No active HttpContext.");
         DateTime now = DateTime.UtcNow;
@@ -334,6 +335,7 @@ public sealed class SignInService
             IpAddress = http.ClientAddress(),
             UserAgent = userAgent.Length == 0 ? null : userAgent[..Math.Min(userAgent.Length, 512)],
             IdentityToken = string.IsNullOrEmpty(identityToken) ? null : identityToken,
+            IdentitySessionId = string.IsNullOrEmpty(identitySessionId) || identitySessionId.Length > IdentitySessionService.MaxSessionIdLength ? null : identitySessionId,
             CreateUserId = user.Id,
         };
 

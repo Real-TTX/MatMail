@@ -2,17 +2,13 @@ using System.Globalization;
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using MatMail.Data;
 using MatMail.Services;
 using MatMail.Tests.Support;
 using MatPlatform;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Testing.Handlers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Net.Http.Headers;
 
 namespace MatMail.Tests;
 
@@ -23,7 +19,7 @@ namespace MatMail.Tests;
 /// its own sign-in here – password, and the code when it has a second factor –; another account signing in links nothing.
 /// </summary>
 [Collection(PlatformWebCollection.Name)]
-public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : IClassFixture<IdentityPlatformFactory>
+public sealed class PendingLinkTests(IdentityPlatformFactory site) : IClassFixture<IdentityPlatformFactory>
 {
     private const string LinkTarget = "/Account/Login?local=1&link=1";
     private const string Password = "Pending-Passw0rd!";
@@ -33,7 +29,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     {
         User mallory = await AddUserAsync("mallory", "victim@pending.example");
         int count = await CountUsersAsync();
-        var browser = new Browser(site);
+        var browser = new IdentityBrowser(site);
 
         string target = await browser.SignInThroughIdentityAsync(Person("sub-victim", "victim@pending.example", "admin"));
 
@@ -58,7 +54,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     public async Task The_local_sign_in_of_the_matched_account_links_it()
     {
         User vera = await AddUserAsync("vera", "vera@pending.example");
-        var browser = new Browser(site);
+        var browser = new IdentityBrowser(site);
         Assert.Equal(LinkTarget, await browser.SignInThroughIdentityAsync(Person("sub-vera", "vera@pending.example", "tenant-admin")));
 
         HttpResponseMessage response = await browser.SignInLocallyAsync("vera", Password);
@@ -72,9 +68,10 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
 
         // The session keeps the ID token of the person: the sign-out ends the session at MatIdentity too.
         Assert.Equal("sub-vera.id.token", await IdentityTokenOfSessionAsync(vera.Id));
+        Assert.Equal("sub-vera.sid", await QueryAsync(db => db.UserSessions.Where(s => s.UserId == vera.Id).Select(s => s.IdentitySessionId).FirstAsync()));
 
         // The next sign-in through MatIdentity goes straight into the account.
-        Assert.Equal("/", await new Browser(site).SignInThroughIdentityAsync(Person("sub-vera", "vera@pending.example", null)));
+        Assert.Equal("/", await new IdentityBrowser(site).SignInThroughIdentityAsync(Person("sub-vera", "vera@pending.example", null)));
     }
 
     [DbFact]
@@ -82,7 +79,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     {
         User tom = await AddUserAsync("tom", "tom@pending.example");
         byte[] key = await EnrolAsync(tom.Id);
-        var browser = new Browser(site);
+        var browser = new IdentityBrowser(site);
         Assert.Equal(LinkTarget, await browser.SignInThroughIdentityAsync(Person("sub-tom", "tom@pending.example", null)));
 
         // The password alone is no proof yet.
@@ -95,7 +92,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
         string page = await browser.Client.GetStringAsync("/Account/TwoFactor");
         HttpResponseMessage code = await browser.Client.PostAsync("/Account/TwoFactor", new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["__RequestVerificationToken"] = Token(page),
+            ["__RequestVerificationToken"] = IdentityBrowser.Token(page),
             ["Input.Code"] = Totp.Compute(key, Totp.StepOf(DateTimeOffset.UtcNow) + 1),
         }));
 
@@ -110,7 +107,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     {
         User walter = await AddUserAsync("walter", "walter@pending.example");
         await AddUserAsync("other", "other@pending.example");
-        var browser = new Browser(site);
+        var browser = new IdentityBrowser(site);
         Assert.Equal(LinkTarget, await browser.SignInThroughIdentityAsync(Person("sub-walter", "walter@pending.example", "admin")));
 
         HttpResponseMessage response = await browser.SignInLocallyAsync("other", Password);
@@ -121,7 +118,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
         Assert.False(browser.HasPendingLink);
 
         // The link is gone: Walter's own sign-in afterwards links nothing either.
-        await new Browser(site).SignInLocallyAsync("walter", Password);
+        await new IdentityBrowser(site).SignInLocallyAsync("walter", Password);
         Assert.Null((await FindAsync(walter.Id)).ExternalSubject);
     }
 
@@ -129,13 +126,13 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     public async Task Cancel_forgets_the_pending_link()
     {
         User clara = await AddUserAsync("clara", "clara@pending.example");
-        var browser = new Browser(site);
+        var browser = new IdentityBrowser(site);
         Assert.Equal(LinkTarget, await browser.SignInThroughIdentityAsync(Person("sub-clara", "clara@pending.example", null)));
 
         string page = await browser.Client.GetStringAsync(LinkTarget);
         HttpResponseMessage cancel = await browser.Client.PostAsync("/Account/Login?handler=CancelLink", new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["__RequestVerificationToken"] = Token(page),
+            ["__RequestVerificationToken"] = IdentityBrowser.Token(page),
         }));
 
         Assert.Equal(HttpStatusCode.Redirect, cancel.StatusCode);
@@ -165,7 +162,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
 
         foreach (string value in values)
         {
-            var browser = new Browser(site);
+            var browser = new IdentityBrowser(site);
             browser.SetPendingLink(value);
 
             string page = await browser.Client.GetStringAsync(LinkTarget);
@@ -178,7 +175,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
         }
 
         // The same link with time left does link: the values above failed for their age, forgery or purpose only.
-        var fresh = new Browser(site);
+        var fresh = new IdentityBrowser(site);
         fresh.SetPendingLink(protector.Protect(json, DateTimeOffset.UtcNow.AddMinutes(5)));
         await fresh.SignInLocallyAsync("erik", Password);
         Assert.Equal("sub-erik", (await FindAsync(erik.Id)).ExternalSubject);
@@ -186,7 +183,7 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
     }
 
     private static MatIdentityPerson Person(string subject, string email, string? role)
-        => new(subject, email, subject, null, role, subject + ".id.token", new ClaimsPrincipal());
+        => new(subject, email, subject, null, role, subject + ".id.token", new ClaimsPrincipal()) { SessionId = subject + ".sid" };
 
     private async Task<User> AddUserAsync(string login, string email)
     {
@@ -236,66 +233,4 @@ public sealed partial class PendingLinkTests(IdentityPlatformFactory site) : ICl
 
     private Task<string[]> RoleNamesAsync(long userId)
         => QueryAsync(db => db.UserRoles.IgnoreQueryFilters().Where(r => r.UserId == userId).Select(r => r.Role!.Name).ToArrayAsync());
-
-    private static string Token(string html) => TokenRegex().Match(html).Groups[1].Value;
-
-    [GeneratedRegex(@"name=""__RequestVerificationToken"" type=""hidden"" value=""([^""]+)""")]
-    private static partial Regex TokenRegex();
-
-    /// <summary>A browser with its own cookies; the callback of MatIdentity is run in the app's services and its cookies are handed over.</summary>
-    private sealed class Browser
-    {
-        private static readonly Uri Base = new("http://localhost");
-        private readonly IdentityPlatformFactory _site;
-        private readonly CookieContainer _cookies = new();
-
-        public Browser(IdentityPlatformFactory site)
-        {
-            _site = site;
-            Client = site.CreateDefaultClient(Base, new CookieContainerHandler(_cookies));
-        }
-
-        public HttpClient Client { get; }
-
-        public bool HasPendingLink => _cookies.GetCookies(Base)[MatIdentityPendingLink.CookieName] is { Expired: false } cookie && cookie.Value.Length > 0;
-
-        public void SetPendingLink(string value) => _cookies.Add(Base, new Cookie(MatIdentityPendingLink.CookieName, value, "/"));
-
-        /// <summary>What <c>/signin-oidc</c> does after MatIdentity signed the person in; the cookies it sets go into this browser.</summary>
-        public async Task<string> SignInThroughIdentityAsync(MatIdentityPerson person)
-        {
-            using IServiceScope scope = _site.Services.CreateScope();
-            var http = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
-            http.Request.Scheme = "http";
-            http.Request.Host = new HostString("localhost");
-            var accessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
-            accessor.HttpContext = http;
-            try
-            {
-                string target = await MatIdentitySignIn.CompleteSignInAsync(http, person);
-                foreach (SetCookieHeaderValue cookie in SetCookieHeaderValue.ParseList(http.Response.Headers.SetCookie.Select(c => c ?? string.Empty).ToList()))
-                {
-                    _cookies.Add(Base, new Cookie(cookie.Name.Value!, cookie.Value.Value, "/"));
-                }
-
-                return target;
-            }
-            finally
-            {
-                accessor.HttpContext = null;
-            }
-        }
-
-        public async Task<HttpResponseMessage> SignInLocallyAsync(string login, string password)
-        {
-            string page = await Client.GetStringAsync("/Account/Login?local=1");
-            return await Client.PostAsync("/Account/Login?local=1", new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["__RequestVerificationToken"] = Token(page),
-                ["Input.LoginName"] = login,
-                ["Input.Password"] = password,
-                ["Input.Remember"] = "false",
-            }));
-        }
-    }
 }

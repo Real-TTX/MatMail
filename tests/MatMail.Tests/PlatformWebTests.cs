@@ -306,12 +306,15 @@ public sealed class LocalSignInTests(PlatformFactory site) : IClassFixture<Platf
         HttpResponseMessage response = await browser.GetAsync("/Admin");
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/Account/Login", response.Headers.Location!.OriginalString);
-        Assert.Equal(HttpStatusCode.NotFound, (await site.Browser().GetAsync("/signin-oidc")).StatusCode);
 
         await SignIn.LocalAsync(browser, "/Account/Login");
         Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync("/Admin")).StatusCode);
 
-        HttpResponseMessage signedOut = await SignIn.PostAsync(browser, "/Account/Index", "/Account/Logout");
+        // Nothing answers the callback address of MatIdentity: like any unknown address it is 404 for somebody signed in (without a session
+        // every address that is no page of its own leads to the sign-in, so only the signed-in browser can tell).
+        Assert.Equal(HttpStatusCode.NotFound, (await browser.GetAsync("/signin-oidc")).StatusCode);
+
+        HttpResponseMessage signedOut = await SignIn.PostAsync(browser, "/Account", "/Account/Logout");
         Assert.Equal(HttpStatusCode.Redirect, signedOut.StatusCode);
         Assert.Equal("/Account/Login", signedOut.Headers.Location!.OriginalString);
     }
@@ -337,6 +340,22 @@ public sealed class IdentitySignInTests(IdentityPlatformFactory site) : IClassFi
         Assert.False(string.IsNullOrEmpty(query["code_challenge"].ToString()));
         Assert.EndsWith("/signin-oidc", query["redirect_uri"].ToString());
         Assert.Equal(["openid", "profile", "email", "roles", "offline_access"], query["scope"].ToString().Split(' '));
+    }
+
+    [DbFact]
+    public async Task Behind_a_tls_proxy_the_address_for_matidentity_is_https()
+    {
+        // MatPlatform 1.2.0: X-Forwarded-Proto of Matcad gives the scheme (only the scheme), so the redirect_uri is https and the cookies are Secure.
+        HttpClient browser = site.Browser();
+        browser.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+        HttpResponseMessage response = await browser.GetAsync("/Account/Login");
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+
+        Dictionary<string, Microsoft.Extensions.Primitives.StringValues> query = QueryHelpers.ParseQuery(response.Headers.Location!.Query);
+        Assert.StartsWith("https://", query["redirect_uri"].ToString());
+
+        HttpResponseMessage plain = await site.Browser().GetAsync("/Account/Login");
+        Assert.StartsWith("http://", QueryHelpers.ParseQuery(plain.Headers.Location!.Query)["redirect_uri"].ToString());
     }
 
     [DbFact]
@@ -367,7 +386,7 @@ public sealed class IdentitySignInTests(IdentityPlatformFactory site) : IClassFi
         Assert.Equal(HttpStatusCode.OK, (await browser.GetAsync("/Admin")).StatusCode);
 
         // A local session has no ID token: signed out here only, and the sign-in page does not sign in again at once.
-        HttpResponseMessage signedOut = await SignIn.PostAsync(browser, "/Account/Index", "/Account/Logout");
+        HttpResponseMessage signedOut = await SignIn.PostAsync(browser, "/Account", "/Account/Logout");
         Assert.Equal(HttpStatusCode.Redirect, signedOut.StatusCode);
         Assert.Equal("/Account/Login?signedOut=1", signedOut.Headers.Location!.OriginalString);
 

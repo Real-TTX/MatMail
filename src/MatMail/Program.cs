@@ -126,15 +126,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 // A user with two-factor authentication enters the code after MatIdentity too (no session without it).
 builder.Services.PostConfigure<OpenIdConnectOptions>(MatIdentitySignIn.Scheme, MailIdentityUsers.SendToSecondStep);
 
-// API calls answer 401/403 instead of redirecting to the login page.
-builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme, options =>
-{
-    var originalLogin = options.Events.OnRedirectToLogin;
-    var originalDenied = options.Events.OnRedirectToAccessDenied;
-    options.Events.OnRedirectToLogin = context => IsApi(context.Request) ? Respond(context.Response, 401) : originalLogin(context);
-    options.Events.OnRedirectToAccessDenied = context => IsApi(context.Request) ? Respond(context.Response, 403) : originalDenied(context);
-});
-
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(Permissions.SystemAdminPolicy, policy => policy.RequireClaim(AppClaims.SystemAdmin, "1"));
@@ -321,15 +312,6 @@ app.MapMailApi();
 app.MapMatPlatform();
 await app.RunAsync();
 return 0;
-
-static bool IsApi(HttpRequest request)
-    => request.Path.StartsWithSegments("/api") || string.Equals(request.Headers.XRequestedWith, "XMLHttpRequest", StringComparison.OrdinalIgnoreCase);
-
-static Task Respond(HttpResponse response, int status)
-{
-    response.StatusCode = status;
-    return Task.CompletedTask;
-}
 
 // Makes the Program class visible to the integration tests.
 public partial class Program

@@ -1,3 +1,4 @@
+using MatMail.Platform;
 using MatMail.Services;
 using MatPlatform;
 using Microsoft.AspNetCore.Authentication;
@@ -11,9 +12,12 @@ namespace MatMail.Pages.Account;
 /// The web sign-in: login name or address and password (then the code, when two-factor authentication is on). With MatIdentity configured
 /// (<c>MATIDENTITY_AUTHORITY</c>) a visit goes straight on to MatIdentity; the local form stays reachable with <c>?local=1</c> (the way in for an
 /// administrator when MatIdentity is down), <c>?signedOut=1</c> (back from the sign-out there) and <c>?ssoError=1</c> (it failed) do not go on.
+/// <c>?link=1</c>: a person of MatIdentity has the address of an account here (<see cref="MatIdentityPendingLink"/>); the sign-in of exactly that
+/// account (with its code, when it has a second factor) links it, another account links nothing, "Cancel" forgets the link.
 /// </summary>
 public class LoginModel(
     SignInService signIn,
+    MailIdentityUsers identityUsers,
     TwoFactorTicket ticket,
     BrandingService branding,
     MatPlatformSettings platform,
@@ -45,6 +49,12 @@ public class LoginModel(
 
     /// <summary><c>?ssoError=1</c>: the sign-in at MatIdentity failed, or MatIdentity cannot be reached.</summary>
     public bool SsoError { get; private set; }
+
+    /// <summary>A person of MatIdentity waits for an account here to be linked by its own sign-in (null: none, or it expired).</summary>
+    public MatIdentityPendingLink? PendingLink { get; private set; }
+
+    /// <summary><c>?link=1</c> without a pending link: the ten minutes are over.</summary>
+    public bool LinkExpired { get; private set; }
 
     /// <summary>The local form is shown: always without MatIdentity, with it only on <c>?local=1</c>.</summary>
     public bool ShowLocalForm => !IdentityEnabled || Local;
@@ -115,16 +125,27 @@ public class LoginModel(
             return RedirectToPage("/Account/TwoFactor");
         }
 
-        await signIn.SignInAsync(result.User!, Input.Remember);
+        // A pending link of MatIdentity counts for exactly the account that matched; it is gone either way.
+        string? identityToken = await identityUsers.LinkPendingAsync(HttpContext, result.User!, HttpContext.RequestAborted);
+        await signIn.SignInAsync(result.User!, Input.Remember, identityToken);
 
         // Bound to two-factor authentication without having set it up: straight to the set-up (the rest of the site is closed to them anyway).
         return result.TwoFactor is { SetupRequired: true } ? Redirect(TwoFactorSetupMiddleware.SecurityPath) : LocalRedirect(SafeReturnUrl());
+    }
+
+    /// <summary>"Cancel" on <c>?link=1</c>: the account is not linked, the pending link is forgotten.</summary>
+    public IActionResult OnPostCancelLink()
+    {
+        MatIdentityPendingLink.Clear(HttpContext);
+        return Redirect(WithReturnUrl("/Account/Login?local=1"));
     }
 
     private void ReadFlags()
     {
         Local = QueryFlag("local");
         SsoError = QueryFlag("ssoError");
+        PendingLink = MatIdentityPendingLink.Peek(HttpContext);
+        LinkExpired = PendingLink is null && QueryFlag("link");
     }
 
     /// <summary>A flag in the query: <c>1</c> or <c>true</c>.</summary>

@@ -19,6 +19,15 @@
         }
     </div>
 
+    @if (Model.PendingLink is not null)
+    {
+        <mm-alert kind="info" id="login-link">@L["An account with your e-mail address exists here. Sign in once with its login name and password to connect it with MatIdentity; after that MatIdentity signs you in to it."]</mm-alert>
+    }
+    else if (Model.LinkExpired)
+    {
+        <mm-alert kind="warn" id="login-link-expired">@L["The time to connect your account with MatIdentity is over. Sign in with MatIdentity again."]</mm-alert>
+    }
+
     @if (Model.SsoError)
     {
         <mm-alert kind="warn" id="login-sso-error">@L["The sign-in through MatIdentity did not work. You can sign in here with your login name and password, or try MatIdentity again."]</mm-alert>
@@ -33,12 +42,20 @@
             <mm-field asp-for="Input.Remember" kind="checkbox" label='@L["Stay signed in"]' />
 
             <mm-button-row>
-                <mm-button variant="primary" type="submit" icon="login">@L["Sign in"]</mm-button>
+                @if (Model.PendingLink is not null)
+                {
+                    <mm-button variant="primary" type="submit" icon="link">@L["Sign in and connect"]</mm-button>
+                    <mm-button variant="secondary" type="submit" handler="CancelLink" icon="x" id="login-link-cancel">@L["Cancel"]</mm-button>
+                }
+                else
+                {
+                    <mm-button variant="primary" type="submit" icon="login">@L["Sign in"]</mm-button>
+                }
             </mm-button-row>
         </mm-form>
     }
 
-    @if (Model.IdentityEnabled)
+    @if (Model.IdentityEnabled && Model.PendingLink is null)
     {
         <mm-button-row>
             <mm-button variant="@(Model.ShowLocalForm ? "secondary" : "primary")" href="@Model.IdentitySignInUrl" icon="key">@L["Sign in with MatIdentity"]</mm-button>

@@ -540,13 +540,19 @@ The key is `MAT_API_KEY` in the header `X-Api-Key`; with MatIdentity configured,
 
 **Sign-in through MatIdentity.** With `MATIDENTITY_AUTHORITY` set, the sign-in page goes straight on to MatIdentity (OpenID Connect,
 code with PKCE; redirect address `/signin-oidc`, signed-out address `/signout-callback-oidc`), and the sign-out ends the session there
-too. The local form stays at `/Account/Login?local=1` (the way in when MatIdentity is down). A person is found by the claim `sub`; at the
-first sign-in the one user whose login name, contact address or personal mailbox address is the person's e-mail address is linked, else
-a new user is made in the first tenant (no mailbox: an administrator gives one). When MatIdentity decides the role, the claim `role` is
-followed at every sign-in: `admin` = system administrator, `tenant-admin` = the role *Administrator* of the user's tenant, `user` = the
-role *User*. Two-factor authentication of MatMail still asks for the code. **Mail programs are not affected:** IMAP and SMTP sign in with
-the user's password or an app password exactly as before (a user made by MatIdentity has no password anybody knows: for mail
-programs, and for app passwords, an administrator gives it one). Without the variable nothing changes.
+too. The local form stays at `/Account/Login?local=1` (the way in when MatIdentity is down). A person is found by the claim `sub`. When
+there is none yet and one user's login name, contact address or personal mailbox address is the person's e-mail address, that account
+is **not** entered on the strength of the address (anybody could have typed it into their own profile): the browser goes to the local form
+(`?local=1&link=1`), which says so, and the account is connected with MatIdentity only after one sign-in **to that account** with its
+password – and its code, when it has two-factor authentication – within ten minutes; another account signing in connects nothing, and
+*Cancel* forgets it. Without such an account a new user is made in the first tenant (no mailbox: an administrator gives one). When
+MatIdentity decides the role, the claim `role` is followed at every sign-in and at the connection: `admin` = system administrator,
+`tenant-admin` = the role *Administrator* of the user's tenant, `user` = the role *User*. Two-factor authentication of MatMail still asks
+for the code. Behind a TLS proxy (Matcad) the scheme comes from `X-Forwarded-Proto`, so the addresses for MatIdentity are `https`.
+**Mail programs are not affected:** IMAP and SMTP sign in with the user's password or an app password exactly as before (a user made by
+MatIdentity has no password anybody knows: for mail programs, and for app passwords, an administrator gives it one). Without the variable
+nothing changes. MatMail is a mail server itself: it does not read the `MATSMTP_*` variables of the platform (its own mail goes out
+through its own queue).
 
 ### Directories in detail
 

@@ -8,8 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace MatMail.Tests;
 
 /// <summary>
-/// How a person signed in by MatIdentity becomes a local user (<see cref="ExternalSignInService"/>): by <c>sub</c>, else the one user with the
-/// address, else a new one; the claim <c>role</c>; and that IMAP and SMTP keep signing the user in exactly as before.
+/// How a person signed in by MatIdentity becomes a local user (<see cref="ExternalSignInService"/>): by <c>sub</c>, else – when one user has the
+/// address – that account only after its own sign-in (<see cref="ExternalSignInService.LinkAsync"/>), else a new one; the claim <c>role</c>; and
+/// that IMAP and SMTP keep signing the user in exactly as before. The pages around the link: <c>PendingLinkTests</c>.
 /// </summary>
 public sealed class ExternalSignInTests : IAsyncLifetime
 {
@@ -31,6 +32,19 @@ public sealed class ExternalSignInTests : IAsyncLifetime
         using IServiceScope scope = _host.Scope();
         return await scope.ServiceProvider.GetRequiredService<ExternalSignInService>()
             .SignInAsync(new ExternalPerson(subject, email, name, preferred, role));
+    }
+
+    private async Task<ExternalSignInResult> LinkAsync(long userId, string subject, string? role = null)
+    {
+        using IServiceScope scope = _host.Scope();
+        return await scope.ServiceProvider.GetRequiredService<ExternalSignInService>()
+            .LinkAsync(userId, new ExternalPerson(subject, null, null, null, role));
+    }
+
+    private async Task<int> CountUsersAsync()
+    {
+        using IServiceScope scope = _host.Scope();
+        return await scope.ServiceProvider.GetRequiredService<MatMailDbContext>().Users.IgnoreQueryFilters().CountAsync();
     }
 
     private async Task<User> LoadAsync(long userId)
@@ -90,19 +104,38 @@ public sealed class ExternalSignInTests : IAsyncLifetime
     }
 
     [DbFact]
-    public async Task The_owner_of_the_mailbox_with_the_address_is_linked_and_keeps_signing_in_to_mail_programs()
+    public async Task The_owner_of_the_address_is_not_entered_by_it_but_linked_after_its_own_sign_in_and_keeps_its_mail_programs()
     {
         string hashBefore = (await LoadAsync(_seed.Alice.Id)).PasswordHash;
+        int usersBefore = await CountUsersAsync();
 
-        ExternalSignInResult result = await SignInAsync("sub-alice", $"ALICE@{TestHost.Domain}", "Alice Example");
+        // The address proves nothing (anybody may have typed it into their own profile): no user, no link, no new user, no error.
+        ExternalSignInResult result = await SignInAsync("sub-alice", $"ALICE@{TestHost.Domain}", "Alice Example", null, "tenant-admin");
+        Assert.False(result.Succeeded);
+        Assert.Null(result.Error);
+        Assert.Equal(_seed.Alice.Id, result.LinkTo!.Id);
+        Assert.Null((await LoadAsync(_seed.Alice.Id)).ExternalSubject);
+        Assert.Equal(usersBefore, await CountUsersAsync());
 
-        Assert.True(result.Succeeded, result.Error);
-        Assert.Equal(_seed.Alice.Id, result.User!.Id);
+        // After the account's own sign-in (the pages call this): linked, the role claim followed, nothing else changed.
+        ExternalSignInResult linked = await LinkAsync(_seed.Alice.Id, "sub-alice", "tenant-admin");
+        Assert.True(linked.Succeeded, linked.Error);
         User alice = await LoadAsync(_seed.Alice.Id);
         Assert.Equal("sub-alice", alice.ExternalSubject);
         Assert.Equal("alice", alice.LoginName);
         Assert.Equal("Alice", alice.DisplayName);
         Assert.Equal(hashBefore, alice.PasswordHash);
+        Assert.Contains(TenantService.AdministratorRoleName, await RoleNamesAsync(alice.Id));
+
+        // From now on MatIdentity signs the person in to it.
+        ExternalSignInResult again = await SignInAsync("sub-alice", $"alice@{TestHost.Domain}");
+        Assert.True(again.Succeeded, again.Error);
+        Assert.Equal(_seed.Alice.Id, again.User!.Id);
+
+        // A linked account is not linked again, and a subject belongs to one account only.
+        Assert.False((await LinkAsync(_seed.Alice.Id, "sub-someone-else")).Succeeded);
+        Assert.False((await LinkAsync(_seed.Bob.Id, "sub-alice")).Succeeded);
+        Assert.Null((await LoadAsync(_seed.Bob.Id)).ExternalSubject);
 
         // IMAP and SMTP: the login name and the address with the password, as before.
         Assert.NotNull(await ProtocolLoginAsync("alice", Password));
@@ -110,7 +143,7 @@ public sealed class ExternalSignInTests : IAsyncLifetime
     }
 
     [DbFact]
-    public async Task An_address_of_two_users_or_of_another_person_is_not_linked()
+    public async Task An_address_of_two_users_or_of_another_person_is_refused()
     {
         using (IServiceScope scope = _host.Scope())
         {
@@ -122,11 +155,16 @@ public sealed class ExternalSignInTests : IAsyncLifetime
 
         ExternalSignInResult twoUsers = await SignInAsync("sub-x", $"alice@{TestHost.Domain}");
         Assert.False(twoUsers.Succeeded);
+        Assert.NotNull(twoUsers.Error);
+        Assert.Null(twoUsers.LinkTo);
         Assert.Null((await LoadAsync(_seed.Alice.Id)).ExternalSubject);
 
-        Assert.True((await SignInAsync("sub-bob", $"bob@{TestHost.Domain}")).Succeeded);
+        Assert.Equal(_seed.Bob.Id, (await SignInAsync("sub-bob", $"bob@{TestHost.Domain}")).LinkTo!.Id);
+        Assert.True((await LinkAsync(_seed.Bob.Id, "sub-bob")).Succeeded);
         ExternalSignInResult taken = await SignInAsync("sub-other", $"bob@{TestHost.Domain}");
         Assert.False(taken.Succeeded);
+        Assert.NotNull(taken.Error);
+        Assert.Null(taken.LinkTo);
         Assert.Equal("sub-bob", (await LoadAsync(_seed.Bob.Id)).ExternalSubject);
     }
 
@@ -165,7 +203,9 @@ public sealed class ExternalSignInTests : IAsyncLifetime
             await db.SaveChangesAsync();
         }
 
-        Assert.False((await SignInAsync("sub-bob", $"bob@{TestHost.Domain}")).Succeeded);
+        ExternalSignInResult result = await SignInAsync("sub-bob", $"bob@{TestHost.Domain}");
+        Assert.False(result.Succeeded);
+        Assert.Null(result.LinkTo);
     }
 
     [DbFact]

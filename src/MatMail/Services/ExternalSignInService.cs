@@ -8,10 +8,16 @@ namespace MatMail.Services;
 /// <summary>A person MatIdentity has signed in (its claims <c>sub</c>, <c>email</c>, <c>name</c>, <c>preferred_username</c> and <c>role</c>).</summary>
 public sealed record ExternalPerson(string Subject, string? Email, string? Name, string? PreferredUserName, string? Role);
 
-/// <summary>The local user for a person of MatIdentity, or why there is none (an English text for the log).</summary>
+/// <summary>
+/// The local user for a person of MatIdentity, or why there is none (an English text for the log), or – <see cref="LinkTo"/> – the existing
+/// account that matched by its address and is linked only after its own sign-in.
+/// </summary>
 public sealed record ExternalSignInResult(User? User, string? Error)
 {
     public bool Succeeded => User is not null;
+
+    /// <summary>The one unlinked account whose login name, contact address or mailbox address is the person's e-mail address: not signed in, not linked.</summary>
+    public User? LinkTo { get; init; }
 }
 
 /// <summary>
@@ -34,9 +40,12 @@ public static class PlatformRoles
 
 /// <summary>
 /// The web sign-in through MatIdentity (the Mat platform, on when <c>MATIDENTITY_AUTHORITY</c> is set): which local user a person of MatIdentity
-/// is. Found by <see cref="User.ExternalSubject"/>; at the first sign-in linked to the one user whose login name, contact address or personal
-/// mailbox address is the person's e-mail address; else made new in the first tenant, without a password anybody knows and without a mailbox
-/// (an administrator gives one). The claim <c>role</c> (<see cref="PlatformRoles"/>) is followed at every sign-in when it is there.
+/// is. Found by <see cref="User.ExternalSubject"/>; else, when one user's login name, contact address or personal mailbox address is the
+/// person's e-mail address, that account is <b>not</b> linked by the address (anybody may have typed it into their own profile): the answer is
+/// <see cref="ExternalSignInResult.LinkTo"/>, and the account is linked by <see cref="LinkAsync"/> only after its own sign-in here (password, and
+/// the code when it has a second factor; MatPlatform's <c>MatIdentityPendingLink</c>); else the person is made new in the first tenant, without a
+/// password anybody knows and without a mailbox (an administrator gives one). The claim <c>role</c> (<see cref="PlatformRoles"/>) is followed at
+/// every sign-in and at the link when it is there.
 /// <para>
 /// Only the web sign-in is touched: the password hash, the app passwords and the directory of a user stay as they are, so IMAP and SMTP sign in
 /// exactly as before. Whether the user may sign in at all is <see cref="SignInService.CanSignInAsync"/>, as for every sign-in.
@@ -61,14 +70,27 @@ public sealed class ExternalSignInService(MatMailDbContext db, SignInService sig
         User? user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.ExternalSubject == subject, cancel);
         if (user is null)
         {
-            ExternalSignInResult linked = await LinkByAddressAsync(subject, email, remoteIp, cancel);
-            if (linked.Error is not null)
+            ExternalSignInResult matched = await FindByAddressAsync(email, cancel);
+            if (matched.Error is not null)
             {
-                await log.WarnAsync(ActivityCategory.Auth, $"Sign-in through MatIdentity refused: {linked.Error}", remoteIp: remoteIp);
-                return linked;
+                await log.WarnAsync(ActivityCategory.Auth, $"Sign-in through MatIdentity refused: {matched.Error}", remoteIp: remoteIp);
+                return matched;
             }
 
-            user = linked.User ?? await CreateAsync(subject, email, person, remoteIp, cancel);
+            if (matched.User is { } match)
+            {
+                if (!await signIn.CanSignInAsync(match))
+                {
+                    await log.WarnAsync(ActivityCategory.Auth, $"Sign-in through MatIdentity refused: '{match.LoginName}' is disabled.", tenantId: match.TenantId, userId: match.Id, remoteIp: remoteIp);
+                    return new ExternalSignInResult(null, "The user is disabled.");
+                }
+
+                // The address proves nothing: the account is linked once somebody has signed in to it here (LinkAsync).
+                await log.InfoAsync(ActivityCategory.Auth, $"A person of MatIdentity has the address {email} of '{match.LoginName}': it is linked after its own sign-in.", tenantId: match.TenantId, userId: match.Id, remoteIp: remoteIp);
+                return new ExternalSignInResult(null, null) { LinkTo = match };
+            }
+
+            user = await CreateAsync(subject, email, person, remoteIp, cancel);
             if (user is null)
             {
                 const string noTenant = "there is no tenant to create the user in.";
@@ -91,10 +113,44 @@ public sealed class ExternalSignInService(MatMailDbContext db, SignInService sig
     }
 
     /// <summary>
-    /// The first sign-in of a person: the one user whose login name, contact address or personal mailbox address is their e-mail address.
-    /// Nobody: no user (a new one is made). Several, or one that belongs to another person of MatIdentity: refused, an administrator decides.
+    /// Links the account <paramref name="userId"/> with the person of MatIdentity after somebody has signed in to it here (password, and the code
+    /// when it has a second factor) while the person's link was pending. Refused when the account is gone or linked already, or the subject belongs
+    /// to another account. The claim <c>role</c> is followed like at a sign-in through MatIdentity.
     /// </summary>
-    private async Task<ExternalSignInResult> LinkByAddressAsync(string subject, string? email, string? remoteIp, CancellationToken cancel)
+    public async Task<ExternalSignInResult> LinkAsync(long userId, ExternalPerson person, string? remoteIp = null, CancellationToken cancel = default)
+    {
+        string subject = (person.Subject ?? string.Empty).Trim();
+        if (subject.Length == 0 || subject.Length > MaxSubjectLength)
+        {
+            return new ExternalSignInResult(null, "MatIdentity sent no usable subject.");
+        }
+
+        User? user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId, cancel);
+        if (user is null)
+        {
+            return new ExternalSignInResult(null, "The user does not exist.");
+        }
+
+        if (user.ExternalSubject is not null || await db.Users.IgnoreQueryFilters().AnyAsync(u => u.ExternalSubject == subject, cancel))
+        {
+            await log.WarnAsync(ActivityCategory.Auth, $"'{user.LoginName}' was not linked with MatIdentity: it or the person is linked already.", tenantId: user.TenantId, userId: user.Id, remoteIp: remoteIp);
+            return new ExternalSignInResult(null, "The user or the person is linked already.");
+        }
+
+        user.ExternalSubject = subject;
+        await ApplyRoleAsync(user, person.Role, cancel);
+        await db.SaveChangesAsync(cancel);
+        cache.InvalidateUser(user.Id);
+        await log.InfoAsync(ActivityCategory.Auth, $"'{user.LoginName}' was linked with MatIdentity after its own sign-in.", tenantId: user.TenantId, userId: user.Id, remoteIp: remoteIp);
+        return new ExternalSignInResult(user, null);
+    }
+
+    /// <summary>
+    /// The first sign-in of a person: the one user whose login name, contact address or personal mailbox address is their e-mail address (in
+    /// <see cref="ExternalSignInResult.User"/>; nothing is linked here). Nobody: no user (a new one is made). Several, or one that belongs to
+    /// another person of MatIdentity: refused, an administrator decides.
+    /// </summary>
+    private async Task<ExternalSignInResult> FindByAddressAsync(string? email, CancellationToken cancel)
     {
         if (email is null)
         {
@@ -127,9 +183,6 @@ public sealed class ExternalSignInService(MatMailDbContext db, SignInService sig
             return new ExternalSignInResult(null, $"the user '{user.LoginName}' belongs to another person of MatIdentity.");
         }
 
-        user.ExternalSubject = subject;
-        await db.SaveChangesAsync(cancel);
-        await log.InfoAsync(ActivityCategory.Auth, $"'{user.LoginName}' was linked to MatIdentity by the address {email}.", tenantId: user.TenantId, userId: user.Id, remoteIp: remoteIp);
         return new ExternalSignInResult(user, null);
     }
 

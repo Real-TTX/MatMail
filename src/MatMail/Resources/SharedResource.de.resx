@@ -218,6 +218,7 @@
   <data name="Also shared and delegated" xml:space="preserve"><value>Auch gemeinsame und delegierte</value></data>
   <data name="Also shared and delegated mailboxes I can read" xml:space="preserve"><value>Auch gemeinsame und delegierte Postfächer, die ich lesen darf</value></data>
   <data name="Alternative" xml:space="preserve"><value>Alternativ</value></data>
+  <data name="An account with your e-mail address exists here. Sign in once with its login name and password to connect it with MatIdentity; after that MatIdentity signs you in to it." xml:space="preserve"><value>Hier gibt es schon ein Konto mit Ihrer E-Mail-Adresse. Melden Sie sich einmal mit seinem Anmeldenamen und Passwort an, um es mit MatIdentity zu verbinden; danach meldet MatIdentity Sie darin an.</value></data>
   <data name="An app password" xml:space="preserve"><value>Ein App-Passwort</value></data>
   <data name="An attachment is no longer available. Please add it again." xml:space="preserve"><value>Ein Anhang ist nicht mehr verfügbar. Bitte fügen Sie ihn erneut hinzu.</value></data>
   <data name="An inactive tenant cannot sign in or receive mail." xml:space="preserve"><value>Ein inaktiver Mandant kann sich nicht anmelden und keine E-Mails empfangen.</value></data>
@@ -1175,6 +1176,7 @@
   <data name="Show the subject of a message in the mail transfer log" xml:space="preserve"><value>Betreff einer Nachricht im Mail-Transferprotokoll anzeigen</value></data>
   <data name="Show trimmed content" xml:space="preserve"><value>Ausgeblendeten Inhalt anzeigen</value></data>
   <data name="Sign in" xml:space="preserve"><value>Anmelden</value></data>
+  <data name="Sign in and connect" xml:space="preserve"><value>Anmelden und verbinden</value></data>
   <data name="Sign in with a password" xml:space="preserve"><value>Mit Passwort anmelden</value></data>
   <data name="Sign in with MatIdentity" xml:space="preserve"><value>Mit MatIdentity anmelden</value></data>
   <data name="Sign out" xml:space="preserve"><value>Abmelden</value></data>
@@ -1452,6 +1454,7 @@
   <data name="The tenant was saved." xml:space="preserve"><value>Der Mandant wurde gespeichert.</value></data>
   <data name="The test notification could not be sent. Turn notifications off and on again." xml:space="preserve"><value>Die Testbenachrichtigung konnte nicht gesendet werden. Schalten Sie die Benachrichtigungen aus und wieder ein.</value></data>
   <data name="The text is too long." xml:space="preserve"><value>Der Text ist zu lang.</value></data>
+  <data name="The time to connect your account with MatIdentity is over. Sign in with MatIdentity again." xml:space="preserve"><value>Die Zeit zum Verbinden Ihres Kontos mit MatIdentity ist abgelaufen. Melden Sie sich erneut mit MatIdentity an.</value></data>
   <data name="The TLS certificate could not be loaded; keeping the previous one." xml:space="preserve"><value>Das TLS-Zertifikat konnte nicht geladen werden; das bisherige bleibt in Verwendung.</value></data>
   <data name="The trash is empty." xml:space="preserve"><value>Der Papierkorb ist leer.</value></data>
   <data name="The trash still holds {0}: deleted messages keep taking up room there until the trash is emptied." xml:space="preserve"><value>Im Papierkorb liegen noch {0}: Gelöschte Nachrichten belegen dort weiter Platz, bis der Papierkorb geleert wird.</value></data>
@@ -1463,6 +1466,7 @@
   <data name="The user is disabled." xml:space="preserve"><value>Der Benutzer ist deaktiviert.</value></data>
   <data name="The user must choose a new password at the next sign-in" xml:space="preserve"><value>Der Benutzer muss bei der nächsten Anmeldung ein neues Passwort wählen</value></data>
   <data name="The user name is required." xml:space="preserve"><value>Der Benutzername ist erforderlich.</value></data>
+  <data name="The user or the person is linked already." xml:space="preserve"><value>Der Benutzer oder die Person ist schon verknüpft.</value></data>
   <data name="The user was created." xml:space="preserve"><value>Der Benutzer wurde angelegt.</value></data>
   <data name="The user was deleted." xml:space="preserve"><value>Der Benutzer wurde gelöscht.</value></data>
   <data name="The user was saved." xml:space="preserve"><value>Der Benutzer wurde gespeichert.</value></data>

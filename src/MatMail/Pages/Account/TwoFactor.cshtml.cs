@@ -1,3 +1,4 @@
+using MatMail.Platform;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,7 +10,7 @@ namespace MatMail.Pages.Account;
 /// The second step of the sign-in: after a right password, the code of the authenticator app (or a recovery code). The page opens
 /// with the ticket the password page handed out; without it there is nothing to do here.
 /// </summary>
-public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, SignInService signIn, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
+public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, SignInService signIn, MailIdentityUsers identityUsers, BrandingService branding, IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -61,7 +62,10 @@ public class TwoFactorModel(TwoFactorService twoFactor, TwoFactorTicket ticket, 
         }
 
         ticket.Clear(HttpContext);
-        await signIn.SignInAsync(outcome.User, pending.Remember, pending.IdentityToken);
+
+        // Password and code are right: now a pending link of MatIdentity to exactly this account is made (never before the code).
+        string? linkedToken = await identityUsers.LinkPendingAsync(HttpContext, outcome.User, HttpContext.RequestAborted);
+        await signIn.SignInAsync(outcome.User, pending.Remember, linkedToken ?? pending.IdentityToken);
 
         if (outcome.Result.UsedRecoveryCode)
         {

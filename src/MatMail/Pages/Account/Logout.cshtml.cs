@@ -13,6 +13,7 @@ public class LogoutModel(SignInService signIn, MatPlatformSettings platform) : P
     public async Task<IActionResult> OnPostAsync()
     {
         string? identityToken = null;
+        MatIdentityPendingLink.Clear(HttpContext);
         if (User.Identity?.IsAuthenticated == true)
         {
             identityToken = await signIn.SignOutAsync();

@@ -1,18 +1,18 @@
 using MatMail.Data;
+using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace MatMail.Pages.Platform;
 
 /// <summary>
 /// What the lists across all tenants have in common (system administrators only: the folder is closed to everybody else in
-/// <c>Program.cs</c>). They read with <c>IgnoreQueryFilters()</c>, which switches the tenant filter off for the whole query – exactly what
-/// these lists are for – and never join a filtered set with an unfiltered one. A row opens in its tenant: <see cref="OpenInTenant"/>.
+/// <c>Program.cs</c>): the toolbar (search, tenant, status, sort, page) and the tenant column. The rows come from
+/// <see cref="PlatformListService"/> (no database in the pages). A row opens in its tenant: <see cref="OpenInTenant"/>.
 /// </summary>
-public abstract class PlatformListModel(MatMailDbContext db) : PageModel
+public abstract class PlatformListModel(PlatformListService lists) : PageModel
 {
-    protected MatMailDbContext Db => db;
+    protected PlatformListService Lists => lists;
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
@@ -31,7 +31,10 @@ public abstract class PlatformListModel(MatMailDbContext db) : PageModel
 
     public IReadOnlyList<Tenant> Tenants { get; private set; } = Array.Empty<Tenant>();
 
-    protected async Task LoadTenantsAsync() => Tenants = await db.Tenants.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+    /// <summary>The toolbar as the service takes it.</summary>
+    protected PlatformListQuery Query => new(Search, TenantId, Status, Sort, PageNumber);
+
+    protected async Task LoadTenantsAsync() => Tenants = await lists.ListTenantsAsync(HttpContext.RequestAborted);
 
     public string TenantName(long tenantId) => Tenants.FirstOrDefault(t => t.Id == tenantId)?.Name ?? "?";
 }

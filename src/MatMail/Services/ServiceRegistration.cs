@@ -53,6 +53,7 @@ public static class ServiceRegistration
         services.AddScoped<SetupService>();
         services.AddScoped<ExternalSignInService>();
         services.AddScoped<InstanceOverviewService>();
+        services.AddScoped<PlatformListService>();
 
         services.AddMessaging();
         services.AddPushNotifications();

@@ -155,7 +155,7 @@ Taken from a demo instance with made-up data (English UI; German is built in).
 
 | A newsletter | A wide table |
 |---|---|
-| ![A newsletter of WEB.DE](docs/images/mail-reader.png) | ![A report with a wide table, scaled to fit](docs/images/mail-table.png) |
+| ![A newsletter with its own colours, scaled to the window](docs/images/mail-reader.png) | ![A report with a wide table, scaled to fit](docs/images/mail-table.png) |
 
 Foreign HTML – newsletters of T-Online, WEB.DE and Telekom, mails of Outlook – is sanitised and
 shown in a sandboxed frame, scaled to the width of the window. Wide tables get an *Original size*
@@ -189,7 +189,7 @@ attachments, the ids that tie a reply to its conversation); the file is kept for
 
 | A reading pane with a conversation | The settings |
 |---|---|
-| ![The list on the left, the conversation Projektplan Q4 on the right](docs/images/mail-reading-pane.png) | ![The appearance settings: reading pane and conversations](docs/images/account-appearance-mail.png) |
+| ![The list on the left, the conversation “Hafenbräu brand refresh – timeline” on the right](docs/images/mail-reading-pane.png) | ![The appearance settings: reading pane and conversations](docs/images/account-appearance-mail.png) |
 
 Both are a choice per user. The reading pane shows the message beside the list or below it (the bar
 between them can be dragged, and the size is remembered); on a small screen a message always opens
@@ -230,7 +230,7 @@ already in place.
 
 | The app page | Writing offline |
 |---|---|
-| ![Install the app, turn on notifications, the devices that get them](docs/images/account-app.png) | ![Writing a message without a connection: it waits on the device](docs/images/mail-offline.png) |
+| ![Install the app, turn on notifications, the devices that get them](docs/images/account-app.png) | ![Without a connection: the message waits in the outbox on the device](docs/images/mail-offline.png) |
 
 MatMail installs like an app (PWA) and opens in a window of its own. Without a connection it still
 opens; what you write – with attachments – waits in an outbox on the device and goes out as soon as
@@ -271,7 +271,7 @@ relay* may send without signing in: printers, scanners, internal servers.
 
 | Branding | The sign-in page of a tenant |
 |---|---|
-| ![Name, logo and accent colour of a tenant](docs/images/admin-branding.png) | ![The sign-in page at /t/eine-firma](docs/images/login-tenant.png) |
+| ![Name, logo and accent colour of a tenant](docs/images/admin-branding.png) | ![The sign-in page at /t/lindqvist](docs/images/login-tenant.png) |
 
 Name, logo and accent colour per tenant, shown in the app, on the tenant's own sign-in page
 (`/t/<name>`) and as `{{Website}}` in signatures. A user who chose an accent colour of their own
@@ -341,6 +341,17 @@ backup is damaged or does not fit it stops and leaves everything as it was.
 What runs, what is queued and what happened; personal and shared mailboxes with their delegates;
 sign-ins, mail traffic, synchronisation and delivery events. Only the sections you hold a
 permission for are shown.
+
+### The whole installation: the platform
+
+| Overview of the tenants | Mailboxes of all tenants | Users of all tenants |
+|---|---|---|
+| ![The platform: every tenant with its users, mailboxes, domains and connected accounts](docs/images/platform.png) | ![All mailboxes of all tenants with their tenant and how full they are](docs/images/platform-mailboxes.png) | ![All users of all tenants, with the tenant they belong to](docs/images/platform-users.png) |
+
+A system administrator has a second menu, *Platform*: an overview of the tenants with their counts, the tenants, the server
+settings and the backups, and one list each of the connected accounts, mailboxes, domains and users of all tenants, with a
+tenant column and filter. A row opens in its tenant. The administration says which tenant it is about (the chip at the top
+right), the platform says "all tenants".
 
 ### Light, dark and narrow screens
 
@@ -414,7 +425,7 @@ administrator account. The `matmail-data` volume keeps the configuration, the ke
 certificates, `matmail-db` the mail – an update is just `docker compose pull && docker compose up
 -d`. The same file lives in the repository as `docker-compose.yml`.
 
-Set the real host name under **Administration → Server settings** (*Public host name*); after a
+Set the real host name under **Platform → Server settings** (*Public host name*); after a
 restart of the container the self-signed certificate of the mail servers carries it. Everything
 else is optional.
 
@@ -435,7 +446,7 @@ At this point MatMail has no mail yet – which brings us to the interesting par
 7. **A directory** (optional) – if your people have accounts in Active Directory or another LDAP
    server, connect it (*People → Directories*, see *Directories in detail* below) and they sign in
    with the password they have.
-8. **Backups** – a target and a schedule (*System → Backups*), so that the data is saved regularly
+8. **Backups** – a target and a schedule (*Platform → Backups*), so that the data is saved regularly
    (see *Backup and restore in detail* below).
 
 Worth knowing:
@@ -513,7 +524,7 @@ in the account menu.
 ### Updates, backups and a lost second factor
 
 - **Updates:** `docker compose pull && docker compose up -d`. The database is migrated on start.
-- **Backups:** *System → Backups* (see below). A backup holds the database and the data volume as a
+- **Backups:** *Platform → Backups* (see below). A backup holds the database and the data volume as a
   whole, including `/data/keys`, which protects the stored provider passwords and the secrets of the
   authenticator apps: treat backup files like the secrets they contain, and encrypt them when they leave
   the server.

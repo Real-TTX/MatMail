@@ -442,11 +442,11 @@ Worth knowing:
   volume (`certs/fullchain.pem` + `certs/privkey.pem`, or `certs/server.pfx`) and it is picked up
   right away; **Server settings → TLS certificate** shows what is in use.
 - **Behind a reverse proxy.** The web interface listens on plain HTTP (port 9933) and expects a
-  proxy in front that terminates TLS. Add `MATMAIL__Server__TrustProxyHeaders: "true"` on the
-  `matmail` service so that the real client address (sign-in throttling, smart-host rules) and
-  `https` (secure cookies) come through `X-Forwarded-*`. Only do that when the port is reachable
-  through the proxy alone. A proxy that sends the same headers can be as small as
-  `reverse_proxy matmail:9933` in Caddy.
+  proxy in front that terminates TLS; nothing to set. The real client address (sign-in throttling,
+  smart-host rules) and `https` (secure cookies) come through `X-Forwarded-For` and
+  `X-Forwarded-Proto`, as in every Mat app. Publish the port to the proxy alone (a Docker network
+  or `127.0.0.1:9933:9933`): anybody who can reach it directly could send those headers himself. A
+  proxy can be as small as `reverse_proxy matmail:9933` in Caddy.
 - **Without a proxy.** To let MatMail serve HTTPS itself (the certificate above, self-signed until
   you bring your own) set `MATMAIL__Server__WebHttps: "true"` and open `https://<your-server>:9933`.
   Notifications and the installed app need HTTPS in the browser, wherever it comes from.
@@ -474,7 +474,6 @@ service:
 |---|---|---|
 | `MATMAIL__Server__Hostname` | `localhost` | name of the server (certificate, greeting) |
 | `MATMAIL__Server__WebHttps` | `false` | HTTPS for the web interface itself (off: plain HTTP behind a reverse proxy) |
-| `MATMAIL__Server__TrustProxyHeaders` | `false` | trust `X-Forwarded-*` of a reverse proxy |
 | `MATMAIL__Database__Host` / `Port` / `Database` / `Username` / `Password` | `db` / `5432` / `matmail` / `postgres` / `matmail` | PostgreSQL |
 | `MATMAIL__Smtp__Port` / `SubmissionPort` / `ImplicitTlsPort` | `25` / `587` / `465` | SMTP ports |
 | `MATMAIL__Imap__Port` / `ImplicitTlsPort` / `MaxConnections` | `143` / `993` / `500` | IMAP ports, overall connection limit |

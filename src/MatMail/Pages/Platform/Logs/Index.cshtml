@@ -1,0 +1,9 @@
+@page "/Platform/Logs"
+@model MatMail.Pages.Platform.Logs.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Activity log";
+    ViewData["Title"] = L["Activity log of all tenants"].Value;
+    ViewData["Description"] = L["The events of every tenant and of the installation itself (start, backups, mail for unknown domains). Old entries are removed automatically."].Value;
+}
+
+<partial name="_ActivityLogList" model="Model" />

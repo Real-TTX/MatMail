@@ -1,0 +1,77 @@
+@page "/Platform/Queue"
+@model MatMail.Pages.Platform.QueueModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Outgoing queue";
+    ViewData["Title"] = L["Outgoing queue of all tenants"].Value;
+    ViewData["Description"] = L["What waits to be delivered to other servers, for every tenant. A row opens in its tenant, where it can be tried again or cancelled."].Value;
+    string openLabel = L["Open in its tenant"].Value;
+}
+
+<mm-list>
+<mm-toolbar count="Model.Paged.Total">
+    <mm-toolbar-search name="Search" value="@Model.Search" placeholder='@L["Search subject, sender, recipient or error…"]' />
+    <mm-toolbar-select name="TenantId" label='@L["Tenant"]' value="@Model.TenantId?.ToString()">
+        <option value="">@L["All tenants"]</option>
+        @foreach (var tenant in Model.Tenants) { <option value="@tenant.Id">@tenant.Name</option> }
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Status" label='@L["Status"]' value="@Model.Status">
+        <option value="">@L["All"]</option>
+        <option value="Pending">@L["Waiting"]</option>
+        <option value="Sending">@L["Sending"]</option>
+        <option value="Sent">@L["Sent"]</option>
+        <option value="Failed">@L["Failed"]</option>
+        <option value="Cancelled">@L["Cancelled"]</option>
+    </mm-toolbar-select>
+    <mm-toolbar-select name="Sort" label='@L["Sort"]' value="@Model.Sort">
+        <option value="created_desc">@L["Newest first"]</option>
+        <option value="created_asc">@L["Oldest first"]</option>
+        <option value="next_asc">@L["Next attempt"]</option>
+    </mm-toolbar-select>
+</mm-toolbar>
+
+<mm-table item-count="Model.Paged.Rows.Count" empty-text='@L["The queue is empty."]' empty-icon="send">
+    <thead>
+        <tr>
+            <th>@L["Message"]</th>
+            <th>@L["Tenant"]</th>
+            <th class="mat-hide-sm">@L["Recipients"]</th>
+            <th>@L["Status"]</th>
+            <th class="mat-hide-sm mat-num">@L["Attempts"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Paged.Rows)
+        {
+            string target = "/Admin/Queue/Details?id=" + item.Id;
+            string subject = string.IsNullOrWhiteSpace(item.Subject) ? L["(no subject)"].Value : item.Subject;
+            <tr data-row-submit>
+                <td>
+                    <div class="mat-table__name"><span><partial name="_OpenInTenant" model="new OpenInTenant(item.TenantId, target, subject)" /><small>@item.EnvelopeFrom · @Fmt.Size(item.SizeBytes)</small></span></div>
+                </td>
+                <td>@Model.TenantName(item.TenantId)</td>
+                <td class="mat-hide-sm">@string.Join(", ", item.Recipients.Take(2))@(item.Recipients.Length > 2 ? $" +{item.Recipients.Length - 2}" : "")</td>
+                <td>
+                    <div>
+                        @switch (item.Status)
+                        {
+                            case OutboundStatus.Sent: <mm-badge kind="ok">@L["Sent"]</mm-badge> break;
+                            case OutboundStatus.Failed: <mm-badge kind="danger">@L["Failed"]</mm-badge> break;
+                            case OutboundStatus.Sending: <mm-badge kind="info">@L["Sending"]</mm-badge> break;
+                            case OutboundStatus.Cancelled: <mm-badge kind="muted">@L["Cancelled"]</mm-badge> break;
+                            default: <mm-badge kind="warn">@L["Waiting"]</mm-badge> break;
+                        }
+                        @if (!string.IsNullOrEmpty(item.LastError) && item.Status != OutboundStatus.Sent) { <small class="mat-muted mat-d-block mat-text-break">@item.LastError</small> }
+                    </div>
+                </td>
+                <td class="mat-hide-sm mat-num">@item.AttemptCount</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions"><partial name="_OpenInTenant" model='new OpenInTenant(item.TenantId, target, openLabel, OpenInTenant.OpenIcon)' /></div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
+</mm-list>

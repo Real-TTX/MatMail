@@ -175,6 +175,7 @@
   <data name="Active Directory or another LDAP server: people sign in to the web client, IMAP and SMTP with the password they already have there." xml:space="preserve"><value>Active Directory oder ein anderer LDAP-Server: Personen melden sich am Webclient, an IMAP und SMTP mit dem Passwort an, das sie dort schon haben.</value></data>
   <data name="Active users" xml:space="preserve"><value>Aktive Benutzer</value></data>
   <data name="Activity log" xml:space="preserve"><value>Aktivitätsprotokoll</value></data>
+  <data name="Activity log of all tenants" xml:space="preserve"><value>Aktivitätslog aller Mandanten</value></data>
   <data name="Add {0} to this mailbox, so future mail arrives there directly" xml:space="preserve"><value>{0} diesem Postfach hinzufügen, damit künftige Nachrichten direkt dort ankommen</value></data>
   <data name="Add a label" xml:space="preserve"><value>Markierung hinzufügen</value></data>
   <data name="Add a target" xml:space="preserve"><value>Ziel anlegen</value></data>
@@ -606,6 +607,7 @@
   <data name="Install a certificate" xml:space="preserve"><value>Zertifikat installieren</value></data>
   <data name="Install app" xml:space="preserve"><value>App installieren</value></data>
   <data name="Install the app" xml:space="preserve"><value>App installieren</value></data>
+  <data name="Installation" xml:space="preserve"><value>Installation</value></data>
   <data name="Internal" xml:space="preserve"><value>Intern</value></data>
   <data name="IP address" xml:space="preserve"><value>IP-Adresse</value></data>
   <data name="is" xml:space="preserve"><value>ist</value></data>
@@ -695,6 +697,7 @@
   <data name="Mail transfer" xml:space="preserve"><value>Mail-Transfer</value></data>
   <data name="Mail transfer log" xml:space="preserve"><value>Mail-Transferprotokoll</value></data>
   <data name="Mail transfers" xml:space="preserve"><value>Mail-Transfers</value></data>
+  <data name="Mail transfers of all tenants" xml:space="preserve"><value>Mail-Übertragungen aller Mandanten</value></data>
   <data name="Mail: leave it empty and mail that nobody claims waits in Unassigned; with a mailbox here, such mail goes to its inbox instead. Backup and migration: the mailbox that receives the copies." xml:space="preserve"><value>Mail: Lassen Sie es leer, dann wartet Post, die niemand beansprucht, in „Unverteilt“; mit einem Postfach hier landet solche Post stattdessen in dessen Posteingang. Backup und Migration: das Postfach, das die Kopien erhält.</value></data>
   <data name="Mail: the mail is fetched and distributed to the mailboxes by recipient address. The account can also be used to send." xml:space="preserve"><value>E-Mail: Die Nachrichten werden abgeholt und anhand der Empfängeradresse auf die Postfächer verteilt. Das Konto kann auch zum Senden verwendet werden.</value></data>
   <data name="Mailbox" xml:space="preserve"><value>Postfach</value></data>
@@ -947,6 +950,7 @@
   <data name="Outgoing" xml:space="preserve"><value>Ausgehend</value></data>
   <data name="Outgoing mail (SMTP)" xml:space="preserve"><value>Postausgangsserver (SMTP)</value></data>
   <data name="Outgoing queue" xml:space="preserve"><value>Ausgangswarteschlange</value></data>
+  <data name="Outgoing queue of all tenants" xml:space="preserve"><value>Ausgangswarteschlange aller Mandanten</value></data>
   <data name="Overview" xml:space="preserve"><value>Übersicht</value></data>
   <data name="Overview of tenant “{0}”." xml:space="preserve"><value>Übersicht des Mandanten „{0}“.</value></data>
   <data name="Owner" xml:space="preserve"><value>Besitzer</value></data>
@@ -1315,6 +1319,7 @@
   <data name="The domain was saved." xml:space="preserve"><value>Die Domäne wurde gespeichert.</value></data>
   <data name="The e-mail address is not valid." xml:space="preserve"><value>Die E-Mail-Adresse ist ungültig.</value></data>
   <data name="The entry was removed." xml:space="preserve"><value>Der Eintrag wurde entfernt.</value></data>
+  <data name="The events of every tenant and of the installation itself (start, backups, mail for unknown domains). Old entries are removed automatically." xml:space="preserve"><value>Die Ereignisse aller Mandanten und der Installation selbst (Start, Backups, Mail für unbekannte Domänen). Alte Einträge werden automatisch entfernt.</value></data>
   <data name="The file contains no private key." xml:space="preserve"><value>Die Datei enthält keinen privaten Schlüssel.</value></data>
   <data name="The file is an Outlook item, but not a message." xml:space="preserve"><value>Die Datei ist ein Outlook-Element, aber keine Nachricht.</value></data>
   <data name="The file is empty." xml:space="preserve"><value>Die Datei ist leer.</value></data>
@@ -1595,6 +1600,7 @@
   <data name="weeks" xml:space="preserve"><value>Wochen</value></data>
   <data name="Welcome to MatMail" xml:space="preserve"><value>Willkommen bei MatMail</value></data>
   <data name="What came in and went out, one line per message. 0 = no transfer log." xml:space="preserve"><value>Was eingegangen und hinausgegangen ist, eine Zeile pro Nachricht. 0 = kein Transferprotokoll.</value></data>
+  <data name="What came into the server, what went out and what moved between mailboxes, for every tenant – and what no tenant could be found for." xml:space="preserve"><value>Was auf den Server kam, was hinausging und was zwischen Postfächern wanderte, für alle Mandanten – und wofür kein Mandant gefunden wurde.</value></data>
   <data name="What came into the server, what went out and what moved between mailboxes, with the way it took and how it ended." xml:space="preserve"><value>Was in den Server hineinkam, was ihn verlassen hat und was zwischen Postfächern bewegt wurde, mit dem Weg, den es genommen hat, und wie es ausging.</value></data>
   <data name="What happened" xml:space="preserve"><value>Was geschah</value></data>
   <data name="What happens to a message that fits. The message is dealt with before it is stored, so it arrives where it belongs." xml:space="preserve"><value>Was mit einer passenden Nachricht geschieht. Sie wird behandelt, bevor sie gespeichert wird, und landet gleich dort, wo sie hingehört.</value></data>
@@ -1607,6 +1613,7 @@
   <data name="What somebody gets who signs in for the first time. A login name that exists on this server already always belongs to that user." xml:space="preserve"><value>Was jemand bekommt, der sich zum ersten Mal anmeldet. Ein Anmeldename, den es auf diesem Server schon gibt, gehört immer diesem Benutzer.</value></data>
   <data name="What the mailbox takes up on this server: the complete messages with their attachments." xml:space="preserve"><value>Was das Postfach auf diesem Server belegt: die vollständigen Nachrichten samt Anhängen.</value></data>
   <data name="What they get" xml:space="preserve"><value>Was sie bekommen</value></data>
+  <data name="What waits to be delivered to other servers, for every tenant. A row opens in its tenant, where it can be tried again or cancelled." xml:space="preserve"><value>Was auf die Zustellung an andere Server wartet, für alle Mandanten. Eine Zeile öffnet sich im jeweiligen Mandanten, wo sie erneut versucht oder abgebrochen werden kann.</value></data>
   <data name="When" xml:space="preserve"><value>Wann</value></data>
   <data name="When a message arrives" xml:space="preserve"><value>Wenn eine Nachricht eintrifft</value></data>
   <data name="Where" xml:space="preserve"><value>Wo</value></data>

@@ -16,6 +16,14 @@ public sealed record PlatformDomainRow(long Id, long TenantId, string Name, stri
 public sealed record PlatformMailboxRow(
     long Id, long TenantId, string Name, MailboxType Type, bool IsActive, string? OwnerName, string? PrimaryAddress, int AddressCount, int MessageCount, long UsedBytes, long? QuotaBytes);
 
+/// <summary>The backups of the installation for the start page of the platform: the newest that worked, how many schedules, whether the last run of one failed.</summary>
+public sealed record PlatformBackupState(DateTime? LastBackup, int Plans, bool Failed);
+
+/// <summary>An entry of the outgoing queue in the list across all tenants.</summary>
+public sealed record PlatformQueueRow(
+    long Id, long TenantId, string Subject, string EnvelopeFrom, string[] Recipients, long SizeBytes, OutboundStatus Status, int AttemptCount,
+    DateTime NextAttemptDate, DateTime? SentDate, DateTime UpdateDate, string? LastError);
+
 /// <summary>A user in the list across all tenants.</summary>
 public sealed record PlatformUserRow(
     long Id, long TenantId, string LoginName, string DisplayName, string? Email, bool IsActive, bool IsSystemAdmin, DateTime? LastLoginDate,
@@ -228,6 +236,47 @@ public sealed class PlatformListService(MatMailDbContext db)
                 u.DirectoryDisabledDate != null, u.DirectoryId != null,
                 db.UserTotps.Any(t => t.UserId == u.Id && t.ConfirmedDate != null),
                 db.TenantMemberships.Count(m => m.UserId == u.Id)))
+            .ToPageAsync(list.PageNumber);
+    }
+
+    /// <summary>The backups of the installation (plans and runs belong to no tenant).</summary>
+    public async Task<PlatformBackupState> BackupStateAsync(CancellationToken cancel = default)
+        => new(
+            await db.BackupRuns.AsNoTracking().Where(r => r.Status == BackupRunStatus.Succeeded).MaxAsync(r => (DateTime?)r.StartedDate, cancel),
+            await db.BackupPlans.CountAsync(p => p.IsActive, cancel),
+            await db.BackupPlans.AnyAsync(p => p.IsActive && p.LastStatus == BackupRunStatus.Failed, cancel));
+
+    /// <summary>The outgoing queue of all tenants. Status: an <see cref="OutboundStatus"/>; sort: <c>created_asc</c>, <c>next_asc</c>, else the newest first.</summary>
+    public async Task<PageResult<PlatformQueueRow>> QueueAsync(PlatformListQuery list)
+    {
+        IQueryable<OutboundMessage> query = db.OutboundMessages.IgnoreQueryFilters().AsNoTracking();
+        if (list.TenantId is long tenantId)
+        {
+            query = query.Where(o => o.TenantId == tenantId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(list.Search))
+        {
+            string pattern = Pager.ContainsPattern(list.Search);
+            query = query.Where(o => EF.Functions.ILike(o.Subject, pattern) || EF.Functions.ILike(o.EnvelopeFrom, pattern)
+                                     || (o.LastError != null && EF.Functions.ILike(o.LastError, pattern))
+                                     || o.Recipients.Any(r => EF.Functions.ILike(r, pattern)));
+        }
+
+        if (Enum.TryParse(list.Status, out OutboundStatus status))
+        {
+            query = query.Where(o => o.Status == status);
+        }
+
+        query = list.Sort switch
+        {
+            "created_asc" => query.OrderBy(o => o.CreateDate),
+            "next_asc" => query.OrderBy(o => o.NextAttemptDate),
+            _ => query.OrderByDescending(o => o.CreateDate),
+        };
+
+        return await query
+            .Select(o => new PlatformQueueRow(o.Id, o.TenantId, o.Subject, o.EnvelopeFrom, o.Recipients, o.SizeBytes, o.Status, o.AttemptCount, o.NextAttemptDate, o.SentDate, o.UpdateDate, o.LastError))
             .ToPageAsync(list.PageNumber);
     }
 

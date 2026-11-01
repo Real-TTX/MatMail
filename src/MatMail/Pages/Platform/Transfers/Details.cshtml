@@ -1,0 +1,9 @@
+@page "/Platform/Transfers/Details"
+@model MatMail.Pages.Platform.Transfers.DetailsModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Mail transfers / Details";
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Item?.Subject) ? L["Mail transfer"].Value : Model.Item!.Subject;
+    ViewData["Width"] = "narrow";
+}
+
+<partial name="_TransferDetails" model="Model" />

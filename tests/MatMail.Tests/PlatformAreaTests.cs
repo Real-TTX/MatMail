@@ -13,7 +13,8 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
 {
     private const string SecondTenantDomain = "second-tenant.example";
     private const string FirstTenantDomain = "first-tenant.example";
-    private static readonly string[] Lists = ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users"];
+    private static readonly string[] Lists =
+        ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users", "/Platform/Queue", "/Platform/Transfers", "/Platform/Logs"];
 
     private async Task<(long First, long Second)> SeedAsync()
     {
@@ -138,5 +139,38 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Tenants")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Settings")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Backup")).StatusCode);
+    }
+
+    [DbFact]
+    public async Task The_events_of_the_installation_are_the_platforms_and_a_tenant_sees_only_its_own()
+    {
+        (long first, long second) = await SeedAsync();
+        string marker = "installation-event-" + Guid.NewGuid().ToString("N")[..8];
+        using (IServiceScope scope = site.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            db.ActivityLogs.Add(new ActivityLog { Category = ActivityCategory.System, Level = ActivityLevel.Info, Message = marker + " of the installation" });
+            db.ActivityLogs.Add(new ActivityLog { TenantId = second, Category = ActivityCategory.Admin, Level = ActivityLevel.Info, Message = marker + " of the second tenant" });
+            db.MailTransfers.Add(new MailTransfer { Direction = TransferDirection.Inbound, Channel = TransferChannel.SmtpServer, Status = TransferStatus.Failed, Sender = "x@y.example", Recipients = marker + "@unknown.example", Subject = marker });
+            await db.SaveChangesAsync();
+        }
+
+        // the administration of a tenant – even for a system administrator – shows that tenant and nothing of the installation or another tenant
+        HttpClient admin = await SignedInAsync(PlatformFactory.AdminUser);
+        foreach (string page in new[] { "/Admin/Logs", "/Admin", "/Admin/Transfers" })
+        {
+            Assert.DoesNotContain(marker, await admin.GetStringAsync(page));
+        }
+
+        // the platform shows all of it, and the filter tells the installation from a tenant
+        string logs = await admin.GetStringAsync("/Platform/Logs");
+        Assert.Contains(marker + " of the installation", logs);
+        Assert.Contains(marker + " of the second tenant", logs);
+        string installation = await admin.GetStringAsync("/Platform/Logs?TenantId=0");
+        Assert.Contains(marker + " of the installation", installation);
+        Assert.DoesNotContain(marker + " of the second tenant", installation);
+        Assert.DoesNotContain(marker, await admin.GetStringAsync($"/Platform/Logs?TenantId={first}"));
+        Assert.Contains(marker + "@unknown.example", await admin.GetStringAsync("/Platform/Transfers"));
     }
 }

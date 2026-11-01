@@ -7,6 +7,50 @@
     string openLabel = L["Open the administration of this tenant"].Value;
 }
 
+<div class="mat-cols">
+    <mm-card class="mat-col-12" title='@L["Server"]' icon="server">
+        <dl class="mat-kv">
+            <dt>@L["Version"]</dt><dd class="mat-mono">@AppInfo.Version</dd>
+            <dt>@L["Host name"]</dt><dd>@Model.Hostname</dd>
+            <dt>@L["Started"]</dt><dd>@Fmt.DateTimeText(AppInfo.StartedAt)</dd>
+            <dt>@L["Certificate"]</dt>
+            <dd>
+                @if (Model.Certificate is { } cert)
+                {
+                    <div>@cert.Subject</div>
+                    <div class="mat-muted">
+                        @if (cert.IsSelfSigned) { <mm-badge kind="warn">@L["Self-signed"]</mm-badge> }
+                        @string.Format(L["valid until {0}"].Value, Fmt.DateText(cert.NotAfter))
+                    </div>
+                }
+                else
+                {
+                    <mm-badge kind="danger">@L["None"]</mm-badge>
+                }
+            </dd>
+            <dt>@L["Backup"]</dt>
+            <dd>
+                @if (Model.Backup.Plans == 0)
+                {
+                    <a href="/Platform/Backup"><mm-badge kind="warn">@L["Not scheduled"]</mm-badge></a>
+                }
+                else if (Model.Backup.Failed)
+                {
+                    <a href="/Platform/Backup"><mm-badge kind="danger">@L["The last backup failed"]</mm-badge></a>
+                }
+                else if (Model.Backup.LastBackup is { } last && last > DateTime.UtcNow.AddDays(-2))
+                {
+                    <a href="/Platform/Backup"><mm-badge kind="ok">@Fmt.Ago(last)</mm-badge></a>
+                }
+                else
+                {
+                    <a href="/Platform/Backup"><mm-badge kind="warn">@(Model.Backup.LastBackup is null ? L["No backup yet"].Value : string.Format(L["Last: {0}"].Value, Fmt.Ago(Model.Backup.LastBackup)))</mm-badge></a>
+                }
+            </dd>
+        </dl>
+    </mm-card>
+</div>
+
 <mm-table item-count="Model.Rows.Count" empty-text='@L["No tenants yet."]' empty-icon="building">
     <thead>
         <tr>

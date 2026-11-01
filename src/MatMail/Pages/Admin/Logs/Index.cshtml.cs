@@ -1,17 +1,17 @@
-using System.Globalization;
 using MatMail.Data;
 using MatMail.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Admin.Logs;
 
-public class IndexModel(MatMailDbContext db, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
+/// <summary>
+/// The activity log of the tenant the person works in – only its own events, those of the installation are the platform's. The platform shows
+/// the same list for every tenant (<c>Pages/Platform/Logs</c> overrides <see cref="Scope"/>); the markup is one partial, <c>_ActivityLogList</c>.
+/// </summary>
+public class IndexModel(LogListService logs, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {
-    private const int PageSize = 50;
-
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
@@ -33,48 +33,33 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, IStringLoc
     [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
 
-    public PageResult<ActivityLog> Paged { get; private set; } = new(Array.Empty<ActivityLog>(), 0, 1, 1, PageSize);
+    /// <summary>On the platform: the tenant to show (empty: all of them, 0: the events of the installation itself).</summary>
+    [BindProperty(SupportsGet = true)]
+    public long? TenantId { get; set; }
+
+    public PageResult<ActivityLog> Paged { get; private set; } = new(Array.Empty<ActivityLog>(), 0, 1, 1, LogListService.PageSize);
+
+    /// <summary>Every tenant, for the column and the filter of the platform; empty in the administration of a tenant.</summary>
+    public IReadOnlyList<Tenant> Tenants { get; private set; } = Array.Empty<Tenant>();
+
+    /// <summary>The list shows every tenant (the platform), with a column and a filter for the tenant.</summary>
+    public virtual bool AllTenants => false;
+
+    /// <summary>Which entries the list shows: those of the tenant the person works in.</summary>
+    protected virtual LogScope Scope => LogScope.OfTenant(currentUser.TenantId);
 
     public async Task OnGetAsync()
     {
-        long? tenantId = currentUser.TenantId;
-        bool system = currentUser.IsSystemAdmin;
-
-        // A tenant sees its own events; installation-wide events (no tenant) are for system administrators.
-        IQueryable<ActivityLog> query = db.ActivityLogs.AsNoTracking().Where(a => a.TenantId == tenantId || (system && a.TenantId == null));
-
-        if (!string.IsNullOrWhiteSpace(Search))
+        if (AllTenants)
         {
-            string pattern = Pager.ContainsPattern(Search);
-            query = query.Where(a => EF.Functions.ILike(a.Message, pattern) || (a.Details != null && EF.Functions.ILike(a.Details, pattern))
-                                     || (a.RemoteIp != null && EF.Functions.ILike(a.RemoteIp, pattern)));
+            Tenants = await logs.TenantsAsync();
         }
 
-        if (Enum.TryParse(Category, out ActivityCategory category))
-        {
-            query = query.Where(a => a.Category == category);
-        }
-
-        if (Enum.TryParse(Level, out ActivityLevel level))
-        {
-            query = query.Where(a => a.Level == level);
-        }
-
-        if (DateTime.TryParseExact(From, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime from))
-        {
-            query = query.Where(a => a.CreateDate >= from);
-        }
-
-        if (DateTime.TryParseExact(To, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime to))
-        {
-            DateTime end = to.AddDays(1);
-            query = query.Where(a => a.CreateDate < end);
-        }
-
-        query = Sort == "oldest" ? query.OrderBy(a => a.CreateDate) : query.OrderByDescending(a => a.CreateDate);
-        Paged = await query.ToPageAsync(PageNumber, PageSize);
+        Paged = await logs.ActivityAsync(new ActivityFilter(Search, Category, Level, From, To, Sort, PageNumber), Scope);
         PageNumber = Paged.PageNumber;
     }
+
+    public string TenantName(long? tenantId) => tenantId is long id ? Tenants.FirstOrDefault(t => t.Id == id)?.Name ?? "?" : l["Installation"].Value;
 
     public string CategoryLabel(string name) => name switch
     {

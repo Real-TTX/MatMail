@@ -1,0 +1,15 @@
+@page "/Platform/Transfers"
+@model MatMail.Pages.Platform.Transfers.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Mail transfers";
+    ViewData["Title"] = L["Mail transfers of all tenants"].Value;
+    ViewData["Description"] = L["What came into the server, what went out and what moved between mailboxes, for every tenant – and what no tenant could be found for."].Value
+        + (Model.LogIsOff ? string.Empty : " " + string.Format(L["Lines are kept for {0} days."].Value, Model.KeptDays) + (Model.ShowsSubjects ? string.Empty : " " + L["Subjects are not recorded."].Value));
+}
+
+@if (Model.LogIsOff)
+{
+    <mm-alert kind="info">@L["The mail transfer log is switched off. Set how many days it is kept under Server settings (0 turns it off)."]</mm-alert>
+}
+
+<partial name="_TransferList" model="Model" />

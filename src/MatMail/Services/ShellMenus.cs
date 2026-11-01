@@ -92,6 +92,9 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
                 new(l["Mailboxes"].Value, "/Platform/Mailboxes", "inbox"),
                 new(l["Domains"].Value, "/Platform/Domains", "globe"),
                 new(l["Users"].Value, "/Platform/Users", "users"),
+                new(l["Outgoing queue"].Value, "/Platform/Queue", "send"),
+                new(l["Mail transfers"].Value, "/Platform/Transfers", "shuffle"),
+                new(l["Activity log"].Value, "/Platform/Logs", "activity"),
             ]),
             new(l["Server"].Value,
             [

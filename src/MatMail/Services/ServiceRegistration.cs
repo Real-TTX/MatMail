@@ -57,6 +57,7 @@ public static class ServiceRegistration
         services.AddScoped<MatMail.Platform.MailIdentityUsers>();   // also IMatIdentityUsers (AddMatIdentitySignIn); the pages link a pending account with it
         services.AddScoped<InstanceOverviewService>();
         services.AddScoped<PlatformListService>();
+        services.AddScoped<LogListService>();
 
         services.AddMessaging();
         services.AddPushNotifications();

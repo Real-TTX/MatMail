@@ -9,7 +9,7 @@ namespace MatMail.Pages.Admin;
 
 /// <summary>The administration dashboard: counts, problems and the latest events.</summary>
 [Authorize]
-public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig config, CertificateProvider certificates) : PageModel
+public class IndexModel(MatMailDbContext db, CurrentUser currentUser) : PageModel
 {
     public int UserCount { get; private set; }
     public int MailboxCount { get; private set; }
@@ -18,19 +18,11 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
     public int QueuedCount { get; private set; }
     public long UnassignedCount { get; private set; }
     public string TenantName => currentUser.TenantName ?? string.Empty;
-    public string Hostname => config.Server.Hostname;
-    public bool IsSystemAdmin => currentUser.IsSystemAdmin;
-    public CertificateInfo? Certificate => certificates.Describe();
     public IReadOnlyList<MailAccount> AccountProblems { get; private set; } = Array.Empty<MailAccount>();
 
     /// <summary>Directories that could not be asked at the last comparison: their people cannot sign in until it works again.</summary>
     public IReadOnlyList<DirectoryConnection> DirectoryProblems { get; private set; } = Array.Empty<DirectoryConnection>();
     public IReadOnlyList<ActivityLog> RecentLogs { get; private set; } = Array.Empty<ActivityLog>();
-
-    /// <summary>The newest backup that worked (system administrators only), and whether any schedule exists or the last run of one failed.</summary>
-    public DateTime? LastBackup { get; private set; }
-    public int BackupPlans { get; private set; }
-    public bool BackupFailed { get; private set; }
 
     public bool Can(string permission) => currentUser.Can(permission);
 
@@ -42,13 +34,6 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
         }
 
         long? tenantId = currentUser.TenantId;
-        if (IsSystemAdmin)
-        {
-            LastBackup = await db.BackupRuns.AsNoTracking().Where(r => r.Status == BackupRunStatus.Succeeded).MaxAsync(r => (DateTime?)r.StartedDate);
-            BackupPlans = await db.BackupPlans.CountAsync(p => p.IsActive);
-            BackupFailed = await db.BackupPlans.AnyAsync(p => p.IsActive && p.LastStatus == BackupRunStatus.Failed);
-        }
-
         if (Can(Permissions.UsersManage))
         {
             UserCount = await db.Users.CountAsync();
@@ -92,7 +77,7 @@ public class IndexModel(MatMailDbContext db, CurrentUser currentUser, AppConfig 
         if (Can(Permissions.LogsView))
         {
             RecentLogs = await db.ActivityLogs.AsNoTracking()
-                .Where(l => l.TenantId == tenantId || l.TenantId == null)
+                .Where(l => l.TenantId == tenantId)   // the events of this tenant; those of the installation are the platform's
                 .OrderByDescending(l => l.CreateDate).Take(8).ToListAsync();
         }
 

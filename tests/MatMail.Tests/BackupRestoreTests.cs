@@ -220,7 +220,7 @@ public class BackupRestoreTests : IAsyncLifetime
     {
         Write("config/app.json", """
             { "Database": { "Host": "old-db", "Password": "old" },
-              "Server": { "Hostname": "mail.old.example", "WebPort": 1111, "WebHttps": false },
+              "Server": { "Hostname": "mail.old.example", "WebPort": 1111, "MaxUploadMb": 10 },
               "Display": { "Culture": "de-DE", "TimeZone": "Europe/Vienna" },
               "Smtp": { "Port": 2525 } }
             """);
@@ -228,7 +228,7 @@ public class BackupRestoreTests : IAsyncLifetime
 
         Write("config/app.json", """
             { "Database": { "Host": "live-db", "Password": "live" },
-              "Server": { "Hostname": "mail.live.example", "WebPort": 9933, "WebHttps": true },
+              "Server": { "Hostname": "mail.live.example", "WebPort": 9933, "MaxUploadMb": 99 },
               "Display": { "Culture": "en-US" } }
             """);
         await RestoreAsync(path, _host, DataDir);
@@ -238,7 +238,7 @@ public class BackupRestoreTests : IAsyncLifetime
         Assert.Equal("live", (string?)restored["Database"]!["Password"]);
         Assert.Equal("mail.live.example", (string?)restored["Server"]!["Hostname"]);
         Assert.Equal(9933, (int?)restored["Server"]!["WebPort"]);
-        Assert.True((bool?)restored["Server"]!["WebHttps"]);
+        Assert.Equal(99, (int?)restored["Server"]!["MaxUploadMb"]);
         Assert.Equal("de-DE", (string?)restored["Display"]!["Culture"]);
         Assert.Equal("Europe/Vienna", (string?)restored["Display"]!["TimeZone"]);
         Assert.Equal(2525, (int?)restored["Smtp"]!["Port"]);

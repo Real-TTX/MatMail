@@ -29,7 +29,6 @@ services:
       - "2993:993"
     environment:
       # Plain HTTP is the default now; it is spelled out so that a data volume from before the change (its app.json still says HTTPS) stays on HTTP.
-      MATMAIL__Server__WebHttps: "false"
       MATMAIL__Server__Hostname: localhost
     sysctls:
       # Lets the non-root app user listen on the standard mail ports inside the container.

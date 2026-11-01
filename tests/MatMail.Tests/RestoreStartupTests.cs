@@ -89,7 +89,7 @@ public class RestoreProgressHostTests
     {
         string dataDir = Path.Combine(Path.GetTempPath(), "matmail-progress-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dataDir);
-        var config = new AppConfig { Server = { WebPort = RestoreStartupTests.FreePort(), WebHttps = false }, Tls = { GenerateSelfSigned = false } };
+        var config = new AppConfig { Server = { WebPort = RestoreStartupTests.FreePort() }, Tls = { GenerateSelfSigned = false } };
 
         RestoreProgressHost? page = await RestoreProgressHost.StartAsync(config, dataDir, NullLogger.Instance);
         Assert.NotNull(page);
@@ -180,7 +180,6 @@ public class RestoreStartupTests : IAsyncLifetime
         {
             // the progress page of a restore must not meet the ports of anything else on the machine
             config.Server.WebPort = FreePort();
-            config.Server.WebHttps = false;
             config.Tls.GenerateSelfSigned = false;
         });
         _hosts.Add(host);

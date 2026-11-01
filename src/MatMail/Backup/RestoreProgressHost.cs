@@ -13,7 +13,6 @@ namespace MatMail.Backup;
 public sealed class RestoreProgressHost : IAsyncDisposable
 {
     private readonly WebApplication _app;
-    private readonly CertificateProvider _certificates;
     private readonly object _lock = new();
     private string _state = "running";
     private string _stage = "start";
@@ -22,25 +21,22 @@ public sealed class RestoreProgressHost : IAsyncDisposable
     private int _total;
     private string? _message;
 
-    private RestoreProgressHost(WebApplication app, CertificateProvider certificates)
+    private RestoreProgressHost(WebApplication app)
     {
         _app = app;
-        _certificates = certificates;
     }
 
     /// <summary>Starts the page. Null when the port cannot be used: the restore then runs without it.</summary>
     public static async Task<RestoreProgressHost?> StartAsync(AppConfig config, string dataDir, ILogger logger)
     {
-        CertificateProvider? certificates = null;
         try
         {
-            certificates = new CertificateProvider(config, dataDir, logger);
             WebApplicationBuilder builder = WebApplication.CreateSlimBuilder();
             builder.Logging.ClearProviders();
-            builder.WebHost.ConfigureMatMailWebServer(config, certificates);
+            builder.WebHost.ConfigureMatMailWebServer(config);
             WebApplication app = builder.Build();
 
-            var host = new RestoreProgressHost(app, certificates);
+            var host = new RestoreProgressHost(app);
             app.MapGet("/restore-status", () => Results.Json(host.Snapshot(), JsonSerializerOptions.Web));
             app.MapGet("/healthz", () => Results.Json(new { status = "restoring" }));
 
@@ -68,7 +64,6 @@ public sealed class RestoreProgressHost : IAsyncDisposable
         catch (Exception ex)
         {
             logger.LogWarning("The progress page of the restore could not be started ({Reason}); the restore goes on without it.", ex.Message);
-            certificates?.Dispose();
             return null;
         }
     }
@@ -105,15 +100,8 @@ public sealed class RestoreProgressHost : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await Task.Delay(TimeSpan.FromSeconds(3));
-        try
-        {
-            await _app.StopAsync(TimeSpan.FromSeconds(5));
-            await _app.DisposeAsync();
-        }
-        finally
-        {
-            _certificates.Dispose();
-        }
+        await _app.StopAsync(TimeSpan.FromSeconds(5));
+        await _app.DisposeAsync();
     }
 
     // A page of its own (no stylesheets, scripts or texts of the application: none of it is available now). English and German.

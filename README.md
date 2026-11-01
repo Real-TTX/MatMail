@@ -465,9 +465,9 @@ Worth knowing:
   `X-Forwarded-Proto`, as in every Mat app. Publish the port to the proxy alone (a Docker network
   or `127.0.0.1:9933:9933`): anybody who can reach it directly could send those headers himself. A
   proxy can be as small as `reverse_proxy matmail:9933` in Caddy.
-- **Without a proxy.** To let MatMail serve HTTPS itself (the certificate above, self-signed until
-  you bring your own) set `MATMAIL__Server__WebHttps: "true"` and open `https://<your-server>:9933`.
-  Notifications and the installed app need HTTPS in the browser, wherever it comes from.
+- **HTTPS is the proxy's job.** MatMail serves its web interface over plain HTTP only. Notifications
+  and the installed app need HTTPS in the browser, so open it through the proxy. The certificate
+  above is for the mail servers (IMAP, SMTP).
 - **The database is not exposed.** PostgreSQL has no published port, so its password stays inside
   the compose network. To choose your own, set `POSTGRES_PASSWORD` and `MATMAIL__Database__Password`
   to the same value.
@@ -491,7 +491,6 @@ service:
 | Variable | Default | Meaning |
 |---|---|---|
 | `MATMAIL__Server__Hostname` | `localhost` | name of the server (certificate, greeting) |
-| `MATMAIL__Server__WebHttps` | `false` | HTTPS for the web interface itself (off: plain HTTP behind a reverse proxy) |
 | `MATMAIL__Database__Host` / `Port` / `Database` / `Username` / `Password` | `db` / `5432` / `matmail` / `postgres` / `matmail` | PostgreSQL |
 | `MATMAIL__Smtp__Port` / `SubmissionPort` / `ImplicitTlsPort` | `25` / `587` / `465` | SMTP ports |
 | `MATMAIL__Imap__Port` / `ImplicitTlsPort` / `MaxConnections` | `143` / `993` / `500` | IMAP ports, overall connection limit |

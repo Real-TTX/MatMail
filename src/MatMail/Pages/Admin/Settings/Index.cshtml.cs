@@ -25,7 +25,6 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
     public class InputModel
     {
         public string Hostname { get; set; } = "localhost";
-        public bool WebHttps { get; set; }
         public int MaxUploadMb { get; set; }
 
         public bool SmtpEnabled { get; set; }
@@ -148,7 +147,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
 
     private InputModel ToInput(AppConfig c) => new()
     {
-        Hostname = c.Server.Hostname, WebHttps = c.Server.WebHttps, MaxUploadMb = c.Server.MaxUploadMb,
+        Hostname = c.Server.Hostname, MaxUploadMb = c.Server.MaxUploadMb,
         SmtpEnabled = c.Smtp.Enabled, SmtpPort = c.Smtp.Port, SmtpSubmissionPort = c.Smtp.SubmissionPort, SmtpImplicitTlsPort = c.Smtp.ImplicitTlsPort,
         SmtpMaxMessageSizeMb = c.Smtp.MaxMessageSizeMb, SmtpMaxRecipients = c.Smtp.MaxRecipients, SmtpRequireTlsForAuth = c.Smtp.RequireTlsForAuth,
         ImapEnabled = c.Imap.Enabled, ImapPort = c.Imap.Port, ImapImplicitTlsPort = c.Imap.ImplicitTlsPort, ImapRequireTls = c.Imap.RequireTls,
@@ -162,7 +161,6 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
     private void Apply(AppConfig c)
     {
         c.Server.Hostname = Input.Hostname.Trim();
-        c.Server.WebHttps = Input.WebHttps;
         c.Server.MaxUploadMb = Input.MaxUploadMb;
         c.Smtp.Enabled = Input.SmtpEnabled;
         c.Smtp.Port = Input.SmtpPort;

@@ -892,7 +892,6 @@
   <data name="Ocean" xml:space="preserve"><value>Ozean</value></data>
   <data name="Of several templates that fit, the lowest number is used." xml:space="preserve"><value>Passen mehrere Vorlagen, wird die mit der niedrigsten Zahl verwendet.</value></data>
   <data name="Off" xml:space="preserve"><value>Aus</value></data>
-  <data name="Off by default: MatMail is made to run behind a reverse proxy that handles HTTPS. The mail servers use the certificate either way." xml:space="preserve"><value>Standardmäßig aus: MatMail ist dafür gedacht, hinter einem Reverse Proxy zu laufen, der HTTPS übernimmt. Die Mailserver verwenden das Zertifikat in jedem Fall.</value></data>
   <data name="Off: a message opens in place of the list. On small screens it always does." xml:space="preserve"><value>Aus: Eine Nachricht öffnet sich anstelle der Liste. Auf kleinen Bildschirmen ist das immer so.</value></data>
   <data name="Offline: not saved on the server yet" xml:space="preserve"><value>Offline: noch nicht auf dem Server gespeichert</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
@@ -1149,7 +1148,6 @@
   <data name="Sending…" xml:space="preserve"><value>Wird gesendet …</value></data>
   <data name="Sent" xml:space="preserve"><value>Gesendet</value></data>
   <data name="Sent through" xml:space="preserve"><value>Gesendet über</value></data>
-  <data name="Serve the web interface over HTTPS" xml:space="preserve"><value>Weboberfläche über HTTPS bereitstellen</value></data>
   <data name="Server" xml:space="preserve"><value>Server</value></data>
   <data name="Server settings" xml:space="preserve"><value>Servereinstellungen</value></data>
   <data name="Sessions" xml:space="preserve"><value>Sitzungen</value></data>

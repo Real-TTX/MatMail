@@ -64,9 +64,9 @@ var builder = WebApplication.CreateBuilder(args);
 var certificates = new CertificateProvider(config, dataDir, bootstrapLogging.CreateLogger("Certificates"));
 
 // ---------------------------------------------------------------------------------------------
-// Web server (Kestrel): one port for the web interface, plain HTTP (a reverse proxy terminates TLS) unless Server.WebHttps is on
+// Web server (Kestrel): one port for the web interface, plain HTTP (a reverse proxy terminates TLS)
 // ---------------------------------------------------------------------------------------------
-builder.WebHost.ConfigureMatMailWebServer(config, certificates);
+builder.WebHost.ConfigureMatMailWebServer(config);
 
 // ---------------------------------------------------------------------------------------------
 // Services

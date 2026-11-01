@@ -43,7 +43,6 @@ public class ServerConfig
     /// Serve the web interface over HTTPS itself (self-signed unless a certificate is configured). Off by default: MatMail is made to run
     /// behind a reverse proxy that terminates TLS. The mail servers use the certificate in either case.
     /// </summary>
-    public bool WebHttps { get; set; }
 
     /// <summary>Largest attachment upload / message the web client accepts.</summary>
     public int MaxUploadMb { get; set; } = 50;

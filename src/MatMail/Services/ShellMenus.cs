@@ -78,8 +78,8 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
 
     /// <summary>
     /// What belongs to the whole installation and not to one tenant, for system administrators only: the tenants, one list of everything
-    /// across all of them (a row opens in its tenant) and the server itself. The addresses of the tenants, the server settings and the
-    /// backups are the old ones under /Admin; the menu of a page follows from its address.
+    /// across all of them (a row opens in its tenant) and the server itself. Every page of it lives under /Platform, which only system
+    /// administrators may open (one rule in Program.cs); the administration under /Admin is the one of a single tenant.
     /// </summary>
     private NavSet Platform()
         => new(PlatformId, l["Platform"].Value, "server",
@@ -87,7 +87,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             new(null, [new(l["Overview"].Value, "/Platform", "dashboard")]),
             new(l["All tenants"].Value,
             [
-                new(l["Tenants"].Value, "/Admin/Tenants", "building"),
+                new(l["Tenants"].Value, "/Platform/Tenants", "building"),
                 new(l["Connected accounts"].Value, "/Platform/Accounts", "plug"),
                 new(l["Mailboxes"].Value, "/Platform/Mailboxes", "inbox"),
                 new(l["Domains"].Value, "/Platform/Domains", "globe"),
@@ -95,8 +95,8 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             ]),
             new(l["Server"].Value,
             [
-                new(l["Server settings"].Value, "/Admin/Settings", "settings"),
-                new(l["Backups"].Value, "/Admin/Backup", "archive"),
+                new(l["Server settings"].Value, "/Platform/Settings", "settings"),
+                new(l["Backups"].Value, "/Platform/Backup", "archive"),
             ]),
         ], Href: "/Platform", Last: true);
 

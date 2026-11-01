@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 public class TargetModel(MatMailDbContext db, BackupService backups, SecretProtector secrets, AppConfig config, IStringLocalizer<SharedResource> l) : PageModel
 {

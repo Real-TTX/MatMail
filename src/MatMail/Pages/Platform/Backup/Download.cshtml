@@ -1,7 +1,7 @@
-@page "/Admin/Backup/Download"
-@model MatMail.Pages.Admin.Backup.DownloadModel
+@page "/Platform/Backup/Download"
+@model MatMail.Pages.Platform.Backup.DownloadModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups / Download";
+    ViewData["Breadcrumb"] = "Platform / Backups / Download";
     ViewData["Title"] = L["Download a backup"].Value;
     ViewData["Description"] = L["Makes a complete backup now – database and files – and offers it for download. Use it to keep a copy somewhere else, or to move to another server."].Value;
     ViewData["Width"] = "narrow";
@@ -12,12 +12,12 @@
 @if (Model.Token is Guid token)
 {
     @* The backup is made on the server; backup.js shows how far it is and unhides the link when the file is ready. *@
-    <mm-card id="backup-download" title='@L["The backup"]' icon="archive" data-status-url="@Url.Page("/Admin/Backup/Download", "Status", new { token })">
+    <mm-card id="backup-download" title='@L["The backup"]' icon="archive" data-status-url="@Url.Page("/Platform/Backup/Download", "Status", new { token })">
         <div class="mat-meter mat-meter--indeterminate" id="backup-download-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]"><div class="mat-meter__fill"></div></div>
         <p class="mat-muted" id="backup-download-text">@L["Getting ready …"]</p>
         <mm-list-actions>
-            <mm-button variant="primary" id="backup-download-link" href='@Url.Page("/Admin/Backup/Download", "File", new { token })' icon="download" hidden="hidden">@L["Download"]</mm-button>
-            <mm-button variant="secondary" href="/Admin/Backup" icon="back">@L["Back"]</mm-button>
+            <mm-button variant="primary" id="backup-download-link" href='@Url.Page("/Platform/Backup/Download", "File", new { token })' icon="download" hidden="hidden">@L["Download"]</mm-button>
+            <mm-button variant="secondary" href="/Platform/Backup" icon="back">@L["Back"]</mm-button>
         </mm-list-actions>
         <p class="mat-muted">@L["The file stays on the server for an hour."]</p>
     </mm-card>
@@ -32,7 +32,7 @@ else
         </mm-form-section>
         <mm-button-row>
             <mm-button variant="primary" type="submit" handler="Start" icon="download">@L["Make the backup"]</mm-button>
-            <mm-button variant="secondary" href="/Admin/Backup" icon="back">@L["Back"]</mm-button>
+            <mm-button variant="secondary" href="/Platform/Backup" icon="back">@L["Back"]</mm-button>
         </mm-button-row>
     </mm-form>
 }

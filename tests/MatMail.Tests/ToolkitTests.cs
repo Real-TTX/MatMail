@@ -217,8 +217,8 @@ public partial class ToolkitTests
     [InlineData("/Admin/Mailboxes/Edit", "/Admin/Mailboxes")]
     [InlineData("/admin/mailboxes/addresses", "/Admin/Mailboxes")]
     [InlineData("/Admin", "/Admin")]
-    [InlineData("/Admin/Backup/Plans", "/Admin/Backup")]
-    [InlineData("/Admin/Tenants/Edit", "/Admin/Tenants")]
+    [InlineData("/Platform/Backup/Plans", "/Platform/Backup")]
+    [InlineData("/Platform/Tenants/Edit", "/Platform/Tenants")]
     [InlineData("/Platform", "/Platform")]
     [InlineData("/Platform/Accounts", "/Platform/Accounts")]
     [InlineData("/Account/Rules/Edit", "/Account/Rules")]
@@ -230,9 +230,9 @@ public partial class ToolkitTests
     [Theory]
     [InlineData("/Mail", "mail")]
     [InlineData("/Admin/Users/Edit", "admin")]
-    [InlineData("/Admin/Backup/Plan", "platform")]
-    [InlineData("/Admin/Tenants/Edit", "platform")]
-    [InlineData("/Admin/Settings", "platform")]
+    [InlineData("/Platform/Backup/Plan", "platform")]
+    [InlineData("/Platform/Tenants/Edit", "platform")]
+    [InlineData("/Platform/Settings", "platform")]
     [InlineData("/Platform", "platform")]
     [InlineData("/Platform/Users", "platform")]
     [InlineData("/Account/Security", "account")]
@@ -314,7 +314,7 @@ public partial class ToolkitTests
         string[] platform = menus.Single(m => m.Id == "platform").Pages.Select(p => p.Href!).ToArray();
         string[] administration = menus.Single(m => m.Id == "admin").Pages.Select(p => p.Href!).ToArray();
 
-        foreach (string wholeInstallation in new[] { "/Admin/Tenants", "/Admin/Settings", "/Admin/Backup", "/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users" })
+        foreach (string wholeInstallation in new[] { "/Platform/Tenants", "/Platform/Settings", "/Platform/Backup", "/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users" })
         {
             Assert.Contains(wholeInstallation, platform);
             Assert.DoesNotContain(wholeInstallation, administration);
@@ -327,11 +327,13 @@ public partial class ToolkitTests
         IReadOnlyList<NavSet> ofATenantAdministrator = new ShellMenus(new CurrentUser(accessor), new EchoLocalizer()).ForUser();
         Assert.Equal(["mail", "account", "admin"], ofATenantAdministrator.Select(m => m.Id));
 
-        // and the folder of the platform is closed to everybody else, like the pages that moved there
+        // the folder of the platform is closed to everybody else, and everything of the platform lives in it (nothing of it under /Admin)
         string program = File.ReadAllText(Path.Combine(Source, "Program.cs"));
-        foreach (string folder in new[] { "/Platform", "/Admin/Tenants", "/Admin/Settings", "/Admin/Backup" })
+        Assert.Contains("AuthorizeFolder(\"/Platform\", Permissions.SystemAdminPolicy)", program);
+        Assert.All(platform, href => Assert.StartsWith("/Platform", href));
+        foreach (string moved in new[] { "Tenants", "Settings", "Backup" })
         {
-            Assert.Contains($"AuthorizeFolder(\"{folder}\", Permissions.SystemAdminPolicy)", program);
+            Assert.False(Directory.Exists(Path.Combine(Source, "Pages", "Admin", moved)), $"/Admin/{moved} still has pages");
         }
     }
 
@@ -339,7 +341,7 @@ public partial class ToolkitTests
     [
         new("mail", "Mail", "mail", [new(null, [new("Open mail", "/Mail", "inbox")])], Custom: true, Paths: ["/Mail"]),
         new("admin", "Administration", "settings", [new(null, [new("Dashboard", "/Admin", "dashboard")]), new("Mail", [new("Mailboxes", "/Admin/Mailboxes", "inbox")])]),
-        new("platform", "Platform", "server", [new(null, [new("Overview", "/Platform", "dashboard")]), new("All tenants", [new("Tenants", "/Admin/Tenants", "building"), new("Users", "/Platform/Users", "users"), new("Accounts", "/Platform/Accounts", "plug")]), new("Server", [new("Server settings", "/Admin/Settings", "settings"), new("Backups", "/Admin/Backup", "archive")])]),
+        new("platform", "Platform", "server", [new(null, [new("Overview", "/Platform", "dashboard")]), new("All tenants", [new("Tenants", "/Platform/Tenants", "building"), new("Users", "/Platform/Users", "users"), new("Accounts", "/Platform/Accounts", "plug")]), new("Server", [new("Server settings", "/Platform/Settings", "settings"), new("Backups", "/Platform/Backup", "archive")])]),
         new("account", "My account", "user", [new(null, [new("Profile", "/Account", "user"), new("Mail rules", "/Account/Rules", "filter")])], Paths: ["/Account"]),
     ];
 

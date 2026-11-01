@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 /// <summary>One backup file of a target as the restore page lists it.</summary>
 public sealed record BackupFileRow(string Name, long Bytes, DateTime CreatedUtc, string MadeBy, string Version, bool Encrypted);

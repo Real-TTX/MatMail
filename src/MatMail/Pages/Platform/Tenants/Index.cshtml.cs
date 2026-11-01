@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatMail.Pages.Admin.Tenants;
+namespace MatMail.Pages.Platform.Tenants;
 
 public class IndexModel(MatMailDbContext db, CurrentUser currentUser) : PageModel
 {

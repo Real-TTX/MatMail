@@ -1,7 +1,7 @@
-@page "/Admin/Backup/RestoreConfirm"
-@model MatMail.Pages.Admin.Backup.RestoreConfirmModel
+@page "/Platform/Backup/RestoreConfirm"
+@model MatMail.Pages.Platform.Backup.RestoreConfirmModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups / Restore / Confirm";
+    ViewData["Breadcrumb"] = "Platform / Backups / Restore / Confirm";
     ViewData["Title"] = L["Restore a backup"].Value;
     ViewData["Width"] = "narrow";
 }
@@ -11,7 +11,7 @@
 @if (!Model.SourceOk)
 {
     <mm-alert kind="danger">@Model.Error</mm-alert>
-    <mm-button-row><mm-button variant="secondary" href="/Admin/Backup/Restore" icon="back">@L["Back"]</mm-button></mm-button-row>
+    <mm-button-row><mm-button variant="secondary" href="/Platform/Backup/Restore" icon="back">@L["Back"]</mm-button></mm-button-row>
     return;
 }
 
@@ -49,7 +49,7 @@ else if (Model.Error is not null)
 {
     var failed = Model.Preparation.State == MatMail.Backup.PreparationState.Failed;
     @* The preparation runs on the server; backup.js shows how far it is, offers the way back when it failed and waits for the restart. *@
-    <mm-card id="restore-preparation" title='@L["The restore is being prepared"]' icon="restore" data-status-url="/Admin/Backup?handler=Status">
+    <mm-card id="restore-preparation" title='@L["The restore is being prepared"]' icon="restore" data-status-url="/Platform/Backup?handler=Status">
         <div class="mat-meter mat-meter--indeterminate" id="restore-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]" hidden="@failed"><div class="mat-meter__fill"></div></div>
         <p class="@(failed ? "mat-text-danger" : "mat-muted")" id="restore-progress-text">@(failed ? Model.Preparation.Message : L["Getting ready …"].Value)</p>
         <form method="post" asp-page-handler="Reset" id="restore-back" hidden="@(!failed)">
@@ -87,7 +87,7 @@ else if (Model.Problem is null)
 
         <mm-button-row>
             <mm-button variant="secondary" type="submit" handler="Check" icon="search">@L["Check the backup"]</mm-button>
-            <mm-button variant="secondary" href="/Admin/Backup/Restore" icon="back">@L["Back"]</mm-button>
+            <mm-button variant="secondary" href="/Platform/Backup/Restore" icon="back">@L["Back"]</mm-button>
             <mm-button-spacer />
             <mm-button variant="danger" type="submit" handler="Start" icon="restore" confirm-ok='@L["Restore"]'
                        confirm='@string.Format(L["Replace the current data with “{0}”? MatMail restarts and everybody is disconnected."].Value, Model.FileLabel)'>@L["Restore"]</mm-button>
@@ -96,7 +96,7 @@ else if (Model.Problem is null)
 }
 else
 {
-    <mm-button-row><mm-button variant="secondary" href="/Admin/Backup/Restore" icon="back">@L["Back"]</mm-button></mm-button-row>
+    <mm-button-row><mm-button variant="secondary" href="/Platform/Backup/Restore" icon="back">@L["Back"]</mm-button></mm-button-row>
 }
 
 @section Scripts {

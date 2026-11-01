@@ -1,7 +1,7 @@
-@page "/Admin/Backup/Restore"
-@model MatMail.Pages.Admin.Backup.RestoreModel
+@page "/Platform/Backup/Restore"
+@model MatMail.Pages.Platform.Backup.RestoreModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups / Restore";
+    ViewData["Breadcrumb"] = "Platform / Backups / Restore";
     ViewData["Title"] = L["Backups"].Value;
     ViewData["Description"] = L["Put a backup in place of what is here: the database and the files of the data volume. Backups of earlier versions can be restored too; they are brought up to this version."].Value;
 }
@@ -55,8 +55,8 @@
                     <td class="mat-hide-sm mat-num mat-nowrap">@Fmt.Size(file.Bytes)</td>
                     <td class="mat-table__cell-actions">
                         <div class="mat-table__actions">
-                            <mm-button variant="ghost" href='@($"/Admin/Backup/Restore?handler=File&target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="download" icon-only="true" small="true">@L["Download"]</mm-button>
-                            <mm-button variant="ghost" href='@($"/Admin/Backup/RestoreConfirm?target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="restore" icon-only="true" small="true">@L["Restore this backup"]</mm-button>
+                            <mm-button variant="ghost" href='@($"/Platform/Backup/Restore?handler=File&target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="download" icon-only="true" small="true">@L["Download"]</mm-button>
+                            <mm-button variant="ghost" href='@($"/Platform/Backup/RestoreConfirm?target={Model.Target}&file={Uri.EscapeDataString(file.Name)}")' icon="restore" icon-only="true" small="true">@L["Restore this backup"]</mm-button>
                         </div>
                     </td>
                 </tr>
@@ -70,7 +70,7 @@
 }
 
 @* A backup from the computer of the administrator: the file is sent as it is (backup.js), then the confirmation page shows what it holds. *@
-<mm-card id="backup-upload" title='@L["Restore from a file"]' icon="upload" data-url="/Admin/Backup/Restore?handler=Upload" data-next="/Admin/Backup/RestoreConfirm">
+<mm-card id="backup-upload" title='@L["Restore from a file"]' icon="upload" data-url="/Platform/Backup/Restore?handler=Upload" data-next="/Platform/Backup/RestoreConfirm">
     <p class="mat-muted">@L["A backup you have on your computer, from this or another MatMail. The file is sent to the server first; then you see what it holds before anything is replaced."]</p>
     <label class="mat-dropzone" for="backup-file"><mm-icon name="upload" /><strong>@L["Drop the backup file here or click to choose it"]</strong><span class="mat-muted">.zip, .mmbak</span><input type="file" id="backup-file" accept=".zip,.mmbak" /><span class="mat-dropzone__files"></span></label>
     <div class="mat-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]" hidden><div class="mat-meter__fill"></div></div>

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 /// <summary>A backup made now, to be downloaded (to keep a copy somewhere else, or to move to another server).</summary>
 public class DownloadModel(BackupDownloads downloads, BackupService backups, RestorePreparation preparation, IStringLocalizer<SharedResource> l) : PageModel

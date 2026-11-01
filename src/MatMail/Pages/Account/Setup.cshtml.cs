@@ -40,7 +40,7 @@ public class SetupModel(
     public string? UploadProblem { get; private set; }
     public bool HasUpload { get; private set; }
     public PreparationStatus Preparation => preparation.Status;
-    public IReadOnlyDictionary<string, string> Texts => Pages.Admin.Backup.BackupTexts.For(l);
+    public IReadOnlyDictionary<string, string> Texts => Pages.Platform.Backup.BackupTexts.For(l);
 
     public class InputModel
     {
@@ -68,7 +68,7 @@ public class SetupModel(
         }
     }
 
-    public IActionResult OnGetStatus() => Pages.Admin.Backup.BackupStatus.Json(backups, preparation, downloads: null, token: null);
+    public IActionResult OnGetStatus() => Pages.Platform.Backup.BackupStatus.Json(backups, preparation, downloads: null, token: null);
 
     public IActionResult OnPostCheck()
     {

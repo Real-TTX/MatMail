@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 /// <summary>The schedules: what is backed up when, where to, and for how long it is kept.</summary>
 public class PlansModel(MatMailDbContext db, IStringLocalizer<SharedResource> l) : PageModel

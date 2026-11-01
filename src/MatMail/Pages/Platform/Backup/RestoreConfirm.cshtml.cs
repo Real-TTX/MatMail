@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 /// <summary>What a backup holds, and the question whether it really is to replace what is here.</summary>
 public class RestoreConfirmModel(

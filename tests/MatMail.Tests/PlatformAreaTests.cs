@@ -90,7 +90,7 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         HttpClient tenantAdmin = await SignedInAsync("tenant-admin");
         Assert.Equal(HttpStatusCode.OK, (await tenantAdmin.GetAsync("/Admin")).StatusCode);   // the administration of their tenant is theirs
 
-        foreach (string list in Lists.Concat(["/Admin/Tenants", "/Admin/Settings", "/Admin/Backup"]))
+        foreach (string list in Lists.Concat(["/Platform/Tenants", "/Platform/Settings", "/Platform/Backup"]))
         {
             HttpResponseMessage response = await tenantAdmin.GetAsync(list);
             Assert.NotEqual(HttpStatusCode.OK, response.StatusCode);
@@ -117,5 +117,26 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         await SignIn.PostAsync(tenantAdmin, "/Admin", "/Account/SwitchTenant", new Dictionary<string, string> { ["tenantId"] = second.ToString(), ["returnUrl"] = "/Admin" });
         string admin = await tenantAdmin.GetStringAsync("/Admin");
         Assert.DoesNotContain("Second tenant", admin);
+    }
+
+    [DbFact]
+    public async Task The_old_addresses_of_the_pages_that_moved_to_the_platform_lead_there()
+    {
+        HttpClient admin = await SignedInAsync(PlatformFactory.AdminUser);
+        foreach ((string old, string now) in new[]
+        {
+            ("/Admin/Tenants", "/Platform/Tenants"),
+            ("/Admin/Settings/Certificate", "/Platform/Settings/Certificate"),
+            ("/Admin/Backup/Plans?page=2", "/Platform/Backup/Plans?page=2"),
+        })
+        {
+            HttpResponseMessage response = await admin.GetAsync(old);
+            Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
+            Assert.Equal(now, response.Headers.Location!.OriginalString);
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Tenants")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Settings")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/Platform/Backup")).StatusCode);
     }
 }

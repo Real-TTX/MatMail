@@ -152,9 +152,6 @@ builder.Services.AddRazorPages(options =>
 
         // One line per admin area: who may open it.
         options.Conventions.AuthorizeFolder("/Platform", Permissions.SystemAdminPolicy);
-        options.Conventions.AuthorizeFolder("/Admin/Tenants", Permissions.SystemAdminPolicy);
-        options.Conventions.AuthorizeFolder("/Admin/Settings", Permissions.SystemAdminPolicy);
-        options.Conventions.AuthorizeFolder("/Admin/Backup", Permissions.SystemAdminPolicy);
         options.Conventions.AuthorizeFolder("/Admin/Users", Permissions.UsersManage);
         options.Conventions.AuthorizeFolder("/Admin/Roles", Permissions.RolesManage);
         options.Conventions.AuthorizeFolder("/Admin/Domains", Permissions.DomainsManage);
@@ -296,6 +293,13 @@ app.MapGet("/manifest.webmanifest", async (HttpContext http, BrandingService bra
 
 // A tenant's own sign-in address: /t/<name>.
 app.MapGet("/t/{slug}", (string slug) => Results.Redirect("/Account/Login?t=" + Uri.EscapeDataString(slug))).AllowAnonymous();
+
+// The pages of the whole installation moved from /Admin to /Platform: bookmarks and the links in older mails (a failed backup) still arrive.
+foreach (string moved in new[] { "Tenants", "Settings", "Backup" })
+{
+    app.MapGet($"/Admin/{moved}/{{**rest}}", (HttpContext http, string? rest)
+        => Results.Redirect($"/Platform/{moved}{(string.IsNullOrEmpty(rest) ? string.Empty : "/" + rest)}{http.Request.QueryString}", permanent: true));
+}
 
 app.MapRazorPages();
 app.MapMailApi();

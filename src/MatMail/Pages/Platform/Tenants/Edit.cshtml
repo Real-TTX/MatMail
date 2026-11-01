@@ -1,7 +1,7 @@
-@page "/Admin/Tenants/Edit"
-@model MatMail.Pages.Admin.Tenants.EditModel
+@page "/Platform/Tenants/Edit"
+@model MatMail.Pages.Platform.Tenants.EditModel
 @{
-    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Tenants / Edit tenant" : "Administration / Tenants / New tenant";
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Platform / Tenants / Edit tenant" : "Platform / Tenants / New tenant";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New tenant"].Value;
     ViewData["Description"] = Model.IsEdit ? null : L["A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant."].Value;
     ViewData["Width"] = "narrow";
@@ -18,7 +18,7 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Tenants" icon="back">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Platform/Tenants" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit && !Model.IsCurrent)
         {

@@ -1,7 +1,7 @@
-@page "/Admin/Backup/Plans"
-@model MatMail.Pages.Admin.Backup.PlansModel
+@page "/Platform/Backup/Plans"
+@model MatMail.Pages.Platform.Backup.PlansModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups / Schedules";
+    ViewData["Breadcrumb"] = "Platform / Backups / Schedules";
     ViewData["Title"] = L["Backups"].Value;
     ViewData["Description"] = L["A schedule says when a backup is made, where it goes, and how many are kept."].Value;
 }
@@ -39,9 +39,9 @@
     <tbody>
         @foreach (var plan in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Backup/Plan?id=@plan.Id">
+            <tr data-row-href="/Platform/Backup/Plan?id=@plan.Id">
                 <td>
-                    <div class="mat-table__name"><span><a href="/Admin/Backup/Plan?id=@plan.Id">@plan.Name</a>@if (plan.Encrypt) { <span class="mat-muted" role="img" aria-label="@L["Encrypted"]" data-tip="@L["Encrypted"]"> <mm-icon name="lock" /></span> }</span></div>
+                    <div class="mat-table__name"><span><a href="/Platform/Backup/Plan?id=@plan.Id">@plan.Name</a>@if (plan.Encrypt) { <span class="mat-muted" role="img" aria-label="@L["Encrypted"]" data-tip="@L["Encrypted"]"> <mm-icon name="lock" /></span> }</span></div>
                 </td>
                 <td>@Model.Schedule(plan)</td>
                 <td class="mat-hide-sm">@plan.Target?.Name</td>
@@ -59,7 +59,7 @@
                 </td>
                 <td class="mat-table__cell-actions">
                     <div class="mat-table__actions">
-                        <mm-button variant="ghost" href='@($"/Admin/Backup/Plan?id={plan.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
+                        <mm-button variant="ghost" href='@($"/Platform/Backup/Plan?id={plan.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
                     </div>
                 </td>
             </tr>
@@ -70,6 +70,6 @@
 <mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
 
 <mm-list-actions>
-    <mm-button variant="primary" href="/Admin/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
+    <mm-button variant="primary" href="/Platform/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
 </mm-list-actions>
 </mm-list>

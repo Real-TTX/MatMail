@@ -1,7 +1,7 @@
-@page "/Admin/Backup/Targets"
-@model MatMail.Pages.Admin.Backup.TargetsModel
+@page "/Platform/Backup/Targets"
+@model MatMail.Pages.Platform.Backup.TargetsModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups / Targets";
+    ViewData["Breadcrumb"] = "Platform / Backups / Targets";
     ViewData["Title"] = L["Backups"].Value;
     ViewData["Description"] = L["A target is a place for backups: a folder of this server (a mounted disk or share) or a folder on a network share (NAS) that MatMail reaches itself."].Value;
 }
@@ -36,9 +36,9 @@
     <tbody>
         @foreach (var target in Model.Paged.Rows)
         {
-            <tr data-row-href="/Admin/Backup/Target?id=@target.Id">
+            <tr data-row-href="/Platform/Backup/Target?id=@target.Id">
                 <td>
-                    <div class="mat-table__name"><span><a href="/Admin/Backup/Target?id=@target.Id">@target.Name</a> @if (!target.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</span></div>
+                    <div class="mat-table__name"><span><a href="/Platform/Backup/Target?id=@target.Id">@target.Name</a> @if (!target.IsActive) { <mm-badge kind="muted">@L["Disabled"]</mm-badge> }</span></div>
                 </td>
                 <td class="mat-hide-sm">
                     @if (target.Kind == BackupTargetKind.Smb) { <mm-badge kind="info" icon="network">@L["Network share (SMB)"]</mm-badge> }
@@ -63,7 +63,7 @@
                 <td class="mat-hide-sm mat-num">@(Model.PlanCounts.GetValueOrDefault(target.Id))</td>
                 <td class="mat-table__cell-actions">
                     <div class="mat-table__actions">
-                        <mm-button variant="ghost" href='@($"/Admin/Backup/Target?id={target.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
+                        <mm-button variant="ghost" href='@($"/Platform/Backup/Target?id={target.Id}")' icon="edit" icon-only="true" small="true">@L["Edit"]</mm-button>
                     </div>
                 </td>
             </tr>
@@ -74,6 +74,6 @@
 <mm-pagination current-page="Model.Paged.PageNumber" total-pages="Model.Paged.TotalPages" total-count="Model.Paged.Total" page-size="Model.Paged.PageSize" />
 
 <mm-list-actions>
-    <mm-button variant="primary" href="/Admin/Backup/Target" icon="plus">@L["New target"]</mm-button>
+    <mm-button variant="primary" href="/Platform/Backup/Target" icon="plus">@L["New target"]</mm-button>
 </mm-list-actions>
 </mm-list>

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Tenants;
+namespace MatMail.Pages.Platform.Tenants;
 
 public class EditModel(MatMailDbContext db, TenantService tenants, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {

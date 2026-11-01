@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Settings;
+namespace MatMail.Pages.Platform.Settings;
 
 public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
 {

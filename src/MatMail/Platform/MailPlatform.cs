@@ -13,7 +13,7 @@ namespace MatMail.Platform;
 /// MatMail as an app of the Mat platform (MatDesign docs/PLATFORM.md), on the shared package MatPlatform (the folder <c>MatPlatform/</c>, a copy):
 /// how Mattiverse shows it (<see cref="Describe"/>: tiles, a few settings, buttons), its values and what the buttons do. The platform looks at the
 /// <b>installation</b>, never at one tenant: the numbers are those of all tenants, the settings are a few of the server settings
-/// (<c>/data/config/app.json</c>, the same file and values as /Admin/Settings; they apply after a restart). Texts are German or English, as the
+/// (<c>/data/config/app.json</c>, the same file and values as /Platform/Settings; they apply after a restart). Texts are German or English, as the
 /// caller asks with <c>Accept-Language</c>. No database here: the values come from the services.
 /// </summary>
 public sealed class MailPlatform(
@@ -141,7 +141,7 @@ public sealed class MailPlatform(
         });
 
         o.LinkAction("openAdmin", T("Administration öffnen", "Open admin"), "external", "/Admin");
-        o.LinkAction("openSettings", T("Alle Servereinstellungen", "All server settings"), "settings", "/Admin/Settings");
+        o.LinkAction("openSettings", T("Alle Servereinstellungen", "All server settings"), "settings", "/Platform/Settings");
         o.LinkAction("openQueue", T("Ausgang öffnen", "Open the queue"), "list", "/Admin/Queue");
         o.PostAction("fetchMail", T("Jetzt abrufen", "Fetch mail now"), "refresh");
         o.PostAction("retryQueue", T("Ausgang jetzt senden", "Send the queue now"), "upload",
@@ -197,7 +197,7 @@ public sealed class MailPlatform(
         };
     }
 
-    /// <summary>The settings as they are in the file (like /Admin/Settings shows them; environment overrides are not part of it).</summary>
+    /// <summary>The settings as they are in the file (like /Platform/Settings shows them; environment overrides are not part of it).</summary>
     public Task<IReadOnlyDictionary<string, object?>> GetConfigurationAsync(MatPlatformCall call, CancellationToken ct)
     {
         AppConfig c = AppConfigLoader.LoadFile(effective.DataDir);
@@ -218,7 +218,7 @@ public sealed class MailPlatform(
 
     /// <summary>
     /// The values were checked against the definition by MatPlatform already (types, required, min/max, options); here what it cannot know: a
-    /// host name that is only blanks and a time zone this server does not know. Saved into the file like /Admin/Settings does, logged with the caller.
+    /// host name that is only blanks and a time zone this server does not know. Saved into the file like /Platform/Settings does, logged with the caller.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, string>> ConfigureAsync(IReadOnlyDictionary<string, JsonElement> values, MatPlatformCall call, CancellationToken ct)
     {

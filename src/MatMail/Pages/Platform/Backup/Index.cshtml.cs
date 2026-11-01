@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
-namespace MatMail.Pages.Admin.Backup;
+namespace MatMail.Pages.Platform.Backup;
 
 /// <summary>What is going on with the backups: the run that is going now, how the last restore ended, warnings, and the history.</summary>
 public class IndexModel(MatMailDbContext db, BackupService backups, RestorePreparation preparation, AppConfig config, IStringLocalizer<SharedResource> l) : PageModel

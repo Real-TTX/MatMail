@@ -1,7 +1,7 @@
-@page "/Admin/Backup/Target"
-@model MatMail.Pages.Admin.Backup.TargetModel
+@page "/Platform/Backup/Target"
+@model MatMail.Pages.Platform.Backup.TargetModel
 @{
-    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Backups / Edit target" : "Administration / Backups / New target";
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Platform / Backups / Edit target" : "Platform / Backups / New target";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New target"].Value;
     ViewData["Width"] = "narrow";
 }
@@ -43,7 +43,7 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Backup/Targets" icon="back">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Platform/Backup/Targets" icon="back">@L["Back"]</mm-button>
         <mm-button variant="secondary" type="submit" handler="Test" icon="plug">@L["Test connection"]</mm-button>
         <mm-button-spacer />
         @if (Model.IsEdit)

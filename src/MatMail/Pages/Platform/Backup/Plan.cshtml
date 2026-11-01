@@ -1,14 +1,14 @@
-@page "/Admin/Backup/Plan"
-@model MatMail.Pages.Admin.Backup.PlanModel
+@page "/Platform/Backup/Plan"
+@model MatMail.Pages.Platform.Backup.PlanModel
 @{
-    ViewData["Breadcrumb"] = Model.IsEdit ? "Administration / Backups / Edit schedule" : "Administration / Backups / New schedule";
+    ViewData["Breadcrumb"] = Model.IsEdit ? "Platform / Backups / Edit schedule" : "Platform / Backups / New schedule";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New schedule"].Value;
     ViewData["Width"] = "narrow";
 }
 
 @if (Model.TargetItems.Count == 0)
 {
-    <mm-alert kind="warn">@L["There is no target yet. A backup needs a place to go to."] <a href="/Admin/Backup/Target">@L["Add a target"]</a></mm-alert>
+    <mm-alert kind="warn">@L["There is no target yet. A backup needs a place to go to."] <a href="/Platform/Backup/Target">@L["Add a target"]</a></mm-alert>
 }
 
 <mm-form>
@@ -61,7 +61,7 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Backup/Plans" icon="back">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Platform/Backup/Plans" icon="back">@L["Back"]</mm-button>
         @if (Model.IsEdit)
         {
             <mm-button variant="secondary" type="submit" handler="RunNow" icon="play">@L["Back up now"]</mm-button>

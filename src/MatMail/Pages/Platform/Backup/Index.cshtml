@@ -1,7 +1,7 @@
-@page "/Admin/Backup"
-@model MatMail.Pages.Admin.Backup.IndexModel
+@page "/Platform/Backup"
+@model MatMail.Pages.Platform.Backup.IndexModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Backups";
+    ViewData["Breadcrumb"] = "Platform / Backups";
     ViewData["Title"] = L["Backups"].Value;
     ViewData["Description"] = L["Everything of this installation – the database and the files of the data volume – is backed up as a whole, so that it can be restored on any server. Backups are made on a schedule to a folder or to a network share (NAS)."].Value;
 }
@@ -45,7 +45,7 @@
 }
 
 @* The run that is going on: the script (backup.js) shows it while it runs and reloads the page when it is over. *@
-<mm-card id="backup-activity" title='@L["A backup is running"]' icon="refresh" data-status-url="@Url.Page("/Admin/Backup/Index", "Status")" data-running="@(Model.Activity is null ? "false" : "true")" hidden="@(Model.Activity is null)">
+<mm-card id="backup-activity" title='@L["A backup is running"]' icon="refresh" data-status-url="@Url.Page("/Platform/Backup/Index", "Status")" data-running="@(Model.Activity is null ? "false" : "true")" hidden="@(Model.Activity is null)">
     <div class="mat-meter" id="backup-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="@L["Progress"]"><div class="mat-meter__fill"></div></div>
     <p class="mat-muted" id="backup-activity-text">@(Model.Activity?.Stage)</p>
     <form method="post" asp-page-handler="Cancel" data-no-busy>
@@ -114,8 +114,8 @@
                     @if (run.Status == BackupRunStatus.Succeeded && run.FileName is not null && run.TargetId is not null)
                     {
                         <div class="mat-table__actions">
-                            <mm-button variant="ghost" href='@($"/Admin/Backup/Restore?handler=File&target={run.TargetId}&file={Uri.EscapeDataString(run.FileName)}")' icon="download" icon-only="true" small="true">@L["Download"]</mm-button>
-                            <mm-button variant="ghost" href='@($"/Admin/Backup/RestoreConfirm?target={run.TargetId}&file={Uri.EscapeDataString(run.FileName)}")' icon="restore" icon-only="true" small="true">@L["Restore this backup"]</mm-button>
+                            <mm-button variant="ghost" href='@($"/Platform/Backup/Restore?handler=File&target={run.TargetId}&file={Uri.EscapeDataString(run.FileName)}")' icon="download" icon-only="true" small="true">@L["Download"]</mm-button>
+                            <mm-button variant="ghost" href='@($"/Platform/Backup/RestoreConfirm?target={run.TargetId}&file={Uri.EscapeDataString(run.FileName)}")' icon="restore" icon-only="true" small="true">@L["Restore this backup"]</mm-button>
                         </div>
                     }
                 </td>
@@ -141,8 +141,8 @@
             </div>
         </form>
     }
-    <mm-button variant="secondary" href="/Admin/Backup/Download" icon="download">@L["Download a backup"]</mm-button>
-    <mm-button variant="secondary" href="/Admin/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
+    <mm-button variant="secondary" href="/Platform/Backup/Download" icon="download">@L["Download a backup"]</mm-button>
+    <mm-button variant="secondary" href="/Platform/Backup/Plan" icon="plus">@L["New schedule"]</mm-button>
 </mm-list-actions>
 </mm-list>
 

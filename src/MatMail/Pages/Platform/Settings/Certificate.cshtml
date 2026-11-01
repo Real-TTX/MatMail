@@ -1,7 +1,7 @@
-@page "/Admin/Settings/Certificate"
-@model MatMail.Pages.Admin.Settings.CertificateModel
+@page "/Platform/Settings/Certificate"
+@model MatMail.Pages.Platform.Settings.CertificateModel
 @{
-    ViewData["Breadcrumb"] = "Administration / Server settings / TLS certificate";
+    ViewData["Breadcrumb"] = "Platform / Server settings / TLS certificate";
     ViewData["Title"] = L["TLS certificate"].Value;
     ViewData["Description"] = L["The web interface, SMTP and IMAP are encrypted with this certificate. Without one, a self-signed certificate is created; mail programs and browsers then warn."].Value;
     ViewData["Width"] = "narrow";
@@ -58,7 +58,7 @@
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" handler="Upload" icon="upload">@L["Install"]</mm-button>
-        <mm-button variant="secondary" href="/Admin/Settings" icon="back">@L["Back"]</mm-button>
+        <mm-button variant="secondary" href="/Platform/Settings" icon="back">@L["Back"]</mm-button>
         <mm-button-spacer />
         <mm-button variant="danger" type="submit" handler="UseSelfSigned" icon="rotate-ccw"
                    confirm='@L["Remove the installed certificate and use a self-signed one again?"]' confirm-ok='@L["Use a self-signed certificate"]'>@L["Use a self-signed certificate"]</mm-button>

@@ -45,9 +45,6 @@ public class ServerConfig
     /// </summary>
     public bool WebHttps { get; set; }
 
-    /// <summary>Trust X-Forwarded-For / X-Forwarded-Proto of a reverse proxy.</summary>
-    public bool TrustProxyHeaders { get; set; }
-
     /// <summary>Largest attachment upload / message the web client accepts.</summary>
     public int MaxUploadMb { get; set; } = 50;
 }

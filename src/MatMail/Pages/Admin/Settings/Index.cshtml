@@ -17,7 +17,6 @@
                           help='@L["The name of this server: used in the SMTP/IMAP greeting and for the generated certificate."]' />
                 <mm-field asp-for="Input.WebHttps" kind="checkbox" label='@L["Serve the web interface over HTTPS"]' full="true"
                           help='@L["Off by default: MatMail is made to run behind a reverse proxy that handles HTTPS. The mail servers use the certificate either way."]' />
-                <mm-field asp-for="Input.TrustProxyHeaders" kind="checkbox" label='@L["A reverse proxy is in front (trust X-Forwarded-For / X-Forwarded-Proto)"]' full="true" />
                 <mm-field asp-for="Input.MaxUploadMb" kind="number" label='@L["Largest message / attachment upload"]' suffix="MB" />
             </mm-form-section>
         </mm-tab-panel>

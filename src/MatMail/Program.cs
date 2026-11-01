@@ -200,15 +200,8 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     }));
 });
 
-if (config.Server.TrustProxyHeaders)
-{
-    builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
-        options.KnownIPNetworks.Clear();
-        options.KnownProxies.Clear();
-    });
-}
+// Behind a reverse proxy without a setting, like the other Mat apps: the real client address and the scheme come from X-Forwarded-*.
+builder.Services.Configure<ForwardedHeadersOptions>(ProxyHeaders.Configure);
 
 // ---------------------------------------------------------------------------------------------
 // Pipeline
@@ -230,10 +223,7 @@ catch (MatMail.Versioning.IncompatibleVersionException ex)
 
 await StartupInitializer.SeedAdministratorFromEnvironmentAsync(app.Services, startupLogger);
 
-if (config.Server.TrustProxyHeaders)
-{
-    app.UseForwardedHeaders();
-}
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {

@@ -568,6 +568,29 @@ public class TenantMembershipTests : IAsyncLifetime
     }
 
     // -------------------------------------------------------------------------------------------------------------------
+    // The switcher of the menu
+    // -------------------------------------------------------------------------------------------------------------------
+
+    private async Task<string[]> SwitcherAsync(User user, long workingIn)
+    {
+        using IServiceScope scope = _host.Scope(c => c.RunAs(user.Id, workingIn, user.IsSystemAdmin, Permissions.All, user.DisplayName));
+        return (await scope.ServiceProvider.GetRequiredService<MembershipService>().ListSwitchableAsync()).Select(t => t.Name).ToArray();
+    }
+
+    [DbFact]
+    public async Task The_switcher_offers_the_tenants_of_the_person_and_not_every_tenant_of_the_installation()
+    {
+        User root = await _host.CreateUserAsync(_a, "root", isSystemAdmin: true);
+
+        Assert.Equal(new[] { "Home" }, await SwitcherAsync(root, _a));           // one tenant of their own: nothing to switch, though there are two
+        Assert.Equal(new[] { "Home", "Other" }, await SwitcherAsync(root, _b.Id));  // went into B through the platform: B is there, and the way home
+        Assert.Equal(new[] { "Home" }, await SwitcherAsync(_carol, _a));          // a plain user of A
+
+        await JoinAsync(_carol);
+        Assert.Equal(new[] { "Home", "Other" }, await SwitcherAsync(_carol, _a)); // a member of B
+    }
+
+    // -------------------------------------------------------------------------------------------------------------------
     // Mail programs and the second factor
     // -------------------------------------------------------------------------------------------------------------------
 

@@ -5,14 +5,14 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace MatMail.Pages.Account;
 
-/// <summary>System administrators change the tenant they are working in.</summary>
-public class SwitchTenantModel(SignInService signIn, CurrentUser currentUser) : PageModel
+/// <summary>Changes the tenant a session works in. Who may enter which tenant decides <see cref="SignInService.SwitchTenantAsync"/> alone.</summary>
+public class SwitchTenantModel(SignInService signIn) : PageModel
 {
     public IActionResult OnGet() => Redirect("/");
 
     public async Task<IActionResult> OnPostAsync(long tenantId, string? returnUrl)
     {
-        if (currentUser.IsSystemAdmin && Guid.TryParse(User.FindFirstValue(AppClaims.SessionToken), out Guid token))
+        if (Guid.TryParse(User.FindFirstValue(AppClaims.SessionToken), out Guid token))
         {
             await signIn.SwitchTenantAsync(token, tenantId);
         }

@@ -22,6 +22,10 @@ html[data-density="compact"] .mat-table th { padding-top: var(--mat-space-2); pa
 .mm-linkbutton:hover { text-decoration: underline; text-underline-offset: 3px; }
 .mm-linkbutton:focus-visible { outline: none; box-shadow: var(--mat-focus-ring); border-radius: var(--mat-radius-xs); }
 
+/* The toolbar control wraps the bar, the chips of the filters in effect, its form and its dialogs. The wrapper takes no part in the layout,
+   so that the bar and the chips are children of the list as the toolkit expects them: in its order and with its gap (LIST-01). */
+.mm-toolbar { display: contents; }
+
 /* Where an administrative page applies: to the tenant the person works in, or to the whole installation (the platform). */
 .mm-scope { margin-left: auto; white-space: nowrap; }
 

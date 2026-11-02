@@ -256,6 +256,7 @@
   <data name="Available in signatures as {{Website}}." xml:space="preserve"><value>In Signaturen als {{Website}} verfügbar.</value></data>
   <data name="Back" xml:space="preserve"><value>Zurück</value></data>
   <data name="Back to start" xml:space="preserve"><value>Zurück zur Startseite</value></data>
+  <data name="Back to the platform" xml:space="preserve"><value>Zurück zur Plattform</value></data>
   <data name="Back up now" xml:space="preserve"><value>Jetzt sichern</value></data>
   <data name="Backup" xml:space="preserve"><value>Backup</value></data>
   <data name="Backup – keep a copy" xml:space="preserve"><value>Backup – Kopie aufbewahren</value></data>
@@ -1661,6 +1662,7 @@
   <data name="You are offline, so the list cannot be loaded. You can still write messages." xml:space="preserve"><value>Sie sind offline, deshalb kann die Liste nicht geladen werden. Nachrichten schreiben können Sie trotzdem.</value></data>
   <data name="You are offline. Messages you write are kept on this device and sent as soon as you are back online." xml:space="preserve"><value>Sie sind offline. Nachrichten, die Sie schreiben, werden auf diesem Gerät aufbewahrt und gesendet, sobald Sie wieder online sind.</value></data>
   <data name="You are using the app." xml:space="preserve"><value>Sie nutzen die App.</value></data>
+  <data name="You are working in the tenant {0} as a platform administrator. What you change here is recorded in its activity log." xml:space="preserve"><value>Du arbeitest als Plattform-Admin im Mandanten {0}. Was du hier änderst, wird in seinem Aktivitätslog festgehalten.</value></data>
   <data name="You can have at most 20 app passwords. Revoke one you no longer need." xml:space="preserve"><value>Sie können höchstens 20 App-Passwörter haben. Widerrufen Sie eines, das Sie nicht mehr brauchen.</value></data>
   <data name="You cannot deactivate the tenant you are working in." xml:space="preserve"><value>Sie können den Mandanten, in dem Sie gerade arbeiten, nicht deaktivieren.</value></data>
   <data name="You cannot deactivate your own account." xml:space="preserve"><value>Das eigene Konto kann nicht deaktiviert werden.</value></data>

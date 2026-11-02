@@ -231,6 +231,19 @@
 
             <main class="mat-page @(width == "narrow" ? "mat-page--narrow" : width == "wide" ? "mat-page--wide" : "") @(isMail ? "mm-flush" : "")" id="main">
                 <partial name="_Notice" />
+                @if (!isMail && PlatformAdminAuditMiddleware.IsInForeignTenant(CurrentUser, out _))
+                {
+                    @* A platform administrator in a tenant that is not their own works there with every permission: always in sight, and the way back. *@
+                    <mm-alert kind="warn">
+                        <span>@string.Format(L["You are working in the tenant {0} as a platform administrator. What you change here is recorded in its activity log."].Value, CurrentUser.TenantName)</span>
+                        <form method="post" action="/Account/SwitchTenant" class="mm-open-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="tenantId" value="@CurrentUser.HomeTenantId" />
+                            <input type="hidden" name="returnUrl" value="/Platform" />
+                            <button type="submit" class="mm-linkbutton">@L["Back to the platform"]</button>
+                        </form>
+                    </mm-alert>
+                }
                 @if (showHeading)
                 {
                     <div class="mat-page__head">

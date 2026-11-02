@@ -173,4 +173,31 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         Assert.DoesNotContain(marker, await admin.GetStringAsync($"/Platform/Logs?TenantId={first}"));
         Assert.Contains(marker + "@unknown.example", await admin.GetStringAsync("/Platform/Transfers"));
     }
+
+    [DbFact]
+    public async Task A_platform_administrator_in_another_tenant_sees_it_and_what_they_change_there_is_logged_there()
+    {
+        (long first, long second) = await SeedAsync();
+        HttpClient admin = await SignedInAsync(PlatformFactory.AdminUser);
+        string bar = "as a platform administrator";
+        Assert.DoesNotContain(bar, await admin.GetStringAsync("/Admin"));     // at home: nothing to say
+
+        HttpResponseMessage switched = await SignIn.PostAsync(admin, "/Platform", "/Account/SwitchTenant", new Dictionary<string, string> { ["tenantId"] = second.ToString(), ["returnUrl"] = "/Admin" });
+        Assert.Equal(HttpStatusCode.Redirect, switched.StatusCode);
+        Assert.Contains(bar, await admin.GetStringAsync("/Admin"));
+
+        // a change in that tenant (here a form with nothing filled in: what counts is that it was sent) is written into its log
+        await SignIn.PostAsync(admin, "/Admin/Domains/Edit", "/Admin/Domains/Edit", new Dictionary<string, string> { ["Input.Name"] = "" });
+        using (IServiceScope scope = site.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<CurrentUser>().RunAsSystem();
+            var db = scope.ServiceProvider.GetRequiredService<MatMailDbContext>();
+            Assert.True(await db.ActivityLogs.AnyAsync(l => l.TenantId == second && l.Message.Contains("Platform administrator") && l.Message.Contains("/Admin/Domains/Edit")));
+            Assert.False(await db.ActivityLogs.AnyAsync(l => l.TenantId == first && l.Message.Contains("Platform administrator")));
+        }
+
+        // and back home
+        await SignIn.PostAsync(admin, "/Admin", "/Account/SwitchTenant", new Dictionary<string, string> { ["tenantId"] = first.ToString(), ["returnUrl"] = "/Admin" });
+        Assert.DoesNotContain(bar, await admin.GetStringAsync("/Admin"));
+    }
 }

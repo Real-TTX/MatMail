@@ -31,7 +31,6 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
 
     public bool IsEdit => Id != 0;
     public bool IsSelf => Id == currentUser.UserId;
-    public bool CanSetSystemAdmin => currentUser.IsSystemAdmin;
 
     /// <summary>For a lost phone: not for oneself (that needs the password and a code, on the account page).</summary>
     public bool CanResetTwoFactor => IsEdit && !IsSelf && TwoFactor.Enabled;
@@ -53,7 +52,6 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
         public string? Password { get; set; }
         public bool MustChangePassword { get; set; }
         public bool IsActive { get; set; } = true;
-        public bool IsSystemAdmin { get; set; }
         public long[] RoleIds { get; set; } = Array.Empty<long>();
         public bool CreateMailbox { get; set; } = true;
         public string? PrimaryAddress { get; set; }
@@ -91,7 +89,6 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
             Fax = user.Fax,
             MustChangePassword = user.MustChangePassword,
             IsActive = user.IsActive,
-            IsSystemAdmin = user.IsSystemAdmin,
             RoleIds = await db.UserRoles.Where(ur => ur.UserId == Id).Select(ur => ur.RoleId).ToArrayAsync(),
             CreateMailbox = false,
         };
@@ -119,7 +116,7 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
             Password = Input.Password,
             MustChangePassword = Input.MustChangePassword,
             IsActive = Input.IsActive,
-            IsSystemAdmin = Input.IsSystemAdmin && currentUser.IsSystemAdmin,
+            IsSystemAdmin = false,   // who administers the platform is decided on the platform (Administrators), never here
             RoleIds = Input.RoleIds ?? Array.Empty<long>(),
             CreateMailbox = !IsEdit && Input.CreateMailbox,
             PrimaryAddress = Input.PrimaryAddress,
@@ -127,11 +124,8 @@ public class EditModel(MatMailDbContext db, UserService users, TwoFactorService 
 
         if (IsEdit)
         {
-            // The system administrator flag is only editable by system administrators; others keep the stored value.
-            if (!currentUser.IsSystemAdmin)
-            {
-                userInput.IsSystemAdmin = await db.Users.Where(u => u.Id == Id).Select(u => u.IsSystemAdmin).FirstOrDefaultAsync();
-            }
+            // The platform flag is not part of this page: a user keeps what the platform decided.
+            userInput.IsSystemAdmin = await db.Users.Where(u => u.Id == Id).Select(u => u.IsSystemAdmin).FirstOrDefaultAsync();
 
             Guid.TryParse(User.FindFirstValue(AppClaims.SessionToken), out Guid ownSession);
             string? error = await users.UpdateAsync(Id, userInput, ownSession == Guid.Empty ? null : ownSession);

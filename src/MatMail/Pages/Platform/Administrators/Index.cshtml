@@ -1,0 +1,45 @@
+@page "/Platform/Administrators"
+@model MatMail.Pages.Platform.Administrators.IndexModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Administrators";
+    ViewData["Title"] = L["Platform administrators"].Value;
+    ViewData["Description"] = L["They manage the tenants, the server and its backups, and may work in every tenant. Each of them is a user of one tenant; the administrators of a tenant are given by its roles."].Value;
+}
+
+<mm-list>
+<mm-table item-count="Model.Rows.Count" empty-text='@L["No platform administrators."]' empty-icon="shield">
+    <thead>
+        <tr>
+            <th>@L["User"]</th>
+            <th>@L["Tenant"]</th>
+            <th class="mat-hide-sm">@L["Last sign-in"]</th>
+            <th>@L["Status"]</th>
+            <th scope="col"><span class="mat-sr-only">@L["Actions"]</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var admin in Model.Rows)
+        {
+            <tr>
+                <td><div class="mat-table__name"><span>@admin.DisplayName @if (admin.UserId == Model.Self) { <mm-badge kind="info">@L["You"]</mm-badge> }<small>@admin.LoginName</small></span></div></td>
+                <td>@Model.TenantName(admin.TenantId)</td>
+                <td class="mat-hide-sm">@Fmt.Ago(admin.LastLoginDate)</td>
+                <td>@if (admin.IsActive) { <mm-badge kind="ok">@L["Active"]</mm-badge> } else { <mm-badge kind="muted">@L["Inactive"]</mm-badge> }</td>
+                <td class="mat-table__cell-actions">
+                    <div class="mat-table__actions">
+                        <form method="post" asp-page-handler="Revoke" data-no-busy>
+                            <input type="hidden" name="id" value="@admin.UserId" />
+                            <mm-button variant="ghost" type="submit" icon="trash" icon-only="true" small="true"
+                                       confirm='@L["Take the platform away from this person? They stay a user of their tenant."]'>@L["Remove from the platform"]</mm-button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</mm-table>
+
+<mm-list-actions>
+    <mm-button variant="primary" href="/Platform/Administrators/Add" icon="user-plus">@L["Add a platform administrator"]</mm-button>
+</mm-list-actions>
+</mm-list>

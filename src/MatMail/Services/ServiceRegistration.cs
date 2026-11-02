@@ -58,6 +58,7 @@ public static class ServiceRegistration
         services.AddScoped<InstanceOverviewService>();
         services.AddScoped<PlatformListService>();
         services.AddScoped<LogListService>();
+        services.AddScoped<PlatformAdminService>();
 
         services.AddMessaging();
         services.AddPushNotifications();

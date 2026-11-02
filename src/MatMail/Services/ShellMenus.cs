@@ -100,6 +100,7 @@ public sealed class ShellMenus(CurrentUser user, IStringLocalizer<SharedResource
             [
                 new(l["Server settings"].Value, "/Platform/Settings", "settings"),
                 new(l["Backups"].Value, "/Platform/Backup", "archive"),
+                new(l["Administrators"].Value, "/Platform/Administrators", "shield"),
             ]),
         ], Href: "/Platform", Last: true);
 

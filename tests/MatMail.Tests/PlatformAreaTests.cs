@@ -14,7 +14,7 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
     private const string SecondTenantDomain = "second-tenant.example";
     private const string FirstTenantDomain = "first-tenant.example";
     private static readonly string[] Lists =
-        ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users", "/Platform/Queue", "/Platform/Transfers", "/Platform/Logs"];
+        ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users", "/Platform/Queue", "/Platform/Transfers", "/Platform/Logs", "/Platform/Administrators", "/Platform/Administrators/Add"];
 
     private async Task<(long First, long Second)> SeedAsync()
     {

@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatMail.Services;
 
-/// <summary>Creating and removing tenants. A new tenant gets its built-in roles and its "Unassigned" mailbox.</summary>
+/// <summary>The first administrator of a new tenant: a user with the built-in Administrator role, who sets a password of their own at the first sign-in.</summary>
+public sealed record FirstAdministrator(string LoginName, string DisplayName, string Password);
+
+/// <summary>Creating and removing tenants. A new tenant gets its built-in roles, its "Unassigned" mailbox and, from the platform, its first administrator.</summary>
 public sealed class TenantService
 {
     public const string AdministratorRoleName = "Administrator";
@@ -19,7 +22,7 @@ public sealed class TenantService
     }
 
     /// <summary>Creates a tenant. Returns the tenant or an error text (English source string).</summary>
-    public async Task<(Tenant? Tenant, string? Error)> CreateAsync(string? name, string? description, long? actingUserId = null)
+    public async Task<(Tenant? Tenant, string? Error)> CreateAsync(string? name, string? description, long? actingUserId = null, FirstAdministrator? firstAdministrator = null)
     {
         string trimmed = (name ?? string.Empty).Trim();
         if (trimmed.Length == 0)
@@ -62,6 +65,29 @@ public sealed class TenantService
         await db.SaveChangesAsync();
 
         await scope.ServiceProvider.GetRequiredService<MailboxService>().GetUnassignedMailboxAsync(tenant.Id);
+
+        if (firstAdministrator is not null)
+        {
+            long administratorRole = await db.Roles.Where(r => r.TenantId == tenant.Id && r.Name == AdministratorRoleName).Select(r => r.Id).FirstAsync();
+            (User? administrator, string? userError) = await scope.ServiceProvider.GetRequiredService<UserService>().CreateAsync(
+                new UserInput
+                {
+                    LoginName = firstAdministrator.LoginName,
+                    DisplayName = firstAdministrator.DisplayName,
+                    Password = firstAdministrator.Password,
+                    MustChangePassword = true,
+                    RoleIds = new[] { administratorRole },
+                    CreateMailbox = false,
+                },
+                tenant.Id);
+            if (administrator is null)
+            {
+                // all or nothing: a tenant nobody can administer is not left behind
+                await db.Tenants.Where(t => t.Id == tenant.Id).ExecuteDeleteAsync();
+                return (null, userError);
+            }
+        }
+
         return (tenant, null);
     }
 

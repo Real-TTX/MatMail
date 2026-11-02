@@ -3,7 +3,7 @@
 @{
     ViewData["Breadcrumb"] = Model.IsEdit ? "Platform / Tenants / Edit tenant" : "Platform / Tenants / New tenant";
     ViewData["Title"] = Model.IsEdit ? Model.Input.Name : L["New tenant"].Value;
-    ViewData["Description"] = Model.IsEdit ? null : L["A new tenant starts with the roles Administrator and User and an Unassigned mailbox. Create its first administrator under Users after switching into the tenant."].Value;
+    ViewData["Description"] = Model.IsEdit ? null : L["A new tenant starts with the roles Administrator and User, an Unassigned mailbox and its first administrator, who sets a password of their own at the first sign-in."].Value;
     ViewData["Width"] = "narrow";
 }
 
@@ -15,6 +15,16 @@
         <mm-field asp-for="Input.Description" kind="textarea" rows="3" label='@L["Description"]' />
         <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' help='@L["An inactive tenant cannot sign in or receive mail."]' />
     </mm-form-section>
+
+    @if (!Model.IsEdit)
+    {
+        <mm-form-section title='@L["First administrator"]' icon="user-plus"
+                         description='@L["The person who administers the tenant: users, mailboxes, domains, accounts. A platform administrator is not needed for that."]'>
+            <mm-field asp-for="Input.AdminLoginName" label='@L["Login name"]' />
+            <mm-field asp-for="Input.AdminDisplayName" label='@L["Name"]' />
+            <mm-field asp-for="Input.AdminPassword" kind="password" label='@L["Initial password"]' help='@L["They set a password of their own at the first sign-in."]' />
+        </mm-form-section>
+    }
 
     <mm-button-row>
         <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>

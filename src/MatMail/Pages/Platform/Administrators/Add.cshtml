@@ -1,0 +1,19 @@
+@page "/Platform/Administrators/Add"
+@model MatMail.Pages.Platform.Administrators.AddModel
+@{
+    ViewData["Breadcrumb"] = "Platform / Administrators / Add";
+    ViewData["Title"] = L["Add a platform administrator"].Value;
+    ViewData["Description"] = L["An existing user of any tenant gets the platform as well. They keep their tenant and their roles there."].Value;
+    ViewData["Width"] = "narrow";
+}
+
+<mm-form>
+    <mm-form-section title='@L["Who"]' icon="shield">
+        <mm-field asp-for="LoginName" label='@L["Login name"]' autofocus="autofocus" />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="save">@L["Save"]</mm-button>
+        <mm-button variant="secondary" href="/Platform/Administrators" icon="back">@L["Back"]</mm-button>
+    </mm-button-row>
+</mm-form>

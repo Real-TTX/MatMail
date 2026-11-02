@@ -23,6 +23,11 @@ public class EditModel(MatMailDbContext db, TenantService tenants, CurrentUser c
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public bool IsActive { get; set; } = true;
+
+        /// <summary>The first administrator of a new tenant.</summary>
+        public string? AdminLoginName { get; set; }
+        public string? AdminDisplayName { get; set; }
+        public string? AdminPassword { get; set; }
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -53,10 +58,18 @@ public class EditModel(MatMailDbContext db, TenantService tenants, CurrentUser c
 
         if (!IsEdit)
         {
-            (Tenant? created, string? createError) = await tenants.CreateAsync(name, Input.Description);
+            if (string.IsNullOrWhiteSpace(Input.AdminLoginName) || string.IsNullOrWhiteSpace(Input.AdminPassword))
+            {
+                ModelState.AddModelError("Input.AdminLoginName", l["A new tenant needs its first administrator: a login name and a password."]);
+                return Page();
+            }
+
+            var first = new FirstAdministrator(
+                Input.AdminLoginName.Trim(), string.IsNullOrWhiteSpace(Input.AdminDisplayName) ? Input.AdminLoginName.Trim() : Input.AdminDisplayName.Trim(), Input.AdminPassword);
+            (Tenant? created, string? createError) = await tenants.CreateAsync(name, Input.Description, firstAdministrator: first);
             if (created is null)
             {
-                ModelState.AddModelError("Input.Name", l[createError!]);
+                ModelState.AddModelError(string.Empty, l[createError!]);
                 return Page();
             }
 

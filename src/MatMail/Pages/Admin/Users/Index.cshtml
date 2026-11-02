@@ -46,7 +46,7 @@
             {
                 <tr data-row-href="/Admin/Users/Edit?id=@user.Id">
                     <td>
-                        <div class="mat-table__name"><span><a href="/Admin/Users/Edit?id=@user.Id">@user.DisplayName</a> @if (user.IsSystemAdmin) { <mm-badge kind="info" icon="shield">@L["System administrator"]</mm-badge> } @if (user.InDirectory) { <mm-badge kind="muted" icon="server">@L["Directory"]</mm-badge> }<small>@user.LoginName@(string.IsNullOrEmpty(user.Email) ? "" : " · " + user.Email)</small></span></div>
+                        <div class="mat-table__name"><span><a href="/Admin/Users/Edit?id=@user.Id">@user.DisplayName</a> @if (user.InDirectory) { <mm-badge kind="muted" icon="server">@L["Directory"]</mm-badge> }<small>@user.LoginName@(string.IsNullOrEmpty(user.Email) ? "" : " · " + user.Email)</small></span></div>
                     </td>
                     <td class="mat-hide-sm">
                         <div class="mat-row">@foreach (var role in user.Roles) { <span class="mat-tag">@role</span> }</div>

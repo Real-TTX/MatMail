@@ -52,10 +52,6 @@
                     <mm-picker asp-for="Input.RoleIds" asp-items="Model.RoleItems" multiple="true" label='@L["Roles"]'
                                help='@L["Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox."]' />
                     <mm-field asp-for="Input.IsActive" kind="checkbox" label='@L["Active"]' />
-                    @if (Model.CanSetSystemAdmin)
-                    {
-                        <mm-field asp-for="Input.IsSystemAdmin" kind="checkbox" label='@L["System administrator (manages all tenants and the server)"]' />
-                    }
                 </mm-form-section>
 
                 @if (Model.IsEdit)

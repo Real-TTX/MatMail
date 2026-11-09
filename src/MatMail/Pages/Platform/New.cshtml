@@ -1,0 +1,21 @@
+@page "/Platform/New"
+@model MatMail.Pages.Platform.NewModel
+@{
+    ViewData["Breadcrumb"] = "Platform / " + Model.Target!.Title;
+    ViewData["Title"] = Model.Target.Title;
+    ViewData["Description"] = L["It belongs to one tenant. Choose which: you switch into its administration and fill in the form there."].Value;
+    ViewData["ActiveHref"] = Model.Target.List;
+    ViewData["Width"] = "narrow";
+}
+
+<mm-form>
+    <input type="hidden" asp-for="What" />
+    <mm-form-section title='@L["Tenant"]' icon="building">
+        <mm-field asp-for="TenantId" kind="select" label='@L["In which tenant?"]' asp-items="Model.TenantItems" />
+    </mm-form-section>
+
+    <mm-button-row>
+        <mm-button variant="primary" type="submit" icon="arrow-right">@L["Continue"]</mm-button>
+        <mm-button variant="secondary" href="@Model.Target.List" icon="back">@L["Back"]</mm-button>
+    </mm-button-row>
+</mm-form>

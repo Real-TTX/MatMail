@@ -14,7 +14,7 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
     private const string SecondTenantDomain = "second-tenant.example";
     private const string FirstTenantDomain = "first-tenant.example";
     private static readonly string[] Lists =
-        ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users", "/Platform/Queue", "/Platform/Transfers", "/Platform/Logs", "/Platform/Administrators", "/Platform/Administrators/Add"];
+        ["/Platform", "/Platform/Accounts", "/Platform/Mailboxes", "/Platform/Domains", "/Platform/Users", "/Platform/Queue", "/Platform/Transfers", "/Platform/Logs", "/Platform/Administrators", "/Platform/Administrators/Add", "/Platform/New?What=account"];
 
     private async Task<(long First, long Second)> SeedAsync()
     {
@@ -199,5 +199,26 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         // and back home
         await SignIn.PostAsync(admin, "/Admin", "/Account/SwitchTenant", new Dictionary<string, string> { ["tenantId"] = first.ToString(), ["returnUrl"] = "/Admin" });
         Assert.DoesNotContain(bar, await admin.GetStringAsync("/Admin"));
+    }
+
+    [DbFact]
+    public async Task Something_new_from_a_list_of_the_platform_is_made_in_the_tenant_chosen_for_it()
+    {
+        (long first, long second) = await SeedAsync();
+        HttpClient admin = await SignedInAsync(PlatformFactory.AdminUser);
+
+        Assert.Contains("/Platform/New?What=account", await admin.GetStringAsync("/Platform/Accounts"));
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/Platform/New?What=nonsense")).StatusCode);
+
+        HttpResponseMessage response = await SignIn.PostAsync(admin, "/Platform/New?What=account", "/Platform/New?What=account", new Dictionary<string, string> { ["TenantId"] = second.ToString() });
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("/Admin/Accounts/Edit", response.Headers.Location!.OriginalString);
+        Assert.Contains("Second tenant", await admin.GetStringAsync("/Admin/Accounts/Edit"));   // the bar names the tenant the form belongs to
+
+        // a tenant that does not exist is refused, the session stays where it is
+        HttpResponseMessage refused = await SignIn.PostAsync(admin, "/Platform/New?What=user", "/Platform/New?What=user", new Dictionary<string, string> { ["TenantId"] = "999999" });
+        Assert.Equal(HttpStatusCode.OK, refused.StatusCode);
+
+        await SignIn.PostAsync(admin, "/Admin", "/Account/SwitchTenant", new Dictionary<string, string> { ["tenantId"] = first.ToString(), ["returnUrl"] = "/Admin" });
     }
 }

@@ -309,6 +309,7 @@
   <data name="Choose how often." xml:space="preserve"><value>Wählen Sie, wie oft.</value></data>
   <data name="Choose one of the options." xml:space="preserve"><value>Wählen Sie eine der Optionen.</value></data>
   <data name="Choose the mailbox that receives the copies." xml:space="preserve"><value>Wählen Sie das Postfach, das die Kopien erhält.</value></data>
+  <data name="Choose the tenant it belongs to." xml:space="preserve"><value>Wähle den Mandanten, zu dem es gehört.</value></data>
   <data name="Choose where the backups go." xml:space="preserve"><value>Wählen Sie, wohin die Backups gehen.</value></data>
   <data name="Choose where the messages come from." xml:space="preserve"><value>Wählen Sie, woher die Nachrichten kommen.</value></data>
   <data name="Choose yes or no." xml:space="preserve"><value>Wählen Sie Ja oder Nein.</value></data>
@@ -343,6 +344,7 @@
   <data name="contains" xml:space="preserve"><value>enthält</value></data>
   <data name="Content" xml:space="preserve"><value>Inhalt</value></data>
   <data name="Contents" xml:space="preserve"><value>Inhalt</value></data>
+  <data name="Continue" xml:space="preserve"><value>Weiter</value></data>
   <data name="Copied" xml:space="preserve"><value>Kopiert</value></data>
   <data name="copies" xml:space="preserve"><value>Kopien</value></data>
   <data name="Copy" xml:space="preserve"><value>Kopieren</value></data>
@@ -600,6 +602,7 @@
   <data name="Import selected" xml:space="preserve"><value>Auswahl importieren</value></data>
   <data name="In the time zone of this server. For a plan that runs every few hours only the minute counts." xml:space="preserve"><value>In der Zeitzone dieses Servers. Bei einem Zeitplan, der alle paar Stunden läuft, zählt nur die Minute.</value></data>
   <data name="In use" xml:space="preserve"><value>Belegt</value></data>
+  <data name="In which tenant?" xml:space="preserve"><value>In welchem Mandanten?</value></data>
   <data name="Inactive" xml:space="preserve"><value>Inaktiv</value></data>
   <data name="Inbox" xml:space="preserve"><value>Posteingang</value></data>
   <data name="Incoming" xml:space="preserve"><value>Eingehend</value></data>
@@ -625,6 +628,7 @@
   <data name="is smaller than" xml:space="preserve"><value>ist kleiner als</value></data>
   <data name="Is uploaded as soon as you are back online" xml:space="preserve"><value>Wird hochgeladen, sobald Sie wieder online sind</value></data>
   <data name="Issuer" xml:space="preserve"><value>Aussteller</value></data>
+  <data name="It belongs to one tenant. Choose which: you switch into its administration and fill in the form there." xml:space="preserve"><value>Es gehört zu einem Mandanten. Wähle aus, zu welchem: Du wechselst in seine Administration und füllst dort das Formular aus.</value></data>
   <data name="It may have been sent in the meantime. Held mail is shown as failed in the outgoing queue; retry what is really missing." xml:space="preserve"><value>Sie könnten inzwischen gesendet worden sein. Angehaltene Mails erscheinen in der Warteschlange als fehlgeschlagen; versuchen Sie erneut, was wirklich fehlt.</value></data>
   <data name="It was made on {0}" xml:space="preserve"><value>Es wurde am {0} erstellt</value></data>
   <data name="Italic" xml:space="preserve"><value>Kursiv</value></data>
@@ -1469,6 +1473,7 @@
   <data name="The template was created." xml:space="preserve"><value>Die Vorlage wurde angelegt.</value></data>
   <data name="The template was deleted." xml:space="preserve"><value>Die Vorlage wurde gelöscht.</value></data>
   <data name="The template was saved." xml:space="preserve"><value>Die Vorlage wurde gespeichert.</value></data>
+  <data name="The tenant could not be opened." xml:space="preserve"><value>Der Mandant konnte nicht geöffnet werden.</value></data>
   <data name="The tenant does not exist." xml:space="preserve"><value>Der Mandant existiert nicht.</value></data>
   <data name="The tenant was created." xml:space="preserve"><value>Der Mandant wurde angelegt.</value></data>
   <data name="The tenant was deleted." xml:space="preserve"><value>Der Mandant wurde gelöscht.</value></data>

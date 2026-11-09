@@ -140,9 +140,9 @@ public sealed class MailPlatform(
             Restart = true,
         });
 
-        o.LinkAction("openAdmin", T("Administration öffnen", "Open admin"), "external", "/Admin");
+        o.LinkAction("openAdmin", T("Plattform öffnen", "Open the platform"), "external", "/Platform");
         o.LinkAction("openSettings", T("Alle Servereinstellungen", "All server settings"), "settings", "/Platform/Settings");
-        o.LinkAction("openQueue", T("Ausgang öffnen", "Open the queue"), "list", "/Admin/Queue");
+        o.LinkAction("openQueue", T("Ausgang aller Mandanten öffnen", "Open the queue of all tenants"), "list", "/Platform/Queue");
         o.PostAction("fetchMail", T("Jetzt abrufen", "Fetch mail now"), "refresh");
         o.PostAction("retryQueue", T("Ausgang jetzt senden", "Send the queue now"), "upload",
             confirm: T("Alle wartenden und aufgegebenen Nachrichten jetzt erneut senden?", "Try every waiting and given-up message again now?"));

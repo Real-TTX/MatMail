@@ -53,12 +53,12 @@ public sealed class PlatformDefinitionTests
     }
 
     [Fact]
-    public void The_actions_are_links_into_the_admin_area_and_two_that_run()
+    public void The_actions_are_links_into_the_platform_and_two_that_run()
     {
         MatApiDefinition definition = MatPlatformBuilder.Build(MailPlatform.Describe, "en");
 
         Assert.Equal(["fetchMail", "retryQueue"], definition.Actions.Where(a => a.Kind == "post").Select(a => a.Id));
-        Assert.All(definition.Actions.Where(a => a.Kind == "link"), a => Assert.StartsWith("/Admin", a.Url));
+        Assert.All(definition.Actions.Where(a => a.Kind == "link"), a => Assert.StartsWith("/Platform", a.Url));   // the contract looks at the installation, not at one tenant
         Assert.False(string.IsNullOrEmpty(definition.Actions.Single(a => a.Id == "retryQueue").Confirm));
     }
 

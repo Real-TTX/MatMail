@@ -17,6 +17,7 @@ public class SetupModel(
     MatMailDbContext db,
     RestorePreparation preparation,
     BackupService backups,
+    ServerName serverName,
     IStringLocalizer<SharedResource> l) : PageModel
 {
     [BindProperty]
@@ -202,6 +203,7 @@ public class SetupModel(
 
         User user = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.LoginName == SignInService.NormalizeLoginName(Input.LoginName));
         await signIn.SignInAsync(user);
+        await serverName.LearnFromAsync(Request, user.Id);
         return Redirect("/");
     }
 }

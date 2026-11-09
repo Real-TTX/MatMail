@@ -7,9 +7,10 @@ using Microsoft.EntityFrameworkCore;
 namespace MatMail.Pages.Account;
 
 /// <summary>The settings for Outlook, Thunderbird, Apple Mail and phones: this server's names, ports and the user's login.</summary>
-public class MailProgramsModel(AppConfig config, MatMailDbContext db, CurrentUser currentUser, CertificateProvider certificates, TwoFactorService twoFactor) : PageModel
+public class MailProgramsModel(AppConfig config, MatMailDbContext db, CurrentUser currentUser, CertificateProvider certificates, TwoFactorService twoFactor, ServerName serverName) : PageModel
 {
-    public string Host => config.Server.Hostname;
+    /// <summary>The name of the server, or – while none is set – the one this page was opened under (never "localhost" for a phone).</summary>
+    public string Host => serverName.ForRequest(Request);
     public string LoginName => currentUser.Username ?? string.Empty;
     public string? PrimaryAddress { get; private set; }
 

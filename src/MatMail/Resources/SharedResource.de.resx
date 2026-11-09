@@ -843,6 +843,7 @@
   <data name="No certificate" xml:space="preserve"><value>Kein Zertifikat</value></data>
   <data name="No connected account delivers into your mailboxes." xml:space="preserve"><value>Kein verbundenes Konto liefert in Ihre Postfächer.</value></data>
   <data name="No connected accounts yet." xml:space="preserve"><value>Noch keine verbundenen Konten.</value></data>
+  <data name="No data directory." xml:space="preserve"><value>Kein Datenverzeichnis.</value></data>
   <data name="No device yet." xml:space="preserve"><value>Noch kein Gerät.</value></data>
   <data name="No directories yet." xml:space="preserve"><value>Noch keine Verzeichnisse.</value></data>
   <data name="No domains yet." xml:space="preserve"><value>Noch keine Domänen.</value></data>
@@ -1387,9 +1388,9 @@
   <data name="The message was deleted." xml:space="preserve"><value>Die Nachricht wurde gelöscht.</value></data>
   <data name="The name cannot be changed while the domain has addresses." xml:space="preserve"><value>Der Name kann nicht geändert werden, solange die Domäne Adressen hat.</value></data>
   <data name="The name is too long." xml:space="preserve"><value>Der Name ist zu lang.</value></data>
+  <data name="The name mail programs connect to and other mail servers see (greeting, HELO, the generated certificate). It holds at once." xml:space="preserve"><value>Der Name, mit dem sich Mailprogramme verbinden und den andere Mailserver sehen (Begrüßung, HELO, das erzeugte Zertifikat). Gilt sofort.</value></data>
   <data name="The name must not be longer than 100 characters." xml:space="preserve"><value>Der Name darf höchstens 100 Zeichen lang sein.</value></data>
   <data name="The name of a header field has no blanks and no colon." xml:space="preserve"><value>Der Name eines Header-Felds enthält keine Leerzeichen und keinen Doppelpunkt.</value></data>
-  <data name="The name of this server: used in the SMTP/IMAP greeting and for the generated certificate." xml:space="preserve"><value>Der Name dieses Servers: wird in der SMTP-/IMAP-Begrüßung und für das erzeugte Zertifikat verwendet.</value></data>
   <data name="The new recovery codes are valid; the old ones are not." xml:space="preserve"><value>Die neuen Wiederherstellungscodes gelten, die alten nicht mehr.</value></data>
   <data name="The newest" xml:space="preserve"><value>Die neuesten</value></data>
   <data name="The newest {0} of {1} backups are shown." xml:space="preserve"><value>Es werden die neuesten {0} von {1} Backups angezeigt.</value></data>
@@ -1439,6 +1440,8 @@
   <data name="The search and the sort order in effect are kept." xml:space="preserve"><value>Die aktive Suche und Sortierung bleiben erhalten.</value></data>
   <data name="The security settings were saved." xml:space="preserve"><value>Die Sicherheitseinstellungen wurden gespeichert.</value></data>
   <data name="The sender: everybody of the tenant, one mailbox or one user. A more specific template wins." xml:space="preserve"><value>Der Absender: alle im Mandanten, ein Postfach oder ein Benutzer. Die genauere Vorlage gewinnt.</value></data>
+  <data name="The server has no public name yet. Mail programs, the certificate and other mail servers need one – probably {0}, the name you opened this page under." xml:space="preserve"><value>Der Server hat noch keinen öffentlichen Namen. Mailprogramme, das Zertifikat und andere Mailserver brauchen einen – vermutlich {0}, der Name, unter dem du diese Seite geöffnet hast.</value></data>
+  <data name="The server has no public name yet. Mail programs, the certificate and other mail servers need one: enter the name it is reached under, e.g. mail.example.com." xml:space="preserve"><value>Der Server hat noch keinen öffentlichen Namen. Mailprogramme, das Zertifikat und andere Mailserver brauchen einen: Gib den Namen ein, unter dem er erreichbar ist, z. B. mail.example.com.</value></data>
   <data name="The server is required." xml:space="preserve"><value>Der Server ist erforderlich.</value></data>
   <data name="The server offers no shares." xml:space="preserve"><value>Der Server bietet keine Freigaben an.</value></data>
   <data name="The session was ended." xml:space="preserve"><value>Die Sitzung wurde beendet.</value></data>

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Localization;
 
 namespace MatMail.Pages.Platform.Settings;
 
-public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser currentUser, IStringLocalizer<SharedResource> l) : PageModel
+public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser currentUser, IStringLocalizer<SharedResource> l, ServerName serverName) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -61,6 +61,11 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         public string ThemeAccent { get; set; } = "default";
     }
 
+    /// <summary>The server has no name of its own yet ("localhost"): mail programs, the certificate and other mail servers need one.</summary>
+    public bool NameIsUnset => serverName.IsUnset;
+
+    public string? SuggestedName => ServerName.PublicNameOf(Request.Host);
+
     public void OnGet() => Input = ToInput(AppConfigLoader.LoadFile(AppInfo.DataDir));
 
     public async Task<IActionResult> OnPostAsync()
@@ -76,6 +81,7 @@ public class IndexModel(AppConfig effective, ActivityLogger log, CurrentUser cur
         try
         {
             AppConfigLoader.Save(AppInfo.DataDir, config);
+            serverName.Apply(config.Server.Hostname);   // the name holds at once (mail servers, certificate); ports wait for the restart
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

@@ -243,7 +243,8 @@ app.UseMiddleware<SetupRedirectMiddleware>();
 app.UseMiddleware<MustChangePasswordMiddleware>();
 app.UseMiddleware<TwoFactorSetupMiddleware>();
 app.UseAuthorization();
-app.UseMiddleware<PlatformAdminAuditMiddleware>();   // what a platform administrator changes in another tenant goes into its log
+app.UseMiddleware<PlatformAdminAuditMiddleware>();
+app.UseMiddleware<ServerNameMiddleware>();   // while the server has no name of its own: the one a platform administrator opens it under   // what a platform administrator changes in another tenant goes into its log
 
 app.MapGet("/healthz", async (MatMailDbContext db, CancellationToken cancel) =>
 {

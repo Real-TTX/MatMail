@@ -8,13 +8,20 @@
 
 <partial name="_SettingsTabs" model='"settings"' />
 
+@if (Model.NameIsUnset)
+{
+    <mm-alert kind="warn">@(Model.SuggestedName is { } suggested
+        ? string.Format(L["The server has no public name yet. Mail programs, the certificate and other mail servers need one – probably {0}, the name you opened this page under."].Value, suggested)
+        : L["The server has no public name yet. Mail programs, the certificate and other mail servers need one: enter the name it is reached under, e.g. mail.example.com."].Value)</mm-alert>
+}
+
 <mm-form>
     <mm-tabs class="mm-tabs">
         <mm-tab-panel title='@L["Server"]' icon="server">
             <mm-form-section title='@L["Address and web interface"]' icon="globe" columns="2"
                              description='@string.Format(L["The web interface listens on port {0} (set by the container)."].Value, Model.WebPort)'>
                 <mm-field asp-for="Input.Hostname" label='@L["Public host name"]' placeholder="mail.example.com" full="true"
-                          help='@L["The name of this server: used in the SMTP/IMAP greeting and for the generated certificate."]' />
+                          help='@L["The name mail programs connect to and other mail servers see (greeting, HELO, the generated certificate). It holds at once."]' />
                 <mm-field asp-for="Input.MaxUploadMb" kind="number" label='@L["Largest message / attachment upload"]' suffix="MB" />
             </mm-form-section>
         </mm-tab-panel>

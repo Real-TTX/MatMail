@@ -190,23 +190,10 @@ public sealed class MembershipService(IServiceScopeFactory scopes, CurrentUser c
     // -----------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// What the tenant switcher of the menu offers: the tenants the person belongs to (<see cref="ListTenantsAsync"/>) and, for a system
-    /// administrator who went into another tenant through the platform, that tenant as well, so that they see where they are and can go
-    /// home. Every tenant of the installation is the business of the platform (its overview opens any of them), not of the switcher.
+    /// The tenants the signed-in person belongs to (home first, then by name; tenants that are switched off are left out): what the tenant
+    /// switcher of the menu offers. Only their own, also for a system administrator – every tenant of the installation is the business of the
+    /// platform (its lists open any of them), and the way back from a tenant opened there is the warning bar of that tenant.
     /// </summary>
-    public async Task<List<TenantChoice>> ListSwitchableAsync()
-    {
-        List<TenantChoice> tenants = await ListTenantsAsync();
-        if (current.IsSystemAdmin && current.TenantId is long active && tenants.All(t => t.Id != active)
-            && await db.Tenants.AsNoTracking().Where(t => t.Id == active).Select(t => t.Name).FirstOrDefaultAsync() is { } name)
-        {
-            tenants.Add(new TenantChoice(active, name, IsHome: false));
-        }
-
-        return tenants;
-    }
-
-    /// <summary>The tenants the signed-in person can work in (home first, then by name); tenants that are switched off are left out.</summary>
     public async Task<List<TenantChoice>> ListTenantsAsync()
     {
         if (current.UserId is not long userId)

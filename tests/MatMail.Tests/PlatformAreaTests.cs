@@ -213,7 +213,9 @@ public sealed class PlatformAreaTests(PlatformFactory site) : IClassFixture<Plat
         HttpResponseMessage response = await SignIn.PostAsync(admin, "/Platform/New?What=account", "/Platform/New?What=account", new Dictionary<string, string> { ["TenantId"] = second.ToString() });
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.Equal("/Admin/Accounts/Edit", response.Headers.Location!.OriginalString);
-        Assert.Contains("Second tenant", await admin.GetStringAsync("/Admin/Accounts/Edit"));   // the bar names the tenant the form belongs to
+        string form = await admin.GetStringAsync("/Admin/Accounts/Edit");
+        Assert.Contains("Second tenant", form);        // the bar names the tenant the form belongs to
+        Assert.Contains("Back to my tenant", form);    // and leads home: the switcher holds only the own tenants
 
         // a tenant that does not exist is refused, the session stays where it is
         HttpResponseMessage refused = await SignIn.PostAsync(admin, "/Platform/New?What=user", "/Platform/New?What=user", new Dictionary<string, string> { ["TenantId"] = "999999" });

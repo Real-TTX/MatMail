@@ -134,7 +134,7 @@ New code that wants to cross the boundary has to be one of these or says why not
 | `UserService.SetRolesAsync`, `MailboxService` | roles of the tenant that is administered, also for members; owner must be home user or member |
 | `Pages/Admin/Users/*` (list, invite, invitations, member page), `Pages/Admin/Mailboxes/*` (pickers) | see above |
 | `Pages/Account/Tenants` (new), `ShellMenus`, `NavModel` badge | the person's side |
-| `Pages/Shared/_Layout.cshtml`, `TenantService.ListSwitchableAsync` | the tenants of a member, from the snapshot |
+| `Pages/Shared/_Layout.cshtml`, `MembershipService.ListTenantsAsync` | the tenants of a member, from the snapshot |
 | `Push/PushPlanner`, `wwwroot/sw.js`, `mail-core.js` / `mail-ui.js`, `mail-outbox.js` | tenant in the payload, the card, the outbox key |
 | `MaintenanceService` | closed and expired invitations are deleted after 90 days |
 | `Resources/SharedResource.de.resx`, `CLAUDE.md`, `README.md`, `BACKLOG.md` | texts, documentation |

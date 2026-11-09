@@ -41,7 +41,7 @@
 
     var head = new HeadModel(pageTitle == productName ? productName : pageTitle + " · " + productName, productName, brandColor, isMail);
     var displayName = CurrentUser.DisplayName ?? CurrentUser.Username ?? "?";
-    var switchableTenants = await Memberships.ListSwitchableAsync();
+    var switchableTenants = await Memberships.ListTenantsAsync();
     var culture = global::System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
     // An entry of the popup of the switcher. A menu with a start page is a link: the page that loads draws its own menu (a button would only swap the items).
@@ -242,6 +242,12 @@
                             <input type="hidden" name="returnUrl" value="/Platform" />
                             <button type="submit" class="mm-linkbutton">@L["Back to the platform"]</button>
                         </form>
+                        <form method="post" action="/Account/SwitchTenant" class="mm-open-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="tenantId" value="@CurrentUser.HomeTenantId" />
+                            <input type="hidden" name="returnUrl" value="/Admin" />
+                            <button type="submit" class="mm-linkbutton">@L["Back to my tenant"]</button>
+                        </form>
                     </mm-alert>
                 }
                 @if (showHeading)
@@ -298,8 +304,8 @@
             }
             @if (switchableTenants.Count > 1)
             {
-                @* The tenants of the person (home and memberships; a system administrator also the one they went into through the platform), one at
-                   a time: a closed parent between the menus and the administration (SHELL-15), a form button each. Shown only with more than one. *@
+                @* The tenants of the person (home and memberships, never others: a tenant opened through the platform is left by its warning bar),
+                   a closed parent between the menus and the administration (SHELL-15), a form button each. Shown only with more than one. *@
                 <button type="button" class="mat-menu__item mat-menu__parent" role="menuitem" aria-expanded="false" aria-controls="nav-switch-choices-tenants" data-nav-group>
                     @Toolkit.Icon("building")<span>@L["Tenants"]</span>@Toolkit.Icon("chevron-down", "mat-menu__chev")
                 </button>

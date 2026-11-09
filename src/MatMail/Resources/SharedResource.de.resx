@@ -255,6 +255,7 @@
   <data name="Authenticator app" xml:space="preserve"><value>Authenticator-App</value></data>
   <data name="Available in signatures as {{Website}}." xml:space="preserve"><value>In Signaturen als {{Website}} verfügbar.</value></data>
   <data name="Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="Back to my tenant" xml:space="preserve"><value>Zurück zu meinem Mandanten</value></data>
   <data name="Back to start" xml:space="preserve"><value>Zurück zur Startseite</value></data>
   <data name="Back to the platform" xml:space="preserve"><value>Zurück zur Plattform</value></data>
   <data name="Back up now" xml:space="preserve"><value>Jetzt sichern</value></data>

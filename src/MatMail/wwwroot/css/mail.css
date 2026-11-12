@@ -209,12 +209,13 @@ html[data-previews="off"] .mail-row__snippet { display: none; }
 .reader { max-width: 62rem; }
 .reader__head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--mat-space-3); margin: var(--mat-space-3) 0 var(--mat-space-4); }
 .reader__subject { font-size: var(--mat-fs-xl); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.reader__sender { display: flex; align-items: flex-start; gap: var(--mat-space-3); }
-.reader__who { flex: 1; min-width: 0; }
+.reader__sender { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--mat-space-1) var(--mat-space-3); }
+/* The sender takes the line; when the date and the buttons do not fit beside it (a phone, a narrow reading pane) they go below, never the name into a column of letters. */
+.reader__who { flex: 1 1 14rem; min-width: 0; }
 .reader__from { overflow-wrap: anywhere; }
 .reader__to { display: inline-flex; align-items: center; gap: var(--mat-space-1); padding: 0; border: 0; background: none; color: var(--mat-text-muted); font: inherit; font-size: var(--mat-fs-sm); cursor: pointer; }
 .reader__to:hover { color: var(--mat-text); }
-.reader__meta { display: inline-flex; align-items: center; gap: 2px; flex: none; color: var(--mat-text-muted); font-size: var(--mat-fs-xs); }
+.reader__meta { display: inline-flex; align-items: center; gap: 2px; flex: none; margin-left: auto; color: var(--mat-text-muted); font-size: var(--mat-fs-xs); }
 .reader__date { margin-right: var(--mat-space-2); white-space: nowrap; }
 .reader__details { margin: var(--mat-space-2) 0 0 3.35rem; padding: var(--mat-space-3) var(--mat-space-4); border: 1px solid var(--mat-border); border-radius: var(--mat-radius); font-size: var(--mat-fs-sm); background: var(--mat-surface); }
 .reader__details[hidden] { display: none; }
@@ -339,7 +340,7 @@ a.attachment:hover { background: var(--mat-surface-3); text-decoration: none; }
     position: fixed;
     right: var(--mat-space-4);
     bottom: calc(var(--mat-space-4) + var(--mat-safe-bottom));
-    z-index: var(--mat-z-nav);   /* over the list, under the backdrop and the drawer */
+    z-index: calc(var(--mat-z-nav) - 2);   /* over the list, under the backdrop (z-nav - 1) and the drawer */
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -378,7 +379,7 @@ a.attachment:hover { background: var(--mat-surface-3); text-decoration: none; }
   .mail-reader { padding: var(--mat-space-1) var(--mat-space-4) 5rem; }
   .reader__subject { font-size: var(--mat-fs-lg); }
   .reader__details { margin-left: 0; }
-  .reader__sender { flex-wrap: wrap; }
+  .reader__who { flex-basis: calc(100% - 3.35rem); }
   .reader__meta { margin-left: 3.35rem; }
   .thread__from { max-width: 8rem; }
   .thread__body { padding: var(--mat-space-2) var(--mat-space-3) var(--mat-space-3); }

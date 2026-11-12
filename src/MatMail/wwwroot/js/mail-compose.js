@@ -84,6 +84,7 @@
     var editor = App.el("div", { class: "compose__editor", contenteditable: "true", role: "textbox", "aria-multiline": "true", "aria-label": T("messageBody") });
     editor.innerHTML = model.html || "<div><br></div>";
     editor.addEventListener("input", function () { markDirty(win); });
+    themeLater(editor);
     editor.addEventListener("paste", function (e) { pasteImages(win, e); });
 
     var attachmentsBox = App.el("div", { class: "compose__attachments" });
@@ -287,6 +288,39 @@
     win.signature.hidden = list.length === 0;
   }
 
+  // ---------------------------------------------------------------------------------------------
+  // The dark theme
+  // ---------------------------------------------------------------------------------------------
+
+  /**
+   * A signature, a quoted original or pasted text may bring colours meant for a white page. In the dark theme what is too dark is shown
+   * lighter (mail-colours.js); what is sent and saved stays as written (buildModel takes App.colours.clean).
+   */
+  function adaptEditor(editor) {
+    if (!App.colours.darkTheme()) { return; }
+    App.colours.adapt(editor, App.colours.backgroundOf(editor) || App.colours.backgroundOf(doc.body) || { r: 32, g: 33, b: 36, a: 1 });
+  }
+
+  function themeEditor(editor) {
+    App.colours.restore(editor);
+    adaptEditor(editor);
+  }
+
+  /** Looks after an editor: now, whenever something is put into it, and when the theme changes. */
+  function themeLater(editor) {
+    var pending = false;
+    if (window.MutationObserver) {
+      new MutationObserver(function () {
+        if (pending) { return; }
+        pending = true;
+        requestAnimationFrame(function () { pending = false; adaptEditor(editor); });
+      }).observe(editor, { childList: true, subtree: true });
+    }
+    requestAnimationFrame(function () { themeEditor(editor); });
+  }
+
+  App.colours.onThemeChange(function () { doc.querySelectorAll(".compose__editor").forEach(themeEditor); });
+
   function applySignature(win, initial) {
     var existing = win.editor.querySelector(".mm-signature");
     if (existing) { existing.remove(); }
@@ -414,7 +448,7 @@
       from: win.from.value,
       to: win.to.values(), cc: win.cc.values(), bcc: win.bcc.values(),
       subject: win.subject.value,
-      html: win.editor.innerHTML,
+      html: App.colours.clean(win.editor),   // as written: without what the dark theme lightened
       inReplyTo: win.model.inReplyTo || null,
       references: win.model.references || null,
       replyToMessageId: win.model.replyToMessageId || null,

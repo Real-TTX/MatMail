@@ -54,32 +54,41 @@
     try { return frame.contentDocument; } catch (e) { return null; }
   }
 
-  // The theme of the page: the attribute data-theme of <html> says "light" or "dark"; without it (or "system") the device decides.
-  var systemDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-  function isDark() {
-    var theme = document.documentElement.getAttribute("data-theme");
-    return theme === "dark" || (theme !== "light" && !!systemDark && systemDark.matches);
-  }
-
-  /** Mails without colours of their own follow the dark theme; the ones with colours stay on a light page. */
+  /**
+   * The dark theme. A mail without colours of its own simply follows it (the styles of the frame). One with colours: a layout the sender
+   * painted (a coloured background or a picture behind a good part of it, a newsletter) is shown on its light page as it is; otherwise
+   * the white the sender put behind it goes and what is too dark to read on the dark page is made lighter (mail-colours.js).
+   */
   function applyTheme(viewer) {
     var doc = contentOf(viewer.frame);
-    if (!doc) { return; }
+    if (!doc || !doc.body) { return; }
     var root = doc.documentElement;
-    var dark = isDark();
+    var holder = doc.getElementById("mm-body") || doc.body;
+    var dark = App.colours.darkTheme();
+    App.colours.restore(holder);
+    root.classList.remove("mm-paper");
     root.classList.toggle("mm-dark", dark);
-    viewer.frame.classList.toggle("reader__body--paper", dark && root.classList.contains("mm-styled"));
+    var paper = false;
+    if (dark && root.classList.contains("mm-styled")) {
+      var painted = App.colours.paintedBackground(holder);
+      paper = painted.coloured;
+      if (!paper) {
+        App.colours.neutralise(holder, painted.white);
+        App.colours.adapt(holder, App.colours.backgroundOf(viewer.frame.parentElement) || DARK_PAGE);
+      }
+    }
+    root.classList.toggle("mm-paper", paper);
+    viewer.frame.classList.toggle("reader__body--paper", paper);
   }
+
+  var DARK_PAGE = { r: 32, g: 33, b: 36, a: 1 };   // only when the page around the frame paints nothing at all
 
   function refitAll() {
     frames.forEach(function (viewer) { applyTheme(viewer); fit(viewer); });
   }
 
-  // The theme switch of the page changes data-theme (and the device its colour scheme); the open mail follows.
-  if (window.MutationObserver) {
-    new MutationObserver(function () { frames.forEach(applyTheme); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  }
-  if (systemDark && systemDark.addEventListener) { systemDark.addEventListener("change", function () { frames.forEach(applyTheme); }); }
+  // The theme switch of the page (or the device) changes the theme; the open mail follows.
+  App.colours.onThemeChange(function () { frames.forEach(applyTheme); });
 
   // ---------------------------------------------------------------------------------------------
   // Size

@@ -267,7 +267,7 @@
   <data name="Base" xml:space="preserve"><value>Basis</value></data>
   <data name="Bcc" xml:space="preserve"><value>Bcc</value></data>
   <data name="Before a restore" xml:space="preserve"><value>Vor einer Wiederherstellung</value></data>
-  <data name="Below the list" xml:space="preserve"><value>Unter der Liste</value></data>
+  <data name="Below" xml:space="preserve"><value>Unten</value></data>
   <data name="Berry" xml:space="preserve"><value>Beere</value></data>
   <data name="Between 0 and 1000." xml:space="preserve"><value>Zwischen 0 und 1000.</value></data>
   <data name="Between 1 and 1000." xml:space="preserve"><value>Zwischen 1 und 1000.</value></data>
@@ -911,7 +911,7 @@
   <data name="Ocean" xml:space="preserve"><value>Ozean</value></data>
   <data name="Of several templates that fit, the lowest number is used." xml:space="preserve"><value>Passen mehrere Vorlagen, wird die mit der niedrigsten Zahl verwendet.</value></data>
   <data name="Off" xml:space="preserve"><value>Aus</value></data>
-  <data name="Off: a message opens in place of the list. On small screens it always does." xml:space="preserve"><value>Aus: Eine Nachricht öffnet sich anstelle der Liste. Auf kleinen Bildschirmen ist das immer so.</value></data>
+  <data name="Off: a message opens in place of the list. Right or below: the list stays beside it. On small screens a message always opens in place of the list." xml:space="preserve"><value>Aus: Eine Nachricht öffnet sich anstelle der Liste. Rechts oder unten: Die Liste bleibt daneben stehen. Auf kleinen Bildschirmen öffnet sich eine Nachricht immer anstelle der Liste.</value></data>
   <data name="Offline: not saved on the server yet" xml:space="preserve"><value>Offline: noch nicht auf dem Server gespeichert</value></data>
   <data name="OK" xml:space="preserve"><value>OK</value></data>
   <data name="Older" xml:space="preserve"><value>Älter</value></data>
@@ -1096,7 +1096,7 @@
   <data name="Result" xml:space="preserve"><value>Ergebnis</value></data>
   <data name="Revoke" xml:space="preserve"><value>Widerrufen</value></data>
   <data name="Revoke the app password “{0}”? Mail programs that use it stop working." xml:space="preserve"><value>App-Passwort „{0}“ widerrufen? Mailprogramme, die es verwenden, funktionieren dann nicht mehr.</value></data>
-  <data name="Right of the list" xml:space="preserve"><value>Rechts neben der Liste</value></data>
+  <data name="Right" xml:space="preserve"><value>Rechts</value></data>
   <data name="Role" xml:space="preserve"><value>Rolle</value></data>
   <data name="Roles" xml:space="preserve"><value>Rollen</value></data>
   <data name="Roles decide what the user may administer. Access to other people’s mailboxes is delegated per mailbox." xml:space="preserve"><value>Rollen legen fest, was der Benutzer verwalten darf. Der Zugriff auf fremde Postfächer wird pro Postfach als Vertretung vergeben.</value></data>

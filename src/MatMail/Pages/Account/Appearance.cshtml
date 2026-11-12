@@ -82,13 +82,13 @@
         <fieldset class="mat-field mat-fieldset">
             <legend class="mat-legend">@L["Reading pane"]</legend>
             <div class="mat-btn-group" role="radiogroup" aria-label="@L["Reading pane"]">
-                @foreach (var pane in new[] { ("off", L["Off"].Value), ("right", L["Right of the list"].Value), ("below", L["Below the list"].Value) })
+                @foreach (var pane in new[] { ("off", L["Off"].Value), ("right", L["Right"].Value), ("below", L["Below"].Value) })
                 {
                     <input type="radio" class="mat-btn-check" id="Input_ReadingPane_@pane.Item1" name="Input.ReadingPane" value="@pane.Item1" checked="@(Model.Input.ReadingPane == pane.Item1)" />
                     <label class="mat-btn mat-btn--secondary" for="Input_ReadingPane_@pane.Item1">@pane.Item2</label>
                 }
             </div>
-            <span class="mat-hint">@L["Off: a message opens in place of the list. On small screens it always does."]</span>
+            <span class="mat-hint">@L["Off: a message opens in place of the list. Right or below: the list stays beside it. On small screens a message always opens in place of the list."]</span>
         </fieldset>
         <mm-field asp-for="Input.ShowPreviews" kind="checkbox" label='@L["Show the first words of a message in the list"]' />
         <mm-field asp-for="Input.ConversationView" kind="checkbox" label='@L["Group messages into conversations"]'

@@ -141,12 +141,13 @@ public sealed partial class MailBodyRenderer
         + ".mm-quote-toggle{display:inline-block;margin:6px 0;padding:0 9px;height:16px;line-height:14px;border:0;border-radius:8px;background:#e8eaed;color:#5f6368;cursor:pointer;font:700 12px/16px system-ui,sans-serif}"
         + ".mm-quote-toggle:hover{background:#dadce0}"
         + ".mm-quote[hidden]{display:none}"
-        // Mails without colours of their own follow the dark theme; the ones with colours stay on their light page.
-        + "html.mm-dark.mm-plain body,html.mm-dark.mm-unstyled body{background:transparent;color:#e8eaed}"
-        + "html.mm-dark.mm-plain a,html.mm-dark.mm-unstyled a{color:#8ab4f8}"
-        + "html.mm-dark.mm-plain blockquote,html.mm-dark.mm-unstyled blockquote{color:#9aa0a6;border-left-color:#5f6368}"
-        + "html.mm-dark.mm-plain img[data-blocked],html.mm-dark.mm-unstyled img[data-blocked]{background:repeating-linear-gradient(45deg,#2a2d32,#2a2d32 6px,#33373d 6px,#33373d 12px)}"
-        + "html.mm-dark.mm-plain .mm-quote-toggle,html.mm-dark.mm-unstyled .mm-quote-toggle{background:#3c4043;color:#bdc1c6}";
+        // The dark theme (mail-viewer.js sets mm-dark): every mail follows it, unless the sender painted the layout itself (mm-paper: shown
+        // on its light page as it is); text colours of the sender that are too dark for it are made lighter by the viewer (mail-colours.js).
+        + "html.mm-dark:not(.mm-paper) body{background:transparent;color:#e8eaed}"
+        + "html.mm-dark:not(.mm-paper) a{color:#8ab4f8}"
+        + "html.mm-dark:not(.mm-paper) blockquote{color:#9aa0a6;border-left-color:#5f6368}"
+        + "html.mm-dark:not(.mm-paper) img[data-blocked]{background:repeating-linear-gradient(45deg,#2a2d32,#2a2d32 6px,#33373d 6px,#33373d 12px)}"
+        + "html.mm-dark:not(.mm-paper) .mm-quote-toggle{background:#3c4043;color:#bdc1c6}";
 
     /// <summary>
     /// Newsletters put their page colour and text colour on the body element, which the sanitiser removes together with the element.
